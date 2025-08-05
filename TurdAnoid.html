@@ -1,0 +1,157 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html>
+<head>
+  <title>Turdanoid</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+</head>
+<body>
+<script>
+let paddle, ball, bricks;
+let paddleWidth = 100;
+let paddleHeight = 15;
+let ballRadius = 20;
+let ballSpeed = 5;
+let score = 0;
+
+function setup() {
+  createCanvas(800, 600);
+  paddle = createVector(width / 2 - paddleWidth / 2, height - 40);
+  ball = createVector(width / 2, height - 60);
+  ball.velocity = createVector(random(-ballSpeed, ballSpeed), -ballSpeed);
+  bricks = [];
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 4; j++) {
+      bricks.push({ x: i * 100 + 10, y: j * 40 + 50, w: 80, h: 20, broken: false });
+    }
+  }
+}
+
+function draw() {
+  background(220);
+  // Draw paddle
+  fill(0, 128, 255);
+  rect(paddle.x, paddle.y, paddleWidth, paddleHeight);
+  // Move paddle
+  paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
+  
+  // Draw turd ball
+  textSize(30);
+  text("💩", ball.x - ballRadius, ball.y + ballRadius / 2);
+  
+  // Move ball
+  ball.x += ball.velocity.x;
+  ball.y += ball.velocity.y;
+  
+  // Ball collisions with walls
+  if (ball.x <= ballRadius || ball.x >= width - ballRadius) {
+    ball.velocity.x *= -1;
+    // Placeholder for silly sound
+    console.log("PLOP!");
+  }
+  if (ball.y <= ballRadius) {
+    ball.velocity.y *= -1;
+    console.log("SPLAT!");
+  }
+  if (ball.y >= height) {
+    // Game over
+    textSize(40);
+    textAlign(CENTER);
+    text("Whoops! Turd got flushed! 😵", width / 2, height / 2);
+    noLoop();
+    return;
+  }
+  
+  // Paddle collision
+  if (ball.y + ballRadius >= paddle.y && ball.x >= paddle.x && ball.x <= paddle.x + paddleWidth) {
+    ball.velocity.y *= -1;
+    console.log("BOING! Turd bounce!");
+  }
+  
+  // Brick collisions
+  for (let brick of bricks) {
+    if (!brick.broken && ball.x >= brick.x && ball.x <= brick.x + brick.w && 
+        ball.y >= brick.y && ball.y <= brick.y + brick.h) {
+      brick.broken = true;
+      ball.velocity.y *= -1;
+      score += 10;
+      console.log("SMASH! Brick got pooped on!");
+    }
+  }
+  
+  // Draw bricks
+  fill(255, 165, 0);
+  for (let brick of bricks) {
+    if (!brick.broken) {
+      rect(brick.x, brick.y, brick.w, brick.h);
+    }
+  }
+  
+  // Draw score
+  textSize(20);
+  textAlign(LEFT);
+  text("Poop Points: " + score, 10, 30);
+  
+  // Win condition
+  if (bricks.every(brick => brick.broken)) {
+    textSize(40);
+    textAlign(CENTER);
+    text("Turd Triumph! You cleaned up! 🏆", width / 2, height / 2);
+    noLoop();
+  }
+}
+
+function mousePressed() {
+  if (!isLooping()) {
+    // Restart game
+    ball.x = width / 2;
+    ball.y = height - 60;
+    ball.velocity = createVector(random(-ballSpeed, ballSpeed), -ballSpeed);
+    score = 0;
+    for (let brick of bricks) {
+      brick.broken = false;
+    }
+    loop();
+  }
+}
+</script>
+</body>
+</html>
