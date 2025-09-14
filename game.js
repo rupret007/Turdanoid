@@ -5,6 +5,11 @@ class Game {
         this.score = 0;
         this.lives = 3;
         this.gameRunning = true;
+
+        this.keys = {
+            left: false,
+            right: false
+        };
         
         // Game objects
         this.paddle = {
@@ -93,12 +98,35 @@ class Game {
             if (e.code === 'Space' && !this.gameRunning) {
                 this.restart();
             }
+            if (e.code === 'ArrowLeft') {
+                this.keys.left = true;
+            }
+            if (e.code === 'ArrowRight') {
+                this.keys.right = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft') {
+                this.keys.left = false;
+            }
+            if (e.code === 'ArrowRight') {
+                this.keys.right = false;
+            }
         });
     }
     
     update() {
         if (!this.gameRunning) return;
-        
+
+        if (this.keys.left) {
+            this.paddle.x -= this.paddle.speed;
+        }
+        if (this.keys.right) {
+            this.paddle.x += this.paddle.speed;
+        }
+        this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+
         // Update ball position
         this.ball.x += this.ball.dx;
         this.ball.y += this.ball.dy;
