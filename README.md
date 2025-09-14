@@ -9,13 +9,13 @@ A modern, visually stunning version of the classic Arkanoid game built with HTML
 - **Particle Effects**: Dynamic particle system for enhanced visual appeal
 - **Progressive Difficulty**: Ball speed increases with each level
 - **Health System**: Some blocks require multiple hits to destroy
-- **Responsive Controls**: Mouse-based paddle control for precise gameplay
+- **Responsive Controls**: Use the mouse or arrow keys for precise paddle control
 - **Visual Feedback**: Glowing effects, shadows, and smooth transitions
 
 ## 🎯 How to Play
 
 1. **Objective**: Break all the colored blocks using the ball and paddle
-2. **Controls**: Move your mouse to control the paddle position
+2. **Controls**: Move your mouse or use the left/right arrow keys to control the paddle position
 3. **Scoring**: 
    - Each block destroyed: 10 points
    - Level completed: 100 bonus points
@@ -26,7 +26,7 @@ A modern, visually stunning version of the classic Arkanoid game built with HTML
 
 1. Open `index.html` in your web browser
 2. The game starts automatically
-3. Move your mouse to control the paddle
+3. Move your mouse or use the arrow keys to control the paddle
 4. Try to break all blocks without losing the ball
 
 ## 🎨 Game Elements
