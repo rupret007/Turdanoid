@@ -1,107 +1,335 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Turdtris</title>
+<title>Turdtris - Ultimate Edition</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Courier New', monospace;
+  font-family: 'Orbitron', 'Courier New', monospace;
+  overflow: hidden;
 }
+
 body {
-  background: linear-gradient(135deg, #2c1810, #1a0f08);
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(160, 82, 45, 0.3) 0%, transparent 50%),
+    linear-gradient(135deg, #2c1810, #1a0f08);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #d4a574;
+  animation: backgroundPulse 10s ease-in-out infinite;
 }
+
+@keyframes backgroundPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
+}
+
 .game-container {
   display: flex;
-  gap: 20px;
+  gap: 25px;
   align-items: flex-start;
+  position: relative;
 }
+
 canvas {
-  border: 3px solid #8B4513;
-  box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+  border: 4px solid #8B4513;
+  box-shadow: 
+    0 0 30px rgba(139, 69, 19, 0.6),
+    inset 0 0 20px rgba(0, 0, 0, 0.3);
   touch-action: none;
   background: #1a1a1a;
-}
-.info-panel {
-  background: rgba(139, 69, 19, 0.2);
-  border: 2px solid #8B4513;
   border-radius: 8px;
-  padding: 20px;
-  width: 200px;
-  box-shadow: 0 0 15px rgba(139, 69, 19, 0.3);
+  position: relative;
+  z-index: 2;
 }
+
+.info-panel {
+  background: 
+    linear-gradient(145deg, rgba(139, 69, 19, 0.25), rgba(160, 82, 45, 0.15));
+  border: 3px solid #8B4513;
+  border-radius: 12px;
+  padding: 25px;
+  width: 220px;
+  box-shadow: 
+    0 0 25px rgba(139, 69, 19, 0.4),
+    inset 0 0 15px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
 .info-panel h3 {
-  margin: 0 0 10px 0;
+  margin: 0 0 15px 0;
   color: #d4a574;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  text-shadow: 
+    2px 2px 4px rgba(0,0,0,0.7),
+    0 0 10px rgba(212, 165, 116, 0.3);
+  font-weight: 900;
+  font-size: 20px;
+  text-align: center;
+  animation: titleGlow 2s ease-in-out infinite alternate;
 }
+
+@keyframes titleGlow {
+  from { text-shadow: 2px 2px 4px rgba(0,0,0,0.7), 0 0 10px rgba(212, 165, 116, 0.3); }
+  to { text-shadow: 2px 2px 4px rgba(0,0,0,0.7), 0 0 20px rgba(212, 165, 116, 0.6); }
+}
+
 .score, .level, .lines {
   font-size: 18px;
-  margin: 10px 0;
+  margin: 12px 0;
   color: #f4e4c4;
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  transition: all 0.3s ease;
 }
-.next-piece {
+
+.score-highlight {
+  animation: scoreFlash 0.5s ease-out;
+  transform: scale(1.1);
+}
+
+@keyframes scoreFlash {
+  0% { color: #f4e4c4; transform: scale(1); }
+  50% { color: #ffff00; transform: scale(1.2); }
+  100% { color: #f4e4c4; transform: scale(1.1); }
+}
+
+.next-piece, .hold-piece {
   margin: 20px 0;
 }
-.next-canvas {
-  border: 1px solid #8B4513;
-  background: #1a1a1a;
+
+.next-canvas, .hold-canvas {
+  border: 2px solid #8B4513;
+  background: 
+    linear-gradient(145deg, #1a1a1a, #0f0f0f);
   margin-top: 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
+
 .controls {
-  font-size: 12px;
+  font-size: 11px;
   color: #b8956f;
   margin-top: 20px;
-  line-height: 1.4;
+  line-height: 1.5;
+  background: rgba(0,0,0,0.2);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 69, 19, 0.3);
 }
-.game-over-overlay {
+
+.game-over-overlay, .pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: #d4a574;
+  display: none;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.overlay-content {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9);
-  color: #d4a574;
-  padding: 30px;
-  border: 3px solid #8B4513;
-  border-radius: 10px;
+  background: 
+    linear-gradient(145deg, rgba(139, 69, 19, 0.9), rgba(160, 82, 45, 0.8));
+  padding: 40px;
+  border: 4px solid #8B4513;
+  border-radius: 15px;
   text-align: center;
-  display: none;
-  z-index: 100;
+  box-shadow: 
+    0 0 50px rgba(139, 69, 19, 0.8),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  animation: overlaySlideIn 0.5s ease-out;
 }
-.restart-btn {
-  background: #8B4513;
+
+@keyframes overlaySlideIn {
+  from { transform: translate(-50%, -60%); opacity: 0; }
+  to { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+.restart-btn, .menu-btn {
+  background: linear-gradient(145deg, #8B4513, #A0522D);
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 25px;
   font-size: 16px;
   cursor: pointer;
-  border-radius: 5px;
-  margin-top: 15px;
+  border-radius: 8px;
+  margin: 10px 5px;
   font-family: inherit;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-.restart-btn:hover {
-  background: #A0522D;
+
+.restart-btn:hover, .menu-btn:hover {
+  background: linear-gradient(145deg, #A0522D, #CD853F);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+.high-scores {
+  margin: 20px 0;
+  font-size: 12px;
+}
+
+.high-score-entry {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+  padding: 3px 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+.particles {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #8B4513;
+  border-radius: 50%;
+  animation: particleFloat 1s ease-out forwards;
+}
+
+@keyframes particleFloat {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.5);
+  }
+}
+
+.combo-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffff00;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 100;
+  animation: comboAnimation 1s ease-out forwards;
+  display: none;
+}
+
+@keyframes comboAnimation {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -30%) scale(1); }
+}
+
+.sound-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(139, 69, 19, 0.3);
+  border: 2px solid #8B4513;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.sound-toggle:hover {
+  background: rgba(139, 69, 19, 0.5);
+  transform: scale(1.1);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8B4513, #D2691E);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .info-panel {
+    width: 300px;
+    padding: 20px;
+  }
+  
+  canvas {
+    width: 280px;
+    height: 560px;
+  }
 }
 </style>
 </head>
 <body>
+<div class="sound-toggle" onclick="toggleSound()" id="soundToggle">🔊</div>
+
 <div class="game-container">
   <canvas width="320" height="640" id="game"></canvas>
   <div class="info-panel">
-    <h3>💩 TURDTRIS 💩</h3>
+    <h3>💩 TURDTRIS ULTIMATE 💩</h3>
     <div class="score">Score: <span id="score">0</span></div>
     <div class="level">Level: <span id="level">1</span></div>
     <div class="lines">Lines: <span id="lines">0</span></div>
     
+    <div class="progress-bar">
+      <div class="progress-fill" id="levelProgress"></div>
+    </div>
+    <div style="font-size: 10px; text-align: center; margin-top: 5px;">
+      Next Level: <span id="nextLevel">10</span> lines
+    </div>
+    
+    <div class="hold-piece">
+      <h3>Hold (C):</h3>
+      <canvas width="120" height="80" id="hold" class="hold-canvas"></canvas>
+    </div>
+    
     <div class="next-piece">
       <h3>Next Piece:</h3>
       <canvas width="120" height="80" id="next" class="next-canvas"></canvas>
+    </div>
+    
+    <div class="high-scores">
+      <h3>High Scores:</h3>
+      <div id="highScoresList"></div>
     </div>
     
     <div class="controls">
@@ -109,30 +337,128 @@ canvas {
       ← → Move<br>
       ↑ Rotate<br>
       ↓ Hard Drop<br>
-      Space Soft Drop<br><br>
+      Space Soft Drop<br>
+      C Hold Piece<br>
+      P Pause<br><br>
       <strong>Mobile:</strong><br>
       Swipe to move<br>
       Tap to rotate<br>
-      Swipe down to drop
+      Swipe down to drop<br>
+      Double tap to hold
     </div>
   </div>
 </div>
 
+<div class="combo-display" id="comboDisplay"></div>
+
 <div class="game-over-overlay" id="gameOverOverlay">
-  <h2>💩 GAME OVER! 💩</h2>
-  <p>Final Score: <span id="finalScore">0</span></p>
-  <p>Lines Cleared: <span id="finalLines">0</span></p>
-  <button class="restart-btn" onclick="restartGame()">Play Again</button>
+  <div class="overlay-content">
+    <h2>💩 GAME OVER! 💩</h2>
+    <p>Final Score: <span id="finalScore">0</span></p>
+    <p>Lines Cleared: <span id="finalLines">0</span></p>
+    <p>Level Reached: <span id="finalLevel">1</span></p>
+    <div id="newHighScore" style="display: none;">
+      <h3 style="color: #ffff00;">🎉 NEW HIGH SCORE! 🎉</h3>
+    </div>
+    <button class="restart-btn" onclick="restartGame()">Play Again</button>
+    <button class="menu-btn" onclick="showMenu()">Main Menu</button>
+  </div>
+</div>
+
+<div class="pause-overlay" id="pauseOverlay">
+  <div class="overlay-content">
+    <h2>⏸️ PAUSED ⏸️</h2>
+    <p>Press P to continue</p>
+    <button class="menu-btn" onclick="togglePause()">Resume</button>
+    <button class="restart-btn" onclick="restartGame()">Restart</button>
+  </div>
 </div>
 <script>
-// Turdtris - A Tetris-like game with a turd theme (brown pieces)
+// Turdtris Ultimate - Enhanced Tetris with advanced features
 
 // Game state variables
 let score = 0;
 let level = 1;
 let linesCleared = 0;
-let dropSpeed = 60; // frames before auto-drop
+let dropSpeed = 60;
 let softDrop = false;
+let gameOver = false;
+let paused = false;
+let count = 0;
+let rAF = null;
+let soundEnabled = true;
+let combo = 0;
+let lastClearTime = 0;
+
+// Hold piece functionality
+let heldPiece = null;
+let canHold = true;
+
+// High scores
+let highScores = JSON.parse(localStorage.getItem('turdtrisHighScores') || '[]');
+
+// Particle system
+const particles = [];
+
+// Audio context for sound effects
+let audioContext;
+let sounds = {};
+
+// Initialize audio
+function initAudio() {
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    createSounds();
+  } catch (e) {
+    console.log('Audio not supported');
+    soundEnabled = false;
+  }
+}
+
+// Create sound effects
+function createSounds() {
+  if (!audioContext) return;
+  
+  // Line clear sound
+  sounds.lineClear = createTone(800, 0.2, 'sine');
+  sounds.drop = createTone(200, 0.1, 'square');
+  sounds.rotate = createTone(400, 0.05, 'triangle');
+  sounds.move = createTone(300, 0.03, 'square');
+  sounds.levelUp = createTone(1000, 0.5, 'sine');
+  sounds.gameOver = createTone(150, 1, 'sawtooth');
+}
+
+function createTone(frequency, duration, type = 'sine') {
+  return () => {
+    if (!soundEnabled || !audioContext) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = frequency;
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+  };
+}
+
+function playSound(soundName) {
+  if (sounds[soundName]) {
+    sounds[soundName]();
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+}
 
 // Get random integer between min and max
 function getRandomInt(min, max) {
@@ -234,6 +560,15 @@ function isValidMove(matrix, cellRow, cellCol) {
   return true;
 }
 
+// Get ghost piece position
+function getGhostPosition() {
+  let ghostRow = tetromino.row;
+  while (isValidMove(tetromino.matrix, ghostRow + 1, tetromino.col)) {
+    ghostRow++;
+  }
+  return ghostRow;
+}
+
 // Hard drop tetromino
 function hardDrop() {
   let dropDistance = 0;
@@ -241,8 +576,85 @@ function hardDrop() {
     dropDistance++;
   }
   tetromino.row += dropDistance;
-  score += dropDistance * 2; // Bonus points for hard drop
+  score += dropDistance * 2;
+  playSound('drop');
   placeTetromino();
+}
+
+// Hold piece functionality
+function holdPiece() {
+  if (!canHold) return;
+  
+  if (heldPiece === null) {
+    heldPiece = {
+      name: tetromino.name,
+      matrix: tetrominos[tetromino.name]
+    };
+    tetromino = nextTetromino;
+    nextTetromino = getNextTetromino();
+  } else {
+    const temp = {
+      name: tetromino.name,
+      matrix: tetrominos[tetromino.name]
+    };
+    
+    tetromino = {
+      name: heldPiece.name,
+      matrix: heldPiece.matrix,
+      row: heldPiece.name === 'I' ? -1 : -2,
+      col: Math.floor((playfield[0].length - heldPiece.matrix[0].length) / 2)
+    };
+    
+    heldPiece = temp;
+  }
+  
+  canHold = false;
+  drawHoldPiece();
+  drawNextPiece();
+}
+
+// Create particles for line clear
+function createParticles(clearedRows) {
+  clearedRows.forEach(row => {
+    for (let col = 0; col < 10; col++) {
+      for (let i = 0; i < 3; i++) {
+        particles.push({
+          x: col * grid + grid / 2,
+          y: (row - 2) * grid + grid / 2,
+          vx: (Math.random() - 0.5) * 10,
+          vy: Math.random() * -5 - 2,
+          life: 1,
+          decay: 0.02,
+          color: colors[playfield[row][col]] || '#8B4513'
+        });
+      }
+    }
+  });
+}
+
+// Update particles
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const particle = particles[i];
+    particle.x += particle.vx;
+    particle.y += particle.vy;
+    particle.vy += 0.2; // gravity
+    particle.life -= particle.decay;
+    
+    if (particle.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+// Draw particles
+function drawParticles() {
+  particles.forEach(particle => {
+    context.globalAlpha = particle.life;
+    context.fillStyle = particle.color;
+    context.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+  });
+  context.globalAlpha = 1;
 }
 
 // Place tetromino on playfield
@@ -258,50 +670,145 @@ function placeTetromino() {
     }
   }
   
-  // Clear completed lines
-  let linesCleared = 0;
+  // Find completed lines
+  const clearedRows = [];
+  let linesThisClear = 0;
+  
   for (let row = playfield.length - 1; row >= 0; row--) {
     if (playfield[row].every(cell => !!cell)) {
-      // Remove the completed line
+      clearedRows.push(row);
       playfield.splice(row, 1);
-      // Add new empty line at top
       playfield.unshift(new Array(10).fill(0));
-      linesCleared++;
+      linesThisClear++;
       row++; // Check the same row again since we removed a line
     }
   }
   
   // Update score and level
-  if (linesCleared > 0) {
-    const lineScores = [0, 100, 300, 500, 800]; // Points for 0, 1, 2, 3, 4 lines
-    score += lineScores[linesCleared] * level;
-    window.linesCleared += linesCleared;
+  if (linesThisClear > 0) {
+    // Create particles for cleared lines
+    createParticles(clearedRows);
     
-    // Level up every 10 lines
-    const newLevel = Math.floor(window.linesCleared / 10) + 1;
-    if (newLevel > level) {
-      level = newLevel;
-      dropSpeed = Math.max(5, 60 - (level - 1) * 5); // Increase speed with level
+    // Combo system
+    const currentTime = Date.now();
+    if (currentTime - lastClearTime < 3000) {
+      combo++;
+    } else {
+      combo = 0;
+    }
+    lastClearTime = currentTime;
+    
+    // Score calculation with combo bonus
+    const lineScores = [0, 100, 300, 500, 800];
+    let baseScore = lineScores[linesThisClear] * level;
+    let comboBonus = combo * 50 * level;
+    score += baseScore + comboBonus;
+    
+    linesCleared += linesThisClear;
+    
+    // Show combo display
+    if (combo > 0) {
+      showCombo(linesThisClear, combo);
     }
     
+    // Level up every 10 lines
+    const newLevel = Math.floor(linesCleared / 10) + 1;
+    if (newLevel > level) {
+      level = newLevel;
+      dropSpeed = Math.max(3, 60 - (level - 1) * 4);
+      playSound('levelUp');
+    }
+    
+    playSound('lineClear');
     updateScore();
+    updateLevelProgress();
+  } else {
+    combo = 0; // Reset combo if no lines cleared
   }
   
-  // Get next piece and update preview
-  tetromino = getNextTetromino();
+  // Get next piece and allow holding again
+  tetromino = nextTetromino;
   nextTetromino = getNextTetromino();
+  canHold = true;
+  
   drawNextPiece();
+}
+
+// Show combo display
+function showCombo(lines, combo) {
+  const comboDisplay = document.getElementById('comboDisplay');
+  const comboTexts = ['', 'SINGLE!', 'DOUBLE!', 'TRIPLE!', 'TURDTRIS!'];
+  
+  let text = comboTexts[lines] || 'AMAZING!';
+  if (combo > 0) {
+    text += ` COMBO x${combo + 1}`;
+  }
+  
+  comboDisplay.textContent = text;
+  comboDisplay.style.display = 'block';
+  
+  setTimeout(() => {
+    comboDisplay.style.display = 'none';
+  }, 1000);
 }
 
 // Show game over
 function showGameOver() {
   cancelAnimationFrame(rAF);
   gameOver = true;
+  playSound('gameOver');
+  
+  // Check for high score
+  const isHighScore = checkHighScore(score);
   
   // Update final score display
   document.getElementById('finalScore').textContent = score;
   document.getElementById('finalLines').textContent = linesCleared;
+  document.getElementById('finalLevel').textContent = level;
+  document.getElementById('newHighScore').style.display = isHighScore ? 'block' : 'none';
   document.getElementById('gameOverOverlay').style.display = 'block';
+}
+
+// Check and update high scores
+function checkHighScore(newScore) {
+  highScores.push({ score: newScore, level: level, lines: linesCleared, date: new Date().toLocaleDateString() });
+  highScores.sort((a, b) => b.score - a.score);
+  highScores = highScores.slice(0, 5); // Keep top 5
+  
+  localStorage.setItem('turdtrisHighScores', JSON.stringify(highScores));
+  updateHighScoreDisplay();
+  
+  return newScore === highScores[0].score;
+}
+
+// Update high score display
+function updateHighScoreDisplay() {
+  const highScoresList = document.getElementById('highScoresList');
+  highScoresList.innerHTML = '';
+  
+  highScores.forEach((score, index) => {
+    const entry = document.createElement('div');
+    entry.className = 'high-score-entry';
+    entry.innerHTML = `
+      <span>${index + 1}. ${score.score.toLocaleString()}</span>
+      <span>L${score.level}</span>
+    `;
+    highScoresList.appendChild(entry);
+  });
+}
+
+// Toggle pause
+function togglePause() {
+  if (gameOver) return;
+  
+  paused = !paused;
+  if (paused) {
+    cancelAnimationFrame(rAF);
+    document.getElementById('pauseOverlay').style.display = 'block';
+  } else {
+    document.getElementById('pauseOverlay').style.display = 'none';
+    rAF = requestAnimationFrame(loop);
+  }
 }
 
 // Restart game
@@ -313,7 +820,13 @@ function restartGame() {
   dropSpeed = 60;
   softDrop = false;
   gameOver = false;
+  paused = false;
   count = 0;
+  combo = 0;
+  lastClearTime = 0;
+  heldPiece = null;
+  canHold = true;
+  particles.length = 0;
   
   // Clear playfield
   for (let row = 0; row < playfield.length; row++) {
@@ -327,33 +840,49 @@ function restartGame() {
   tetromino = getNextTetromino();
   nextTetromino = getNextTetromino();
   
-  // Hide game over overlay
+  // Hide overlays
   document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('pauseOverlay').style.display = 'none';
   
   // Update displays
   updateScore();
+  updateLevelProgress();
   drawNextPiece();
+  drawHoldPiece();
   
   // Restart game loop
   rAF = requestAnimationFrame(loop);
 }
 
-// Update score display
+// Update score display with animation
 function updateScore() {
-  document.getElementById('score').textContent = score;
+  document.getElementById('score').textContent = score.toLocaleString();
   document.getElementById('level').textContent = level;
   document.getElementById('lines').textContent = linesCleared;
+  
+  // Add score flash animation
+  const scoreElement = document.querySelector('.score');
+  scoreElement.classList.add('score-highlight');
+  setTimeout(() => scoreElement.classList.remove('score-highlight'), 500);
 }
 
-// Colors for turd theme (enhanced brown palette)
+// Update level progress bar
+function updateLevelProgress() {
+  const currentLevelLines = linesCleared % 10;
+  const progress = (currentLevelLines / 10) * 100;
+  document.getElementById('levelProgress').style.width = `${progress}%`;
+  document.getElementById('nextLevel').textContent = 10 - currentLevelLines;
+}
+
+// Enhanced colors with gradients
 const colors = {
-  'I': '#8B4513', // saddlebrown
-  'O': '#D2691E', // chocolate  
-  'T': '#A0522D', // sienna
-  'S': '#CD853F', // peru
-  'Z': '#DEB887', // burlywood
-  'J': '#BC8F8F', // rosybrown
-  'L': '#800000'  // maroon
+  'I': '#8B4513',
+  'O': '#D2691E',
+  'T': '#A0522D',
+  'S': '#CD853F',
+  'Z': '#DEB887',
+  'J': '#BC8F8F',
+  'L': '#800000'
 };
 
 // Setup canvas and playfield
@@ -361,6 +890,8 @@ const canvas = document.getElementById('game');
 const context = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next');
 const nextContext = nextCanvas.getContext('2d');
+const holdCanvas = document.getElementById('hold');
+const holdContext = holdCanvas.getContext('2d');
 const grid = 32;
 
 // Initialize playfield (20 visible rows + 2 hidden rows at top)
@@ -376,6 +907,45 @@ for (let row = 0; row < 22; row++) {
 let tetromino = getNextTetromino();
 let nextTetromino = getNextTetromino();
 
+// Draw piece on canvas
+function drawPiece(ctx, piece, offsetX = 0, offsetY = 0, blockSize = 20) {
+  if (!piece) return;
+  
+  const matrix = piece.matrix;
+  ctx.fillStyle = colors[piece.name];
+  
+  for (let row = 0; row < matrix.length; row++) {
+    for (let col = 0; col < matrix[row].length; col++) {
+      if (matrix[row][col]) {
+        const gradient = ctx.createLinearGradient(
+          offsetX + col * blockSize, offsetY + row * blockSize,
+          offsetX + col * blockSize + blockSize, offsetY + row * blockSize + blockSize
+        );
+        gradient.addColorStop(0, colors[piece.name]);
+        gradient.addColorStop(1, shadeColor(colors[piece.name], -20));
+        ctx.fillStyle = gradient;
+        
+        ctx.fillRect(
+          offsetX + col * blockSize,
+          offsetY + row * blockSize,
+          blockSize - 1,
+          blockSize - 1
+        );
+        
+        // Border highlight
+        ctx.strokeStyle = shadeColor(colors[piece.name], 40);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          offsetX + col * blockSize,
+          offsetY + row * blockSize,
+          blockSize - 1,
+          blockSize - 1
+        );
+      }
+    }
+  }
+}
+
 // Draw next piece preview
 function drawNextPiece() {
   nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
@@ -386,54 +956,75 @@ function drawNextPiece() {
     const offsetX = (nextCanvas.width - matrix[0].length * blockSize) / 2;
     const offsetY = (nextCanvas.height - matrix.length * blockSize) / 2;
     
-    nextContext.fillStyle = colors[nextTetromino.name];
-    for (let row = 0; row < matrix.length; row++) {
-      for (let col = 0; col < matrix[row].length; col++) {
-        if (matrix[row][col]) {
-          nextContext.fillRect(
-            offsetX + col * blockSize, 
-            offsetY + row * blockSize, 
-            blockSize - 1, 
-            blockSize - 1
-          );
-        }
-      }
-    }
+    drawPiece(nextContext, nextTetromino, offsetX, offsetY, blockSize);
+  }
+}
+
+// Draw hold piece
+function drawHoldPiece() {
+  holdContext.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+  
+  if (heldPiece) {
+    const matrix = heldPiece.matrix;
+    const blockSize = 20;
+    const offsetX = (holdCanvas.width - matrix[0].length * blockSize) / 2;
+    const offsetY = (holdCanvas.height - matrix.length * blockSize) / 2;
+    
+    drawPiece(holdContext, heldPiece, offsetX, offsetY, blockSize);
   }
 }
 
 // Game loop
-let count = 0;
-let gameOver = false;
-let rAF = null;
-
 function loop() {
+  if (paused) return;
+  
   rAF = requestAnimationFrame(loop);
   context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Update and draw particles
+  updateParticles();
+  drawParticles();
 
   // Draw playfield (only visible rows)
   for (let row = 2; row < playfield.length; row++) {
     for (let col = 0; col < playfield[row].length; col++) {
       if (playfield[row][col]) {
         const name = playfield[row][col];
-        context.fillStyle = colors[name];
+        const x = col * grid;
+        const y = (row - 2) * grid;
         
-        // Add subtle gradient effect
-        const gradient = context.createLinearGradient(
-          col * grid, (row - 2) * grid, 
-          col * grid + grid, (row - 2) * grid + grid
-        );
+        // Gradient effect
+        const gradient = context.createLinearGradient(x, y, x + grid, y + grid);
         gradient.addColorStop(0, colors[name]);
         gradient.addColorStop(1, shadeColor(colors[name], -20));
         context.fillStyle = gradient;
         
-        context.fillRect(col * grid, (row - 2) * grid, grid - 1, grid - 1);
+        context.fillRect(x, y, grid - 1, grid - 1);
         
-        // Add border highlight
+        // Border highlight
         context.strokeStyle = shadeColor(colors[name], 40);
         context.lineWidth = 1;
-        context.strokeRect(col * grid, (row - 2) * grid, grid - 1, grid - 1);
+        context.strokeRect(x, y, grid - 1, grid - 1);
       }
+    }
+  }
+
+  // Draw ghost piece
+  if (tetromino) {
+    const ghostRow = getGhostPosition();
+    if (ghostRow !== tetromino.row) {
+      context.globalAlpha = 0.3;
+      for (let row = 0; row < tetromino.matrix.length; row++) {
+        for (let col = 0; col < tetromino.matrix[row].length; col++) {
+          if (tetromino.matrix[row][col] && ghostRow + row >= 2) {
+            const x = (tetromino.col + col) * grid;
+            const y = (ghostRow + row - 2) * grid;
+            context.fillStyle = colors[tetromino.name];
+            context.fillRect(x, y, grid - 1, grid - 1);
+          }
+        }
+      }
+      context.globalAlpha = 1;
     }
   }
 
@@ -449,8 +1040,7 @@ function loop() {
       }
     }
     
-    // Draw current tetromino with enhanced visuals
-    context.fillStyle = colors[tetromino.name];
+    // Draw current tetromino
     for (let row = 0; row < tetromino.matrix.length; row++) {
       for (let col = 0; col < tetromino.matrix[row].length; col++) {
         if (tetromino.matrix[row][col]) {
@@ -492,41 +1082,65 @@ function shadeColor(color, percent) {
 
 // Enhanced keyboard controls
 document.addEventListener('keydown', function(e) {
-  if (gameOver) return;
+  if (gameOver && e.code !== 'KeyR') return;
   
   switch(e.code) {
     case 'ArrowLeft':
       e.preventDefault();
+      if (paused) return;
       const leftCol = tetromino.col - 1;
       if (isValidMove(tetromino.matrix, tetromino.row, leftCol)) {
         tetromino.col = leftCol;
+        playSound('move');
       }
       break;
       
     case 'ArrowRight':
       e.preventDefault();
+      if (paused) return;
       const rightCol = tetromino.col + 1;
       if (isValidMove(tetromino.matrix, tetromino.row, rightCol)) {
         tetromino.col = rightCol;
+        playSound('move');
       }
       break;
       
     case 'ArrowUp':
       e.preventDefault();
+      if (paused) return;
       const rotatedMatrix = rotate(tetromino.matrix);
       if (isValidMove(rotatedMatrix, tetromino.row, tetromino.col)) {
         tetromino.matrix = rotatedMatrix;
+        playSound('rotate');
       }
       break;
       
     case 'ArrowDown':
       e.preventDefault();
+      if (paused) return;
       hardDrop();
       break;
       
     case 'Space':
       e.preventDefault();
+      if (paused) return;
       softDrop = true;
+      break;
+      
+    case 'KeyC':
+      e.preventDefault();
+      if (paused) return;
+      holdPiece();
+      break;
+      
+    case 'KeyP':
+      e.preventDefault();
+      togglePause();
+      break;
+      
+    case 'KeyR':
+      e.preventDefault();
+      if (gameOver) restartGame();
       break;
   }
 });
@@ -541,9 +1155,10 @@ document.addEventListener('keyup', function(e) {
 let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
+let lastTapTime = 0;
 
 canvas.addEventListener('touchstart', function(e) {
-  if (gameOver) return;
+  if (gameOver || paused) return;
   e.preventDefault();
   const touch = e.touches[0];
   touchStartX = touch.clientX;
@@ -556,7 +1171,7 @@ canvas.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 canvas.addEventListener('touchend', function(e) {
-  if (gameOver) return;
+  if (gameOver || paused) return;
   e.preventDefault();
   
   const touch = e.changedTouches[0];
@@ -568,12 +1183,22 @@ canvas.addEventListener('touchend', function(e) {
   const deltaY = touchEndY - touchStartY;
   const threshold = 30;
   
+  // Double tap for hold
+  const currentTime = Date.now();
+  if (currentTime - lastTapTime < 300 && Math.abs(deltaX) < threshold && Math.abs(deltaY) < threshold) {
+    holdPiece();
+    lastTapTime = 0;
+    return;
+  }
+  
   // Quick tap = rotate
   if (touchDuration < 200 && Math.abs(deltaX) < threshold && Math.abs(deltaY) < threshold) {
     const rotatedMatrix = rotate(tetromino.matrix);
     if (isValidMove(rotatedMatrix, tetromino.row, tetromino.col)) {
       tetromino.matrix = rotatedMatrix;
+      playSound('rotate');
     }
+    lastTapTime = currentTime;
   }
   // Swipe gestures
   else if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
@@ -581,6 +1206,7 @@ canvas.addEventListener('touchend', function(e) {
     const col = deltaX < 0 ? tetromino.col - 1 : tetromino.col + 1;
     if (isValidMove(tetromino.matrix, tetromino.row, col)) {
       tetromino.col = col;
+      playSound('move');
     }
   }
   else if (deltaY > threshold) {
@@ -589,10 +1215,25 @@ canvas.addEventListener('touchend', function(e) {
   }
 }, { passive: false });
 
+// Menu placeholder function
+function showMenu() {
+  // Could implement a main menu here
+  console.log('Main menu not implemented');
+}
+
 // Initialize game
-updateScore();
-drawNextPiece();
-rAF = requestAnimationFrame(loop);
+function init() {
+  initAudio();
+  updateScore();
+  updateLevelProgress();
+  updateHighScoreDisplay();
+  drawNextPiece();
+  drawHoldPiece();
+  rAF = requestAnimationFrame(loop);
+}
+
+// Start the game
+init();
 </script>
 </body>
 </html>
