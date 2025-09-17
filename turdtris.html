@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Turdtris</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+}
+body {
+  background: linear-gradient(135deg, #2c1810, #1a0f08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d4a574;
+}
+.game-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+canvas {
+  border: 3px solid #8B4513;
+  box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+  touch-action: none;
+  background: #1a1a1a;
+}
+.info-panel {
+  background: rgba(139, 69, 19, 0.2);
+  border: 2px solid #8B4513;
+  border-radius: 8px;
+  padding: 20px;
+  width: 200px;
+  box-shadow: 0 0 15px rgba(139, 69, 19, 0.3);
+}
+.info-panel h3 {
+  margin: 0 0 10px 0;
+  color: #d4a574;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+.score, .level, .lines {
+  font-size: 18px;
+  margin: 10px 0;
+  color: #f4e4c4;
+}
+.next-piece {
+  margin: 20px 0;
+}
+.next-canvas {
+  border: 1px solid #8B4513;
+  background: #1a1a1a;
+  margin-top: 10px;
+}
+.controls {
+  font-size: 12px;
+  color: #b8956f;
+  margin-top: 20px;
+  line-height: 1.4;
+}
+.game-over-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #d4a574;
+  padding: 30px;
+  border: 3px solid #8B4513;
+  border-radius: 10px;
+  text-align: center;
+  display: none;
+  z-index: 100;
+}
+.restart-btn {
+  background: #8B4513;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-top: 15px;
+  font-family: inherit;
+}
+.restart-btn:hover {
+  background: #A0522D;
+}
+</style>
+</head>
+<body>
+<div class="game-container">
+  <canvas width="320" height="640" id="game"></canvas>
+  <div class="info-panel">
+    <h3>💩 TURDTRIS 💩</h3>
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="level">Level: <span id="level">1</span></div>
+    <div class="lines">Lines: <span id="lines">0</span></div>
+    
+    <div class="next-piece">
+      <h3>Next Piece:</h3>
+      <canvas width="120" height="80" id="next" class="next-canvas"></canvas>
+    </div>
+    
+    <div class="controls">
+      <strong>Controls:</strong><br>
+      ← → Move<br>
+      ↑ Rotate<br>
+      ↓ Hard Drop<br>
+      Space Soft Drop<br><br>
+      <strong>Mobile:</strong><br>
+      Swipe to move<br>
+      Tap to rotate<br>
+      Swipe down to drop
+    </div>
+  </div>
+</div>
+
+<div class="game-over-overlay" id="gameOverOverlay">
+  <h2>💩 GAME OVER! 💩</h2>
+  <p>Final Score: <span id="finalScore">0</span></p>
+  <p>Lines Cleared: <span id="finalLines">0</span></p>
+  <button class="restart-btn" onclick="restartGame()">Play Again</button>
+</div>
+<script>
+// Turdtris - A Tetris-like game with a turd theme (brown pieces)
+
+// Game state variables
+let score = 0;
+let level = 1;
+let linesCleared = 0;
+let dropSpeed = 60; // frames before auto-drop
+let softDrop = false;
+
+// Get random integer between min and max
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Tetromino sequence generator
+const tetrominoSequence = [];
+function generateSequence() {
+  const sequence = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
+  while (sequence.length) {
+    const rand = getRandomInt(0, sequence.length - 1);
+    const name = sequence.splice(rand, 1)[0];
+    tetrominoSequence.push(name);
+  }
+}
+
+// Tetromino shapes
+const tetrominos = {
+  'I': [
+    [0,0,0,0],
+    [1,1,1,1],
+    [0,0,0,0],
+    [0,0,0,0]
+  ],
+  'J': [
+    [1,0,0],
+    [1,1,1],
+    [0,0,0],
+  ],
+  'L': [
+    [0,0,1],
+    [1,1,1],
+    [0,0,0],
+  ],
+  'O': [
+    [1,1],
+    [1,1],
+  ],
+  'S': [
+    [0,1,1],
+    [1,1,0],
+    [0,0,0],
+  ],
+  'Z': [
+    [1,1,0],
+    [0,1,1],
+    [0,0,0],
+  ],
+  'T': [
+    [0,1,0],
+    [1,1,1],
+    [0,0,0],
+  ]
+};
+
+// Get next tetromino
+function getNextTetromino() {
+  if (tetrominoSequence.length === 0) {
+    generateSequence();
+  }
+  const name = tetrominoSequence.pop();
+  const matrix = tetrominos[name];
+  const col = Math.floor((playfield[0].length - matrix[0].length) / 2);
+  const row = name === 'I' ? -1 : -2;
+  return {
+    name: name,
+    matrix: matrix,
+    row: row,
+    col: col
+  };
+}
+
+// Rotate matrix 90 degrees clockwise
+function rotate(matrix) {
+  const N = matrix.length - 1;
+  const result = matrix.map((row, i) =>
+    row.map((val, j) => matrix[N - j][i])
+  );
+  return result;
+}
+
+// Check if move is valid
+function isValidMove(matrix, cellRow, cellCol) {
+  for (let row = 0; row < matrix.length; row++) {
+    for (let col = 0; col < matrix[row].length; col++) {
+      if (matrix[row][col] && (
+        cellCol + col < 0 ||
+        cellCol + col >= playfield[0].length ||
+        cellRow + row >= playfield.length ||
+        (cellRow + row >= 0 && playfield[cellRow + row][cellCol + col]))
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Hard drop tetromino
+function hardDrop() {
+  let dropDistance = 0;
+  while (isValidMove(tetromino.matrix, tetromino.row + dropDistance + 1, tetromino.col)) {
+    dropDistance++;
+  }
+  tetromino.row += dropDistance;
+  score += dropDistance * 2; // Bonus points for hard drop
+  placeTetromino();
+}
+
+// Place tetromino on playfield
+function placeTetromino() {
+  for (let row = 0; row < tetromino.matrix.length; row++) {
+    for (let col = 0; col < tetromino.matrix[row].length; col++) {
+      if (tetromino.matrix[row][col]) {
+        if (tetromino.row + row < 0) {
+          return showGameOver();
+        }
+        playfield[tetromino.row + row][tetromino.col + col] = tetromino.name;
+      }
+    }
+  }
+  
+  // Clear completed lines
+  let linesCleared = 0;
+  for (let row = playfield.length - 1; row >= 0; row--) {
+    if (playfield[row].every(cell => !!cell)) {
+      // Remove the completed line
+      playfield.splice(row, 1);
+      // Add new empty line at top
+      playfield.unshift(new Array(10).fill(0));
+      linesCleared++;
+      row++; // Check the same row again since we removed a line
+    }
+  }
+  
+  // Update score and level
+  if (linesCleared > 0) {
+    const lineScores = [0, 100, 300, 500, 800]; // Points for 0, 1, 2, 3, 4 lines
+    score += lineScores[linesCleared] * level;
+    window.linesCleared += linesCleared;
+    
+    // Level up every 10 lines
+    const newLevel = Math.floor(window.linesCleared / 10) + 1;
+    if (newLevel > level) {
+      level = newLevel;
+      dropSpeed = Math.max(5, 60 - (level - 1) * 5); // Increase speed with level
+    }
+    
+    updateScore();
+  }
+  
+  // Get next piece and update preview
+  tetromino = getNextTetromino();
+  nextTetromino = getNextTetromino();
+  drawNextPiece();
+}
+
+// Show game over
+function showGameOver() {
+  cancelAnimationFrame(rAF);
+  gameOver = true;
+  
+  // Update final score display
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalLines').textContent = linesCleared;
+  document.getElementById('gameOverOverlay').style.display = 'block';
+}
+
+// Restart game
+function restartGame() {
+  // Reset game state
+  score = 0;
+  level = 1;
+  linesCleared = 0;
+  dropSpeed = 60;
+  softDrop = false;
+  gameOver = false;
+  count = 0;
+  
+  // Clear playfield
+  for (let row = 0; row < playfield.length; row++) {
+    for (let col = 0; col < playfield[row].length; col++) {
+      playfield[row][col] = 0;
+    }
+  }
+  
+  // Reset tetromino sequence
+  tetrominoSequence.length = 0;
+  tetromino = getNextTetromino();
+  nextTetromino = getNextTetromino();
+  
+  // Hide game over overlay
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  
+  // Update displays
+  updateScore();
+  drawNextPiece();
+  
+  // Restart game loop
+  rAF = requestAnimationFrame(loop);
+}
+
+// Update score display
+function updateScore() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('level').textContent = level;
+  document.getElementById('lines').textContent = linesCleared;
+}
+
+// Colors for turd theme (enhanced brown palette)
+const colors = {
+  'I': '#8B4513', // saddlebrown
+  'O': '#D2691E', // chocolate  
+  'T': '#A0522D', // sienna
+  'S': '#CD853F', // peru
+  'Z': '#DEB887', // burlywood
+  'J': '#BC8F8F', // rosybrown
+  'L': '#800000'  // maroon
+};
+
+// Setup canvas and playfield
+const canvas = document.getElementById('game');
+const context = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next');
+const nextContext = nextCanvas.getContext('2d');
+const grid = 32;
+
+// Initialize playfield (20 visible rows + 2 hidden rows at top)
+const playfield = [];
+for (let row = 0; row < 22; row++) {
+  playfield[row] = [];
+  for (let col = 0; col < 10; col++) {
+    playfield[row][col] = 0;
+  }
+}
+
+// Current and next tetrominos
+let tetromino = getNextTetromino();
+let nextTetromino = getNextTetromino();
+
+// Draw next piece preview
+function drawNextPiece() {
+  nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  
+  if (nextTetromino) {
+    const matrix = nextTetromino.matrix;
+    const blockSize = 20;
+    const offsetX = (nextCanvas.width - matrix[0].length * blockSize) / 2;
+    const offsetY = (nextCanvas.height - matrix.length * blockSize) / 2;
+    
+    nextContext.fillStyle = colors[nextTetromino.name];
+    for (let row = 0; row < matrix.length; row++) {
+      for (let col = 0; col < matrix[row].length; col++) {
+        if (matrix[row][col]) {
+          nextContext.fillRect(
+            offsetX + col * blockSize, 
+            offsetY + row * blockSize, 
+            blockSize - 1, 
+            blockSize - 1
+          );
+        }
+      }
+    }
+  }
+}
+
+// Game loop
+let count = 0;
+let gameOver = false;
+let rAF = null;
+
+function loop() {
+  rAF = requestAnimationFrame(loop);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw playfield (only visible rows)
+  for (let row = 2; row < playfield.length; row++) {
+    for (let col = 0; col < playfield[row].length; col++) {
+      if (playfield[row][col]) {
+        const name = playfield[row][col];
+        context.fillStyle = colors[name];
+        
+        // Add subtle gradient effect
+        const gradient = context.createLinearGradient(
+          col * grid, (row - 2) * grid, 
+          col * grid + grid, (row - 2) * grid + grid
+        );
+        gradient.addColorStop(0, colors[name]);
+        gradient.addColorStop(1, shadeColor(colors[name], -20));
+        context.fillStyle = gradient;
+        
+        context.fillRect(col * grid, (row - 2) * grid, grid - 1, grid - 1);
+        
+        // Add border highlight
+        context.strokeStyle = shadeColor(colors[name], 40);
+        context.lineWidth = 1;
+        context.strokeRect(col * grid, (row - 2) * grid, grid - 1, grid - 1);
+      }
+    }
+  }
+
+  // Auto-drop logic
+  if (tetromino) {
+    const currentDropSpeed = softDrop ? Math.floor(dropSpeed / 10) : dropSpeed;
+    if (++count > currentDropSpeed) {
+      tetromino.row++;
+      count = 0;
+      if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
+        tetromino.row--;
+        placeTetromino();
+      }
+    }
+    
+    // Draw current tetromino with enhanced visuals
+    context.fillStyle = colors[tetromino.name];
+    for (let row = 0; row < tetromino.matrix.length; row++) {
+      for (let col = 0; col < tetromino.matrix[row].length; col++) {
+        if (tetromino.matrix[row][col]) {
+          const x = (tetromino.col + col) * grid;
+          const y = (tetromino.row + row - 2) * grid;
+          
+          // Skip drawing if above visible area
+          if (tetromino.row + row < 2) continue;
+          
+          // Gradient effect for current piece
+          const gradient = context.createLinearGradient(x, y, x + grid, y + grid);
+          gradient.addColorStop(0, colors[tetromino.name]);
+          gradient.addColorStop(1, shadeColor(colors[tetromino.name], -20));
+          context.fillStyle = gradient;
+          
+          context.fillRect(x, y, grid - 1, grid - 1);
+          
+          // Highlight border
+          context.strokeStyle = shadeColor(colors[tetromino.name], 40);
+          context.lineWidth = 2;
+          context.strokeRect(x, y, grid - 1, grid - 1);
+        }
+      }
+    }
+  }
+}
+
+// Helper function to lighten/darken colors
+function shadeColor(color, percent) {
+  const num = parseInt(color.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = (num >> 8 & 0x00FF) + amt;
+  const B = (num & 0x0000FF) + amt;
+  return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+}
+
+// Enhanced keyboard controls
+document.addEventListener('keydown', function(e) {
+  if (gameOver) return;
+  
+  switch(e.code) {
+    case 'ArrowLeft':
+      e.preventDefault();
+      const leftCol = tetromino.col - 1;
+      if (isValidMove(tetromino.matrix, tetromino.row, leftCol)) {
+        tetromino.col = leftCol;
+      }
+      break;
+      
+    case 'ArrowRight':
+      e.preventDefault();
+      const rightCol = tetromino.col + 1;
+      if (isValidMove(tetromino.matrix, tetromino.row, rightCol)) {
+        tetromino.col = rightCol;
+      }
+      break;
+      
+    case 'ArrowUp':
+      e.preventDefault();
+      const rotatedMatrix = rotate(tetromino.matrix);
+      if (isValidMove(rotatedMatrix, tetromino.row, tetromino.col)) {
+        tetromino.matrix = rotatedMatrix;
+      }
+      break;
+      
+    case 'ArrowDown':
+      e.preventDefault();
+      hardDrop();
+      break;
+      
+    case 'Space':
+      e.preventDefault();
+      softDrop = true;
+      break;
+  }
+});
+
+document.addEventListener('keyup', function(e) {
+  if (e.code === 'Space') {
+    softDrop = false;
+  }
+});
+
+// Enhanced touch controls
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+
+canvas.addEventListener('touchstart', function(e) {
+  if (gameOver) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchStartTime = Date.now();
+}, { passive: false });
+
+canvas.addEventListener('touchmove', function(e) {
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener('touchend', function(e) {
+  if (gameOver) return;
+  e.preventDefault();
+  
+  const touch = e.changedTouches[0];
+  const touchEndX = touch.clientX;
+  const touchEndY = touch.clientY;
+  const touchDuration = Date.now() - touchStartTime;
+  
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  const threshold = 30;
+  
+  // Quick tap = rotate
+  if (touchDuration < 200 && Math.abs(deltaX) < threshold && Math.abs(deltaY) < threshold) {
+    const rotatedMatrix = rotate(tetromino.matrix);
+    if (isValidMove(rotatedMatrix, tetromino.row, tetromino.col)) {
+      tetromino.matrix = rotatedMatrix;
+    }
+  }
+  // Swipe gestures
+  else if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
+    // Horizontal swipe
+    const col = deltaX < 0 ? tetromino.col - 1 : tetromino.col + 1;
+    if (isValidMove(tetromino.matrix, tetromino.row, col)) {
+      tetromino.col = col;
+    }
+  }
+  else if (deltaY > threshold) {
+    // Swipe down = hard drop
+    hardDrop();
+  }
+}, { passive: false });
+
+// Initialize game
+updateScore();
+drawNextPiece();
+rAF = requestAnimationFrame(loop);
+</script>
+</body>
+</html>
