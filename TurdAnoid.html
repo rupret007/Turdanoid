@@ -158,12 +158,18 @@ function draw() {
   if (ballBottom >= paddleTop && ballTop <= paddleBottom &&
       ball.x + ballRadius >= paddleLeft && ball.x - ballRadius <= paddleRight &&
       ball.velocity.y > 0) {
-    // Calculate hit position for angle
-    const hitPos = (ball.x - paddleLeft) / paddleWidth;
+    // Calculate hit position for angle (prevent division by zero)
+    const safePaddleWidth = Math.max(1, paddleWidth);
+    const hitPos = Math.max(0, Math.min(1, (ball.x - paddleLeft) / safePaddleWidth));
     const angle = (hitPos - 0.5) * 0.6; // Max angle
     const currentSpeed = Math.max(ballSpeed, Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y));
-    ball.velocity.x = Math.sin(angle) * currentSpeed;
-    ball.velocity.y = -Math.abs(Math.cos(angle) * currentSpeed);
+    // Ensure speed is finite
+    const safeSpeed = isFinite(currentSpeed) ? currentSpeed : ballSpeed;
+    ball.velocity.x = Math.sin(angle) * safeSpeed;
+    ball.velocity.y = -Math.abs(Math.cos(angle) * safeSpeed);
+    // Ensure values are finite
+    if (!isFinite(ball.velocity.x)) ball.velocity.x = safeSpeed * 0.5;
+    if (!isFinite(ball.velocity.y)) ball.velocity.y = -safeSpeed;
     // Ensure minimum horizontal movement
     if (Math.abs(ball.velocity.x) < 0.5) {
       ball.velocity.x = ball.velocity.x >= 0 ? 0.5 : -0.5;
@@ -185,13 +191,16 @@ function draw() {
     if (ballRight >= brick.x && ballLeft <= brick.x + brick.w &&
         ballBottom >= brick.y && ballTop <= brick.y + brick.h) {
       brick.broken = true;
-      score += 10;
+      score = Math.min(Number.MAX_SAFE_INTEGER, score + 10);
       
       // Determine collision side
       const ballCenterX = ball.x;
       const ballCenterY = ball.y;
-      const brickCenterX = brick.x + brick.w / 2;
-      const brickCenterY = brick.y + brick.h / 2;
+      // Prevent division by zero
+      const safeBrickW = Math.max(1, brick.w);
+      const safeBrickH = Math.max(1, brick.h);
+      const brickCenterX = brick.x + safeBrickW / 2;
+      const brickCenterY = brick.y + safeBrickH / 2;
       
       const dx = ballCenterX - brickCenterX;
       const dy = ballCenterY - brickCenterY;
