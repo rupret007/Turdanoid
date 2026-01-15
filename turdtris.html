@@ -237,7 +237,8 @@ function isValidMove(matrix, cellRow, cellCol) {
 // Hard drop tetromino
 function hardDrop() {
   let dropDistance = 0;
-  while (isValidMove(tetromino.matrix, tetromino.row + dropDistance + 1, tetromino.col)) {
+  const maxDrop = playfield.length; // Safety limit to prevent infinite loops
+  while (dropDistance < maxDrop && isValidMove(tetromino.matrix, tetromino.row + dropDistance + 1, tetromino.col)) {
     dropDistance++;
   }
   tetromino.row += dropDistance;
@@ -259,26 +260,26 @@ function placeTetromino() {
   }
   
   // Clear completed lines
-  let linesCleared = 0;
+  let linesClearedThisTurn = 0;
   for (let row = playfield.length - 1; row >= 0; row--) {
     if (playfield[row].every(cell => !!cell)) {
       // Remove the completed line
       playfield.splice(row, 1);
       // Add new empty line at top
       playfield.unshift(new Array(10).fill(0));
-      linesCleared++;
+      linesClearedThisTurn++;
       row++; // Check the same row again since we removed a line
     }
   }
   
   // Update score and level
-  if (linesCleared > 0) {
+  if (linesClearedThisTurn > 0) {
     const lineScores = [0, 100, 300, 500, 800]; // Points for 0, 1, 2, 3, 4 lines
-    score += lineScores[linesCleared] * level;
-    window.linesCleared += linesCleared;
+    score += lineScores[linesClearedThisTurn] * level;
+    linesCleared += linesClearedThisTurn;
     
     // Level up every 10 lines
-    const newLevel = Math.floor(window.linesCleared / 10) + 1;
+    const newLevel = Math.floor(linesCleared / 10) + 1;
     if (newLevel > level) {
       level = newLevel;
       dropSpeed = Math.max(5, 60 - (level - 1) * 5); // Increase speed with level
@@ -295,13 +296,19 @@ function placeTetromino() {
 
 // Show game over
 function showGameOver() {
-  cancelAnimationFrame(rAF);
+  if (rAF) {
+    cancelAnimationFrame(rAF);
+    rAF = null;
+  }
   gameOver = true;
   
   // Update final score display
-  document.getElementById('finalScore').textContent = score;
-  document.getElementById('finalLines').textContent = linesCleared;
-  document.getElementById('gameOverOverlay').style.display = 'block';
+  const finalScoreEl = document.getElementById('finalScore');
+  const finalLinesEl = document.getElementById('finalLines');
+  const overlayEl = document.getElementById('gameOverOverlay');
+  if (finalScoreEl) finalScoreEl.textContent = score;
+  if (finalLinesEl) finalLinesEl.textContent = linesCleared;
+  if (overlayEl) overlayEl.style.display = 'block';
 }
 
 // Restart game
@@ -328,21 +335,27 @@ function restartGame() {
   nextTetromino = getNextTetromino();
   
   // Hide game over overlay
-  document.getElementById('gameOverOverlay').style.display = 'none';
+  const overlayEl = document.getElementById('gameOverOverlay');
+  if (overlayEl) overlayEl.style.display = 'none';
   
   // Update displays
   updateScore();
   drawNextPiece();
   
   // Restart game loop
-  rAF = requestAnimationFrame(loop);
+  if (!rAF) {
+    rAF = requestAnimationFrame(loop);
+  }
 }
 
 // Update score display
 function updateScore() {
-  document.getElementById('score').textContent = score;
-  document.getElementById('level').textContent = level;
-  document.getElementById('lines').textContent = linesCleared;
+  const scoreEl = document.getElementById('score');
+  const levelEl = document.getElementById('level');
+  const linesEl = document.getElementById('lines');
+  if (scoreEl) scoreEl.textContent = score;
+  if (levelEl) levelEl.textContent = level;
+  if (linesEl) linesEl.textContent = linesCleared;
 }
 
 // Colors for turd theme (enhanced brown palette)
@@ -358,10 +371,20 @@ const colors = {
 
 // Setup canvas and playfield
 const canvas = document.getElementById('game');
-const context = canvas.getContext('2d');
+if (!canvas) {
+  console.error('Game canvas not found');
+}
+const context = canvas ? canvas.getContext('2d') : null;
 const nextCanvas = document.getElementById('next');
-const nextContext = nextCanvas.getContext('2d');
+if (!nextCanvas) {
+  console.error('Next piece canvas not found');
+}
+const nextContext = nextCanvas ? nextCanvas.getContext('2d') : null;
 const grid = 32;
+
+if (!context || !nextContext) {
+  console.error('Could not get canvas contexts');
+}
 
 // Initialize playfield (20 visible rows + 2 hidden rows at top)
 const playfield = [];
@@ -378,6 +401,7 @@ let nextTetromino = getNextTetromino();
 
 // Draw next piece preview
 function drawNextPiece() {
+  if (!nextContext || !nextCanvas) return;
   nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
   
   if (nextTetromino) {
@@ -407,7 +431,13 @@ let count = 0;
 let gameOver = false;
 let rAF = null;
 
+// Ensure count is initialized before use
+if (typeof count === 'undefined') {
+  count = 0;
+}
+
 function loop() {
+  if (gameOver || !context || !canvas) return;
   rAF = requestAnimationFrame(loop);
   context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -480,14 +510,14 @@ function loop() {
 
 // Helper function to lighten/darken colors
 function shadeColor(color, percent) {
+  if (!color || !color.startsWith('#')) return color;
   const num = parseInt(color.replace("#", ""), 16);
+  if (isNaN(num)) return color;
   const amt = Math.round(2.55 * percent);
-  const R = (num >> 16) + amt;
-  const G = (num >> 8 & 0x00FF) + amt;
-  const B = (num & 0x0000FF) + amt;
-  return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+  const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amt));
+  const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+  return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
 
 // Enhanced keyboard controls

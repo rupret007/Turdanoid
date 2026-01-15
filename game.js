@@ -1,10 +1,23 @@
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
+        if (!this.canvas) {
+            console.error('Canvas element not found');
+            return;
+        }
         this.ctx = this.canvas.getContext('2d');
+        if (!this.ctx) {
+            console.error('Could not get 2D context');
+            return;
+        }
+        
+        // Initialize game state
         this.score = 0;
         this.lives = 3;
         this.gameRunning = true;
+        this.paused = false;
+        this.level = 1;
+        this.animationFrameId = null;
         
         // Game objects
         this.paddle = {
@@ -22,12 +35,18 @@ class Game {
             radius: 8,
             dx: 4,
             dy: -4,
-            color: '#ff6b6b'
+            color: '#ff6b6b',
+            speed: 4
         };
         
         this.blocks = [];
         this.particles = [];
         this.powerUps = [];
+        this.maxParticles = 200; // Limit particle count to prevent memory issues
+        
+        // Store event handlers for cleanup
+        this.boundMouseMove = (e) => this.handleMouseMove(e);
+        this.boundKeyDown = (e) => this.handleKeyDown(e);
         
         this.init();
         this.createParticles();
@@ -82,45 +101,96 @@ class Game {
     }
     
     bindEvents() {
-        document.addEventListener('mousemove', (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            this.paddle.x = mouseX - this.paddle.width / 2;
-            this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !this.gameRunning) {
+        document.addEventListener('mousemove', this.boundMouseMove);
+        document.addEventListener('keydown', this.boundKeyDown);
+    }
+    
+    handleMouseMove(e) {
+        if (!this.gameRunning || this.paused) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        this.paddle.x = mouseX - this.paddle.width / 2;
+        this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+    }
+    
+    handleKeyDown(e) {
+        if (e.code === 'Space') {
+            if (!this.gameRunning) {
                 this.restart();
+            } else {
+                this.togglePause();
             }
-        });
+            e.preventDefault();
+        } else if (e.code === 'KeyP' || e.code === 'Escape') {
+            this.togglePause();
+            e.preventDefault();
+        }
+    }
+    
+    togglePause() {
+        this.paused = !this.paused;
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        if (pauseOverlay) {
+            pauseOverlay.style.display = this.paused ? 'block' : 'none';
+        }
     }
     
     update() {
-        if (!this.gameRunning) return;
+        if (!this.gameRunning || this.paused) return;
         
         // Update ball position
         this.ball.x += this.ball.dx;
         this.ball.y += this.ball.dy;
         
-        // Ball collision with walls
-        if (this.ball.x <= this.ball.radius || this.ball.x >= this.canvas.width - this.ball.radius) {
+        // Ball collision with walls - correct position to prevent sticking
+        if (this.ball.x <= this.ball.radius) {
+            this.ball.x = this.ball.radius;
+            this.ball.dx = -this.ball.dx;
+        } else if (this.ball.x >= this.canvas.width - this.ball.radius) {
+            this.ball.x = this.canvas.width - this.ball.radius;
             this.ball.dx = -this.ball.dx;
         }
         if (this.ball.y <= this.ball.radius) {
+            this.ball.y = this.ball.radius;
             this.ball.dy = -this.ball.dy;
         }
         
-        // Ball collision with paddle
-        if (this.ball.y + this.ball.radius >= this.paddle.y &&
-            this.ball.x >= this.paddle.x &&
-            this.ball.x <= this.paddle.x + this.paddle.width) {
-            this.ball.dy = -this.ball.dy;
-            this.ball.dx += (this.ball.x - (this.paddle.x + this.paddle.width / 2)) * 0.1;
+        // Ball collision with paddle - improved detection
+        const ballBottom = this.ball.y + this.ball.radius;
+        const ballTop = this.ball.y - this.ball.radius;
+        const paddleTop = this.paddle.y;
+        const paddleBottom = this.paddle.y + this.paddle.height;
+        const paddleLeft = this.paddle.x;
+        const paddleRight = this.paddle.x + this.paddle.width;
+        
+        if (ballBottom >= paddleTop && ballTop <= paddleBottom &&
+            this.ball.x + this.ball.radius >= paddleLeft &&
+            this.ball.x - this.ball.radius <= paddleRight &&
+            this.ball.dy > 0) {
+            // Calculate hit position on paddle (0 = left edge, 1 = right edge)
+            const hitPos = (this.ball.x - paddleLeft) / this.paddle.width;
+            // Angle based on hit position (-0.5 to 0.5 range)
+            const angle = (hitPos - 0.5) * 0.8; // Max 40 degree angle
+            
+            // Calculate new velocity direction
+            const speed = Math.max(this.ball.speed, Math.sqrt(this.ball.dx * this.ball.dx + this.ball.dy * this.ball.dy));
+            this.ball.dx = Math.sin(angle) * speed;
+            this.ball.dy = -Math.abs(Math.cos(angle) * speed);
+            
+            // Ensure minimum upward velocity and prevent horizontal-only movement
+            if (this.ball.dy > -2) {
+                this.ball.dy = -2;
+            }
+            if (Math.abs(this.ball.dx) < 0.5) {
+                this.ball.dx = this.ball.dx >= 0 ? 0.5 : -0.5;
+            }
+            
+            // Correct ball position to prevent sticking
+            this.ball.y = paddleTop - this.ball.radius;
         }
         
         // Ball out of bounds
-        if (this.ball.y > this.canvas.height) {
+        if (this.ball.y >= this.canvas.height) {
             this.lives--;
             if (this.lives <= 0) {
                 this.gameOver();
@@ -129,31 +199,63 @@ class Game {
             }
         }
         
-        // Update particles
-        this.particles.forEach(particle => {
+        // Update and clean up particles
+        this.particles = this.particles.filter(particle => {
             particle.x += particle.vx;
             particle.y += particle.vy;
             particle.life--;
             
+            // Remove dead particles
             if (particle.life <= 0) {
+                return false;
+            }
+            
+            // Reset background particles that go off screen
+            if (particle.maxLife > 50 && (particle.x < 0 || particle.x > this.canvas.width || 
+                particle.y < 0 || particle.y > this.canvas.height)) {
                 particle.life = particle.maxLife;
                 particle.x = Math.random() * this.canvas.width;
                 particle.y = Math.random() * this.canvas.height;
             }
+            
+            return true;
         });
         
-        // Check block collisions
-        this.blocks.forEach((block, index) => {
+        // Check block collisions - iterate backwards to safely remove items
+        for (let i = this.blocks.length - 1; i >= 0; i--) {
+            const block = this.blocks[i];
             if (this.checkCollision(this.ball, block)) {
+                // Determine collision side for better bounce
+                const ballCenterX = this.ball.x;
+                const ballCenterY = this.ball.y;
+                const blockCenterX = block.x + block.width / 2;
+                const blockCenterY = block.y + block.height / 2;
+                
+                const dx = ballCenterX - blockCenterX;
+                const dy = ballCenterY - blockCenterY;
+                const absDx = Math.abs(dx);
+                const absDy = Math.abs(dy);
+                
                 block.health--;
                 if (block.health <= 0) {
-                    this.blocks.splice(index, 1);
+                    this.blocks.splice(i, 1);
                     this.score += 10;
                     this.createBlockParticles(block);
                 }
-                this.ball.dy = -this.ball.dy;
+                
+                // Bounce based on which side was hit
+                if (absDx > absDy) {
+                    // Hit from left or right
+                    this.ball.dx = -this.ball.dx;
+                } else {
+                    // Hit from top or bottom
+                    this.ball.dy = -this.ball.dy;
+                }
+                
+                // Only process one collision per frame
+                break;
             }
-        });
+        }
         
         // Check win condition
         if (this.blocks.length === 0) {
@@ -164,6 +266,7 @@ class Game {
     }
     
     checkCollision(ball, block) {
+        if (!ball || !block) return false;
         return ball.x + ball.radius > block.x &&
                ball.x - ball.radius < block.x + block.width &&
                ball.y + ball.radius > block.y &&
@@ -171,7 +274,10 @@ class Game {
     }
     
     createBlockParticles(block) {
-        for (let i = 0; i < 8; i++) {
+        // Limit particle creation to prevent memory issues
+        const availableSlots = Math.max(0, this.maxParticles - this.particles.length);
+        const particleCount = Math.min(8, availableSlots);
+        for (let i = 0; i < particleCount; i++) {
             this.particles.push({
                 x: block.x + block.width / 2,
                 y: block.y + block.height / 2,
@@ -186,40 +292,61 @@ class Game {
     }
     
     resetBall() {
+        // Reset to base speed for current level
+        const baseSpeed = 4 + (this.level - 1) * 0.5;
+        this.ball.speed = baseSpeed;
         this.ball.x = this.canvas.width / 2;
         this.ball.y = this.canvas.height - 50;
-        this.ball.dx = 4 * (Math.random() > 0.5 ? 1 : -1);
-        this.ball.dy = -4;
+        // Ensure ball has horizontal movement to prevent vertical-only bouncing
+        const horizontalSpeed = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+        this.ball.dx = Math.abs(horizontalSpeed) < 0.5 ? (Math.random() > 0.5 ? 0.5 : -0.5) : horizontalSpeed;
+        this.ball.dy = -baseSpeed;
     }
     
     nextLevel() {
-        this.score += 100;
-        this.ball.dx *= 1.1;
-        this.ball.dy *= 1.1;
+        this.level++;
+        this.score += 100 * this.level;
+        // Increase base speed for the level
+        const baseSpeed = 4 + (this.level - 1) * 0.5;
+        this.ball.speed = baseSpeed;
         this.createBlocks();
+        // Reset ball position but maintain level-appropriate speed
+        this.ball.x = this.canvas.width / 2;
+        this.ball.y = this.canvas.height - 50;
+        this.ball.dx = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+        this.ball.dy = -baseSpeed;
     }
     
     gameOver() {
         this.gameRunning = false;
-        document.getElementById('gameOver').style.display = 'block';
-        document.getElementById('finalScore').textContent = this.score;
+        const gameOverEl = document.getElementById('gameOver');
+        const finalScoreEl = document.getElementById('finalScore');
+        if (gameOverEl) gameOverEl.style.display = 'block';
+        if (finalScoreEl) finalScoreEl.textContent = this.score;
     }
     
     restart() {
         this.score = 0;
         this.lives = 3;
+        this.level = 1;
         this.gameRunning = true;
+        this.paused = false;
         this.blocks = [];
         this.particles = [];
         this.createBlocks();
         this.createParticles();
         this.resetBall();
-        document.getElementById('gameOver').style.display = 'none';
+        const gameOverEl = document.getElementById('gameOver');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        if (gameOverEl) gameOverEl.style.display = 'none';
+        if (pauseOverlay) pauseOverlay.style.display = 'none';
     }
     
     updateUI() {
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('lives').textContent = this.lives;
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (livesEl) livesEl.textContent = this.lives;
     }
     
     render() {
@@ -283,16 +410,31 @@ class Game {
     gameLoop() {
         this.update();
         this.render();
-        requestAnimationFrame(() => this.gameLoop());
+        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    destroy() {
+        // Clean up event listeners
+        document.removeEventListener('mousemove', this.boundMouseMove);
+        document.removeEventListener('keydown', this.boundKeyDown);
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
     }
 }
 
 // Initialize game when page loads
+let gameInstance = null;
+
 window.addEventListener('load', () => {
-    new Game();
+    gameInstance = new Game();
 });
 
 // Global restart function
 function restartGame() {
-    location.reload();
+    if (gameInstance) {
+        gameInstance.restart();
+    } else {
+        location.reload();
+    }
 }

@@ -51,22 +51,55 @@ let paddleHeight = 15;
 let ballRadius = 20;
 let ballSpeed = 5;
 let score = 0;
+let lives = 3;
+let gameOver = false;
+let gameWon = false;
 
 function setup() {
   createCanvas(800, 600);
+  resetGame();
+}
+
+function resetGame() {
   paddle = createVector(width / 2 - paddleWidth / 2, height - 40);
   ball = createVector(width / 2, height - 60);
-  ball.velocity = createVector(random(-ballSpeed, ballSpeed), -ballSpeed);
+  // Ensure ball has horizontal movement to prevent vertical-only bouncing
+  let vx = random(-ballSpeed, ballSpeed);
+  if (Math.abs(vx) < 0.5) {
+    vx = vx >= 0 ? random(0.5, ballSpeed) : random(-ballSpeed, -0.5);
+  }
+  ball.velocity = createVector(vx, -ballSpeed);
   bricks = [];
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 4; j++) {
       bricks.push({ x: i * 100 + 10, y: j * 40 + 50, w: 80, h: 20, broken: false });
     }
   }
+  gameOver = false;
+  gameWon = false;
+  score = 0;
+  lives = 3;
 }
 
 function draw() {
   background(220);
+  
+  if (gameOver || gameWon) {
+    textSize(40);
+    textAlign(CENTER);
+    fill(0);
+    if (gameWon) {
+      text("Turd Triumph! You cleaned up! 🏆", width / 2, height / 2 - 40);
+      text("Final Score: " + score, width / 2, height / 2 + 20);
+    } else {
+      text("Whoops! Turd got flushed! 😵", width / 2, height / 2 - 40);
+      text("Final Score: " + score, width / 2, height / 2 + 20);
+    }
+    textSize(20);
+    text("Click to play again", width / 2, height / 2 + 60);
+    return;
+  }
+  
   // Draw paddle
   fill(0, 128, 255);
   rect(paddle.x, paddle.y, paddleWidth, paddleHeight);
@@ -75,49 +108,109 @@ function draw() {
   
   // Draw turd ball
   textSize(30);
-  text("💩", ball.x - ballRadius, ball.y + ballRadius / 2);
+  fill(0);
+  textAlign(CENTER);
+  text("💩", ball.x, ball.y);
   
   // Move ball
   ball.x += ball.velocity.x;
   ball.y += ball.velocity.y;
   
-  // Ball collisions with walls
-  if (ball.x <= ballRadius || ball.x >= width - ballRadius) {
-    ball.velocity.x *= -1;
-    // Placeholder for silly sound
-    console.log("PLOP!");
+  // Ball collisions with walls - improved
+  if (ball.x <= ballRadius) {
+    ball.x = ballRadius;
+    ball.velocity.x = -ball.velocity.x;
+  } else if (ball.x >= width - ballRadius) {
+    ball.x = width - ballRadius;
+    ball.velocity.x = -ball.velocity.x;
   }
   if (ball.y <= ballRadius) {
-    ball.velocity.y *= -1;
-    console.log("SPLAT!");
+    ball.y = ballRadius;
+    ball.velocity.y = -ball.velocity.y;
   }
+  
+  // Ball out of bounds
   if (ball.y >= height) {
-    // Game over
-    textSize(40);
-    textAlign(CENTER);
-    text("Whoops! Turd got flushed! 😵", width / 2, height / 2);
-    noLoop();
-    return;
-  }
-  
-  // Paddle collision
-  if (ball.y + ballRadius >= paddle.y && ball.x >= paddle.x && ball.x <= paddle.x + paddleWidth) {
-    ball.velocity.y *= -1;
-    console.log("BOING! Turd bounce!");
-  }
-  
-  // Brick collisions
-  for (let brick of bricks) {
-    if (!brick.broken && ball.x >= brick.x && ball.x <= brick.x + brick.w && 
-        ball.y >= brick.y && ball.y <= brick.y + brick.h) {
-      brick.broken = true;
-      ball.velocity.y *= -1;
-      score += 10;
-      console.log("SMASH! Brick got pooped on!");
+    lives--;
+    if (lives <= 0) {
+      gameOver = true;
+    } else {
+      // Reset ball
+      ball.x = width / 2;
+      ball.y = height - 60;
+      // Ensure ball has horizontal movement to prevent vertical-only bouncing
+      let vx = random(-ballSpeed, ballSpeed);
+      if (Math.abs(vx) < 0.5) {
+        vx = vx >= 0 ? random(0.5, ballSpeed) : random(-ballSpeed, -0.5);
+      }
+      ball.velocity = createVector(vx, -ballSpeed);
     }
   }
   
-  // Draw bricks
+  // Paddle collision - improved detection
+  const ballBottom = ball.y + ballRadius;
+  const ballTop = ball.y - ballRadius;
+  const paddleTop = paddle.y;
+  const paddleBottom = paddle.y + paddleHeight;
+  const paddleLeft = paddle.x;
+  const paddleRight = paddle.x + paddleWidth;
+  
+  if (ballBottom >= paddleTop && ballTop <= paddleBottom &&
+      ball.x + ballRadius >= paddleLeft && ball.x - ballRadius <= paddleRight &&
+      ball.velocity.y > 0) {
+    // Calculate hit position for angle
+    const hitPos = (ball.x - paddleLeft) / paddleWidth;
+    const angle = (hitPos - 0.5) * 0.6; // Max angle
+    const currentSpeed = Math.max(ballSpeed, Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y));
+    ball.velocity.x = Math.sin(angle) * currentSpeed;
+    ball.velocity.y = -Math.abs(Math.cos(angle) * currentSpeed);
+    // Ensure minimum horizontal movement
+    if (Math.abs(ball.velocity.x) < 0.5) {
+      ball.velocity.x = ball.velocity.x >= 0 ? 0.5 : -0.5;
+    }
+    ball.y = paddleTop - ballRadius;
+  }
+  
+  // Brick collisions - improved
+  for (let i = bricks.length - 1; i >= 0; i--) {
+    const brick = bricks[i];
+    if (brick.broken) continue;
+    
+    // Better collision detection
+    const ballLeft = ball.x - ballRadius;
+    const ballRight = ball.x + ballRadius;
+    const ballTop = ball.y - ballRadius;
+    const ballBottom = ball.y + ballRadius;
+    
+    if (ballRight >= brick.x && ballLeft <= brick.x + brick.w &&
+        ballBottom >= brick.y && ballTop <= brick.y + brick.h) {
+      brick.broken = true;
+      score += 10;
+      
+      // Determine collision side
+      const ballCenterX = ball.x;
+      const ballCenterY = ball.y;
+      const brickCenterX = brick.x + brick.w / 2;
+      const brickCenterY = brick.y + brick.h / 2;
+      
+      const dx = ballCenterX - brickCenterX;
+      const dy = ballCenterY - brickCenterY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      
+      // Bounce based on which side was hit
+      if (absDx > absDy) {
+        ball.velocity.x = -ball.velocity.x;
+      } else {
+        ball.velocity.y = -ball.velocity.y;
+      }
+      
+      // Remove brick from array
+      bricks.splice(i, 1);
+    }
+  }
+  
+  // Draw bricks (only unbroken ones - safety check even though broken bricks are removed)
   fill(255, 165, 0);
   for (let brick of bricks) {
     if (!brick.broken) {
@@ -125,30 +218,22 @@ function draw() {
     }
   }
   
-  // Draw score
+  // Draw UI
   textSize(20);
   textAlign(LEFT);
+  fill(0);
   text("Poop Points: " + score, 10, 30);
+  text("Lives: " + lives, 10, 60);
   
   // Win condition
-  if (bricks.every(brick => brick.broken)) {
-    textSize(40);
-    textAlign(CENTER);
-    text("Turd Triumph! You cleaned up! 🏆", width / 2, height / 2);
-    noLoop();
+  if (bricks.length === 0) {
+    gameWon = true;
   }
 }
 
 function mousePressed() {
-  if (!isLooping()) {
-    // Restart game
-    ball.x = width / 2;
-    ball.y = height - 60;
-    ball.velocity = createVector(random(-ballSpeed, ballSpeed), -ballSpeed);
-    score = 0;
-    for (let brick of bricks) {
-      brick.broken = false;
-    }
+  if (gameOver || gameWon) {
+    resetGame();
     loop();
   }
 }
