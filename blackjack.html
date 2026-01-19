@@ -200,18 +200,40 @@
         }
 
         .card.face-down {
-            background: linear-gradient(135deg, #1e3a5f 25%, #2c4a6f 25%, #2c4a6f 50%, #1e3a5f 50%, #1e3a5f 75%, #2c4a6f 75%);
-            background-size: 10px 10px;
-            border: 3px solid #0d2233;
+            background: linear-gradient(135deg, #8B0000 0%, #B22222 50%, #8B0000 100%);
+            border: 3px solid #5C0000;
+            overflow: hidden;
+        }
+
+        .card.face-down::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 3px,
+                rgba(0,0,0,0.1) 3px,
+                rgba(0,0,0,0.1) 6px
+            );
         }
 
         .card.face-down::after {
-            content: '';
+            content: '♠';
             position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
+            font-size: 24px;
+            color: rgba(255,215,0,0.4);
+        }
+
+        .card.flipping {
+            animation: flipCard 0.6s ease;
+        }
+
+        @keyframes flipCard {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
         }
 
         .card-suit {
@@ -332,7 +354,18 @@
         }
 
         .chip:active {
-            transform: scale(0.95);
+            transform: scale(0.9) translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .chip.added {
+            animation: chipBounce 0.3s ease;
+        }
+
+        @keyframes chipBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
         .chip::before {
@@ -512,6 +545,12 @@
         .result-text.blackjack {
             color: var(--gold);
             font-size: 36px;
+            animation: goldPulse 0.5s ease infinite alternate;
+        }
+
+        @keyframes goldPulse {
+            from { text-shadow: 0 0 20px var(--gold); }
+            to { text-shadow: 0 0 40px var(--gold), 0 0 60px var(--gold-dark); }
         }
 
         .result-amount {
@@ -723,6 +762,51 @@
             animation: shake 0.3s ease;
         }
 
+        /* Win celebration */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        .confetti.animate {
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+
+        /* Double down glow */
+        .btn-double.available {
+            animation: glowPulse 1s ease infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
+            50% { box-shadow: 0 4px 25px rgba(255,152,0,0.6); }
+        }
+
+        /* Split available indicator */
+        .btn-split.available {
+            animation: glowPulse 1s ease infinite;
+        }
+
+        /* Card highlight for 21 */
+        .card.twenty-one {
+            box-shadow: 0 0 15px var(--gold), 0 4px 15px var(--card-shadow);
+        }
+
         /* Hide/Show Game Phases */
         .betting-phase .game-actions,
         .playing-phase .betting-controls,
@@ -851,7 +935,8 @@
     <!-- Insurance Prompt -->
     <div class="insurance-prompt" id="insurancePrompt">
         <div class="insurance-title">Insurance?</div>
-        <p style="margin-bottom: 16px; opacity: 0.8;">Dealer shows an Ace. Take insurance?</p>
+        <p style="margin-bottom: 8px; opacity: 0.8;">Dealer shows an Ace</p>
+        <p style="margin-bottom: 16px; font-size: 14px; color: var(--gold);">Cost: $<span id="insuranceCost">0</span> (pays 2:1)</p>
         <div class="insurance-buttons">
             <button class="insurance-btn insurance-yes" id="insuranceYes">Yes</button>
             <button class="insurance-btn insurance-no" id="insuranceNo">No</button>
@@ -874,6 +959,22 @@
             <div class="setting-item">
                 <span class="setting-label">Dealer Hits Soft 17</span>
                 <div class="toggle active" id="soft17Toggle"></div>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-title">How to Play</div>
+                <div style="font-size: 13px; line-height: 1.5; opacity: 0.9; margin-bottom: 16px;">
+                    <p style="margin-bottom: 8px;"><strong>Goal:</strong> Get closer to 21 than the dealer without going over.</p>
+                    <p style="margin-bottom: 8px;"><strong>Card Values:</strong> Number cards = face value, Face cards = 10, Ace = 1 or 11</p>
+                    <p style="margin-bottom: 8px;"><strong>Blackjack:</strong> Ace + 10-value card = instant win, pays 3:2</p>
+                    <p style="margin-bottom: 8px;"><strong>Actions:</strong></p>
+                    <ul style="margin-left: 16px; margin-bottom: 8px;">
+                        <li><strong>Hit</strong> - Take another card</li>
+                        <li><strong>Stand</strong> - Keep your hand</li>
+                        <li><strong>Double</strong> - Double bet, get one card</li>
+                        <li><strong>Split</strong> - Split pairs into two hands</li>
+                    </ul>
+                </div>
             </div>
 
             <div class="stats-section">
@@ -1188,6 +1289,8 @@
             }
 
             offerInsurance() {
+                const insuranceCost = Math.floor(this.currentBet / 2);
+                document.getElementById('insuranceCost').textContent = insuranceCost;
                 this.elements.insurancePrompt.classList.add('show');
             }
 
@@ -1496,6 +1599,16 @@
                 this.elements.resultOverlay.classList.add('show');
                 this.playSound(type === 'win' || type === 'blackjack' ? 'win' : (type === 'lose' ? 'lose' : 'push'));
                 
+                // Visual effects based on result
+                if (type === 'win' || type === 'blackjack') {
+                    this.createConfetti();
+                    this.triggerHaptic('success');
+                } else if (type === 'lose') {
+                    this.triggerHaptic('error');
+                } else {
+                    this.triggerHaptic('medium');
+                }
+                
                 this.saveState();
             }
 
@@ -1665,8 +1778,15 @@
                     this.elements.gameActions.style.display = 'flex';
                     
                     const hand = this.playerHands[this.currentHandIndex];
-                    this.elements.doubleBtn.disabled = !this.canDouble(hand);
-                    this.elements.splitBtn.disabled = !this.canSplit(hand) || this.bankroll < this.currentBet;
+                    const canDouble = this.canDouble(hand);
+                    const canSplit = this.canSplit(hand) && this.bankroll >= this.currentBet;
+                    
+                    this.elements.doubleBtn.disabled = !canDouble;
+                    this.elements.splitBtn.disabled = !canSplit;
+                    
+                    // Add glow effect to available special actions
+                    this.elements.doubleBtn.classList.toggle('available', canDouble);
+                    this.elements.splitBtn.classList.toggle('available', canSplit);
                 } else {
                     this.elements.bettingControls.style.display = 'none';
                     this.elements.gameActions.style.display = 'none';
@@ -1701,6 +1821,42 @@
             shake(element) {
                 element.classList.add('shake');
                 setTimeout(() => element.classList.remove('shake'), 300);
+            }
+
+            triggerHaptic(type = 'light') {
+                // Trigger haptic feedback on iOS
+                if ('vibrate' in navigator) {
+                    const patterns = {
+                        'light': [10],
+                        'medium': [20],
+                        'heavy': [30],
+                        'success': [10, 50, 10],
+                        'error': [30, 50, 30]
+                    };
+                    navigator.vibrate(patterns[type] || patterns.light);
+                }
+            }
+
+            createConfetti() {
+                const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff9ff3'];
+                
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * 100 + 'vw';
+                        confetti.style.top = '-10px';
+                        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                        confetti.style.width = (Math.random() * 8 + 6) + 'px';
+                        confetti.style.height = (Math.random() * 8 + 6) + 'px';
+                        document.body.appendChild(confetti);
+                        
+                        requestAnimationFrame(() => confetti.classList.add('animate'));
+                        
+                        setTimeout(() => confetti.remove(), 3000);
+                    }, i * 30);
+                }
             }
 
             playSound(type) {
@@ -1804,6 +1960,11 @@
                 document.querySelectorAll('.chip').forEach(chip => {
                     chip.addEventListener('click', () => {
                         const value = parseInt(chip.dataset.value);
+                        if (value <= this.bankroll && this.gamePhase === 'betting') {
+                            chip.classList.add('added');
+                            setTimeout(() => chip.classList.remove('added'), 300);
+                            this.triggerHaptic('light');
+                        }
                         this.placeBet(value);
                     });
                 });
@@ -1818,10 +1979,26 @@
                 this.elements.dealBtn.addEventListener('click', () => this.deal());
                 
                 // Game actions
-                this.elements.hitBtn.addEventListener('click', () => this.hit());
-                this.elements.standBtn.addEventListener('click', () => this.stand());
-                this.elements.doubleBtn.addEventListener('click', () => this.double());
-                this.elements.splitBtn.addEventListener('click', () => this.split());
+                this.elements.hitBtn.addEventListener('click', () => {
+                    this.triggerHaptic('light');
+                    this.hit();
+                });
+                this.elements.standBtn.addEventListener('click', () => {
+                    this.triggerHaptic('medium');
+                    this.stand();
+                });
+                this.elements.doubleBtn.addEventListener('click', () => {
+                    if (!this.elements.doubleBtn.disabled) {
+                        this.triggerHaptic('heavy');
+                    }
+                    this.double();
+                });
+                this.elements.splitBtn.addEventListener('click', () => {
+                    if (!this.elements.splitBtn.disabled) {
+                        this.triggerHaptic('heavy');
+                    }
+                    this.split();
+                });
                 
                 // Continue after result
                 this.elements.continueBtn.addEventListener('click', () => this.continueGame());
