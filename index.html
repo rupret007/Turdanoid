@@ -1,150 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Arkanoid</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .game-container {
-            position: relative;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        canvas {
-            border: 2px solid #00ff88;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-        }
-
-        .ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #00ff88;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
-
-        .score {
-            margin-bottom: 10px;
-        }
-
-        .lives {
-            color: #ff6b6b;
-        }
-
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: #00ff88;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            display: none;
-            border: 2px solid #00ff88;
-        }
-
-        .game-over h2 {
-            margin-bottom: 20px;
-            font-size: 2em;
-        }
-
-        .restart-btn {
-            background: #00ff88;
-            color: #000;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .restart-btn:hover {
-            background: #00cc6a;
-            transform: scale(1.05);
-        }
-
-        .particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: #00ff88;
-            border-radius: 50%;
-            animation: float 6s infinite linear;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
+    <meta name="theme-color" content="#0b1024" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Blackjack — iPhone Edition</title>
+    <link rel="stylesheet" href="blackjack.css" />
 </head>
 <body>
-    <div class="particles" id="particles"></div>
-    <div class="game-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div class="ui">
-            <div class="score">Score: <span id="score">0</span></div>
-            <div class="lives">Lives: <span id="lives">3</span></div>
+    <div class="app" id="app">
+        <header class="topbar" role="banner">
+            <div class="brand">
+                <div class="title">Blackjack</div>
+                <div class="subtitle">Fast, clean, iPhone-first — 3:2 payout</div>
+            </div>
+            <div class="top-actions">
+                <div class="pill" aria-label="Bankroll">
+                    Bank <strong id="bankroll">$0</strong>
+                </div>
+                <button class="icon-btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" aria-expanded="false" title="Help">
+                    Help
+                </button>
+                <button class="icon-btn" id="settingsBtn" aria-haspopup="dialog" aria-controls="settingsModal" aria-expanded="false" title="Settings">
+                    Settings
+                </button>
+            </div>
+        </header>
+
+        <div class="table" role="main">
+            <section class="panel" aria-label="Dealer hand">
+                <div class="panel-header">
+                    <div class="label">
+                        <div class="h">Dealer</div>
+                        <div class="sub" id="dealerSub">Upcard shown</div>
+                    </div>
+                    <div class="right">
+                        <span id="dealerTotalLabel">Total</span>
+                        <strong id="dealerTotal">?</strong>
+                    </div>
+                </div>
+                <div class="hand">
+                    <div class="cards" id="dealerCards" aria-label="Dealer cards"></div>
+                    <div class="meta-row">
+                        <div class="badge" id="shoeBadge" aria-label="Shoe">
+                            Shoe <strong id="shoeInfo">6D</strong>
+                        </div>
+                        <div class="badge" id="rulesBadge" aria-label="Rules">
+                            Dealer <strong id="dealerRuleInfo">H17</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" aria-label="Player hand">
+                <div class="panel-header">
+                    <div class="label">
+                        <div class="h">You</div>
+                        <div class="sub" id="playerSub">Place a bet to start</div>
+                    </div>
+                    <div class="right">
+                        <span id="playerBetLabel">Bet</span>
+                        <strong id="playerBet">$0</strong>
+                    </div>
+                </div>
+                <div class="hand">
+                    <div class="split-tabs" id="handTabs" aria-label="Hands" style="display:none;"></div>
+                    <div class="cards" id="playerCards" aria-label="Your cards"></div>
+                    <div class="meta-row">
+                        <div class="badge" id="playerTotalBadge">
+                            Total <strong id="playerTotal">0</strong>
+                        </div>
+                        <div class="badge" id="roundBadge" aria-live="polite">
+                            Round <strong id="roundState">Betting</strong>
+                        </div>
+                        <div class="badge" id="outcomeBadge" style="display:none;">
+                            Result <strong id="outcomeText">—</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-        <div class="game-over" id="gameOver">
-            <h2>Game Over!</h2>
-            <p>Final Score: <span id="finalScore">0</span></p>
-            <button class="restart-btn" onclick="restartGame()">Play Again</button>
+
+        <div class="status" role="status" aria-live="polite">
+            <div id="statusLine">Choose a chip, then Deal.</div>
+            <div class="small" id="statusSub">Tip: Double is allowed on any first two cards. Split on exact pairs.</div>
         </div>
-        <div class="game-over" id="pauseOverlay" style="display: none;">
-            <h2>Paused</h2>
-            <p>Press Space or P to resume</p>
-            <button class="restart-btn" onclick="restartGame()">Restart</button>
+
+        <div class="controls" aria-label="Controls">
+            <div class="control-row" id="chipsRow">
+                <div class="chips" aria-label="Bet chips">
+                    <button class="chip" data-chip="1">$1</button>
+                    <button class="chip" data-chip="5">$5</button>
+                    <button class="chip" data-chip="25">$25</button>
+                    <button class="chip" data-chip="100">$100</button>
+                    <button class="chip" data-chip="500">$500</button>
+                    <button class="chip" id="clearBet">Clear</button>
+                    <button class="chip" id="maxBet">Max</button>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <div class="actions" aria-label="Actions">
+                    <button class="btn primary" id="dealBtn">Deal</button>
+                    <button class="btn" id="hitBtn" disabled>Hit</button>
+                    <button class="btn" id="standBtn" disabled>Stand</button>
+                    <button class="btn warn" id="doubleBtn" disabled>Double</button>
+                    <button class="btn" id="splitBtn" disabled>Split</button>
+                    <button class="btn" id="insuranceBtn" disabled>Insurance</button>
+                    <button class="btn bad" id="newRoundBtn" disabled>Next Hand</button>
+                    <button class="btn" id="resetBtn">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-links" role="contentinfo">
+            <div>
+                <span>Saved on this device.</span>
+                <span class="sr-only" id="a11yAnnounce"></span>
+            </div>
+            <div>
+                <a href="arkanoid.html">Play Arkanoid</a>
+            </div>
         </div>
     </div>
-    <script src="game.js"></script>
+
+    <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settingsTitle">
+        <div class="sheet">
+            <div class="sheet-header">
+                <div class="h" id="settingsTitle">Settings</div>
+                <button class="icon-btn" id="closeSettingsBtn">Close</button>
+            </div>
+            <div class="sheet-body">
+                <div class="field">
+                    <label for="decksSelect">Shoe size</label>
+                    <div class="row">
+                        <div>Decks</div>
+                        <select id="decksSelect">
+                            <option value="1">1 deck</option>
+                            <option value="2">2 decks</option>
+                            <option value="4">4 decks</option>
+                            <option value="6" selected>6 decks</option>
+                            <option value="8">8 decks</option>
+                        </select>
+                    </div>
+                    <div class="hint">More decks feels more “casino”, fewer decks feels more “home game”.</div>
+                </div>
+                <div class="field">
+                    <label>Dealer rule</label>
+                    <div class="row">
+                        <div class="toggle">
+                            <input type="checkbox" id="hitSoft17Toggle" checked />
+                            <span>Dealer hits soft 17 (H17)</span>
+                        </div>
+                    </div>
+                    <div class="hint">H17 is common in modern casinos. Toggle off for S17.</div>
+                </div>
+                <div class="field">
+                    <label for="startingBankroll">Bankroll</label>
+                    <div class="row">
+                        <div>Starting bank</div>
+                        <input id="startingBankroll" type="number" min="10" step="10" value="500" />
+                    </div>
+                    <div class="hint">Reset will set your bank to this amount.</div>
+                </div>
+                <div class="field">
+                    <label>Stats</label>
+                    <div class="row">
+                        <div id="statsLine">—</div>
+                        <button class="btn bad" id="resetStatsBtn">Reset Stats</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="helpTitle">
+        <div class="sheet">
+            <div class="sheet-header">
+                <div class="h" id="helpTitle">How to play</div>
+                <button class="icon-btn" id="closeHelpBtn">Close</button>
+            </div>
+            <div class="sheet-body">
+                <div class="field">
+                    <label>Goal</label>
+                    <div class="hint">Beat the dealer by getting closer to 21 without going over. Blackjack (A + 10-value) pays 3:2.</div>
+                </div>
+                <div class="field">
+                    <label>Actions</label>
+                    <div class="hint">
+                        - Hit: take a card<br />
+                        - Stand: hold and let dealer play<br />
+                        - Double: double bet, take one card, then stand<br />
+                        - Split: if you have an exact pair, split into two hands (Aces get one card each)<br />
+                        - Insurance: offered vs dealer Ace only
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Notes</label>
+                    <div class="hint">This is single-player casino-style blackjack with a multi-deck shoe and dealer H17/S17 setting.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="blackjack.js"></script>
 </body>
 </html>
