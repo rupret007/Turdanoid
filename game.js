@@ -18,6 +18,23 @@ class Game {
         this.paused = false;
         this.level = 1;
         this.animationFrameId = null;
+        this.ballStuck = true;
+        this.inputState = { left: false, right: false };
+        this.pointerState = { active: false, x: null };
+        this.lastPowerUpSummary = null;
+        this.powerUpTypes = null;
+
+        this.ui = {
+            score: document.getElementById('score'),
+            lives: document.getElementById('lives'),
+            level: document.getElementById('level'),
+            ballStatus: document.getElementById('ballStatus'),
+            powerUpList: document.getElementById('powerUpList'),
+            pauseButton: document.getElementById('pauseBtn'),
+            gameOver: document.getElementById('gameOver'),
+            finalScore: document.getElementById('finalScore'),
+            pauseOverlay: document.getElementById('pauseOverlay')
+        };
         
         // Game objects
         const canvasWidth = Math.max(100, this.canvas.width);
@@ -50,13 +67,15 @@ class Game {
         this.balls = []; // Multiple balls for multi-ball power-up
         this.maxParticles = 200; // Limit particle count to prevent memory issues
         this.originalPaddleWidth = 100;
-        this.originalBallSpeed = 4;
         this.lastToiletPaperShot = 0; // Track last shot frame to prevent multiple shots
         this.lastLaserShot = 0; // Track last shot frame to prevent multiple shots
         
         // Store event handlers for cleanup
-        this.boundMouseMove = (e) => this.handleMouseMove(e);
+        this.boundPointerMove = (e) => this.handlePointerMove(e);
+        this.boundPointerDown = (e) => this.handlePointerDown(e);
+        this.boundPointerUp = (e) => this.handlePointerUp(e);
         this.boundKeyDown = (e) => this.handleKeyDown(e);
+        this.boundKeyUp = (e) => this.handleKeyUp(e);
         
         this.init();
         this.createParticles();
@@ -67,6 +86,7 @@ class Game {
         this.createBlocks();
         this.bindEvents();
         // Initialize with single ball
+        this.resetBall(true);
         this.balls = [this.ball];
     }
     
@@ -128,136 +148,315 @@ class Game {
     }
     
     bindEvents() {
-        document.addEventListener('mousemove', this.boundMouseMove);
+        if (!this.canvas) return;
+        this.canvas.addEventListener('pointermove', this.boundPointerMove);
+        this.canvas.addEventListener('pointerdown', this.boundPointerDown);
+        this.canvas.addEventListener('pointerup', this.boundPointerUp);
+        this.canvas.addEventListener('pointerleave', this.boundPointerUp);
         document.addEventListener('keydown', this.boundKeyDown);
+        document.addEventListener('keyup', this.boundKeyUp);
     }
     
-    handleMouseMove(e) {
+    handlePointerMove(e) {
         if (!this.gameRunning || this.paused || !this.canvas) return;
-        try {
-            const rect = this.canvas.getBoundingClientRect();
-            if (!rect || !isFinite(rect.left) || !isFinite(rect.width)) return;
-            const mouseX = e.clientX - rect.left;
-            if (!isFinite(mouseX)) return;
-            const paddleWidth = Math.max(1, this.paddle.width);
-            this.paddle.x = mouseX - paddleWidth / 2;
-            // Ensure paddle stays within bounds (important after power-up size changes)
-            const maxX = Math.max(0, this.canvas.width - paddleWidth);
-            this.paddle.x = Math.max(0, Math.min(maxX, this.paddle.x));
-            // Ensure paddle width is valid
-            this.paddle.width = Math.max(10, Math.min(this.canvas.width, this.paddle.width));
-        } catch (err) {
-            console.error('Error in handleMouseMove:', err);
+        const position = this.getPointerPosition(e);
+        if (!position) return;
+        this.pointerState.active = true;
+        this.pointerState.x = position.x;
+        this.setPaddleX(position.x - this.paddle.width / 2);
+    }
+
+    handlePointerDown(e) {
+        if (!this.gameRunning || !this.canvas) return;
+        const position = this.getPointerPosition(e);
+        if (!position) return;
+        this.pointerState.active = true;
+        this.pointerState.x = position.x;
+        this.setPaddleX(position.x - this.paddle.width / 2);
+        if (!this.paused && this.ballStuck) {
+            this.launchBall();
         }
+    }
+
+    handlePointerUp() {
+        this.pointerState.active = false;
     }
     
     handleKeyDown(e) {
-        if (e.code === 'Space') {
-            if (!this.gameRunning) {
+        if (e.repeat) return;
+        switch (e.code) {
+            case 'Space':
+                if (!this.gameRunning) {
+                    this.restart();
+                } else if (this.paused) {
+                    this.togglePause();
+                } else if (this.ballStuck) {
+                    this.launchBall();
+                } else {
+                    this.togglePause();
+                }
+                e.preventDefault();
+                break;
+            case 'KeyP':
+            case 'Escape':
+                if (this.gameRunning) {
+                    this.togglePause();
+                    e.preventDefault();
+                }
+                break;
+            case 'ArrowLeft':
+            case 'KeyA':
+                this.inputState.left = true;
+                e.preventDefault();
+                break;
+            case 'ArrowRight':
+            case 'KeyD':
+                this.inputState.right = true;
+                e.preventDefault();
+                break;
+            case 'KeyR':
                 this.restart();
-            } else {
-                this.togglePause();
-            }
-            e.preventDefault();
-        } else if (e.code === 'KeyP' || e.code === 'Escape') {
-            this.togglePause();
-            e.preventDefault();
+                e.preventDefault();
+                break;
         }
+    }
+
+    handleKeyUp(e) {
+        switch (e.code) {
+            case 'ArrowLeft':
+            case 'KeyA':
+                this.inputState.left = false;
+                break;
+            case 'ArrowRight':
+            case 'KeyD':
+                this.inputState.right = false;
+                break;
+        }
+    }
+
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    getPointerPosition(e) {
+        if (!this.canvas) return null;
+        const rect = this.canvas.getBoundingClientRect();
+        if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        if (!isFinite(x) || !isFinite(y)) return null;
+        return { x, y };
+    }
+
+    setPaddleX(x) {
+        if (!this.canvas) return;
+        const paddleWidth = this.clamp(this.paddle.width, 10, this.canvas.width);
+        this.paddle.width = paddleWidth;
+        const maxX = Math.max(0, this.canvas.width - paddleWidth);
+        this.paddle.x = this.clamp(x, 0, maxX);
+    }
+
+    updatePaddleFromKeyboard() {
+        if (!this.gameRunning || this.paused) return;
+        if (this.inputState.left === this.inputState.right) return;
+        const direction = this.inputState.left ? -1 : 1;
+        const nextX = this.paddle.x + direction * this.paddle.speed;
+        this.setPaddleX(nextX);
+    }
+
+    alignBallToPaddle() {
+        if (!this.canvas) return;
+        const paddleCenter = this.paddle.x + this.paddle.width / 2;
+        this.ball.x = this.clamp(paddleCenter, this.ball.radius, this.canvas.width - this.ball.radius);
+        this.ball.y = this.paddle.y - this.ball.radius;
+    }
+
+    getBaseBallSpeed() {
+        return Math.max(2, Math.min(15, 4 + (this.level - 1) * 0.5));
+    }
+
+    launchBall() {
+        if (!this.gameRunning || this.paused) return;
+        this.alignBallToPaddle();
+        const baseSpeed = this.getBaseBallSpeed();
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        const horizontalSpeed = baseSpeed * direction;
+        this.ball.speed = baseSpeed;
+        this.ball.dx = Math.abs(horizontalSpeed) < 0.5 ? 0.5 * direction : horizontalSpeed;
+        this.ball.dy = -baseSpeed;
+        if (!isFinite(this.ball.dx)) this.ball.dx = 0.5 * direction;
+        if (!isFinite(this.ball.dy)) this.ball.dy = -baseSpeed;
+        this.ballStuck = false;
+    }
+
+    addScore(points) {
+        const safePoints = isFinite(points) ? points : 0;
+        this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + safePoints);
+    }
+
+    applyBlockHit(blockIndex) {
+        const block = this.blocks[blockIndex];
+        if (!block) return null;
+        if (!block.health || block.health <= 0) {
+            this.blocks.splice(blockIndex, 1);
+            return { removed: true, block };
+        }
+        block.health--;
+        if (block.health <= 0) {
+            this.blocks.splice(blockIndex, 1);
+            this.addScore(10);
+            this.createBlockParticles(block);
+            if (Math.random() < 0.3) {
+                this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
+            }
+            return { removed: true, block };
+        }
+        return { removed: false, block };
+    }
+
+    updatePauseUI() {
+        if (this.ui.pauseOverlay) {
+            this.ui.pauseOverlay.style.display = this.paused ? 'block' : 'none';
+        }
+        if (this.ui.pauseButton) {
+            this.ui.pauseButton.textContent = this.paused ? 'Resume' : 'Pause';
+        }
+        if (this.ui.ballStatus && this.gameRunning) {
+            this.ui.ballStatus.textContent = this.paused
+                ? 'Paused'
+                : (this.ballStuck ? 'Ready' : 'In play');
+        }
+    }
+
+    updatePowerUpList() {
+        if (!this.ui.powerUpList) return;
+        const activeTypes = Object.keys(this.activePowerUps).sort();
+        const types = this.getPowerUpTypes();
+        const items = activeTypes.map(type => {
+            const entry = types.find(powerUp => powerUp.type === type);
+            const timeLeft = Math.ceil(this.activePowerUps[type] / 60);
+            if (entry) {
+                return `${entry.emoji} ${entry.name} (${timeLeft}s)`;
+            }
+            return `${type} (${timeLeft}s)`;
+        });
+        const summary = items.join('|');
+        if (summary === this.lastPowerUpSummary) return;
+        this.lastPowerUpSummary = summary;
+        this.ui.powerUpList.innerHTML = '';
+        if (items.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = 'None';
+            this.ui.powerUpList.appendChild(li);
+            return;
+        }
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            this.ui.powerUpList.appendChild(li);
+        });
     }
     
     togglePause() {
+        if (!this.gameRunning) return;
         this.paused = !this.paused;
-        const pauseOverlay = document.getElementById('pauseOverlay');
-        if (pauseOverlay) {
-            pauseOverlay.style.display = this.paused ? 'block' : 'none';
-        }
+        this.updatePauseUI();
     }
     
     update() {
         if (!this.gameRunning || this.paused) return;
+
+        this.updatePaddleFromKeyboard();
         
         // Update ball position (with slow motion effect)
-        const slowMotionFactor = this.activePowerUps.slowMotion ? 0.5 : 1.0;
-        // Ensure ball velocity is finite before updating
-        if (isFinite(this.ball.dx) && isFinite(this.ball.dy)) {
-            this.ball.x += this.ball.dx * slowMotionFactor;
-            this.ball.y += this.ball.dy * slowMotionFactor;
+        if (this.ballStuck) {
+            this.alignBallToPaddle();
         } else {
-            // Reset ball if velocity becomes invalid
-            this.resetBall();
-        }
-        
-        // Magnet effect - attract ball to paddle
-        if (this.activePowerUps.magnet && this.ball.y > this.canvas.height / 2) {
-            const paddleCenterX = this.paddle.x + this.paddle.width / 2;
-            const attraction = (paddleCenterX - this.ball.x) * 0.05;
-            this.ball.dx += attraction;
-        }
-        
-        // Ball collision with walls - correct position to prevent sticking
-        if (this.ball.x <= this.ball.radius) {
-            this.ball.x = this.ball.radius;
-            this.ball.dx = -this.ball.dx;
-        } else if (this.ball.x >= this.canvas.width - this.ball.radius) {
-            this.ball.x = this.canvas.width - this.ball.radius;
-            this.ball.dx = -this.ball.dx;
-        }
-        if (this.ball.y <= this.ball.radius) {
-            this.ball.y = this.ball.radius;
-            this.ball.dy = -this.ball.dy;
-        }
-        
-        // Ball collision with paddle - improved detection
-        const ballBottom = this.ball.y + this.ball.radius;
-        const ballTop = this.ball.y - this.ball.radius;
-        const paddleTop = this.paddle.y;
-        const paddleBottom = this.paddle.y + this.paddle.height;
-        const paddleLeft = this.paddle.x;
-        const paddleRight = this.paddle.x + this.paddle.width;
-        
-        if (ballBottom >= paddleTop && ballTop <= paddleBottom &&
-            this.ball.x + this.ball.radius >= paddleLeft &&
-            this.ball.x - this.ball.radius <= paddleRight &&
-            this.ball.dy > 0) {
-            // Calculate hit position on paddle (0 = left edge, 1 = right edge)
-            // Prevent division by zero
-            const paddleWidth = Math.max(1, this.paddle.width);
-            const hitPos = Math.max(0, Math.min(1, (this.ball.x - paddleLeft) / paddleWidth));
-            // Angle based on hit position (-0.5 to 0.5 range)
-            const angle = (hitPos - 0.5) * 0.8; // Max 40 degree angle
-            
-            // Calculate new velocity direction
-            const currentSpeed = Math.sqrt(this.ball.dx * this.ball.dx + this.ball.dy * this.ball.dy);
-            const speed = Math.max(this.ball.speed, isFinite(currentSpeed) ? currentSpeed : this.ball.speed);
-            this.ball.dx = Math.sin(angle) * speed;
-            this.ball.dy = -Math.abs(Math.cos(angle) * speed);
-            
-            // Ensure values are finite
-            if (!isFinite(this.ball.dx)) this.ball.dx = speed * 0.5;
-            if (!isFinite(this.ball.dy)) this.ball.dy = -speed;
-            
-            // Ensure minimum upward velocity and prevent horizontal-only movement
-            if (this.ball.dy > -2) {
-                this.ball.dy = -2;
-            }
-            if (Math.abs(this.ball.dx) < 0.5) {
-                this.ball.dx = this.ball.dx >= 0 ? 0.5 : -0.5;
-            }
-            
-            // Correct ball position to prevent sticking
-            this.ball.y = paddleTop - this.ball.radius;
-        }
-        
-        // Ball out of bounds
-        if (this.ball.y >= this.canvas.height) {
-            this.lives--;
-            if (this.lives <= 0) {
-                this.gameOver();
+            const slowMotionFactor = this.activePowerUps.slowMotion ? 0.5 : 1.0;
+            // Ensure ball velocity is finite before updating
+            if (isFinite(this.ball.dx) && isFinite(this.ball.dy)) {
+                this.ball.x += this.ball.dx * slowMotionFactor;
+                this.ball.y += this.ball.dy * slowMotionFactor;
             } else {
-                // Clear extra balls when losing a life
-                this.balls = [];
+                // Reset ball if velocity becomes invalid
                 this.resetBall();
-                this.balls = [this.ball];
+            }
+            
+            // Magnet effect - attract ball to paddle
+            if (this.activePowerUps.magnet && this.ball.y > this.canvas.height / 2) {
+                const paddleCenterX = this.paddle.x + this.paddle.width / 2;
+                const attraction = (paddleCenterX - this.ball.x) * 0.05;
+                this.ball.dx += attraction;
+            }
+            
+            // Ball collision with walls - correct position to prevent sticking
+            if (this.ball.x <= this.ball.radius) {
+                this.ball.x = this.ball.radius;
+                this.ball.dx = -this.ball.dx;
+            } else if (this.ball.x >= this.canvas.width - this.ball.radius) {
+                this.ball.x = this.canvas.width - this.ball.radius;
+                this.ball.dx = -this.ball.dx;
+            }
+            if (this.ball.y <= this.ball.radius) {
+                this.ball.y = this.ball.radius;
+                this.ball.dy = -this.ball.dy;
+            }
+            
+            // Ball collision with paddle - improved detection
+            const ballBottom = this.ball.y + this.ball.radius;
+            const ballTop = this.ball.y - this.ball.radius;
+            const paddleTop = this.paddle.y;
+            const paddleBottom = this.paddle.y + this.paddle.height;
+            const paddleLeft = this.paddle.x;
+            const paddleRight = this.paddle.x + this.paddle.width;
+            
+            if (ballBottom >= paddleTop && ballTop <= paddleBottom &&
+                this.ball.x + this.ball.radius >= paddleLeft &&
+                this.ball.x - this.ball.radius <= paddleRight &&
+                this.ball.dy > 0) {
+                // Calculate hit position on paddle (0 = left edge, 1 = right edge)
+                // Prevent division by zero
+                const paddleWidth = Math.max(1, this.paddle.width);
+                const hitPos = Math.max(0, Math.min(1, (this.ball.x - paddleLeft) / paddleWidth));
+                // Angle based on hit position (-0.5 to 0.5 range)
+                const angle = (hitPos - 0.5) * 0.8; // Max 40 degree angle
+                
+                // Calculate new velocity direction
+                const currentSpeed = Math.sqrt(this.ball.dx * this.ball.dx + this.ball.dy * this.ball.dy);
+                const speed = Math.max(this.ball.speed, isFinite(currentSpeed) ? currentSpeed : this.ball.speed);
+                this.ball.dx = Math.sin(angle) * speed;
+                this.ball.dy = -Math.abs(Math.cos(angle) * speed);
+                
+                // Ensure values are finite
+                if (!isFinite(this.ball.dx)) this.ball.dx = speed * 0.5;
+                if (!isFinite(this.ball.dy)) this.ball.dy = -speed;
+                
+                // Ensure minimum upward velocity and prevent horizontal-only movement
+                if (this.ball.dy > -2) {
+                    this.ball.dy = -2;
+                }
+                if (Math.abs(this.ball.dx) < 0.5) {
+                    this.ball.dx = this.ball.dx >= 0 ? 0.5 : -0.5;
+                }
+                
+                // Correct ball position to prevent sticking
+                this.ball.y = paddleTop - this.ball.radius;
+            }
+            
+            // Ball out of bounds
+            if (this.ball.y >= this.canvas.height) {
+                this.lives--;
+                if (this.lives <= 0) {
+                    this.gameOver();
+                    return;
+                } else {
+                    // Clear extra balls when losing a life
+                    this.balls = [];
+                    this.resetBall();
+                    this.balls = [this.ball];
+                }
             }
         }
         
@@ -283,49 +482,36 @@ class Game {
             return true;
         });
         
-        // Check block collisions for main ball - iterate backwards to safely remove items
-        for (let i = this.blocks.length - 1; i >= 0; i--) {
-            const block = this.blocks[i];
-            if (this.checkCollision(this.ball, block)) {
-                // Determine collision side for better bounce
-                const ballCenterX = this.ball.x;
-                const ballCenterY = this.ball.y;
-                const blockCenterX = block.x + block.width / 2;
-                const blockCenterY = block.y + block.height / 2;
-                
-                const dx = ballCenterX - blockCenterX;
-                const dy = ballCenterY - blockCenterY;
-                const absDx = Math.abs(dx);
-                const absDy = Math.abs(dy);
-                
-                // Ensure block health is valid
-                if (block.health && block.health > 0) {
-                    block.health--;
-                    if (block.health <= 0) {
-                        this.blocks.splice(i, 1);
-                        this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + 10);
-                        this.createBlockParticles(block);
-                        // Chance to drop power-up (30% chance)
-                        if (Math.random() < 0.3) {
-                            this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
-                        }
+        if (!this.ballStuck) {
+            // Check block collisions for main ball - iterate backwards to safely remove items
+            for (let i = this.blocks.length - 1; i >= 0; i--) {
+                const block = this.blocks[i];
+                if (this.checkCollision(this.ball, block)) {
+                    // Determine collision side for better bounce
+                    const ballCenterX = this.ball.x;
+                    const ballCenterY = this.ball.y;
+                    const blockCenterX = block.x + block.width / 2;
+                    const blockCenterY = block.y + block.height / 2;
+                    
+                    const dx = ballCenterX - blockCenterX;
+                    const dy = ballCenterY - blockCenterY;
+                    const absDx = Math.abs(dx);
+                    const absDy = Math.abs(dy);
+                    
+                    this.applyBlockHit(i);
+                    
+                    // Bounce based on which side was hit
+                    if (absDx > absDy) {
+                        // Hit from left or right
+                        this.ball.dx = -this.ball.dx;
+                    } else {
+                        // Hit from top or bottom
+                        this.ball.dy = -this.ball.dy;
                     }
-                } else {
-                    // Remove invalid block
-                    this.blocks.splice(i, 1);
+                    
+                    // Only process one collision per frame
+                    break;
                 }
-                
-                // Bounce based on which side was hit
-                if (absDx > absDy) {
-                    // Hit from left or right
-                    this.ball.dx = -this.ball.dx;
-                } else {
-                    // Hit from top or bottom
-                    this.ball.dy = -this.ball.dy;
-                }
-                
-                // Only process one collision per frame
-                break;
             }
         }
         
@@ -382,7 +568,8 @@ class Game {
     
     // Power-up types
     getPowerUpTypes() {
-        return [
+        if (this.powerUpTypes) return this.powerUpTypes;
+        this.powerUpTypes = [
             { type: 'toiletPaper', emoji: '🧻', color: '#ffffff', name: 'Toilet Paper' },
             { type: 'multiBall', emoji: '⚽', color: '#ff6b6b', name: 'Multi-Ball' },
             { type: 'bigPaddle', emoji: '📏', color: '#4ecdc4', name: 'Big Paddle' },
@@ -392,6 +579,7 @@ class Game {
             { type: 'laser', emoji: '🔫', color: '#ff9ff3', name: 'Laser Paddle' },
             { type: 'magnet', emoji: '🧲', color: '#96ceb4', name: 'Magnet' }
         ];
+        return this.powerUpTypes;
     }
     
     createPowerUp(x, y) {
@@ -470,8 +658,7 @@ class Game {
                 }
                 this.activePowerUps.bigPaddle = duration;
                 this.paddle.width = Math.max(10, this.originalPaddleWidth * 1.5);
-                // Ensure paddle stays in bounds after size change
-                this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+                this.setPaddleX(this.paddle.x);
                 break;
             case 'smallPaddle':
                 // Deactivate big paddle if active
@@ -480,8 +667,7 @@ class Game {
                 }
                 this.activePowerUps.smallPaddle = duration;
                 this.paddle.width = Math.max(10, this.originalPaddleWidth * 0.6);
-                // Ensure paddle stays in bounds after size change
-                this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+                this.setPaddleX(this.paddle.x);
                 break;
             case 'slowMotion':
                 this.activePowerUps.slowMotion = duration;
@@ -504,8 +690,7 @@ class Game {
             case 'bigPaddle':
             case 'smallPaddle':
                 this.paddle.width = this.originalPaddleWidth;
-                // Ensure paddle stays in bounds after size change
-                this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+                this.setPaddleX(this.paddle.x);
                 break;
         }
     }
@@ -621,21 +806,7 @@ class Game {
             for (let j = this.blocks.length - 1; j >= 0; j--) {
                 const block = this.blocks[j];
                 if (this.checkCollision(ball, block)) {
-                    // Ensure block health is valid
-                    if (block.health && block.health > 0) {
-                        block.health--;
-                        if (block.health <= 0) {
-                            this.blocks.splice(j, 1);
-                            this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + 10);
-                            this.createBlockParticles(block);
-                            if (Math.random() < 0.3) {
-                                this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
-                            }
-                        }
-                    } else {
-                        // Remove invalid block
-                        this.blocks.splice(j, 1);
-                    }
+                    this.applyBlockHit(j);
                     const dx = ball.x - (block.x + block.width / 2);
                     const dy = ball.y - (block.y + block.height / 2);
                     if (Math.abs(dx) > Math.abs(dy)) {
@@ -685,21 +856,7 @@ class Game {
                 const block = this.blocks[j];
                 if (shot.x + shot.width > block.x && shot.x < block.x + block.width &&
                     shot.y + shot.height > block.y && shot.y < block.y + block.height) {
-                    // Ensure block health is valid
-                    if (block.health && block.health > 0) {
-                        block.health--;
-                        if (block.health <= 0) {
-                            this.blocks.splice(j, 1);
-                            this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + 10);
-                            this.createBlockParticles(block);
-                            if (Math.random() < 0.3) {
-                                this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
-                            }
-                        }
-                    } else {
-                        // Remove invalid block
-                        this.blocks.splice(j, 1);
-                    }
+                    this.applyBlockHit(j);
                     this.toiletPaperShots.splice(i, 1);
                     break;
                 }
@@ -741,21 +898,7 @@ class Game {
                 const block = this.blocks[j];
                 if (laser.x + laser.width > block.x && laser.x < block.x + block.width &&
                     laser.y + laser.height > block.y && laser.y < block.y + block.height) {
-                    // Ensure block health is valid
-                    if (block.health && block.health > 0) {
-                        block.health--;
-                        if (block.health <= 0) {
-                            this.blocks.splice(j, 1);
-                            this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + 10);
-                            this.createBlockParticles(block);
-                            if (Math.random() < 0.3) {
-                                this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
-                            }
-                        }
-                    } else {
-                        // Remove invalid block
-                        this.blocks.splice(j, 1);
-                    }
+                    this.applyBlockHit(j);
                     this.laserShots.splice(i, 1);
                     break;
                 }
@@ -768,16 +911,22 @@ class Game {
         }
     }
     
-    resetBall() {
+    resetBall(stickToPaddle = true) {
         // Reset to base speed for current level (cap at reasonable maximum)
-        const baseSpeed = Math.max(2, Math.min(15, 4 + (this.level - 1) * 0.5));
+        const baseSpeed = this.getBaseBallSpeed();
         this.ball.speed = baseSpeed;
-        this.ball.x = Math.max(this.ball.radius, Math.min(this.canvas.width - this.ball.radius, this.canvas.width / 2));
-        this.ball.y = Math.max(this.ball.radius, Math.min(this.canvas.height - this.ball.radius, this.canvas.height - 50));
-        // Ensure ball has horizontal movement to prevent vertical-only bouncing
-        const horizontalSpeed = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
-        this.ball.dx = Math.abs(horizontalSpeed) < 0.5 ? (Math.random() > 0.5 ? 0.5 : -0.5) : horizontalSpeed;
-        this.ball.dy = -baseSpeed;
+        this.alignBallToPaddle();
+        if (stickToPaddle) {
+            this.ball.dx = 0;
+            this.ball.dy = 0;
+            this.ballStuck = true;
+        } else {
+            // Ensure ball has horizontal movement to prevent vertical-only bouncing
+            const horizontalSpeed = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
+            this.ball.dx = Math.abs(horizontalSpeed) < 0.5 ? (Math.random() > 0.5 ? 0.5 : -0.5) : horizontalSpeed;
+            this.ball.dy = -baseSpeed;
+            this.ballStuck = false;
+        }
         
         // Ensure values are finite
         if (!isFinite(this.ball.dx)) this.ball.dx = 0.5;
@@ -789,11 +938,9 @@ class Game {
         this.level++;
         // Prevent level overflow
         this.level = Math.min(999, this.level);
-        this.score += 100 * this.level;
-        // Prevent score overflow (though unlikely)
-        this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score);
+        this.addScore(100 * this.level);
         // Increase base speed for the level (cap at reasonable maximum)
-        const baseSpeed = Math.max(2, Math.min(15, 4 + (this.level - 1) * 0.5));
+        const baseSpeed = this.getBaseBallSpeed();
         this.ball.speed = baseSpeed;
         this.createBlocks();
         // Reset all balls and power-ups for new level
@@ -801,28 +948,24 @@ class Game {
         this.toiletPaperShots = [];
         this.laserShots = [];
         this.powerUps = [];
+        this.activePowerUps = {};
+        this.lastPowerUpSummary = null;
         this.lastToiletPaperShot = 0;
         this.lastLaserShot = 0;
-        // Reset ball position but maintain level-appropriate speed
-        this.ball.x = Math.max(this.ball.radius, Math.min(this.canvas.width - this.ball.radius, this.canvas.width / 2));
-        this.ball.y = Math.max(this.ball.radius, Math.min(this.canvas.height - this.ball.radius, this.canvas.height - 50));
-        this.ball.dx = baseSpeed * (Math.random() > 0.5 ? 1 : -1);
-        this.ball.dy = -baseSpeed;
-        
-        // Ensure values are finite
-        if (!isFinite(this.ball.dx)) this.ball.dx = baseSpeed;
-        if (!isFinite(this.ball.dy)) this.ball.dy = -baseSpeed;
-        if (!isFinite(this.ball.speed)) this.ball.speed = baseSpeed;
+        this.paddle.width = this.originalPaddleWidth;
+        this.setPaddleX(this.paddle.x);
+        this.resetBall(true);
         
         this.balls = [this.ball];
     }
     
     gameOver() {
         this.gameRunning = false;
-        const gameOverEl = document.getElementById('gameOver');
-        const finalScoreEl = document.getElementById('finalScore');
-        if (gameOverEl) gameOverEl.style.display = 'block';
-        if (finalScoreEl) finalScoreEl.textContent = this.score;
+        this.paused = false;
+        if (this.ui.gameOver) this.ui.gameOver.style.display = 'block';
+        if (this.ui.finalScore) this.ui.finalScore.textContent = this.score;
+        if (this.ui.ballStatus) this.ui.ballStatus.textContent = 'Game Over';
+        this.updatePauseUI();
     }
     
     restart() {
@@ -831,31 +974,40 @@ class Game {
         this.level = 1;
         this.gameRunning = true;
         this.paused = false;
+        this.ballStuck = true;
         this.blocks = [];
         this.particles = [];
         this.powerUps = [];
         this.activePowerUps = {};
+        this.lastPowerUpSummary = null;
         this.toiletPaperShots = [];
         this.laserShots = [];
         this.balls = [];
         this.lastToiletPaperShot = 0;
         this.lastLaserShot = 0;
         this.paddle.width = this.originalPaddleWidth;
+        this.setPaddleX(this.paddle.x);
         this.createBlocks();
         this.createParticles();
-        this.resetBall();
+        this.resetBall(true);
         this.balls = [this.ball];
-        const gameOverEl = document.getElementById('gameOver');
-        const pauseOverlay = document.getElementById('pauseOverlay');
-        if (gameOverEl) gameOverEl.style.display = 'none';
-        if (pauseOverlay) pauseOverlay.style.display = 'none';
+        if (this.ui.gameOver) this.ui.gameOver.style.display = 'none';
+        if (this.ui.pauseOverlay) this.ui.pauseOverlay.style.display = 'none';
+        this.updatePauseUI();
+        this.updatePowerUpList();
     }
     
     updateUI() {
-        const scoreEl = document.getElementById('score');
-        const livesEl = document.getElementById('lives');
-        if (scoreEl) scoreEl.textContent = this.score;
-        if (livesEl) livesEl.textContent = this.lives;
+        if (this.ui.score) this.ui.score.textContent = this.score;
+        if (this.ui.lives) this.ui.lives.textContent = this.lives;
+        if (this.ui.level) this.ui.level.textContent = this.level;
+        if (this.ui.ballStatus) {
+            this.ui.ballStatus.textContent = this.ballStuck ? 'Ready' : 'In play';
+        }
+        if (this.ui.pauseButton) {
+            this.ui.pauseButton.textContent = this.paused ? 'Resume' : 'Pause';
+        }
+        this.updatePowerUpList();
     }
     
     render() {
@@ -958,6 +1110,16 @@ class Game {
             this.ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
             this.ctx.restore();
         });
+
+        if (this.ballStuck && this.gameRunning && !this.paused) {
+            this.ctx.save();
+            this.ctx.fillStyle = '#00ff88';
+            this.ctx.font = '18px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('Press Space or Tap to launch', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.restore();
+        }
         
         // Draw active power-up indicators (limit to prevent overflow)
         let indicatorY = 100;
@@ -1000,8 +1162,14 @@ class Game {
     
     destroy() {
         // Clean up event listeners
-        document.removeEventListener('mousemove', this.boundMouseMove);
+        if (this.canvas) {
+            this.canvas.removeEventListener('pointermove', this.boundPointerMove);
+            this.canvas.removeEventListener('pointerdown', this.boundPointerDown);
+            this.canvas.removeEventListener('pointerup', this.boundPointerUp);
+            this.canvas.removeEventListener('pointerleave', this.boundPointerUp);
+        }
         document.removeEventListener('keydown', this.boundKeyDown);
+        document.removeEventListener('keyup', this.boundKeyUp);
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
         }
@@ -1021,5 +1189,12 @@ function restartGame() {
         gameInstance.restart();
     } else {
         location.reload();
+    }
+}
+
+// Global pause toggle for UI button
+function togglePauseGame() {
+    if (gameInstance) {
+        gameInstance.togglePause();
     }
 }

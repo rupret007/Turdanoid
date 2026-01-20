@@ -21,6 +21,15 @@
             overflow: hidden;
         }
 
+        .game-shell {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+
         .game-container {
             position: relative;
             background: rgba(255, 255, 255, 0.1);
@@ -28,12 +37,17 @@
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
+            width: min(90vw, 840px);
         }
 
         canvas {
             border: 2px solid #00ff88;
             border-radius: 15px;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            width: 100%;
+            height: auto;
+            display: block;
+            touch-action: none;
         }
 
         .ui {
@@ -52,6 +66,10 @@
 
         .lives {
             color: #ff6b6b;
+        }
+
+        .level {
+            color: #ffd166;
         }
 
         .game-over {
@@ -89,6 +107,72 @@
             transform: scale(1.05);
         }
 
+        .info-panel {
+            background: rgba(0, 0, 0, 0.35);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            color: #eafff6;
+            width: 260px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .info-panel h3 {
+            margin-bottom: 12px;
+            color: #00ff88;
+            font-size: 18px;
+        }
+
+        .status-row {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .powerups {
+            list-style: none;
+            padding-left: 0;
+            margin: 8px 0 12px 0;
+            font-size: 14px;
+        }
+
+        .powerups li {
+            margin: 4px 0;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .control-btn {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+
+        .control-btn.secondary {
+            background: #4ecdc4;
+        }
+
+        .control-btn:hover {
+            background: #00cc6a;
+            transform: translateY(-1px);
+        }
+
+        .control-hint {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #c8f8df;
+        }
+
         .particles {
             position: absolute;
             top: 0;
@@ -124,26 +208,63 @@
                 opacity: 0;
             }
         }
+
+        @media (max-width: 900px) {
+            body {
+                overflow: auto;
+            }
+
+            .game-container {
+                width: min(95vw, 840px);
+            }
+
+            .info-panel {
+                width: min(90vw, 420px);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="particles" id="particles"></div>
-    <div class="game-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div class="ui">
-            <div class="score">Score: <span id="score">0</span></div>
-            <div class="lives">Lives: <span id="lives">3</span></div>
+    <div class="game-shell">
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="ui">
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="lives">Lives: <span id="lives">3</span></div>
+                <div class="level">Level: <span id="level">1</span></div>
+            </div>
+            <div class="game-over" id="gameOver">
+                <h2>Game Over!</h2>
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <button class="restart-btn" onclick="restartGame()">Play Again</button>
+            </div>
+            <div class="game-over" id="pauseOverlay" style="display: none;">
+                <h2>Paused</h2>
+                <p>Press Space, P, or Escape to resume</p>
+                <button class="restart-btn" onclick="restartGame()">Restart</button>
+            </div>
         </div>
-        <div class="game-over" id="gameOver">
-            <h2>Game Over!</h2>
-            <p>Final Score: <span id="finalScore">0</span></p>
-            <button class="restart-btn" onclick="restartGame()">Play Again</button>
-        </div>
-        <div class="game-over" id="pauseOverlay" style="display: none;">
-            <h2>Paused</h2>
-            <p>Press Space or P to resume</p>
-            <button class="restart-btn" onclick="restartGame()">Restart</button>
-        </div>
+        <aside class="info-panel">
+            <h3>Game Status</h3>
+            <div class="status-row">Ball: <span id="ballStatus">Ready</span></div>
+            <div class="status-row">Active Power-ups:</div>
+            <ul class="powerups" id="powerUpList">
+                <li>None</li>
+            </ul>
+            <div class="actions">
+                <button class="control-btn" id="pauseBtn" onclick="togglePauseGame()">Pause</button>
+                <button class="control-btn secondary" onclick="restartGame()">Restart</button>
+            </div>
+            <div class="control-hint">
+                <strong>Controls</strong><br>
+                Mouse or touch: move paddle<br>
+                Arrow keys / A D: move paddle<br>
+                Space: launch / pause / resume<br>
+                P or Esc: pause / resume<br>
+                R: restart
+            </div>
+        </aside>
     </div>
     <script src="game.js"></script>
 </body>
