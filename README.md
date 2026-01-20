@@ -1,62 +1,35 @@
-# Neon Arkanoid 🎮
+# Pulse Blackjack
 
-A modern, visually stunning version of the classic Arkanoid game built with HTML5 Canvas and JavaScript.
+A mobile-first blackjack game designed for smooth iPhone play with big controls,
+clear feedback, and reliable rules.
 
-## ✨ Features
+## Features
 
-- **Modern Neon Aesthetic**: Beautiful gradient backgrounds with glowing neon effects
-- **Smooth Animations**: 60fps gameplay with fluid ball and paddle movement
-- **Particle Effects**: Dynamic particle system for enhanced visual appeal
-- **Progressive Difficulty**: Ball speed increases with each level
-- **Health System**: Some blocks require multiple hits to destroy
-- **Responsive Controls**: Mouse-based paddle control for precise gameplay
-- **Visual Feedback**: Glowing effects, shadows, and smooth transitions
+- Touch-friendly layout with large buttons and safe-area padding
+- Six-deck shoe with automatic shuffle at low penetration
+- Dealer stands on soft 17
+- Blackjack pays 3 to 2
+- Split once on matching values (split aces receive one card each)
+- Double down on any two cards
+- Insurance when the dealer shows an Ace
+- Persistent bank and stats in local storage
+- Reduce motion toggle for calmer visuals
 
-## 🎯 How to Play
+## How to Play
 
-1. **Objective**: Break all the colored blocks using the ball and paddle
-2. **Controls**: Move your mouse to control the paddle position
-3. **Scoring**: 
-   - Each block destroyed: 10 points
-   - Level completed: 100 bonus points
-4. **Lives**: You start with 3 lives
-5. **Game Over**: Lose all lives or press Space to restart
+1. Tap chips to set your bet, then press Deal.
+2. Use Hit, Stand, Double, or Split during your turn.
+3. Insurance appears when the dealer shows an Ace.
+4. Tap Next Round when a hand finishes.
 
-## 🚀 Getting Started
+## Rules Summary
 
-1. Open `index.html` in your web browser
-2. The game starts automatically
-3. Move your mouse to control the paddle
-4. Try to break all blocks without losing the ball
+- Goal: get as close to 21 as possible without going over.
+- Dealer stands on soft 17.
+- Blackjack pays 3 to 2.
+- Split once on matching values, with split aces limited to one card each.
+- Double down adds one card and ends your action on that hand.
 
-## 🎨 Game Elements
+## Getting Started
 
-- **Paddle**: Green glowing paddle at the bottom
-- **Ball**: Red ball that bounces off surfaces
-- **Blocks**: Colorful blocks with different health values
-- **Particles**: Floating background particles and block destruction effects
-
-## 🔧 Technical Details
-
-- Built with vanilla JavaScript (ES6+)
-- HTML5 Canvas for rendering
-- CSS3 for styling and animations
-- Responsive design with modern CSS features
-- No external dependencies required
-
-## 🎮 Game Mechanics
-
-- **Ball Physics**: Realistic bouncing with paddle angle influence
-- **Collision Detection**: Precise hit detection for blocks and walls
-- **Level Progression**: Infinite levels with increasing difficulty
-- **Health System**: Top rows have stronger blocks requiring multiple hits
-
-## 🌟 Visual Effects
-
-- Neon glow effects on all game elements
-- Dynamic particle systems
-- Smooth color transitions
-- Backdrop blur and transparency effects
-- Floating background particles
-
-Enjoy the game! 🎉
+Open `index.html` in your browser. The game loads instantly.
