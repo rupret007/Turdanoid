@@ -60,15 +60,24 @@ All games support:
 - Responsive layouts
 - Viewport scaling for small screens
 
-## Deployment (GitHub Pages)
+## Play Online (GitHub Pages)
 
-1. Push this repo to GitHub
-2. Go to Settings > Pages
-3. Source: Deploy from a branch
-4. Branch: main (or master), folder: / (root) or select the Turdanoid folder
-5. Save. Your site will be at `https://<username>.github.io/<repo>/`
+**Enable GitHub Pages** (one-time setup):
 
-The `.nojekyll` file ensures GitHub Pages serves the files as-is. Open `hub.html` for the game hub, or `index.html` for Neon Arkanoid directly.
+1. Go to https://github.com/rupret007/Turdanoid
+2. Click **Settings** > **Pages**
+3. Under "Build and deployment", set **Source** to "Deploy from a branch"
+4. Set **Branch** to `main`, **Folder** to `/ (root)`
+5. Click **Save**
+
+After a minute or two, your games will be live at:
+
+- **Game Hub:** https://rupret007.github.io/Turdanoid/hub.html
+- **Neon Arkanoid:** https://rupret007.github.io/Turdanoid/index.html
+- **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
+- **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
+
+The `.nojekyll` file ensures GitHub Pages serves the files as-is.
 
 ## Technical Notes
 
