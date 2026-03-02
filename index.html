@@ -29,6 +29,28 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
             max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ui-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px 30px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 12px 0 16px 0;
+            color: #00ff88;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .ui-bar .lives {
+            color: #ff6b6b;
         }
 
         canvas {
@@ -40,28 +62,7 @@
             display: block;
         }
 
-        .ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #00ff88;
-            font-size: 18px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
-
-        .score {
-            margin-bottom: 10px;
-        }
-
-        .lives {
-            color: #ff6b6b;
-        }
-
         .mute-btn {
-            position: absolute;
-            top: 20px;
-            right: 100px;
             background: rgba(0, 255, 136, 0.3);
             color: #00ff88;
             border: 1px solid #00ff88;
@@ -174,15 +175,15 @@
         <button class="restart-btn" onclick="dismissHowToPlay()">Got it</button>
     </div>
     <div class="game-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div class="ui">
-            <div class="score">Score: <span id="score">0</span></div>
+        <div class="ui-bar">
+            <div>Score: <span id="score">0</span></div>
             <div class="high-score">High Score: <span id="highScore">0</span></div>
             <div class="lives">Lives: <span id="lives">3</span></div>
-            <div class="level">Level: <span id="level">1</span></div>
+            <div>Level: <span id="level">1</span></div>
             <div class="combo" id="comboDisplay" style="display:none;">Combo: <span id="combo">0</span>x</div>
             <button class="mute-btn" id="muteBtn" onclick="toggleMute()">Mute</button>
         </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div class="game-over" id="gameOver">
             <h2>Game Over!</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
