@@ -44,7 +44,7 @@
             max-width: 800px;
             padding: 12px 0 16px 0;
             color: #00ff88;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
         }
@@ -53,7 +53,11 @@
             color: #ff6b6b;
         }
 
-        canvas {
+        .canvas-wrap {
+            line-height: 0;
+        }
+
+        .canvas-wrap canvas {
             border: 2px solid #00ff88;
             border-radius: 15px;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
@@ -74,6 +78,23 @@
 
         .mute-btn:hover {
             background: rgba(0, 255, 136, 0.5);
+        }
+
+        /* Desktop: larger game and UI for computer users */
+        @media (min-width: 1024px) {
+            .ui-bar {
+                font-size: 22px;
+                padding: 16px 0 20px 0;
+                max-width: 960px;
+            }
+            .mute-btn {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+            .canvas-wrap canvas {
+                width: 960px;
+                height: 720px;
+            }
         }
 
         .how-to-play {
@@ -183,7 +204,9 @@
             <div class="combo" id="comboDisplay" style="display:none;">Combo: <span id="combo">0</span>x</div>
             <button class="mute-btn" id="muteBtn" onclick="toggleMute()">Mute</button>
         </div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="canvas-wrap">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
         <div class="game-over" id="gameOver">
             <h2>Game Over!</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
