@@ -1,69 +1,47 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Turdanoid</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
 </head>
 <body>
+<a href="hub.html" style="position:fixed;top:10px;right:10px;color:#0066cc;font-size:14px;text-decoration:none;z-index:100;">← Game Hub</a>
 <script>
 let paddle, ball, bricks;
 let paddleWidth = 100;
+let originalPaddleWidth = 100;
 let paddleHeight = 15;
 let ballRadius = 20;
 let ballSpeed = 5;
 let score = 0;
+let highScore = parseInt(localStorage.getItem('turdanoidHighScore') || '0', 10);
 let lives = 3;
 let gameOver = false;
 let gameWon = false;
+let powerUps = [];
+let toiletPaperShots = [];
+let activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
+const POWERUP_TYPES = [
+  { type: 'bigPaddle', emoji: '📏', name: 'Big Paddle' },
+  { type: 'extraLife', emoji: '❤️', name: 'Extra Life' },
+  { type: 'slowBall', emoji: '🐌', name: 'Slow Ball' },
+  { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper' }
+];
 
 function setup() {
   createCanvas(800, 600);
   resetGame();
 }
 
+function windowResized() {
+  resizeCanvas(min(800, windowWidth), min(600, windowHeight - 20));
+}
+
 function resetGame() {
   paddle = createVector(width / 2 - paddleWidth / 2, height - 40);
   ball = createVector(width / 2, height - 60);
-  // Ensure ball has horizontal movement to prevent vertical-only bouncing
   let vx = random(-ballSpeed, ballSpeed);
   if (Math.abs(vx) < 0.5) {
     vx = vx >= 0 ? random(0.5, ballSpeed) : random(-ballSpeed, -0.5);
@@ -75,10 +53,33 @@ function resetGame() {
       bricks.push({ x: i * 100 + 10, y: j * 40 + 50, w: 80, h: 20, broken: false });
     }
   }
+  powerUps = [];
+  toiletPaperShots = [];
+  activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
+  paddleWidth = originalPaddleWidth;
   gameOver = false;
   gameWon = false;
   score = 0;
   lives = 3;
+}
+
+function createPowerUp(x, y) {
+  if (powerUps.length >= 8) return;
+  const p = POWERUP_TYPES[floor(random(POWERUP_TYPES.length))];
+  powerUps.push({ x: x - 15, y: y, w: 30, h: 30, vy: 2, ...p });
+}
+
+function activatePowerUp(type) {
+  if (type === 'bigPaddle') {
+    activePowerUps.bigPaddle = 600;
+    paddleWidth = originalPaddleWidth * 1.5;
+  } else if (type === 'extraLife') {
+    lives++;
+  } else if (type === 'slowBall') {
+    activePowerUps.slowBall = 450;
+  } else if (type === 'toiletPaper') {
+    activePowerUps.toiletPaper = 400;
+  }
 }
 
 function draw() {
@@ -96,15 +97,16 @@ function draw() {
       text("Final Score: " + score, width / 2, height / 2 + 20);
     }
     textSize(20);
-    text("Click to play again", width / 2, height / 2 + 60);
+    text((touches.length > 0 || 'ontouchstart' in window) ? "Tap to play again" : "Click to play again", width / 2, height / 2 + 60);
     return;
   }
   
   // Draw paddle
   fill(0, 128, 255);
   rect(paddle.x, paddle.y, paddleWidth, paddleHeight);
-  // Move paddle
-  paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
+  // Move paddle (touch or mouse; fallback for touchX 0 on first load)
+  const inputX = (touches.length > 0 && typeof touchX === 'number') ? touchX : mouseX;
+  paddle.x = constrain(inputX - paddleWidth / 2, 0, width - paddleWidth);
   
   // Draw turd ball
   textSize(30);
@@ -112,9 +114,52 @@ function draw() {
   textAlign(CENTER);
   text("💩", ball.x, ball.y);
   
-  // Move ball
-  ball.x += ball.velocity.x;
-  ball.y += ball.velocity.y;
+  // Update power-up timers
+  if (activePowerUps.bigPaddle > 0) {
+    activePowerUps.bigPaddle--;
+    if (activePowerUps.bigPaddle <= 0) paddleWidth = originalPaddleWidth;
+  }
+  if (activePowerUps.slowBall > 0) activePowerUps.slowBall--;
+  if (activePowerUps.toiletPaper > 0) {
+    activePowerUps.toiletPaper--;
+    if (frameCount % 25 === 0 && activePowerUps.toiletPaper > 0 && toiletPaperShots.length < 10) {
+      toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 10, y: paddle.y, w: 20, h: 20, vy: -6 });
+    }
+  }
+  
+  // Update and draw toilet paper shots
+  for (let i = toiletPaperShots.length - 1; i >= 0; i--) {
+    const tp = toiletPaperShots[i];
+    tp.y += tp.vy;
+    if (tp.y < -tp.h) { toiletPaperShots.splice(i, 1); continue; }
+    for (let j = bricks.length - 1; j >= 0; j--) {
+      const b = bricks[j];
+      if (tp.x + tp.w > b.x && tp.x < b.x + b.w && tp.y + tp.h > b.y && tp.y < b.y + b.h) {
+        bricks.splice(j, 1);
+        score += 10;
+        if (score > highScore) { highScore = score; try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {} }
+        toiletPaperShots.splice(i, 1);
+        break;
+      }
+    }
+  }
+  
+  // Update power-ups (fall, collide with paddle)
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    const pu = powerUps[i];
+    pu.y += pu.vy;
+    if (pu.y > height) { powerUps.splice(i, 1); continue; }
+    if (pu.y + pu.h >= paddle.y && pu.y <= paddle.y + paddleHeight &&
+        pu.x + pu.w >= paddle.x && pu.x <= paddle.x + paddleWidth) {
+      activatePowerUp(pu.type);
+      powerUps.splice(i, 1);
+    }
+  }
+  
+  // Move ball (apply slow ball)
+  const speedMult = activePowerUps.slowBall > 0 ? 0.6 : 1;
+  ball.x += ball.velocity.x * speedMult;
+  ball.y += ball.velocity.y * speedMult;
   
   // Ball collisions with walls - improved
   if (ball.x <= ballRadius) {
@@ -192,6 +237,11 @@ function draw() {
         ballBottom >= brick.y && ballTop <= brick.y + brick.h) {
       brick.broken = true;
       score = Math.min(Number.MAX_SAFE_INTEGER, score + 10);
+      if (score > highScore) {
+        highScore = score;
+        try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
+      }
+      if (random() < 0.25) createPowerUp(brick.x + brick.w / 2, brick.y + brick.h / 2);
       
       // Determine collision side
       const ballCenterX = ball.x;
@@ -219,12 +269,23 @@ function draw() {
     }
   }
   
-  // Draw bricks (only unbroken ones - safety check even though broken bricks are removed)
+  // Draw bricks
   fill(255, 165, 0);
   for (let brick of bricks) {
-    if (!brick.broken) {
-      rect(brick.x, brick.y, brick.w, brick.h);
-    }
+    if (!brick.broken) rect(brick.x, brick.y, brick.w, brick.h);
+  }
+  
+  // Draw power-ups
+  textSize(24);
+  textAlign(CENTER, CENTER);
+  for (let pu of powerUps) {
+    text(pu.emoji, pu.x + pu.w / 2, pu.y + pu.h / 2);
+  }
+  
+  // Draw toilet paper shots
+  textSize(18);
+  for (let tp of toiletPaperShots) {
+    text('🧻', tp.x + tp.w / 2, tp.y + tp.h / 2);
   }
   
   // Draw UI
@@ -232,11 +293,16 @@ function draw() {
   textAlign(LEFT);
   fill(0);
   text("Poop Points: " + score, 10, 30);
-  text("Lives: " + lives, 10, 60);
+  text("High Score: " + highScore, 10, 50);
+  text("Lives: " + lives, 10, 70);
   
   // Win condition
   if (bricks.length === 0) {
     gameWon = true;
+    if (score > highScore) {
+      highScore = score;
+      try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
+    }
   }
 }
 
@@ -245,6 +311,15 @@ function mousePressed() {
     resetGame();
     loop();
   }
+}
+
+function touchStarted() {
+  if (gameOver || gameWon) {
+    resetGame();
+    loop();
+    return false;
+  }
+  return true;
 }
 </script>
 </body>

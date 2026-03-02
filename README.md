@@ -1,62 +1,79 @@
-# Neon Arkanoid 🎮
+# Turdanoid Games
 
-A modern, visually stunning version of the classic Arkanoid game built with HTML5 Canvas and JavaScript.
+A collection of three retro-style browser games with a playful turd theme.
 
-## ✨ Features
+## Games
 
-- **Modern Neon Aesthetic**: Beautiful gradient backgrounds with glowing neon effects
-- **Smooth Animations**: 60fps gameplay with fluid ball and paddle movement
-- **Particle Effects**: Dynamic particle system for enhanced visual appeal
-- **Progressive Difficulty**: Ball speed increases with each level
-- **Health System**: Some blocks require multiple hits to destroy
-- **Responsive Controls**: Mouse-based paddle control for precise gameplay
-- **Visual Feedback**: Glowing effects, shadows, and smooth transitions
+### Neon Arkanoid
 
-## 🎯 How to Play
+Classic brick-breaker with neon aesthetics. Break blocks with the ball, collect power-ups, and level up!
 
-1. **Objective**: Break all the colored blocks using the ball and paddle
-2. **Controls**: Move your mouse to control the paddle position
-3. **Scoring**: 
-   - Each block destroyed: 10 points
-   - Level completed: 100 bonus points
-4. **Lives**: You start with 3 lives
-5. **Game Over**: Lose all lives or press Space to restart
+**Features:**
+- Combo multiplier for consecutive block hits (displayed in UI)
+- Power-ups: Toilet Paper, Multi-Ball, Big/Small Paddle, Slow Motion, Extra Life, Laser, Magnet, Ghost Ball, Fire Ball
+- Screen shake on life loss and level clear
+- Level-up celebration particles
+- Sound effects with mute toggle
+- High score persistence (localStorage)
+- Responsive canvas and touch support
+- "How to play" hint on first visit
 
-## 🚀 Getting Started
+**Controls:** Mouse or touch to move paddle. Space or P to pause. R to restart (when implemented). Mute button in UI.
 
-1. Open `index.html` in your web browser
-2. The game starts automatically
-3. Move your mouse to control the paddle
-4. Try to break all blocks without losing the ball
+### Turdtris
 
-## 🎨 Game Elements
+Tetris-style game with brown-themed pieces.
 
-- **Paddle**: Green glowing paddle at the bottom
-- **Ball**: Red ball that bounces off surfaces
-- **Blocks**: Colorful blocks with different health values
-- **Particles**: Floating background particles and block destruction effects
+**Features:**
+- Classic Tetris scoring
+- High score persistence
+- Responsive layout
+- Touch controls: swipe to move, tap to rotate, swipe down to drop
 
-## 🔧 Technical Details
+**Controls:** Arrow keys or touch gestures.
 
-- Built with vanilla JavaScript (ES6+)
-- HTML5 Canvas for rendering
-- CSS3 for styling and animations
-- Responsive design with modern CSS features
-- No external dependencies required
+### TurdAnoid
 
-## 🎮 Game Mechanics
+Simple brick-breaker with a turd ball using p5.js.
 
-- **Ball Physics**: Realistic bouncing with paddle angle influence
-- **Collision Detection**: Precise hit detection for blocks and walls
-- **Level Progression**: Infinite levels with increasing difficulty
-- **Health System**: Top rows have stronger blocks requiring multiple hits
+**Features:**
+- Power-ups: Big Paddle, Extra Life, Slow Ball, Toilet Paper (shoots upward)
+- Touch and mouse support
+- Responsive canvas (resizes on window change)
+- High score persistence
+- "Tap to play again" on mobile
 
-## 🌟 Visual Effects
+**Controls:** Mouse or touch to move paddle.
 
-- Neon glow effects on all game elements
-- Dynamic particle systems
-- Smooth color transitions
-- Backdrop blur and transparency effects
-- Floating background particles
+## Getting Started
 
-Enjoy the game! 🎉
+1. Open `hub.html` in a browser to access all games from one place
+2. Or open individual game files directly:
+   - `index.html` - Neon Arkanoid
+   - `turdtris.html` - Turdtris
+   - `TurdAnoid.html` - TurdAnoid
+
+## Mobile Support
+
+All games support:
+- Touch controls
+- Responsive layouts
+- Viewport scaling for small screens
+
+## Deployment (GitHub Pages)
+
+1. Push this repo to GitHub
+2. Go to Settings > Pages
+3. Source: Deploy from a branch
+4. Branch: main (or master), folder: / (root) or select the Turdanoid folder
+5. Save. Your site will be at `https://<username>.github.io/<repo>/`
+
+The `.nojekyll` file ensures GitHub Pages serves the files as-is. Open `hub.html` for the game hub, or `index.html` for Neon Arkanoid directly.
+
+## Technical Notes
+
+- **Neon Arkanoid**: Vanilla JavaScript (Canvas API)
+- **Turdtris**: Vanilla JavaScript (Canvas API)
+- **TurdAnoid**: p5.js
+
+No build step required. Open in any modern browser.

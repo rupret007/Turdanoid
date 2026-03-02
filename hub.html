@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turdanoid Game Hub</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      font-family: 'Arial', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      color: #00ff88;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    }
+    .subtitle {
+      font-size: 1.1em;
+      color: #b8b8b8;
+      margin-bottom: 40px;
+    }
+    .games {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      max-width: 900px;
+    }
+    .game-card {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #00ff88;
+      border-radius: 16px;
+      padding: 24px;
+      width: 260px;
+      text-align: center;
+      text-decoration: none;
+      color: #fff;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .game-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 30px rgba(0, 255, 136, 0.3);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .game-card h2 {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+      color: #00ff88;
+    }
+    .game-card p {
+      font-size: 0.95em;
+      color: #d0d0d0;
+      line-height: 1.4;
+    }
+    .game-card .emoji {
+      font-size: 3em;
+      margin-bottom: 12px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>💩 Turdanoid Game Hub</h1>
+  <p class="subtitle">Choose a game to play</p>
+  <div class="games">
+    <a href="index.html" class="game-card">
+      <span class="emoji">🎮</span>
+      <h2>Neon Arkanoid</h2>
+      <p>Break blocks with neon style. Power-ups, combos, and multi-ball action!</p>
+    </a>
+    <a href="turdtris.html" class="game-card">
+      <span class="emoji">💩</span>
+      <h2>Turdtris</h2>
+      <p>Classic Tetris with a brown twist. Clear lines and stack up the score!</p>
+    </a>
+    <a href="TurdAnoid.html" class="game-card">
+      <span class="emoji">🧻</span>
+      <h2>TurdAnoid</h2>
+      <p>Brick breaker with a turd ball. Catch power-ups and clean up!</p>
+    </a>
+  </div>
+</body>
+</html>

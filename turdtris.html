@@ -19,14 +19,19 @@ body {
 }
 .game-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
   align-items: flex-start;
+  justify-content: center;
+  max-width: 100%;
 }
 canvas {
   border: 3px solid #8B4513;
   box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
   touch-action: none;
   background: #1a1a1a;
+  max-width: 100%;
+  height: auto;
 }
 .info-panel {
   background: rgba(139, 69, 19, 0.2);
@@ -34,6 +39,7 @@ canvas {
   border-radius: 8px;
   padding: 20px;
   width: 200px;
+  max-width: 100%;
   box-shadow: 0 0 15px rgba(139, 69, 19, 0.3);
 }
 .info-panel h3 {
@@ -91,11 +97,13 @@ canvas {
 </style>
 </head>
 <body>
+<a href="hub.html" style="position:fixed;top:10px;right:10px;color:#d4a574;font-size:14px;text-decoration:none;z-index:100;">← Game Hub</a>
 <div class="game-container">
   <canvas width="320" height="640" id="game"></canvas>
   <div class="info-panel">
     <h3>💩 TURDTRIS 💩</h3>
     <div class="score">Score: <span id="score">0</span></div>
+    <div class="high-score">High Score: <span id="highScore">0</span></div>
     <div class="level">Level: <span id="level">1</span></div>
     <div class="lines">Lines: <span id="lines">0</span></div>
     
@@ -129,6 +137,7 @@ canvas {
 
 // Game state variables
 let score = 0;
+let highScore = parseInt(localStorage.getItem('turdtrisHighScore') || '0', 10);
 let level = 1;
 let linesCleared = 0;
 let dropSpeed = 60; // frames before auto-drop
@@ -198,6 +207,7 @@ function getNextTetromino() {
   }
   const name = tetrominoSequence.pop();
   const matrix = tetrominos[name];
+  if (!matrix) return getNextTetromino(); // Fallback if name undefined
   // Prevent division issues
   const playfieldWidth = playfield[0] ? playfield[0].length : 10;
   const matrixWidth = matrix[0] ? matrix[0].length : 0;
@@ -278,7 +288,8 @@ function placeTetromino() {
   // Update score and level
   if (linesClearedThisTurn > 0) {
     const lineScores = [0, 100, 300, 500, 800]; // Points for 0, 1, 2, 3, 4 lines
-    score = Math.min(Number.MAX_SAFE_INTEGER, score + lineScores[linesClearedThisTurn] * level);
+    const lineIndex = Math.min(linesClearedThisTurn, 4);
+    score = Math.min(Number.MAX_SAFE_INTEGER, score + (lineScores[lineIndex] || 0) * level);
     linesCleared += linesClearedThisTurn;
     
     // Level up every 10 lines
@@ -304,6 +315,7 @@ function showGameOver() {
     rAF = null;
   }
   gameOver = true;
+  updateScore(); // Persist high score if applicable
   
   // Update final score display
   const finalScoreEl = document.getElementById('finalScore');
@@ -353,10 +365,16 @@ function restartGame() {
 
 // Update score display
 function updateScore() {
+  if (score > highScore) {
+    highScore = score;
+    try { localStorage.setItem('turdtrisHighScore', String(highScore)); } catch (e) {}
+  }
   const scoreEl = document.getElementById('score');
+  const highScoreEl = document.getElementById('highScore');
   const levelEl = document.getElementById('level');
   const linesEl = document.getElementById('lines');
   if (scoreEl) scoreEl.textContent = score;
+  if (highScoreEl) highScoreEl.textContent = highScore;
   if (levelEl) levelEl.textContent = level;
   if (linesEl) linesEl.textContent = linesCleared;
 }
@@ -580,10 +598,12 @@ let touchStartX = 0;
 let touchStartY = 0;
 let touchStartTime = 0;
 
+if (canvas) {
 canvas.addEventListener('touchstart', function(e) {
   if (gameOver) return;
   e.preventDefault();
   const touch = e.touches[0];
+  if (!touch) return;
   touchStartX = touch.clientX;
   touchStartY = touch.clientY;
   touchStartTime = Date.now();
@@ -598,6 +618,7 @@ canvas.addEventListener('touchend', function(e) {
   e.preventDefault();
   
   const touch = e.changedTouches[0];
+  if (!touch) return;
   const touchEndX = touch.clientX;
   const touchEndY = touch.clientY;
   const touchDuration = Date.now() - touchStartTime;
@@ -626,6 +647,7 @@ canvas.addEventListener('touchend', function(e) {
     hardDrop();
   }
 }, { passive: false });
+}
 
 // Initialize game
 updateScore();

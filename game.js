@@ -3,16 +3,17 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         if (!this.canvas) {
             console.error('Canvas element not found');
-            return;
+            throw new Error('Canvas element not found');
         }
         this.ctx = this.canvas.getContext('2d');
         if (!this.ctx) {
             console.error('Could not get 2D context');
-            return;
+            throw new Error('Could not get 2D context');
         }
         
         // Initialize game state
         this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('neonArkanoidHighScore') || '0', 10);
         this.lives = 3;
         this.gameRunning = true;
         this.paused = false;
@@ -53,10 +54,23 @@ class Game {
         this.originalBallSpeed = 4;
         this.lastToiletPaperShot = 0; // Track last shot frame to prevent multiple shots
         this.lastLaserShot = 0; // Track last shot frame to prevent multiple shots
+        this.combo = 0; // Consecutive block hits without paddle bounce
+        this.screenShake = 0; // Frames of screen shake remaining
+        this.ghostBallRemaining = 0; // Blocks ball can pass through
+        this.fireBall = false; // One-hit destroy blocks
+        this.muted = localStorage.getItem('neonArkanoidMuted') === '1';
+        this.audioCtx = null;
+        
+        // Mobile detection
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       ('ontouchstart' in window) || 
+                       (navigator.maxTouchPoints > 0);
         
         // Store event handlers for cleanup
         this.boundMouseMove = (e) => this.handleMouseMove(e);
         this.boundKeyDown = (e) => this.handleKeyDown(e);
+        this.boundTouchMove = (e) => this.handleTouchMove(e);
+        this.boundTouchStart = (e) => this.handleTouchStart(e);
         
         this.init();
         this.createParticles();
@@ -66,8 +80,34 @@ class Game {
     init() {
         this.createBlocks();
         this.bindEvents();
-        // Initialize with single ball
         this.balls = [this.ball];
+        const muteBtn = document.getElementById('muteBtn');
+        if (muteBtn) muteBtn.textContent = this.muted ? 'Unmute' : 'Mute';
+    }
+    
+    playSound(type) {
+        if (this.muted || (!window.AudioContext && !window.webkitAudioContext)) return;
+        try {
+            if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            const freqs = { block: 440, paddle: 220, powerUp: 880, level: 660, gameOver: 110 };
+            osc.frequency.value = freqs[type] || 440;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.1);
+            osc.start(this.audioCtx.currentTime);
+            osc.stop(this.audioCtx.currentTime + 0.1);
+        } catch (e) {}
+    }
+    
+    toggleMute() {
+        this.muted = !this.muted;
+        try { localStorage.setItem('neonArkanoidMuted', this.muted ? '1' : '0'); } catch (e) {}
+        const btn = document.getElementById('muteBtn');
+        if (btn) btn.textContent = this.muted ? 'Unmute' : 'Mute';
     }
     
     createBlocks() {
@@ -130,6 +170,12 @@ class Game {
     bindEvents() {
         document.addEventListener('mousemove', this.boundMouseMove);
         document.addEventListener('keydown', this.boundKeyDown);
+        
+        // Add touch events when touch is available (mobile + touchscreen laptops)
+        if (('ontouchstart' in window) || this.isMobile) {
+            this.canvas.addEventListener('touchmove', this.boundTouchMove, { passive: false });
+            this.canvas.addEventListener('touchstart', this.boundTouchStart, { passive: false });
+        }
     }
     
     handleMouseMove(e) {
@@ -139,16 +185,44 @@ class Game {
             if (!rect || !isFinite(rect.left) || !isFinite(rect.width)) return;
             const mouseX = e.clientX - rect.left;
             if (!isFinite(mouseX)) return;
-            const paddleWidth = Math.max(1, this.paddle.width);
-            this.paddle.x = mouseX - paddleWidth / 2;
-            // Ensure paddle stays within bounds (important after power-up size changes)
-            const maxX = Math.max(0, this.canvas.width - paddleWidth);
-            this.paddle.x = Math.max(0, Math.min(maxX, this.paddle.x));
-            // Ensure paddle width is valid
-            this.paddle.width = Math.max(10, Math.min(this.canvas.width, this.paddle.width));
+            this.updatePaddlePosition(mouseX);
         } catch (err) {
             console.error('Error in handleMouseMove:', err);
         }
+    }
+    
+    handleTouchMove(e) {
+        if (!this.gameRunning || this.paused || !this.canvas) return;
+        e.preventDefault();
+        try {
+            const rect = this.canvas.getBoundingClientRect();
+            if (!rect || !isFinite(rect.left) || !isFinite(rect.width)) return;
+            const touch = e.touches[0] || e.changedTouches[0];
+            if (!touch) return;
+            const touchX = touch.clientX - rect.left;
+            if (!isFinite(touchX)) return;
+            this.updatePaddlePosition(touchX);
+        } catch (err) {
+            console.error('Error in handleTouchMove:', err);
+        }
+    }
+    
+    handleTouchStart(e) {
+        if (!this.gameRunning || this.paused) return;
+        e.preventDefault();
+        // Allow touch to work like mouse
+        if (e.touches && e.touches.length > 0) {
+            this.handleTouchMove(e);
+        }
+    }
+    
+    updatePaddlePosition(x) {
+        const paddleWidth = Math.max(1, this.paddle.width);
+        this.paddle.x = x - paddleWidth / 2;
+        // Ensure paddle stays within bounds (important after power-up size changes)
+        const maxX = Math.max(0, this.canvas.width - paddleWidth);
+        this.paddle.x = Math.max(0, Math.min(maxX, this.paddle.x));
+        // Do NOT mutate paddle.width here - power-up logic handles it
     }
     
     handleKeyDown(e) {
@@ -246,11 +320,15 @@ class Game {
             
             // Correct ball position to prevent sticking
             this.ball.y = paddleTop - this.ball.radius;
+            this.combo = 0; // Reset combo on paddle hit
+            this.playSound('paddle');
         }
         
         // Ball out of bounds
         if (this.ball.y >= this.canvas.height) {
+            this.combo = 0;
             this.lives--;
+            this.screenShake = 15; // Screen shake on life loss
             if (this.lives <= 0) {
                 this.gameOver();
             } else {
@@ -287,44 +365,60 @@ class Game {
         for (let i = this.blocks.length - 1; i >= 0; i--) {
             const block = this.blocks[i];
             if (this.checkCollision(this.ball, block)) {
-                // Determine collision side for better bounce
                 const ballCenterX = this.ball.x;
                 const ballCenterY = this.ball.y;
                 const blockCenterX = block.x + block.width / 2;
                 const blockCenterY = block.y + block.height / 2;
-                
                 const dx = ballCenterX - blockCenterX;
                 const dy = ballCenterY - blockCenterY;
                 const absDx = Math.abs(dx);
                 const absDy = Math.abs(dy);
                 
+                // Ghost ball: pass through without bouncing (consumed on first block hit)
+                if (this.ghostBallRemaining > 0) {
+                    this.ghostBallRemaining--;
+                    if (block.health && block.health > 0) {
+                        block.health--;
+                        if (block.health <= 0) {
+                            this.blocks.splice(i, 1);
+                            this.combo++;
+                            const comboMult = Math.min(5, 1 + this.combo * 0.5);
+                            this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + Math.floor(10 * comboMult));
+                            this.createBlockParticles(block);
+                            this.playSound('block');
+                            if (Math.random() < 0.3) this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
+                        }
+                    } else {
+                        this.blocks.splice(i, 1);
+                    }
+                    break;
+                }
+                
                 // Ensure block health is valid
+                const damage = this.fireBall ? block.health : 1;
                 if (block.health && block.health > 0) {
-                    block.health--;
+                    block.health -= damage;
                     if (block.health <= 0) {
                         this.blocks.splice(i, 1);
-                        this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + 10);
+                        this.combo++;
+                        const comboMult = Math.min(5, 1 + this.combo * 0.5);
+                        this.score = Math.min(Number.MAX_SAFE_INTEGER, this.score + Math.floor(10 * comboMult));
                         this.createBlockParticles(block);
-                        // Chance to drop power-up (30% chance)
+                        this.playSound('block');
                         if (Math.random() < 0.3) {
                             this.createPowerUp(block.x + block.width / 2, block.y + block.height / 2);
                         }
                     }
                 } else {
-                    // Remove invalid block
                     this.blocks.splice(i, 1);
                 }
                 
-                // Bounce based on which side was hit
+                // Bounce based on which side was hit (unless ghost)
                 if (absDx > absDy) {
-                    // Hit from left or right
                     this.ball.dx = -this.ball.dx;
                 } else {
-                    // Hit from top or bottom
                     this.ball.dy = -this.ball.dy;
                 }
-                
-                // Only process one collision per frame
                 break;
             }
         }
@@ -362,6 +456,26 @@ class Game {
                ball.y - ball.radius < block.y + block.height;
     }
     
+    createLevelUpParticles() {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const availableSlots = Math.max(0, this.maxParticles - this.particles.length);
+        const particleCount = Math.min(30, availableSlots);
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 * i) / particleCount + Math.random();
+            this.particles.push({
+                x: centerX,
+                y: centerY,
+                vx: Math.cos(angle) * 12,
+                vy: Math.sin(angle) * 12,
+                life: 40,
+                maxLife: 40,
+                size: 6,
+                color: ['#00ff88', '#ff6b6b', '#ffd93d'][i % 3]
+            });
+        }
+    }
+    
     createBlockParticles(block) {
         // Limit particle creation to prevent memory issues
         const availableSlots = Math.max(0, this.maxParticles - this.particles.length);
@@ -390,7 +504,9 @@ class Game {
             { type: 'slowMotion', emoji: '🐌', color: '#45b7d1', name: 'Slow Motion' },
             { type: 'extraLife', emoji: '❤️', color: '#ff6b6b', name: 'Extra Life' },
             { type: 'laser', emoji: '🔫', color: '#ff9ff3', name: 'Laser Paddle' },
-            { type: 'magnet', emoji: '🧲', color: '#96ceb4', name: 'Magnet' }
+            { type: 'magnet', emoji: '🧲', color: '#96ceb4', name: 'Magnet' },
+            { type: 'ghostBall', emoji: '👻', color: '#b8b8ff', name: 'Ghost Ball' },
+            { type: 'fireBall', emoji: '🔥', color: '#ff6b35', name: 'Fire Ball' }
         ];
     }
     
@@ -429,12 +545,15 @@ class Game {
             powerUp.y += powerUp.vy;
             powerUp.rotation += 0.1;
             
-            // Check collision with paddle
+            // Check collision with paddle (powerUp.x is center)
+            const puLeft = powerUp.x - powerUp.width / 2;
+            const puRight = powerUp.x + powerUp.width / 2;
             if (powerUp.y + powerUp.height >= this.paddle.y &&
                 powerUp.y <= this.paddle.y + this.paddle.height &&
-                powerUp.x + powerUp.width >= this.paddle.x &&
-                powerUp.x <= this.paddle.x + this.paddle.width) {
+                puRight >= this.paddle.x &&
+                puLeft <= this.paddle.x + this.paddle.width) {
                 this.activatePowerUp(powerUp.type);
+                this.playSound('powerUp');
                 this.powerUps.splice(i, 1);
             }
             // Remove if off screen
@@ -496,6 +615,13 @@ class Game {
             case 'magnet':
                 this.activePowerUps.magnet = duration * 2; // Longer duration
                 break;
+            case 'ghostBall':
+                this.ghostBallRemaining = 1; // Pass through one block
+                break;
+            case 'fireBall':
+                this.fireBall = true;
+                this.activePowerUps.fireBall = duration;
+                break;
         }
     }
     
@@ -506,6 +632,9 @@ class Game {
                 this.paddle.width = this.originalPaddleWidth;
                 // Ensure paddle stays in bounds after size change
                 this.paddle.x = Math.max(0, Math.min(this.canvas.width - this.paddle.width, this.paddle.x));
+                break;
+            case 'fireBall':
+                this.fireBall = false;
                 break;
         }
     }
@@ -615,6 +744,7 @@ class Game {
                 }
                 
                 ball.y = this.paddle.y - ball.radius;
+                this.combo = 0; // Reset combo when any ball hits paddle
             }
             
             // Block collisions
@@ -663,11 +793,12 @@ class Game {
             this.lastToiletPaperShot = currentFrame;
             // Limit shots to prevent memory issues
             if (this.toiletPaperShots.length < 20) {
+                const w = 20;
                 this.toiletPaperShots.push({
-                    x: this.paddle.x + this.paddle.width / 2,
+                    x: this.paddle.x + this.paddle.width / 2 - w / 2,
                     y: this.paddle.y,
-                    width: 20,
-                    height: 20,
+                    width: w,
+                    height: w,
                     vy: -8,
                     rotation: 0
                 });
@@ -721,11 +852,12 @@ class Game {
             this.lastLaserShot = currentFrame;
             // Limit shots to prevent memory issues
             if (this.laserShots.length < 30) {
+                const w = 4, h = 15;
                 this.laserShots.push({
-                    x: this.paddle.x + this.paddle.width / 2,
+                    x: this.paddle.x + this.paddle.width / 2 - w / 2,
                     y: this.paddle.y,
-                    width: 4,
-                    height: 15,
+                    width: w,
+                    height: h,
                     vy: -10
                 });
             }
@@ -786,6 +918,9 @@ class Game {
     }
     
     nextLevel() {
+        this.playSound('level');
+        this.screenShake = 20; // Screen shake on level clear
+        this.createLevelUpParticles();
         this.level++;
         // Prevent level overflow
         this.level = Math.min(999, this.level);
@@ -803,6 +938,9 @@ class Game {
         this.powerUps = [];
         this.lastToiletPaperShot = 0;
         this.lastLaserShot = 0;
+        this.ghostBallRemaining = 0;
+        this.fireBall = false;
+        if (this.activePowerUps.fireBall) delete this.activePowerUps.fireBall;
         // Reset ball position but maintain level-appropriate speed
         this.ball.x = Math.max(this.ball.radius, Math.min(this.canvas.width - this.ball.radius, this.canvas.width / 2));
         this.ball.y = Math.max(this.ball.radius, Math.min(this.canvas.height - this.ball.radius, this.canvas.height - 50));
@@ -818,6 +956,7 @@ class Game {
     }
     
     gameOver() {
+        this.playSound('gameOver');
         this.gameRunning = false;
         const gameOverEl = document.getElementById('gameOver');
         const finalScoreEl = document.getElementById('finalScore');
@@ -827,6 +966,7 @@ class Game {
     
     restart() {
         this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('neonArkanoidHighScore') || '0', 10);
         this.lives = 3;
         this.level = 1;
         this.gameRunning = true;
@@ -840,6 +980,9 @@ class Game {
         this.balls = [];
         this.lastToiletPaperShot = 0;
         this.lastLaserShot = 0;
+        this.combo = 0;
+        this.ghostBallRemaining = 0;
+        this.fireBall = false;
         this.paddle.width = this.originalPaddleWidth;
         this.createBlocks();
         this.createParticles();
@@ -852,14 +995,33 @@ class Game {
     }
     
     updateUI() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            try { localStorage.setItem('neonArkanoidHighScore', String(this.highScore)); } catch (e) {}
+        }
         const scoreEl = document.getElementById('score');
         const livesEl = document.getElementById('lives');
+        const levelEl = document.getElementById('level');
+        const highScoreEl = document.getElementById('highScore');
+        const comboEl = document.getElementById('combo');
+        const comboDisplayEl = document.getElementById('comboDisplay');
         if (scoreEl) scoreEl.textContent = this.score;
         if (livesEl) livesEl.textContent = this.lives;
+        if (levelEl) levelEl.textContent = this.level;
+        if (highScoreEl) highScoreEl.textContent = this.highScore;
+        if (comboEl) comboEl.textContent = this.combo;
+        if (comboDisplayEl) comboDisplayEl.style.display = this.combo > 0 ? 'block' : 'none';
     }
     
     render() {
         if (!this.ctx || !this.canvas) return;
+        
+        // Screen shake
+        const shakeX = this.screenShake > 0 ? (Math.random() - 0.5) * 8 : 0;
+        const shakeY = this.screenShake > 0 ? (Math.random() - 0.5) * 8 : 0;
+        if (this.screenShake > 0) this.screenShake--;
+        this.ctx.save();
+        this.ctx.translate(shakeX, shakeY);
         
         // Clear canvas
         this.ctx.fillStyle = 'rgba(26, 26, 46, 0.1)';
@@ -980,6 +1142,7 @@ class Game {
                 indicatorCount++;
             }
         }
+        this.ctx.restore(); // End screen shake transform
     }
     
     gameLoop() {
@@ -1002,6 +1165,10 @@ class Game {
         // Clean up event listeners
         document.removeEventListener('mousemove', this.boundMouseMove);
         document.removeEventListener('keydown', this.boundKeyDown);
+        if ((('ontouchstart' in window) || this.isMobile) && this.canvas) {
+            this.canvas.removeEventListener('touchmove', this.boundTouchMove);
+            this.canvas.removeEventListener('touchstart', this.boundTouchStart);
+        }
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
         }
@@ -1012,7 +1179,13 @@ class Game {
 let gameInstance = null;
 
 window.addEventListener('load', () => {
-    gameInstance = new Game();
+    try {
+        gameInstance = new Game();
+        if (!gameInstance.canvas || !gameInstance.ctx) gameInstance = null;
+    } catch (e) {
+        console.error('Failed to initialize game:', e);
+        gameInstance = null;
+    }
 });
 
 // Global restart function
