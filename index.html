@@ -1,10 +1,23 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Arkanoid</title>
+    <title>Neon Arkanoid Turbo</title>
     <style>
+        :root {
+            --bg-a: #0a1020;
+            --bg-b: #171e3f;
+            --bg-c: #12343a;
+            --ink: #d4f8ff;
+            --accent: #73ffd7;
+            --hot: #ff8f70;
+            --warn: #ffd87a;
+            --panel: rgba(7, 14, 28, 0.72);
+            --panel-border: rgba(122, 245, 220, 0.35);
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,234 +25,456 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
+            font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 15% 15%, rgba(117, 226, 255, 0.20), transparent 42%),
+                radial-gradient(circle at 85% 8%, rgba(255, 134, 175, 0.18), transparent 38%),
+                linear-gradient(135deg, var(--bg-a), var(--bg-b) 46%, var(--bg-c));
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
 
-        .game-container {
-            position: relative;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            max-width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .hub-link {
+            position: fixed;
+            top: 14px;
+            right: 18px;
+            z-index: 40;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1px solid rgba(115, 255, 215, 0.35);
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 13px;
+            background: rgba(7, 12, 24, 0.55);
+            backdrop-filter: blur(6px);
         }
 
-        .ui-bar {
+        .game-shell {
+            width: min(1180px, 96vw);
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 16px 16px 18px;
+            backdrop-filter: blur(12px);
+        }
+
+        .title-row {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .title-wrap h1 {
+            font-size: clamp(1.1rem, 2vw, 1.6rem);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .title-wrap p {
+            font-size: 0.86rem;
+            color: rgba(212, 248, 255, 0.84);
+            margin-top: 4px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
             flex-wrap: wrap;
-            gap: 20px 30px;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            padding: 12px 0 16px 0;
-            color: #00ff88;
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            justify-content: flex-end;
         }
 
-        .ui-bar .lives {
-            color: #ff6b6b;
+        .btn {
+            border: 1px solid rgba(115, 255, 215, 0.4);
+            color: var(--accent);
+            background: rgba(10, 19, 36, 0.55);
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            background: rgba(28, 48, 88, 0.7);
+        }
+
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(110px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card {
+            background: rgba(8, 16, 32, 0.72);
+            border: 1px solid rgba(123, 230, 255, 0.22);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-card .label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            opacity: 0.75;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-card .value {
+            margin-top: 4px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .stat-card.hot .value { color: var(--hot); }
+        .stat-card.warn .value { color: var(--warn); }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: 1.3fr 1.1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .status-item {
+            background: rgba(8, 16, 32, 0.7);
+            border-radius: 12px;
+            border: 1px solid rgba(123, 230, 255, 0.2);
+            padding: 8px 10px;
+            min-height: 45px;
+        }
+
+        .status-item strong {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.72;
+        }
+
+        .status-item span {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.88rem;
+        }
+
+        .play-area {
+            display: grid;
+            grid-template-columns: 1fr 250px;
+            gap: 12px;
+            align-items: start;
         }
 
         .canvas-wrap {
-            line-height: 0;
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 2px solid rgba(115, 255, 215, 0.35);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 16px 40px rgba(0, 0, 0, 0.4);
         }
 
-        .canvas-wrap canvas {
-            border: 2px solid #00ff88;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-            max-width: 100%;
+        canvas {
+            width: 100%;
             height: auto;
             display: block;
+            background: #070d1a;
         }
 
-        .mute-btn {
-            background: rgba(0, 255, 136, 0.3);
-            color: #00ff88;
-            border: 1px solid #00ff88;
-            padding: 5px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
+        .sidebar {
+            background: rgba(7, 14, 28, 0.68);
+            border: 1px solid rgba(126, 245, 220, 0.24);
+            border-radius: 16px;
+            padding: 12px;
+            min-height: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .mute-btn:hover {
-            background: rgba(0, 255, 136, 0.5);
+        .sidebar h3 {
+            font-size: 0.86rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
         }
 
-        /* Desktop: larger game and UI for computer users */
-        @media (min-width: 1024px) {
-            .ui-bar {
-                font-size: 22px;
-                padding: 16px 0 20px 0;
-                max-width: 960px;
-            }
-            .mute-btn {
-                font-size: 14px;
-                padding: 8px 16px;
-            }
-            .canvas-wrap canvas {
-                width: 960px;
-                height: 720px;
-            }
+        .power-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            min-height: 72px;
+        }
+
+        .power-chip {
+            border: 1px solid rgba(126, 245, 220, 0.4);
+            border-radius: 999px;
+            font-size: 0.72rem;
+            padding: 5px 9px;
+            color: var(--ink);
+            background: rgba(11, 19, 34, 0.85);
+        }
+
+        .hint-list {
+            font-size: 0.79rem;
+            line-height: 1.45;
+            opacity: 0.88;
+        }
+
+        .hint-list p {
+            margin-bottom: 6px;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            place-items: center;
+            text-align: center;
+            background: rgba(5, 9, 18, 0.86);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .overlay-card h2 {
+            color: var(--accent);
+            margin-bottom: 12px;
+            font-size: 1.8rem;
+        }
+
+        .overlay-card p {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .overlay-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
         }
 
         .how-to-play {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: #00ff88;
-            padding: 24px;
-            border-radius: 15px;
-            border: 2px solid #00ff88;
-            z-index: 200;
-            text-align: center;
-        }
-
-        .how-to-play p {
-            margin-bottom: 16px;
-            font-size: 16px;
-        }
-
-        .game-over {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: #00ff88;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
+            inset: 0;
+            background: rgba(5, 10, 20, 0.82);
             display: none;
-            border: 2px solid #00ff88;
+            align-items: center;
+            justify-content: center;
+            z-index: 55;
+            padding: 20px;
         }
 
-        .game-over h2 {
-            margin-bottom: 20px;
-            font-size: 2em;
+        .how-card {
+            width: min(520px, 100%);
+            background: rgba(9, 18, 36, 0.94);
+            border: 1px solid rgba(127, 245, 220, 0.45);
+            border-radius: 16px;
+            padding: 20px;
         }
 
-        .restart-btn {
-            background: #00ff88;
-            color: #000;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .how-card h2 {
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 1.3rem;
         }
 
-        .restart-btn:hover {
-            background: #00cc6a;
-            transform: scale(1.05);
+        .how-card p {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            margin-bottom: 8px;
         }
 
-        .particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .achievement-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translate(-50%, 20px);
+            background: rgba(11, 24, 45, 0.95);
+            color: #ffe6a1;
+            border: 1px solid rgba(255, 214, 129, 0.45);
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            opacity: 0;
             pointer-events: none;
-            z-index: -1;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 65;
         }
 
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: #00ff88;
-            border-radius: 50%;
-            animation: float 6s infinite linear;
+        .achievement-toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
 
-        @keyframes float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
+        .mobile-controls {
+            display: none;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .control-btn {
+            min-width: 90px;
+            border: 1px solid rgba(128, 220, 255, 0.45);
+            background: rgba(11, 22, 42, 0.8);
+            color: var(--ink);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1024px) {
+            .play-area {
+                grid-template-columns: 1fr;
             }
-            10% {
-                opacity: 1;
+            .sidebar {
+                min-height: auto;
             }
-            90% {
-                opacity: 1;
+            .hud-grid {
+                grid-template-columns: repeat(3, minmax(90px, 1fr));
             }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+            .mobile-controls {
+                display: flex;
             }
         }
     </style>
 </head>
 <body>
-    <div class="particles" id="particles"></div>
-    <a href="hub.html" style="position:fixed;top:10px;right:10px;color:#00ff88;font-size:14px;text-decoration:none;z-index:100;">← Game Hub</a>
-    <div class="how-to-play" id="howToPlay" style="display:none;">
-        <p>Move paddle with mouse or touch. Space or P to pause. Break blocks, collect power-ups!</p>
-        <button class="restart-btn" onclick="dismissHowToPlay()">Got it</button>
-    </div>
-    <div class="game-container">
-        <div class="ui-bar">
-            <div>Score: <span id="score">0</span></div>
-            <div class="high-score">High Score: <span id="highScore">0</span></div>
-            <div class="lives">Lives: <span id="lives">3</span></div>
-            <div>Level: <span id="level">1</span></div>
-            <div class="combo" id="comboDisplay" style="display:none;">Combo: <span id="combo">0</span>x</div>
-            <button class="mute-btn" id="muteBtn" onclick="toggleMute()">Mute</button>
-        </div>
-        <div class="canvas-wrap">
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-        </div>
-        <div class="game-over" id="gameOver">
-            <h2>Game Over!</h2>
-            <p>Final Score: <span id="finalScore">0</span></p>
-            <button class="restart-btn" onclick="restartGame()">Play Again</button>
-        </div>
-        <div class="game-over" id="pauseOverlay" style="display: none;">
-            <h2>Paused</h2>
-            <p>Press Space or P to resume</p>
-            <button class="restart-btn" onclick="togglePause()">Resume</button>
-            <button class="restart-btn" onclick="restartGame()" style="margin-top: 10px;">Restart</button>
+    <a class="hub-link" href="hub.html">&larr; Game Hub</a>
+
+    <div class="how-to-play" id="howToPlay">
+        <div class="how-card">
+            <h2>Neon Arkanoid Turbo</h2>
+            <p>Move with mouse/touch or A/D and arrow keys. Launch with Space or tap.</p>
+            <p>Break special blocks, chain combos, and stack power-ups for high scores.</p>
+            <p>Controls: <strong>Space</strong> launch/pause, <strong>P/Esc</strong> pause, <strong>M</strong> mute, <strong>R</strong> restart.</p>
+            <button class="btn" onclick="dismissHowToPlay()">Start Playing</button>
         </div>
     </div>
+
+    <div class="game-shell">
+        <div class="title-row">
+            <div class="title-wrap">
+                <h1>Neon Arkanoid Turbo</h1>
+                <p>Enhanced gameplay, smarter levels, power stackers, and achievement runs.</p>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="togglePause()">Pause / Resume</button>
+                <button class="btn" id="muteBtn" onclick="toggleMute()">Mute</button>
+                <button class="btn" onclick="restartGame()">Restart</button>
+            </div>
+        </div>
+
+        <div class="hud-grid">
+            <div class="stat-card"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="stat-card"><div class="label">High Score</div><div class="value" id="highScore">0</div></div>
+            <div class="stat-card hot"><div class="label">Lives</div><div class="value" id="lives">3</div></div>
+            <div class="stat-card"><div class="label">Level</div><div class="value" id="level">1</div></div>
+            <div class="stat-card warn" id="comboDisplay" style="display:none;"><div class="label">Combo</div><div class="value"><span id="combo">0</span>x</div></div>
+            <div class="stat-card"><div class="label">Best Combo</div><div class="value" id="bestCombo">0</div></div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <strong>Status</strong>
+                <span id="statusLine">Ready.</span>
+            </div>
+            <div class="status-item">
+                <strong>Objective</strong>
+                <span id="objectiveText">Break all blocks.</span>
+            </div>
+            <div class="status-item">
+                <strong>Mode</strong>
+                <span id="modeText">Pattern: Classic Grid</span>
+            </div>
+        </div>
+
+        <div class="play-area">
+            <div class="canvas-wrap">
+                <canvas id="gameCanvas" width="960" height="640"></canvas>
+
+                <div class="overlay" id="gameOver">
+                    <div class="overlay-card">
+                        <h2>Run Over</h2>
+                        <p>Final Score: <strong id="finalScore">0</strong></p>
+                        <div class="overlay-actions">
+                            <button class="btn" onclick="restartGame()">Play Again</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overlay" id="pauseOverlay">
+                    <div class="overlay-card">
+                        <h2>Paused</h2>
+                        <p>Press Space, P, or Resume to continue.</p>
+                        <div class="overlay-actions">
+                            <button class="btn" onclick="togglePause()">Resume</button>
+                            <button class="btn" onclick="restartGame()">Restart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <div>
+                    <h3>Active Powers</h3>
+                    <div class="power-list" id="activePowerList">
+                        <span class="power-chip">None</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>Achievements</h3>
+                    <p class="hint-list" id="achievementsList">0 unlocked</p>
+                </div>
+
+                <div>
+                    <h3>Quick Tips</h3>
+                    <div class="hint-list">
+                        <p>Keep the combo running for score multipliers.</p>
+                        <p>Explosive blocks chain clear nearby bricks.</p>
+                        <p>Shield and Magnet power-ups are clutch on harder waves.</p>
+                        <p>Use keyboard control for precision catches.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <div class="mobile-controls" id="mobileControls">
+            <button class="control-btn" data-action="left">Left</button>
+            <button class="control-btn" data-action="launch">Launch</button>
+            <button class="control-btn" data-action="right">Right</button>
+        </div>
+    </div>
+
+    <div class="achievement-toast" id="achievementToast"></div>
+
     <script src="game.js"></script>
     <script>
-        function togglePause() {
-            if (typeof gameInstance !== 'undefined' && gameInstance && gameInstance.togglePause) {
-                gameInstance.togglePause();
-            }
-        }
-        function toggleMute() {
-            if (typeof gameInstance !== 'undefined' && gameInstance && gameInstance.toggleMute) {
-                gameInstance.toggleMute();
-            }
-        }
         function dismissHowToPlay() {
             const el = document.getElementById('howToPlay');
             if (el) el.style.display = 'none';
-            try { localStorage.setItem('neonArkanoidSeenHint', '1'); } catch (e) {}
+            try { localStorage.setItem('neonArkanoidSeenHint', '1'); } catch (error) {}
         }
-        window.addEventListener('load', function() {
+
+        window.addEventListener('load', function () {
             if (!localStorage.getItem('neonArkanoidSeenHint')) {
                 const el = document.getElementById('howToPlay');
-                if (el) el.style.display = 'block';
+                if (el) el.style.display = 'flex';
             }
         });
     </script>
