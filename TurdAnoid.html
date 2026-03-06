@@ -219,7 +219,7 @@
   <div class="topbar">
     <div>
       <h1>TurdAnoid Turbo</h1>
-      <p>Multi-level poop-breaker with combo scoring, more power-ups, and better effects.</p>
+      <p>Sillier poop-breaker: classic power-ups plus a stinkier gas trail over time.</p>
     </div>
     <div class="actions">
       <button class="btn" onclick="togglePauseExternal()">Pause / Resume</button>
@@ -234,7 +234,7 @@
     <div class="card"><div class="k">Level</div><div class="v" id="levelText">1</div></div>
     <div class="card"><div class="k">Combo</div><div class="v" id="comboText">0</div></div>
     <div class="card"><div class="k">Bricks</div><div class="v" id="bricksText">0</div></div>
-    <div class="card"><div class="k">Shield</div><div class="v" id="shieldText">0</div></div>
+    <div class="card"><div class="k">Stink</div><div class="v" id="shieldText">0</div></div>
   </div>
 
   <div class="main">
@@ -279,7 +279,6 @@ let balls = [];
 let bricks = [];
 let powerUps = [];
 let toiletPaperShots = [];
-let laserShots = [];
 let particles = [];
 
 let paddleWidth = 120;
@@ -297,8 +296,7 @@ let gameOver = false;
 let gameWon = false;
 let paused = false;
 let awaitingLaunch = true;
-let shieldHP = 0;
-let statusText = 'Aim for streaks and collect boosts.';
+let statusText = 'Keep it silly and keep the streak alive.';
 
 let controlLeft = false;
 let controlRight = false;
@@ -306,23 +304,14 @@ let controlRight = false;
 let activePowerUps = {
   bigPaddle: 0,
   slowBall: 0,
-  toiletPaper: 0,
-  laser: 0,
-  magnet: 0,
-  fireBall: 0,
-  scoreBoost: 0
+  toiletPaper: 0
 };
 
 const POWERUP_TYPES = [
-  { type: 'bigPaddle', emoji: 'W', name: 'Wide Paddle' },
-  { type: 'extraLife', emoji: 'L+', name: 'Extra Life' },
-  { type: 'slowBall', emoji: 'SL', name: 'Slow Ball' },
-  { type: 'toiletPaper', emoji: 'TP', name: 'Toilet Paper' },
-  { type: 'multiBall', emoji: 'MB', name: 'Multi Ball' },
-  { type: 'laser', emoji: 'LZ', name: 'Laser' },
-  { type: 'shield', emoji: 'SH', name: 'Shield' },
-  { type: 'fireBall', emoji: 'FB', name: 'Fire Ball' },
-  { type: 'scoreBoost', emoji: '2X', name: 'Score Boost' }
+  { type: 'bigPaddle', emoji: '📏', name: 'Big Paddle' },
+  { type: 'extraLife', emoji: '❤️', name: 'Extra Life' },
+  { type: 'slowBall', emoji: '🐌', name: 'Slow Ball' },
+  { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper' }
 ];
 
 function setup() {
@@ -340,15 +329,16 @@ function windowResized() {
   resetBallState();
 }
 
-function createBall(x, y, vx, vy, mainBall) {
+function createBall(x, y, vx, vy, isMain) {
   return {
     x,
     y,
     r: 10,
     vx,
     vy,
-    mainBall,
-    trail: []
+    isMain,
+    trail: [],
+    stink: 0
   };
 }
 
@@ -366,17 +356,15 @@ function resetGame() {
   gameOver = false;
   gameWon = false;
   paused = false;
-  shieldHP = 0;
-  statusText = 'Fresh run started.';
+  statusText = 'Fresh run started. Try to get extra stinky.';
 
   paddleWidth = originalPaddleWidth;
   paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
 
   powerUps = [];
   toiletPaperShots = [];
-  laserShots = [];
   particles = [];
-  activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0, laser: 0, magnet: 0, fireBall: 0, scoreBoost: 0 };
+  activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
 
   createLevel(level);
   resetBallState();
@@ -396,21 +384,13 @@ function createLevel(levelNumber) {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       if ((levelNumber + r + c) % 7 === 0 && r > 1) continue;
-
-      const typeRoll = random();
-      const type = typeRoll < 0.12 && levelNumber > 1
-        ? 'explosive'
-        : (typeRoll < 0.22 && levelNumber > 2 ? 'hard' : 'normal');
-      const hp = type === 'hard' ? 2 + floor(levelNumber / 5) : 1;
-
       bricks.push({
         x: margin + c * (brickW + gap),
         y: 62 + r * (brickH + gap),
         w: brickW,
         h: brickH,
-        hp,
-        maxHp: hp,
-        type
+        hp: r < 2 ? 2 : 1,
+        maxHp: r < 2 ? 2 : 1
       });
     }
   }
@@ -418,6 +398,7 @@ function createLevel(levelNumber) {
 
 function launchBall() {
   if (!awaitingLaunch || balls.length === 0) return;
+
   const speed = min(11, baseBallSpeed + (level - 1) * 0.3);
   let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.7);
   if (abs(vx) < 1) vx = vx >= 0 ? 1 : -1;
@@ -425,8 +406,9 @@ function launchBall() {
 
   balls[0].vx = vx;
   balls[0].vy = vy;
+  balls[0].stink = 0;
   awaitingLaunch = false;
-  statusText = 'Ball launched. Keep your combo alive.';
+  statusText = 'Launched. It will get stinkier the longer it survives.';
 }
 
 function draw() {
@@ -448,7 +430,7 @@ function draw() {
   updatePaddle();
   updatePowerTimers();
   updatePowerUps();
-  updateProjectiles();
+  updateToiletPaperShots();
   updateBalls();
   updateParticles();
 
@@ -458,12 +440,10 @@ function draw() {
   if (bricks.length === 0) {
     level++;
     score += 100 * level;
-    statusText = `Level ${level} started.`;
+    statusText = `Level ${level} started. The poop escalates.`;
     createLevel(level);
     powerUps = [];
     toiletPaperShots = [];
-    laserShots = [];
-    shieldHP = max(0, shieldHP - 1);
     resetBallState();
   }
 
@@ -489,13 +469,11 @@ function updatePaddle() {
   if (controlLeft) paddle.x -= paddle.speed;
   if (controlRight) paddle.x += paddle.speed;
 
-  if (!touches.length) {
-    paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
-  } else {
+  if (touches.length > 0) {
     paddle.x = constrain(touches[0].x - paddleWidth / 2, 0, width - paddleWidth);
+  } else {
+    paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
   }
-
-  paddle.x = constrain(paddle.x, 0, width - paddleWidth);
 
   if (awaitingLaunch && balls.length) {
     balls[0].x = paddle.x + paddleWidth / 2;
@@ -508,18 +486,13 @@ function updatePowerTimers() {
     if (activePowerUps[key] > 0) activePowerUps[key]--;
   }
 
-  if (activePowerUps.bigPaddle > 0) paddleWidth = originalPaddleWidth * 1.6;
+  if (activePowerUps.bigPaddle > 0) paddleWidth = originalPaddleWidth * 1.5;
   else paddleWidth = originalPaddleWidth;
 
   paddle.x = constrain(paddle.x, 0, width - paddleWidth);
 
-  if (activePowerUps.toiletPaper > 0 && frameCount % 18 === 0 && toiletPaperShots.length < 16) {
-    toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 8, y: paddle.y, w: 16, h: 16, vy: -8 });
-  }
-
-  if (activePowerUps.laser > 0 && frameCount % 10 === 0 && laserShots.length < 30) {
-    laserShots.push({ x: paddle.x + 4, y: paddle.y, w: 4, h: 14, vy: -12 });
-    laserShots.push({ x: paddle.x + paddleWidth - 8, y: paddle.y, w: 4, h: 14, vy: -12 });
+  if (activePowerUps.toiletPaper > 0 && frameCount % 25 === 0 && toiletPaperShots.length < 12) {
+    toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 10, y: paddle.y, w: 20, h: 20, vy: -7 });
   }
 }
 
@@ -527,25 +500,30 @@ function updatePowerUps() {
   for (let i = powerUps.length - 1; i >= 0; i--) {
     const pu = powerUps[i];
     pu.y += pu.vy;
-    pu.angle += 0.06;
+    pu.angle += 0.08;
 
     if (pu.y > height + pu.h) {
       powerUps.splice(i, 1);
       continue;
     }
 
-    if (pu.y + pu.h >= paddle.y && pu.y <= paddle.y + paddleHeight &&
-      pu.x + pu.w >= paddle.x && pu.x <= paddle.x + paddleWidth) {
+    if (
+      pu.y + pu.h >= paddle.y &&
+      pu.y <= paddle.y + paddleHeight &&
+      pu.x + pu.w >= paddle.x &&
+      pu.x <= paddle.x + paddleWidth
+    ) {
       activatePowerUp(pu.type);
       powerUps.splice(i, 1);
     }
   }
 }
 
-function updateProjectiles() {
+function updateToiletPaperShots() {
   for (let i = toiletPaperShots.length - 1; i >= 0; i--) {
     const shot = toiletPaperShots[i];
     shot.y += shot.vy;
+
     if (shot.y < -shot.h) {
       toiletPaperShots.splice(i, 1);
       continue;
@@ -553,86 +531,60 @@ function updateProjectiles() {
 
     let hit = false;
     for (let j = bricks.length - 1; j >= 0; j--) {
-      if (rectHit(shot, bricks[j])) {
-        damageBrick(j, 2, true);
-        hit = true;
-        break;
-      }
-    }
-    if (hit) toiletPaperShots.splice(i, 1);
-  }
-
-  for (let i = laserShots.length - 1; i >= 0; i--) {
-    const shot = laserShots[i];
-    shot.y += shot.vy;
-    if (shot.y < -shot.h) {
-      laserShots.splice(i, 1);
-      continue;
-    }
-
-    let hit = false;
-    for (let j = bricks.length - 1; j >= 0; j--) {
-      if (rectHit(shot, bricks[j])) {
+      const brick = bricks[j];
+      if (rectHit(shot, brick)) {
         damageBrick(j, 1, true);
         hit = true;
         break;
       }
     }
-    if (hit) laserShots.splice(i, 1);
+
+    if (hit) toiletPaperShots.splice(i, 1);
   }
 }
 
 function updateBalls() {
-  const slow = activePowerUps.slowBall > 0 ? 0.68 : 1;
+  const slow = activePowerUps.slowBall > 0 ? 0.6 : 1;
 
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
     b.x += b.vx * slow;
     b.y += b.vy * slow;
+    b.stink = min(2400, b.stink + 1);
+
+    emitGas(b);
 
     b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > 10) b.trail.shift();
-
-    if (activePowerUps.magnet > 0 && b.y > height * 0.4) {
-      const pull = ((paddle.x + paddleWidth / 2) - b.x) * 0.02;
-      b.vx += pull;
-    }
+    if (b.trail.length > 12) b.trail.shift();
 
     if (b.x <= b.r) { b.x = b.r; b.vx = abs(b.vx); }
     if (b.x >= width - b.r) { b.x = width - b.r; b.vx = -abs(b.vx); }
     if (b.y <= b.r) { b.y = b.r; b.vy = abs(b.vy); }
 
-    if (b.y + b.r >= paddle.y && b.y - b.r <= paddle.y + paddleHeight &&
-      b.x + b.r >= paddle.x && b.x - b.r <= paddle.x + paddleWidth && b.vy > 0) {
+    if (
+      b.y + b.r >= paddle.y &&
+      b.y - b.r <= paddle.y + paddleHeight &&
+      b.x + b.r >= paddle.x &&
+      b.x - b.r <= paddle.x + paddleWidth &&
+      b.vy > 0
+    ) {
       const hitPos = constrain((b.x - paddle.x) / max(1, paddleWidth), 0, 1);
-      const angle = (hitPos - 0.5) * 1.0;
+      const angle = (hitPos - 0.5) * 0.9;
       const speed = max(baseBallSpeed, sqrt(b.vx * b.vx + b.vy * b.vy));
       b.vx = sin(angle) * speed;
       b.vy = -abs(cos(angle) * speed);
-      if (abs(b.vx) < 1) b.vx = b.vx >= 0 ? 1 : -1;
+      if (abs(b.vx) < 0.9) b.vx = b.vx >= 0 ? 0.9 : -0.9;
       b.y = paddle.y - b.r;
       combo = 0;
       comboTimer = 0;
     }
 
-    let pierced = activePowerUps.fireBall > 0;
     for (let j = bricks.length - 1; j >= 0; j--) {
       const brick = bricks[j];
       if (!ballHitsBrick(b, brick)) continue;
-
-      damageBrick(j, pierced ? 99 : 1, false);
-      if (!pierced) {
-        b.vy *= -1;
-        break;
-      }
-    }
-
-    const shieldY = height - 8;
-    if (shieldHP > 0 && b.y + b.r >= shieldY) {
-      b.y = shieldY - b.r;
-      b.vy = -abs(b.vy);
-      shieldHP--;
-      if (shieldHP <= 0) statusText = 'Shield depleted.';
+      damageBrick(j, 1, false);
+      b.vy *= -1;
+      break;
     }
 
     if (b.y - b.r > height + 4) {
@@ -644,21 +596,42 @@ function updateBalls() {
     lives--;
     combo = 0;
     comboTimer = 0;
+
     if (lives <= 0) {
       gameOver = true;
-      statusText = 'Flushed. Restart to try again.';
+      statusText = 'Flushed. Tap to run it back.';
       if (score > highScore) {
         highScore = score;
         try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
       }
     } else {
-      statusText = 'Life lost. Relaunch the ball.';
+      statusText = 'Life lost. Relaunch when ready.';
       resetBallState();
       powerUps = [];
       toiletPaperShots = [];
-      laserShots = [];
-      activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0, laser: 0, magnet: 0, fireBall: 0, scoreBoost: 0 };
+      activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
     }
+  }
+}
+
+function emitGas(ball) {
+  const gasChance = map(ball.stink, 0, 2400, 0.02, 0.34, true);
+  const puffs = random() < gasChance * 0.3 ? 2 : 1;
+
+  for (let i = 0; i < puffs; i++) {
+    if (random() > gasChance) continue;
+
+    particles.push({
+      x: ball.x + random(-8, 8),
+      y: ball.y + random(-8, 8),
+      vx: random(-0.8, 0.8),
+      vy: random(-1.6, -0.2),
+      life: random(22, 46),
+      maxLife: 46,
+      size: random(3, 8),
+      kind: 'gas',
+      c: color(random(95, 140), random(210, 255), random(95, 140), 190)
+    });
   }
 }
 
@@ -668,7 +641,7 @@ function damageBrick(index, damage, projectileHit) {
 
   brick.hp -= damage;
   if (brick.hp > 0) {
-    spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, 4, color(255, 210, 170));
+    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 4, color(255, 230, 180));
     return;
   }
 
@@ -676,17 +649,12 @@ function damageBrick(index, damage, projectileHit) {
   combo++;
   comboTimer = 180;
 
-  let gain = 12 + combo * 2;
-  if (activePowerUps.scoreBoost > 0) gain *= 2;
-  if (projectileHit) gain = floor(gain * 0.9);
+  const comboMult = 1 + min(2.4, combo * 0.1);
+  const gain = floor((projectileHit ? 9 : 12) * comboMult);
   score = min(Number.MAX_SAFE_INTEGER, score + gain);
 
-  if (brick.type === 'explosive') {
-    explodeNearby(brick.x + brick.w / 2, brick.y + brick.h / 2, 84);
-  }
-
   if (random() < 0.25) createPowerUp(brick.x + brick.w / 2, brick.y + brick.h / 2);
-  spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, 10, brick.type === 'hard' ? color(160, 220, 255) : color(255, 190, 140));
+  spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 9, color(255, 180, 120));
 
   if (score > highScore) {
     highScore = score;
@@ -694,55 +662,40 @@ function damageBrick(index, damage, projectileHit) {
   }
 }
 
-function explodeNearby(cx, cy, radius) {
-  for (let i = bricks.length - 1; i >= 0; i--) {
-    const b = bricks[i];
-    const bx = b.x + b.w / 2;
-    const by = b.y + b.h / 2;
-    if (dist(cx, cy, bx, by) <= radius) {
-      damageBrick(i, 1, true);
-    }
-  }
-}
-
 function createPowerUp(x, y) {
-  if (powerUps.length >= 12) return;
+  if (powerUps.length >= 10) return;
   const p = POWERUP_TYPES[floor(random(POWERUP_TYPES.length))];
-  powerUps.push({ x: x - 14, y, w: 28, h: 28, vy: 2.2, angle: 0, ...p });
+  powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2, angle: 0, ...p });
 }
 
 function activatePowerUp(type) {
-  if (type === 'bigPaddle') activePowerUps.bigPaddle = 700;
-  if (type === 'extraLife') lives = min(9, lives + 1);
-  if (type === 'slowBall') activePowerUps.slowBall = 540;
-  if (type === 'toiletPaper') activePowerUps.toiletPaper = 520;
-  if (type === 'multiBall' && balls.length < 5) {
-    const source = balls[0] || createBall(paddle.x + paddleWidth / 2, paddle.y - 12, 3, -5, false);
-    balls.push(createBall(source.x, source.y, source.vx + random(-2, 2), -abs(source.vy), false));
-    balls.push(createBall(source.x, source.y, source.vx + random(-2, 2), -abs(source.vy), false));
-  }
-  if (type === 'laser') activePowerUps.laser = 480;
-  if (type === 'shield') shieldHP = max(shieldHP, 3 + floor(level / 4));
-  if (type === 'fireBall') activePowerUps.fireBall = 420;
-  if (type === 'scoreBoost') activePowerUps.scoreBoost = 420;
-  if (type === 'magnet') activePowerUps.magnet = 500;
+  if (type === 'bigPaddle') activePowerUps.bigPaddle = 600;
+  else if (type === 'extraLife') lives = min(9, lives + 1);
+  else if (type === 'slowBall') activePowerUps.slowBall = 450;
+  else if (type === 'toiletPaper') activePowerUps.toiletPaper = 400;
 
-  statusText = `Power-up: ${type}`;
+  const power = POWERUP_TYPES.find((p) => p.type === type);
+  statusText = power ? `Power-up: ${power.name}` : `Power-up: ${type}`;
 }
 
-function spawnParticles(x, y, count, col) {
+function spawnBurst(x, y, count, c) {
   for (let i = 0; i < count; i++) {
     particles.push({
       x,
       y,
       vx: random(-3, 3),
       vy: random(-3, 3),
-      life: random(16, 34),
+      life: random(18, 36),
+      maxLife: 36,
       size: random(2, 5),
-      col
+      kind: 'spark',
+      c
     });
   }
-  if (particles.length > 240) particles.splice(0, particles.length - 240);
+
+  if (particles.length > 300) {
+    particles.splice(0, particles.length - 300);
+  }
 }
 
 function updateParticles() {
@@ -750,24 +703,28 @@ function updateParticles() {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
-    p.vy += 0.04;
+    if (p.kind === 'spark') p.vy += 0.03;
     p.life--;
     if (p.life <= 0) particles.splice(i, 1);
   }
 }
 
 function ballHitsBrick(ball, brick) {
-  return ball.x + ball.r > brick.x &&
+  return (
+    ball.x + ball.r > brick.x &&
     ball.x - ball.r < brick.x + brick.w &&
     ball.y + ball.r > brick.y &&
-    ball.y - ball.r < brick.y + brick.h;
+    ball.y - ball.r < brick.y + brick.h
+  );
 }
 
 function rectHit(rectObj, brick) {
-  return rectObj.x + rectObj.w > brick.x &&
+  return (
+    rectObj.x + rectObj.w > brick.x &&
     rectObj.x < brick.x + brick.w &&
     rectObj.y + rectObj.h > brick.y &&
-    rectObj.y < brick.y + brick.h;
+    rectObj.y < brick.y + brick.h
+  );
 }
 
 function drawGameScene(withGameElements) {
@@ -788,13 +745,6 @@ function drawGameScene(withGameElements) {
   drawPowerUps();
   drawParticlesVisual();
 
-  if (shieldHP > 0) {
-    stroke(130, 235, 255);
-    strokeWeight(3);
-    line(14, height - 8, width - 14, height - 8);
-    noStroke();
-  }
-
   if (awaitingLaunch) {
     fill(232, 255, 240);
     textSize(18);
@@ -806,10 +756,10 @@ function drawGameScene(withGameElements) {
 function drawBricks() {
   for (const b of bricks) {
     const t = b.hp / b.maxHp;
-    const base = b.type === 'hard' ? color(124, 192, 255) : (b.type === 'explosive' ? color(255, 126, 110) : color(255, 175, 120));
+    const base = color(255, 175, 120);
     const grad = drawingContext.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
     grad.addColorStop(0, `rgba(${red(base)},${green(base)},${blue(base)},0.95)`);
-    grad.addColorStop(1, `rgba(${max(0, red(base)-70)},${max(0, green(base)-70)},${max(0, blue(base)-70)},0.95)`);
+    grad.addColorStop(1, `rgba(${max(0, red(base) - 70)},${max(0, green(base) - 70)},${max(0, blue(base) - 70)},0.95)`);
     drawingContext.fillStyle = grad;
     rect(b.x, b.y, b.w, b.h, 6);
 
@@ -836,38 +786,29 @@ function drawBalls() {
       circle(point.x, point.y, b.r * 1.2 * (i / max(1, b.trail.length)));
     }
 
-    fill(activePowerUps.fireBall > 0 ? color(255, 120, 70) : color(90, 70, 50));
-    textSize(22);
+    fill(90, 70, 50);
+    textSize(24);
     textAlign(CENTER, CENTER);
-    text('P', b.x, b.y + 1);
+    text('💩', b.x, b.y + 1);
   }
 }
 
 function drawShots() {
   textAlign(CENTER, CENTER);
-  textSize(14);
+  textSize(18);
   for (const tp of toiletPaperShots) {
-    fill(255);
-    rect(tp.x, tp.y, tp.w, tp.h, 4);
-  }
-
-  for (const l of laserShots) {
-    fill(255, 110, 240);
-    rect(l.x, l.y, l.w, l.h, 2);
+    text('🧻', tp.x + tp.w / 2, tp.y + tp.h / 2);
   }
 }
 
 function drawPowerUps() {
   textAlign(CENTER, CENTER);
-  textSize(13);
+  textSize(24);
   for (const pu of powerUps) {
     push();
     translate(pu.x + pu.w / 2, pu.y + pu.h / 2);
     rotate(pu.angle);
-    fill(130, 255, 205);
-    rect(-pu.w / 2, -pu.h / 2, pu.w, pu.h, 8);
-    fill(10, 45, 35);
-    text(pu.emoji, 0, 1);
+    text(pu.emoji, 0, 0);
     pop();
   }
 }
@@ -875,8 +816,8 @@ function drawPowerUps() {
 function drawParticlesVisual() {
   noStroke();
   for (const p of particles) {
-    const a = map(p.life, 0, 34, 0, 255);
-    fill(red(p.col), green(p.col), blue(p.col), a);
+    const alpha = map(p.life, 0, p.maxLife, 0, 220);
+    fill(red(p.c), green(p.c), blue(p.c), alpha);
     circle(p.x, p.y, p.size);
   }
 }
@@ -899,11 +840,18 @@ function drawEndScreen() {
   fill(230, 255, 236);
   textAlign(CENTER, CENTER);
   textSize(34);
-  text(gameWon ? 'Level Mastered' : 'Flushed!', width / 2, height / 2 - 26);
+  text('Flushed!', width / 2, height / 2 - 26);
   textSize(20);
   text(`Score: ${score}`, width / 2, height / 2 + 8);
   textSize(15);
   text('Tap or click to play again', width / 2, height / 2 + 38);
+}
+
+function getStinkLevel() {
+  if (balls.length === 0) return 0;
+  let total = 0;
+  for (const b of balls) total += b.stink;
+  return floor(map(total / balls.length, 0, 2400, 0, 100, true));
 }
 
 function updateHud() {
@@ -923,18 +871,17 @@ function updateHud() {
   if (levelEl) levelEl.textContent = String(level);
   if (comboEl) comboEl.textContent = String(combo);
   if (bricksEl) bricksEl.textContent = String(bricks.length);
-  if (shieldEl) shieldEl.textContent = String(shieldHP);
+  if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;
   if (statusEl) statusEl.textContent = statusText;
 
   if (powerListEl) {
-    const active = POWERUP_TYPES.filter((p) => activePowerUps[p.type] > 0);
-    if (active.length === 0 && shieldHP <= 0) {
-      powerListEl.innerHTML = '<span class="chip">None</span>';
-    } else {
-      const chips = active.map((p) => `<span class="chip">${p.emoji} ${Math.ceil(activePowerUps[p.type] / 60)}s</span>`);
-      if (shieldHP > 0) chips.push(`<span class="chip">SH ${shieldHP}</span>`);
-      powerListEl.innerHTML = chips.join('');
+    const chips = [];
+    for (const p of POWERUP_TYPES) {
+      if (activePowerUps[p.type] > 0) {
+        chips.push(`<span class="chip">${p.emoji} ${Math.ceil(activePowerUps[p.type] / 60)}s</span>`);
+      }
     }
+    powerListEl.innerHTML = chips.length ? chips.join('') : '<span class="chip">None</span>';
   }
 }
 
@@ -1030,3 +977,5 @@ if (mobileControls) {
 </script>
 </body>
 </html>
+
+
