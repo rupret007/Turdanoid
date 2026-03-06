@@ -336,26 +336,50 @@ body {
 </div>
 
 <script>
-// Turdtris Turbo
+// Turdtris Turbo - enhanced with Tetris Guideline-inspired systems.
 let score = 0;
 let highScore = parseInt(localStorage.getItem('turdtrisHighScore') || '0', 10);
 let level = 1;
 let linesCleared = 0;
+let levelLines = 0;
 let combo = 0;
 let b2b = 0;
+let softDrop = false;
 let paused = false;
 let gameOver = false;
-let softDrop = false;
-let statusText = 'Build smart stacks and chain clears.';
+let statusText = 'Guideline-inspired run: SRS, bag randomizer, and escalating garbage.';
+
+const grid = 32;
+const rows = 22; // 20 visible + 2 hidden
+const cols = 10;
+const lockDelayMs = 500;
+const maxMoveResets = 12;
+
+const themes = [
+  { name: 'Amber Brick', bgA: '#140f0c', bgB: '#2d1f17', grid: 'rgba(255,225,190,0.08)', ghost: 'rgba(255,219,175,0.2)' },
+  { name: 'Mint Sewer', bgA: '#0d1a16', bgB: '#123328', grid: 'rgba(180,255,220,0.08)', ghost: 'rgba(170,255,210,0.2)' },
+  { name: 'Neon Flush', bgA: '#151227', bgB: '#2a1f45', grid: 'rgba(204,184,255,0.08)', ghost: 'rgba(220,200,255,0.2)' },
+  { name: 'Deep Rust', bgA: '#24140f', bgB: '#4a2d1f', grid: 'rgba(255,200,160,0.08)', ghost: 'rgba(255,214,180,0.2)' }
+];
+
+const pieceColors = {
+  I: '#72dbff',
+  J: '#7f9dff',
+  L: '#ffb274',
+  O: '#ffe181',
+  S: '#83f7ae',
+  Z: '#ff8f99',
+  T: '#d6a2ff',
+  G: '#6f5d4f'
+};
 
 const lineScores = [0, 100, 300, 500, 800];
-const grid = 32;
-const rows = 22;
-const cols = 10;
-let dropInterval = 900;
-let dropAccumulator = 0;
-let lastFrameTime = 0;
-let rAF = null;
+const tspinScores = [0, 400, 800, 1200, 1600];
+
+const gravityTable = [
+  1000, 793, 618, 473, 355, 262, 190, 135, 94, 64,
+  43, 28, 18, 11, 7, 5, 4, 3, 2, 1
+];
 
 const canvas = document.getElementById('game');
 const context = canvas ? canvas.getContext('2d') : null;
@@ -369,60 +393,54 @@ for (let row = 0; row < rows; row++) {
   playfield[row] = new Array(cols).fill(0);
 }
 
-const tetrominoSequence = [];
 const tetrominos = {
-  'I': [
-    [0,0,0,0],
-    [1,1,1,1],
-    [0,0,0,0],
-    [0,0,0,0]
-  ],
-  'J': [
-    [1,0,0],
-    [1,1,1],
-    [0,0,0]
-  ],
-  'L': [
-    [0,0,1],
-    [1,1,1],
-    [0,0,0]
-  ],
-  'O': [
-    [1,1],
-    [1,1]
-  ],
-  'S': [
-    [0,1,1],
-    [1,1,0],
-    [0,0,0]
-  ],
-  'Z': [
-    [1,1,0],
-    [0,1,1],
-    [0,0,0]
-  ],
-  'T': [
-    [0,1,0],
-    [1,1,1],
-    [0,0,0]
-  ]
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  J: [[1,0,0],[1,1,1],[0,0,0]],
+  L: [[0,0,1],[1,1,1],[0,0,0]],
+  O: [[1,1],[1,1]],
+  S: [[0,1,1],[1,1,0],[0,0,0]],
+  Z: [[1,1,0],[0,1,1],[0,0,0]],
+  T: [[0,1,0],[1,1,1],[0,0,0]]
 };
 
-const colors = {
-  'I': '#8be2ff',
-  'J': '#8ca5ff',
-  'L': '#ffba7f',
-  'O': '#ffe48b',
-  'S': '#8dffb8',
-  'Z': '#ff8f9a',
-  'T': '#d7a8ff'
+const srsJlstz = {
+  '0>1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '1>0': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '1>2': [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  '2>1': [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  '2>3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  '3>2': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '3>0': [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+  '0>3': [[0,0],[1,0],[1,1],[0,-2],[1,-2]]
 };
 
+const srsI = {
+  '0>1': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  '1>0': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  '1>2': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+  '2>1': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+  '2>3': [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  '3>2': [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  '3>0': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
+  '0>3': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]]
+};
+
+const tetrominoSequence = [];
 let tetromino = null;
 let nextTetromino = null;
 let holdName = null;
 let canHold = true;
+
 let clearEffects = [];
+let floatTexts = [];
+let recentMoveWasRotate = false;
+let lastKickUsed = false;
+
+let dropAccumulator = 0;
+let lockAccumulator = 0;
+let lockResets = 0;
+let lastFrameTime = 0;
+let rAF = null;
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -438,8 +456,13 @@ function generateSequence() {
   }
 }
 
-function getDropInterval() {
-  return Math.max(90, 900 - (level - 1) * 70);
+function getGravityMs() {
+  if (level <= gravityTable.length) return gravityTable[level - 1];
+  return 1;
+}
+
+function copyMatrix(matrix) {
+  return matrix.map((row) => row.slice());
 }
 
 function getNextTetromino() {
@@ -452,10 +475,18 @@ function getNextTetromino() {
   const col = Math.max(0, Math.floor((cols - matrixWidth) / 2));
   const row = name === 'I' ? -1 : -2;
 
-  return { name, matrix, row, col };
+  return {
+    name,
+    matrix: copyMatrix(matrix),
+    row,
+    col,
+    rotation: 0,
+    lastActionRotate: false,
+    lastKick: false
+  };
 }
 
-function rotate(matrix) {
+function rotateCW(matrix) {
   const N = matrix.length - 1;
   return matrix.map((row, i) => row.map((val, j) => matrix[N - j][i]));
 }
@@ -465,37 +496,70 @@ function rotateCCW(matrix) {
   return matrix.map((row, i) => row.map((val, j) => matrix[j][N - i]));
 }
 
-function cloneMatrix(matrix) {
-  return matrix.map((row) => row.slice());
-}
-
 function isValidMove(matrix, cellRow, cellCol) {
   for (let row = 0; row < matrix.length; row++) {
     for (let col = 0; col < matrix[row].length; col++) {
       if (!matrix[row][col]) continue;
-
-      const nextCol = cellCol + col;
-      const nextRow = cellRow + row;
-      if (nextCol < 0 || nextCol >= cols || nextRow >= rows) return false;
-      if (nextRow >= 0 && playfield[nextRow][nextCol]) return false;
+      const targetRow = cellRow + row;
+      const targetCol = cellCol + col;
+      if (targetCol < 0 || targetCol >= cols || targetRow >= rows) return false;
+      if (targetRow >= 0 && playfield[targetRow][targetCol]) return false;
     }
   }
   return true;
+}
+
+function getKickData(pieceName, from, to) {
+  const key = `${from}>${to}`;
+  if (pieceName === 'O') return [[0, 0]];
+  if (pieceName === 'I') return srsI[key] || [[0, 0]];
+  return srsJlstz[key] || [[0, 0]];
+}
+
+function tryRotate(direction) {
+  if (!tetromino || gameOver || paused) return;
+
+  const from = tetromino.rotation;
+  const to = (from + direction + 4) % 4;
+  const rotated = direction > 0 ? rotateCW(tetromino.matrix) : rotateCCW(tetromino.matrix);
+  const kicks = getKickData(tetromino.name, from, to);
+
+  for (let i = 0; i < kicks.length; i++) {
+    const [kickX, kickY] = kicks[i];
+    const testCol = tetromino.col + kickX;
+    const testRow = tetromino.row - kickY;
+    if (isValidMove(rotated, testRow, testCol)) {
+      tetromino.matrix = rotated;
+      tetromino.col = testCol;
+      tetromino.row = testRow;
+      tetromino.rotation = to;
+      tetromino.lastActionRotate = true;
+      tetromino.lastKick = i > 0;
+      recentMoveWasRotate = true;
+      lastKickUsed = i > 0;
+      resetLockDelayOnAction();
+      return;
+    }
+  }
 }
 
 function spawnNextPiece() {
   if (!nextTetromino) nextTetromino = getNextTetromino();
   tetromino = nextTetromino;
   nextTetromino = getNextTetromino();
+
   canHold = true;
-  dropAccumulator = 0;
+  recentMoveWasRotate = false;
+  lastKickUsed = false;
+  lockAccumulator = 0;
+  lockResets = 0;
+
+  drawPreview(nextContext, nextCanvas, nextTetromino);
+  drawHoldPreview();
 
   if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
     showGameOver();
   }
-
-  drawPreview(nextContext, nextCanvas, nextTetromino);
-  drawHoldPreview();
 }
 
 function holdCurrentPiece() {
@@ -506,82 +570,53 @@ function holdCurrentPiece() {
     holdName = currentName;
     spawnNextPiece();
   } else {
-    const swapName = holdName;
+    const swap = holdName;
     holdName = currentName;
-    const matrix = tetrominos[swapName];
+    const matrix = tetrominos[swap];
+    if (!matrix) return;
+
     tetromino = {
-      name: swapName,
-      matrix: cloneMatrix(matrix),
-      row: swapName === 'I' ? -1 : -2,
-      col: Math.max(0, Math.floor((cols - matrix[0].length) / 2))
+      name: swap,
+      matrix: copyMatrix(matrix),
+      row: swap === 'I' ? -1 : -2,
+      col: Math.max(0, Math.floor((cols - matrix[0].length) / 2)),
+      rotation: 0,
+      lastActionRotate: false,
+      lastKick: false
     };
+
     if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
       showGameOver();
     }
   }
 
+  statusText = `Holding ${holdName}.`;
   canHold = false;
-  statusText = `Holding ${holdName}`;
+  lockAccumulator = 0;
   drawHoldPreview();
 }
 
-function placeTetromino() {
-  for (let row = 0; row < tetromino.matrix.length; row++) {
-    for (let col = 0; col < tetromino.matrix[row].length; col++) {
-      if (!tetromino.matrix[row][col]) continue;
-
-      if (tetromino.row + row < 0) {
-        showGameOver();
-        return;
-      }
-
-      playfield[tetromino.row + row][tetromino.col + col] = tetromino.name;
-    }
+function movePiece(offset) {
+  if (!tetromino || gameOver || paused) return;
+  const nextCol = tetromino.col + offset;
+  if (isValidMove(tetromino.matrix, tetromino.row, nextCol)) {
+    tetromino.col = nextCol;
+    tetromino.lastActionRotate = false;
+    resetLockDelayOnAction();
   }
+}
 
-  let linesClearedThisTurn = 0;
-  for (let row = rows - 1; row >= 0; row--) {
-    if (playfield[row].every((cell) => !!cell)) {
-      const rowColors = playfield[row].slice();
-      clearEffects.push({ row, life: 18, colors: rowColors });
-      playfield.splice(row, 1);
-      playfield.unshift(new Array(cols).fill(0));
-      linesClearedThisTurn++;
-      row++;
-    }
-  }
+function softDropStep() {
+  if (!tetromino || gameOver || paused) return;
 
-  if (linesClearedThisTurn > 0) {
-    const lineIndex = Math.min(linesClearedThisTurn, 4);
-    let turnScore = (lineScores[lineIndex] || 0) * level;
-
-    combo++;
-    if (combo > 1) turnScore += combo * 40;
-
-    if (linesClearedThisTurn === 4) {
-      b2b++;
-      if (b2b > 1) turnScore += 250;
-    } else {
-      b2b = 0;
-    }
-
-    score = Math.min(Number.MAX_SAFE_INTEGER, score + turnScore);
-    linesCleared += linesClearedThisTurn;
-    level = Math.min(999, Math.floor(linesCleared / 10) + 1);
-    dropInterval = getDropInterval();
-
-    statusText = linesClearedThisTurn === 4
-      ? `Turdtris! +${turnScore}`
-      : `Cleared ${linesClearedThisTurn} line(s) +${turnScore}`;
+  const nextRow = tetromino.row + 1;
+  if (isValidMove(tetromino.matrix, nextRow, tetromino.col)) {
+    tetromino.row = nextRow;
+    score = Math.min(Number.MAX_SAFE_INTEGER, score + 1);
+    tetromino.lastActionRotate = false;
   } else {
-    combo = 0;
-    if (statusText.startsWith('Cleared') || statusText.startsWith('Turdtris')) {
-      statusText = 'Stack smart and keep the board low.';
-    }
+    lockPiece();
   }
-
-  updateScore();
-  spawnNextPiece();
 }
 
 function hardDrop() {
@@ -592,71 +627,176 @@ function hardDrop() {
     distance++;
   }
   score = Math.min(Number.MAX_SAFE_INTEGER, score + distance * 2);
-  placeTetromino();
+  lockPiece();
 }
 
-function movePiece(offset) {
-  if (!tetromino || gameOver || paused) return;
-  const nextCol = tetromino.col + offset;
-  if (isValidMove(tetromino.matrix, tetromino.row, nextCol)) tetromino.col = nextCol;
+function resetLockDelayOnAction() {
+  if (lockResets < maxMoveResets) {
+    lockAccumulator = 0;
+    lockResets++;
+  }
 }
 
-function rotatePiece(clockwise) {
-  if (!tetromino || gameOver || paused) return;
-  const rotated = clockwise ? rotate(tetromino.matrix) : rotateCCW(tetromino.matrix);
+function isGrounded(piece) {
+  return !isValidMove(piece.matrix, piece.row + 1, piece.col);
+}
 
-  const kicks = [0, -1, 1, -2, 2];
-  for (let i = 0; i < kicks.length; i++) {
-    const kick = kicks[i];
-    if (isValidMove(rotated, tetromino.row, tetromino.col + kick)) {
-      tetromino.matrix = rotated;
-      tetromino.col += kick;
-      return;
+function isTSpin(piece) {
+  if (!piece || piece.name !== 'T' || !piece.lastActionRotate) return false;
+
+  const centerRow = piece.row + 1;
+  const centerCol = piece.col + 1;
+  const corners = [
+    [centerRow - 1, centerCol - 1],
+    [centerRow - 1, centerCol + 1],
+    [centerRow + 1, centerCol - 1],
+    [centerRow + 1, centerCol + 1]
+  ];
+
+  let occupied = 0;
+  for (const [r, c] of corners) {
+    if (r < 0 || r >= rows || c < 0 || c >= cols || playfield[r][c]) occupied++;
+  }
+
+  return occupied >= 3;
+}
+
+function applyLevelModifier(newLevel) {
+  const garbageLines = Math.min(6, Math.floor((newLevel - 1) / 3));
+  if (garbageLines <= 0) return;
+
+  for (let i = 0; i < garbageLines; i++) {
+    const hole = getRandomInt(0, cols - 1);
+    playfield.shift();
+    const garbage = new Array(cols).fill('G');
+    garbage[hole] = 0;
+    playfield.push(garbage);
+  }
+
+  statusText = `Level ${newLevel} modifier: ${garbageLines} garbage line(s) injected.`;
+}
+
+function lockPiece() {
+  if (!tetromino) return;
+
+  for (let row = 0; row < tetromino.matrix.length; row++) {
+    for (let col = 0; col < tetromino.matrix[row].length; col++) {
+      if (!tetromino.matrix[row][col]) continue;
+
+      const targetRow = tetromino.row + row;
+      const targetCol = tetromino.col + col;
+      if (targetRow < 0) {
+        showGameOver();
+        return;
+      }
+      playfield[targetRow][targetCol] = tetromino.name;
     }
   }
-}
 
-function dropStep() {
-  if (!tetromino || gameOver || paused) return;
-  tetromino.row++;
-  if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
-    tetromino.row--;
-    placeTetromino();
+  const tSpin = isTSpin(tetromino);
+
+  let linesClearedThisTurn = 0;
+  for (let row = rows - 1; row >= 0; row--) {
+    if (playfield[row].every((cell) => !!cell)) {
+      clearEffects.push({ row, life: 18, colorSeed: playfield[row].slice() });
+      playfield.splice(row, 1);
+      playfield.unshift(new Array(cols).fill(0));
+      linesClearedThisTurn++;
+      row++;
+    }
   }
+
+  let turnScore = 0;
+  if (linesClearedThisTurn > 0) {
+    const lineIndex = Math.min(linesClearedThisTurn, 4);
+
+    if (tSpin) {
+      turnScore = (tspinScores[lineIndex] || 0) * level;
+    } else {
+      turnScore = (lineScores[lineIndex] || 0) * level;
+    }
+
+    const eligibleB2B = tSpin || linesClearedThisTurn === 4;
+    if (eligibleB2B) {
+      b2b++;
+      if (b2b > 1) turnScore = Math.floor(turnScore * 1.5);
+    } else {
+      b2b = 0;
+    }
+
+    combo++;
+    if (combo > 1) {
+      turnScore += combo * 50 * level;
+    }
+
+    linesCleared += linesClearedThisTurn;
+    levelLines += linesClearedThisTurn;
+
+    const perfectClear = playfield.every((r) => r.every((cell) => !cell));
+    if (perfectClear) {
+      turnScore += 1200 * level;
+      floatTexts.push({ text: 'PERFECT CLEAR', x: canvas.width / 2, y: canvas.height * 0.3, life: 52, color: '#8ee8c7' });
+    }
+
+    const newLevel = Math.min(999, Math.floor(linesCleared / 10) + 1);
+    if (newLevel > level) {
+      level = newLevel;
+      applyLevelModifier(level);
+    }
+
+    statusText = tSpin
+      ? `T-Spin x${linesClearedThisTurn}! +${turnScore}`
+      : `Cleared ${linesClearedThisTurn} line(s) +${turnScore}`;
+  } else {
+    combo = 0;
+    if (tSpin) {
+      turnScore = 100 * level;
+      statusText = `T-Spin no line +${turnScore}`;
+    }
+  }
+
+  score = Math.min(Number.MAX_SAFE_INTEGER, score + turnScore);
+  updateScore();
+  spawnNextPiece();
 }
 
-function getGhostRow() {
-  if (!tetromino) return 0;
-  let ghostRow = tetromino.row;
-  while (isValidMove(tetromino.matrix, ghostRow + 1, tetromino.col)) ghostRow++;
-  return ghostRow;
-}
-
-function drawCell(x, y, color, alpha) {
+function drawCell(x, y, colorHex, alpha) {
   if (!context) return;
+
   context.save();
   context.globalAlpha = alpha === undefined ? 1 : alpha;
-
   const grad = context.createLinearGradient(x, y, x + grid, y + grid);
-  grad.addColorStop(0, shadeColor(color, 20));
-  grad.addColorStop(1, shadeColor(color, -25));
+  grad.addColorStop(0, shadeColor(colorHex, 22));
+  grad.addColorStop(1, shadeColor(colorHex, -24));
   context.fillStyle = grad;
   context.fillRect(x + 1, y + 1, grid - 2, grid - 2);
 
-  context.strokeStyle = shadeColor(color, 45);
+  context.strokeStyle = shadeColor(colorHex, 40);
   context.lineWidth = 1;
   context.strokeRect(x + 1.5, y + 1.5, grid - 3, grid - 3);
   context.restore();
 }
 
+function getGhostRow() {
+  if (!tetromino) return 0;
+  let ghostRow = tetromino.row;
+  while (isValidMove(tetromino.matrix, ghostRow + 1, tetromino.col)) {
+    ghostRow++;
+  }
+  return ghostRow;
+}
+
 function drawPlayfield() {
   if (!context || !canvas) return;
 
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = '#100d0b';
+  const theme = themes[(level - 1) % themes.length];
+  const bg = context.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, theme.bgA);
+  bg.addColorStop(1, theme.bgB);
+  context.fillStyle = bg;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  context.strokeStyle = 'rgba(255, 224, 188, 0.06)';
+  context.strokeStyle = theme.grid;
   context.lineWidth = 1;
   for (let row = 0; row <= 20; row++) {
     context.beginPath();
@@ -673,21 +813,22 @@ function drawPlayfield() {
 
   for (let row = 2; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const name = playfield[row][col];
-      if (!name) continue;
-      drawCell(col * grid, (row - 2) * grid, colors[name]);
+      const cell = playfield[row][col];
+      if (!cell) continue;
+      const cellColor = pieceColors[cell] || '#b0a498';
+      drawCell(col * grid, (row - 2) * grid, cellColor, 1);
     }
   }
 
   for (let i = clearEffects.length - 1; i >= 0; i--) {
-    const effect = clearEffects[i];
-    effect.life--;
-    const alpha = Math.max(0, effect.life / 18);
+    const fx = clearEffects[i];
+    fx.life--;
+    const alpha = Math.max(0, fx.life / 18);
     for (let col = 0; col < cols; col++) {
-      const color = colors[effect.colors[col]] || '#fff0d4';
-      drawCell(col * grid, (effect.row - 2) * grid, color, alpha);
+      const name = fx.colorSeed[col] || 'O';
+      drawCell(col * grid, (fx.row - 2) * grid, pieceColors[name] || '#ffe1a6', alpha);
     }
-    if (effect.life <= 0) clearEffects.splice(i, 1);
+    if (fx.life <= 0) clearEffects.splice(i, 1);
   }
 
   if (tetromino) {
@@ -695,28 +836,30 @@ function drawPlayfield() {
     for (let row = 0; row < tetromino.matrix.length; row++) {
       for (let col = 0; col < tetromino.matrix[row].length; col++) {
         if (!tetromino.matrix[row][col]) continue;
-        const y = ghostRow + row - 2;
-        if (y < 0) continue;
-        drawCell((tetromino.col + col) * grid, y * grid, colors[tetromino.name], 0.22);
+        const drawY = ghostRow + row - 2;
+        if (drawY < 0) continue;
+        drawCell((tetromino.col + col) * grid, drawY * grid, pieceColors[tetromino.name], 0.22);
       }
     }
 
     for (let row = 0; row < tetromino.matrix.length; row++) {
       for (let col = 0; col < tetromino.matrix[row].length; col++) {
         if (!tetromino.matrix[row][col]) continue;
-        const y = tetromino.row + row - 2;
-        if (y < 0) continue;
-        drawCell((tetromino.col + col) * grid, y * grid, colors[tetromino.name], 1);
+        const drawY = tetromino.row + row - 2;
+        if (drawY < 0) continue;
+        drawCell((tetromino.col + col) * grid, drawY * grid, pieceColors[tetromino.name], 1);
       }
     }
   }
+
+  drawFloatTexts();
 }
 
 function drawPreview(ctx, targetCanvas, piece) {
   if (!ctx || !targetCanvas) return;
 
   ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-  ctx.fillStyle = '#100d0b';
+  ctx.fillStyle = '#0f0c0a';
   ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
 
   if (!piece) return;
@@ -733,9 +876,10 @@ function drawPreview(ctx, targetCanvas, piece) {
       if (!matrix[row][col]) continue;
       const x = offsetX + col * blockSize;
       const y = offsetY + row * blockSize;
-      ctx.fillStyle = colors[piece.name];
+      const colorHex = pieceColors[piece.name];
+      ctx.fillStyle = colorHex;
       ctx.fillRect(x + 1, y + 1, blockSize - 2, blockSize - 2);
-      ctx.strokeStyle = shadeColor(colors[piece.name], 35);
+      ctx.strokeStyle = shadeColor(colorHex, 35);
       ctx.strokeRect(x + 1.5, y + 1.5, blockSize - 3, blockSize - 3);
     }
   }
@@ -743,13 +887,31 @@ function drawPreview(ctx, targetCanvas, piece) {
 
 function drawHoldPreview() {
   if (!holdContext || !holdCanvas) return;
+
   holdContext.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
-  holdContext.fillStyle = '#100d0b';
+  holdContext.fillStyle = '#0f0c0a';
   holdContext.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
 
   if (!holdName) return;
   const matrix = tetrominos[holdName];
   drawPreview(holdContext, holdCanvas, { name: holdName, matrix });
+}
+
+function drawFloatTexts() {
+  for (let i = floatTexts.length - 1; i >= 0; i--) {
+    const f = floatTexts[i];
+    f.life--;
+    const alpha = Math.max(0, f.life / 52);
+    context.save();
+    context.globalAlpha = alpha;
+    context.fillStyle = f.color || '#ffe8c4';
+    context.font = 'bold 16px Trebuchet MS';
+    context.textAlign = 'center';
+    context.fillText(f.text, f.x, f.y);
+    context.restore();
+    f.y -= 0.5;
+    if (f.life <= 0) floatTexts.splice(i, 1);
+  }
 }
 
 function updateScore() {
@@ -772,7 +934,7 @@ function updateScore() {
   if (linesEl) linesEl.textContent = String(linesCleared);
   if (comboEl) comboEl.textContent = String(combo);
   if (b2bEl) b2bEl.textContent = String(b2b);
-  if (statusEl) statusEl.textContent = statusText;
+  if (statusEl) statusEl.textContent = `${statusText} Theme: ${themes[(level - 1) % themes.length].name}. Gravity: ${getGravityMs()}ms.`;
 }
 
 function showGameOver() {
@@ -786,17 +948,21 @@ function showGameOver() {
   const overlayEl = document.getElementById('gameOverOverlay');
   const finalScoreEl = document.getElementById('finalScore');
   const finalLinesEl = document.getElementById('finalLines');
+
   if (overlayEl) overlayEl.style.display = 'grid';
   if (finalScoreEl) finalScoreEl.textContent = String(score);
   if (finalLinesEl) finalLinesEl.textContent = String(linesCleared);
+
   updateScore();
 }
 
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
+
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
+
   if (!paused && !rAF) {
     lastFrameTime = performance.now();
     rAF = requestAnimationFrame(loop);
@@ -807,25 +973,32 @@ function restartGame() {
   score = 0;
   level = 1;
   linesCleared = 0;
+  levelLines = 0;
   combo = 0;
   b2b = 0;
-  dropInterval = getDropInterval();
-  dropAccumulator = 0;
   softDrop = false;
   paused = false;
   gameOver = false;
-  statusText = 'Fresh stack. Keep it clean.';
+  statusText = 'Fresh stack. Watch the level modifiers.';
 
   for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) playfield[row][col] = 0;
+    for (let col = 0; col < cols; col++) {
+      playfield[row][col] = 0;
+    }
   }
 
   tetrominoSequence.length = 0;
   holdName = null;
   canHold = true;
   clearEffects = [];
+  floatTexts = [];
   tetromino = null;
   nextTetromino = getNextTetromino();
+
+  dropAccumulator = 0;
+  lockAccumulator = 0;
+  lockResets = 0;
+
   spawnNextPiece();
 
   const overlayEl = document.getElementById('gameOverOverlay');
@@ -835,6 +1008,7 @@ function restartGame() {
 
   updateScore();
   drawPlayfield();
+
   if (!rAF) {
     lastFrameTime = performance.now();
     rAF = requestAnimationFrame(loop);
@@ -858,12 +1032,28 @@ function loop(timestamp) {
   const delta = timestamp - lastFrameTime;
   lastFrameTime = timestamp;
 
-  if (!paused) {
-    const interval = softDrop ? Math.max(28, Math.floor(dropInterval / 8)) : dropInterval;
+  if (!paused && tetromino) {
+    const gravity = softDrop ? Math.max(20, Math.floor(getGravityMs() / 15)) : getGravityMs();
     dropAccumulator += delta;
-    if (dropAccumulator >= interval) {
-      dropAccumulator = 0;
-      dropStep();
+
+    while (dropAccumulator >= gravity) {
+      dropAccumulator -= gravity;
+      if (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) {
+        tetromino.row++;
+        tetromino.lastActionRotate = false;
+      } else {
+        break;
+      }
+    }
+
+    if (isGrounded(tetromino)) {
+      lockAccumulator += delta;
+      if (lockAccumulator >= lockDelayMs) {
+        lockPiece();
+      }
+    } else {
+      lockAccumulator = 0;
+      lockResets = 0;
     }
   }
 
@@ -880,18 +1070,43 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  if (paused && e.code !== 'Space') return;
+  if (paused && e.code !== 'Space' && e.code !== 'KeyP') return;
 
   switch (e.code) {
-    case 'ArrowLeft': e.preventDefault(); movePiece(-1); break;
-    case 'ArrowRight': e.preventDefault(); movePiece(1); break;
+    case 'ArrowLeft':
+      e.preventDefault();
+      movePiece(-1);
+      break;
+    case 'ArrowRight':
+      e.preventDefault();
+      movePiece(1);
+      break;
     case 'ArrowUp':
-    case 'KeyX': e.preventDefault(); rotatePiece(true); break;
-    case 'KeyZ': e.preventDefault(); rotatePiece(false); break;
-    case 'ArrowDown': e.preventDefault(); softDrop = true; break;
-    case 'Space': e.preventDefault(); hardDrop(); break;
-    case 'KeyC': e.preventDefault(); holdCurrentPiece(); break;
+    case 'KeyX':
+      e.preventDefault();
+      tryRotate(1);
+      break;
+    case 'KeyZ':
+      e.preventDefault();
+      tryRotate(-1);
+      break;
+    case 'ArrowDown':
+      e.preventDefault();
+      softDrop = true;
+      softDropStep();
+      break;
+    case 'Space':
+      e.preventDefault();
+      if (paused) togglePause();
+      else hardDrop();
+      break;
+    case 'KeyC':
+      e.preventDefault();
+      holdCurrentPiece();
+      break;
   }
+
+  updateScore();
 });
 
 document.addEventListener('keyup', (e) => {
@@ -910,8 +1125,11 @@ if (mobileControls) {
     const run = () => {
       if (action === 'left') movePiece(-1);
       if (action === 'right') movePiece(1);
-      if (action === 'rotate') rotatePiece(true);
-      if (action === 'down') softDrop = true;
+      if (action === 'rotate') tryRotate(1);
+      if (action === 'down') {
+        softDrop = true;
+        softDropStep();
+      }
       if (action === 'drop') hardDrop();
       if (action === 'hold') holdCurrentPiece();
     };
@@ -959,7 +1177,7 @@ if (canvas) {
     const dt = Date.now() - touchStartTime;
 
     if (dt < 180 && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
-      rotatePiece(true);
+      tryRotate(1);
       return;
     }
 
@@ -977,3 +1195,4 @@ restartGame();
 </script>
 </body>
 </html>
+

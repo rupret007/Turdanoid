@@ -9,7 +9,7 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','game.js','README.md') | ForEach-Object {
+@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','game.js','README.md') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 
@@ -29,6 +29,7 @@ $hub = Get-Content hub.html -Raw
 if ($hub -match 'href="index\.html"') { Pass("link to index") } else { Fail("link to index") }
 if ($hub -match 'href="turdtris\.html"') { Pass("link to turdtris") } else { Fail("link to turdtris") }
 if ($hub -match 'href="TurdAnoid\.html"') { Pass("link to TurdAnoid") } else { Fail("link to TurdAnoid") }
+if ($hub -match 'href="turdjack\.html"') { Pass("link to turdjack") } else { Fail("link to turdjack") }
 
 Write-Host "`n=== game.js ===" -ForegroundColor Cyan
 $game = Get-Content game.js -Raw
@@ -55,6 +56,14 @@ if ($turd -match 'toiletPaperShots') { Pass("toiletPaperShots") } else { Fail("t
 if ($turd -match 'windowResized') { Pass("windowResized") } else { Fail("windowResized") }
 if ($turd -match 'touchStarted') { Pass("touchStarted") } else { Fail("touchStarted") }
 if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
+
+Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
+$jack = Get-Content turdjack.html -Raw
+if ($jack -match 'bankroll') { Pass("bankroll") } else { Fail("bankroll") }
+if ($jack -match 'double') { Pass("double action") } else { Fail("double action") }
+if ($jack -match 'localStorage') { Pass("localStorage") } else { Fail("localStorage") }
+if ($jack -match 'dealer') { Pass("dealer logic") } else { Fail("dealer logic") }
+if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

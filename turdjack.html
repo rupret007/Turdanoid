@@ -1,0 +1,1010 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Turdjack 21</title>
+  <style>
+    :root {
+      --bg-a: #0f1914;
+      --bg-b: #1d2f28;
+      --bg-c: #2c4a3f;
+      --felt: #154536;
+      --felt-2: #0f3c30;
+      --ink: #ecfff5;
+      --muted: #b8d7ca;
+      --accent: #8effc2;
+      --hot: #ffbf7a;
+      --danger: #ff8f8f;
+      --chip: #ffe08d;
+      --panel: rgba(7, 18, 14, 0.72);
+      --panel-border: rgba(142, 255, 194, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 16% 12%, rgba(142, 255, 194, 0.18), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(255, 191, 122, 0.16), transparent 28%),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b), var(--bg-c));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    .hub-link {
+      position: fixed;
+      top: 12px;
+      right: 14px;
+      color: var(--accent);
+      border: 1px solid rgba(142, 255, 194, 0.4);
+      border-radius: 999px;
+      padding: 6px 12px;
+      text-decoration: none;
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.25);
+      z-index: 40;
+    }
+
+    .shell {
+      width: min(1160px, 96vw);
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 22px;
+      padding: 12px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.48);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .topbar h1 {
+      color: var(--accent);
+      font-size: clamp(1.15rem, 2.3vw, 1.7rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .topbar p {
+      margin-top: 4px;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid rgba(142, 255, 194, 0.45);
+      background: rgba(12, 30, 24, 0.75);
+      color: var(--accent);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.2s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(20, 44, 35, 0.85);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn.hot {
+      border-color: rgba(255, 191, 122, 0.6);
+      color: var(--hot);
+    }
+
+    .btn.danger {
+      border-color: rgba(255, 143, 143, 0.55);
+      color: var(--danger);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(92px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .card-stat {
+      border: 1px solid rgba(142, 255, 194, 0.24);
+      border-radius: 10px;
+      background: rgba(10, 24, 19, 0.76);
+      text-align: center;
+      padding: 8px;
+    }
+
+    .card-stat .k {
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.78;
+    }
+
+    .card-stat .v {
+      font-size: 1.1rem;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .card-stat.hot .v { color: var(--hot); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 290px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .table {
+      border: 2px solid rgba(142, 255, 194, 0.34);
+      border-radius: 16px;
+      padding: 12px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(130, 245, 180, 0.10), transparent 40%),
+        linear-gradient(160deg, var(--felt), var(--felt-2));
+      min-height: 560px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .status {
+      border: 1px solid rgba(142, 255, 194, 0.22);
+      border-radius: 10px;
+      background: rgba(7, 18, 14, 0.6);
+      padding: 8px;
+      margin-bottom: 10px;
+      font-size: 0.86rem;
+      line-height: 1.4;
+      color: var(--muted);
+      min-height: 48px;
+    }
+
+    .hand {
+      margin-bottom: 14px;
+    }
+
+    .hand-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: var(--ink);
+    }
+
+    .hand-title .score-pill {
+      border: 1px solid rgba(142, 255, 194, 0.35);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: rgba(9, 25, 20, 0.75);
+    }
+
+    .cards {
+      min-height: 124px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .playing-card {
+      width: 74px;
+      height: 106px;
+      border-radius: 10px;
+      background: #f8fafb;
+      border: 1px solid #dde2e4;
+      color: #202428;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.38);
+      padding: 8px 7px;
+      position: relative;
+      transform: translateY(4px);
+      opacity: 0;
+      animation: cardIn 0.22s ease forwards;
+    }
+
+    @keyframes cardIn {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .playing-card.red { color: #cf2e2e; }
+
+    .playing-card .rank {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .playing-card .suit {
+      font-size: 0.95rem;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .playing-card .center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 1.45rem;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    .playing-card .small {
+      position: absolute;
+      right: 7px;
+      bottom: 7px;
+      transform: rotate(180deg);
+      font-size: 0.9rem;
+      line-height: 1;
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .playing-card.back {
+      border-color: #3f624f;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.15), transparent 38%),
+        repeating-linear-gradient(45deg, #255544 0, #255544 8px, #1f4c3c 8px, #1f4c3c 16px);
+      color: #d9ffe9;
+    }
+
+    .playing-card.back .center {
+      font-size: 1.3rem;
+    }
+
+    .sidebar {
+      border: 1px solid rgba(142, 255, 194, 0.24);
+      border-radius: 14px;
+      background: rgba(8, 22, 17, 0.72);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar h3 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .bet-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .chip-btn {
+      border: 1px solid rgba(255, 224, 141, 0.55);
+      background: rgba(59, 44, 22, 0.78);
+      color: var(--chip);
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip-btn:hover {
+      background: rgba(76, 58, 28, 0.9);
+    }
+
+    .rules {
+      font-size: 0.79rem;
+      line-height: 1.42;
+      color: var(--muted);
+      border: 1px solid rgba(142, 255, 194, 0.18);
+      border-radius: 10px;
+      background: rgba(7, 18, 14, 0.52);
+      padding: 8px;
+    }
+
+    .rules p { margin-bottom: 6px; }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .hud { grid-template-columns: repeat(3, minmax(86px, 1fr)); }
+      .cards { min-height: 110px; }
+      .playing-card { width: 66px; height: 96px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="hub-link" href="hub.html">&larr; Game Hub</a>
+
+  <div class="shell">
+    <div class="topbar">
+      <div>
+        <h1>Turdjack 21</h1>
+        <p>Blackjack, but the table smells questionable and the dealer is a toilet.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="newShoeBtn">New Shoe</button>
+        <button class="btn danger" id="resetStatsBtn">Reset Bank</button>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="card-stat hot"><div class="k">Bankroll</div><div class="v" id="bankrollText">$0</div></div>
+      <div class="card-stat"><div class="k">Current Bet</div><div class="v" id="betText">$0</div></div>
+      <div class="card-stat"><div class="k">Hands</div><div class="v" id="handsText">0</div></div>
+      <div class="card-stat"><div class="k">Wins</div><div class="v" id="winsText">0</div></div>
+      <div class="card-stat"><div class="k">Losses</div><div class="v" id="lossesText">0</div></div>
+      <div class="card-stat"><div class="k">Pushes</div><div class="v" id="pushesText">0</div></div>
+    </div>
+
+    <div class="layout">
+      <section class="table">
+        <div class="status" id="statusText">Place a bet and click Deal. Dealer stands on soft 17.</div>
+
+        <div class="hand">
+          <div class="hand-title">
+            <strong>Dealer (Toilet Boss)</strong>
+            <span class="score-pill" id="dealerScoreText">Score: ?</span>
+          </div>
+          <div class="cards" id="dealerCards"></div>
+        </div>
+
+        <div class="hand">
+          <div class="hand-title">
+            <strong>Player (You + Poop Luck)</strong>
+            <span class="score-pill" id="playerScoreText">Score: 0</span>
+          </div>
+          <div class="cards" id="playerCards"></div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div>
+          <h3>Bet Chips</h3>
+          <div class="bet-grid">
+            <button class="chip-btn" data-chip="10">+$10</button>
+            <button class="chip-btn" data-chip="25">+$25</button>
+            <button class="chip-btn" data-chip="50">+$50</button>
+            <button class="chip-btn" data-chip="100">+$100</button>
+          </div>
+          <div class="action-row" style="margin-top:8px;">
+            <button class="btn" id="clearBetBtn">Clear Bet</button>
+            <button class="btn" id="maxBetBtn">Max Bet</button>
+          </div>
+        </div>
+
+        <div>
+          <h3>Round Actions</h3>
+          <div class="action-row">
+            <button class="btn hot" id="dealBtn">Deal</button>
+            <button class="btn" id="hitBtn">Hit</button>
+            <button class="btn" id="standBtn">Stand</button>
+            <button class="btn" id="doubleBtn">Double</button>
+            <button class="btn danger" id="surrenderBtn">Surrender</button>
+          </div>
+        </div>
+
+        <div>
+          <h3>Strategy Hint</h3>
+          <div class="status" id="hintText">Hint: Place a bet to begin.</div>
+        </div>
+
+        <div class="rules">
+          <p><strong>Payouts:</strong> Blackjack pays 3:2, normal win pays 1:1, push returns bet.</p>
+          <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `X` surrender, `C` clear bet.</p>
+          <p><strong>Theme Rule:</strong> If you bust, the toilet flushes your dignity.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE = {
+      bankroll: 'turdjackBankroll',
+      stats: 'turdjackStats'
+    };
+
+    const INITIAL_BANKROLL = 1000;
+    const MIN_BET = 10;
+    const DEALER_HITS_SOFT_17 = false;
+
+    const ui = {
+      bankrollText: document.getElementById('bankrollText'),
+      betText: document.getElementById('betText'),
+      handsText: document.getElementById('handsText'),
+      winsText: document.getElementById('winsText'),
+      lossesText: document.getElementById('lossesText'),
+      pushesText: document.getElementById('pushesText'),
+      statusText: document.getElementById('statusText'),
+      hintText: document.getElementById('hintText'),
+      dealerScoreText: document.getElementById('dealerScoreText'),
+      playerScoreText: document.getElementById('playerScoreText'),
+      dealerCards: document.getElementById('dealerCards'),
+      playerCards: document.getElementById('playerCards'),
+      dealBtn: document.getElementById('dealBtn'),
+      hitBtn: document.getElementById('hitBtn'),
+      standBtn: document.getElementById('standBtn'),
+      doubleBtn: document.getElementById('doubleBtn'),
+      surrenderBtn: document.getElementById('surrenderBtn'),
+      clearBetBtn: document.getElementById('clearBetBtn'),
+      maxBetBtn: document.getElementById('maxBetBtn'),
+      newShoeBtn: document.getElementById('newShoeBtn'),
+      resetStatsBtn: document.getElementById('resetStatsBtn')
+    };
+
+    let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
+    let stats = readObject(STORAGE.stats, { hands: 0, wins: 0, losses: 0, pushes: 0, surrenders: 0 });
+
+    let shoe = [];
+    let discard = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let currentBet = 0;
+    let roundActive = false;
+    let dealerHoleHidden = true;
+    let firstDecisionOpen = false;
+
+    function readNumber(key, fallback) {
+      try {
+        const n = parseInt(localStorage.getItem(key) || '', 10);
+        return Number.isFinite(n) ? n : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function readObject(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE.bankroll, String(bankroll));
+        localStorage.setItem(STORAGE.stats, JSON.stringify(stats));
+      } catch (e) {}
+    }
+
+    function createShoe(decks = 4) {
+      const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+      const suits = ['S', 'H', 'D', 'C'];
+      const next = [];
+
+      for (let d = 0; d < decks; d++) {
+        for (const suit of suits) {
+          for (const rank of ranks) {
+            next.push({ rank, suit });
+          }
+        }
+      }
+
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+
+      shoe = next;
+      discard = [];
+    }
+
+    function drawCard() {
+      if (shoe.length < 18) {
+        setStatus('Shoe running low. Shuffling fresh poop cards.');
+        createShoe(4);
+      }
+      return shoe.pop();
+    }
+
+    function cardValue(card) {
+      if (!card) return 0;
+      if (card.rank === 'A') return 11;
+      if (['K', 'Q', 'J'].includes(card.rank)) return 10;
+      return parseInt(card.rank, 10);
+    }
+
+    function handValue(hand) {
+      let total = 0;
+      let aces = 0;
+      for (const card of hand) {
+        total += cardValue(card);
+        if (card.rank === 'A') aces++;
+      }
+      while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+      }
+      return total;
+    }
+
+    function isSoft17(hand) {
+      let total = 0;
+      let aces = 0;
+      for (const c of hand) {
+        total += cardValue(c);
+        if (c.rank === 'A') aces++;
+      }
+
+      // Convert aces down until <= 21 while tracking if at least one ace stays as 11.
+      let softAces = aces;
+      while (total > 21 && softAces > 0) {
+        total -= 10;
+        softAces--;
+      }
+
+      return total === 17 && softAces > 0;
+    }
+
+    function isBlackjack(hand) {
+      return hand.length === 2 && handValue(hand) === 21;
+    }
+
+    function suitGlyph(suit) {
+      if (suit === 'S') return '♠';
+      if (suit === 'H') return '♥';
+      if (suit === 'D') return '♦';
+      return '♣';
+    }
+
+    function cardClass(suit) {
+      return suit === 'H' || suit === 'D' ? 'playing-card red' : 'playing-card';
+    }
+
+    function renderCards() {
+      ui.dealerCards.innerHTML = '';
+      ui.playerCards.innerHTML = '';
+
+      dealerHand.forEach((card, i) => {
+        const hide = dealerHoleHidden && i === 1;
+        ui.dealerCards.appendChild(createCardElement(card, hide));
+      });
+
+      playerHand.forEach((card) => {
+        ui.playerCards.appendChild(createCardElement(card, false));
+      });
+
+      const dealerScore = dealerHoleHidden
+        ? (dealerHand[0] ? cardValue(dealerHand[0]) : 0)
+        : handValue(dealerHand);
+
+      ui.dealerScoreText.textContent = dealerHoleHidden ? 'Score: ?' : `Score: ${dealerScore}`;
+      ui.playerScoreText.textContent = `Score: ${handValue(playerHand)}`;
+    }
+
+    function createCardElement(card, hidden) {
+      const div = document.createElement('div');
+      if (hidden) {
+        div.className = 'playing-card back';
+        div.innerHTML = '<div class="center">💩</div>';
+        return div;
+      }
+
+      const suit = suitGlyph(card.suit);
+      div.className = cardClass(card.suit);
+      div.innerHTML =
+        `<div class="rank">${card.rank}</div>` +
+        `<div class="suit">${suit}</div>` +
+        `<div class="center">${suit}</div>` +
+        `<div class="small">${card.rank}<br>${suit}</div>`;
+      return div;
+    }
+
+    function dealerUpcardValue() {
+      if (!dealerHand.length) return 0;
+      const v = cardValue(dealerHand[0]);
+      return v === 11 ? 11 : v;
+    }
+
+    function isPair(hand) {
+      return hand.length === 2 && hand[0].rank === hand[1].rank;
+    }
+
+    function isSoftHand(hand) {
+      let total = 0;
+      let aces = 0;
+      for (const c of hand) {
+        total += cardValue(c);
+        if (c.rank === 'A') aces++;
+      }
+      while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+      }
+      return aces > 0;
+    }
+
+    function getBasicHint() {
+      if (!roundActive || playerHand.length === 0 || dealerHand.length === 0) {
+        return 'Hint: Place a bet and deal to see strategy advice.';
+      }
+
+      const up = dealerUpcardValue();
+      const total = handValue(playerHand);
+      const soft = isSoftHand(playerHand);
+      const canDouble = firstDecisionOpen && bankroll >= currentBet;
+      const pair = isPair(playerHand);
+
+      // No split support in this version, so convert pair to hard/soft recommendation.
+      if (pair && playerHand[0].rank === 'A') {
+        return 'Hint: Stand. (A,A would normally split.)';
+      }
+      if (pair && playerHand[0].rank === '8') {
+        return 'Hint: Hit. (8,8 is usually split, but split is disabled.)';
+      }
+
+      if (soft) {
+        if (total <= 17) {
+          if (canDouble && up >= 5 && up <= 6) return 'Hint: Double if allowed, otherwise hit.';
+          return 'Hint: Hit.';
+        }
+        if (total === 18) {
+          if (canDouble && up >= 3 && up <= 6) return 'Hint: Double if allowed, else stand.';
+          if (up >= 9 || up === 11) return 'Hint: Hit.';
+          return 'Hint: Stand.';
+        }
+        return 'Hint: Stand.';
+      }
+
+      if (total <= 8) return 'Hint: Hit.';
+      if (total === 9) {
+        if (canDouble && up >= 3 && up <= 6) return 'Hint: Double if allowed, else hit.';
+        return 'Hint: Hit.';
+      }
+      if (total === 10) {
+        if (canDouble && up <= 9) return 'Hint: Double if allowed, else hit.';
+        return 'Hint: Hit.';
+      }
+      if (total === 11) {
+        if (canDouble && up !== 11) return 'Hint: Double if allowed, else hit.';
+        return 'Hint: Hit.';
+      }
+      if (total === 12) {
+        if (up >= 4 && up <= 6) return 'Hint: Stand.';
+        return 'Hint: Hit.';
+      }
+      if (total >= 13 && total <= 16) {
+        if (up >= 2 && up <= 6) return 'Hint: Stand.';
+        if (firstDecisionOpen && up >= 9) return 'Hint: Consider surrender if available.';
+        return 'Hint: Hit.';
+      }
+      return 'Hint: Stand.';
+    }
+
+    function updateHud() {
+      ui.bankrollText.textContent = `$${bankroll}`;
+      ui.betText.textContent = `$${currentBet}`;
+      ui.handsText.textContent = String(stats.hands || 0);
+      ui.winsText.textContent = String(stats.wins || 0);
+      ui.lossesText.textContent = String(stats.losses || 0);
+      ui.pushesText.textContent = String(stats.pushes || 0);
+
+      ui.dealBtn.disabled = roundActive;
+      ui.hitBtn.disabled = !roundActive;
+      ui.standBtn.disabled = !roundActive;
+      ui.doubleBtn.disabled = !roundActive || playerHand.length !== 2 || bankroll < currentBet;
+      ui.surrenderBtn.disabled = !roundActive || !firstDecisionOpen;
+
+      const lockedBet = roundActive;
+      document.querySelectorAll('[data-chip]').forEach((btn) => {
+        btn.disabled = lockedBet;
+      });
+      ui.clearBetBtn.disabled = lockedBet || currentBet === 0;
+      ui.maxBetBtn.disabled = lockedBet;
+
+      if (ui.hintText) {
+        ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left.`;
+      }
+
+      saveState();
+    }
+
+    function setStatus(text) {
+      ui.statusText.textContent = text;
+    }
+
+    function addBet(amount) {
+      if (roundActive) return;
+      const available = Math.max(0, bankroll - currentBet);
+      const addition = Math.min(amount, available);
+      currentBet += addition;
+      updateHud();
+    }
+
+    function clearBet() {
+      if (roundActive) return;
+      currentBet = 0;
+      updateHud();
+    }
+
+    function maxBet() {
+      if (roundActive) return;
+      currentBet = bankroll;
+      updateHud();
+    }
+
+    function startRound() {
+      if (roundActive) return;
+      if (currentBet < MIN_BET) {
+        setStatus(`Minimum bet is $${MIN_BET}. Don't be cheap with destiny.`);
+        return;
+      }
+      if (currentBet > bankroll) {
+        setStatus('Bet exceeds bankroll. Even the toilet rejects this fraud.');
+        return;
+      }
+
+      bankroll -= currentBet;
+      roundActive = true;
+      firstDecisionOpen = true;
+      dealerHoleHidden = true;
+      playerHand = [];
+      dealerHand = [];
+
+      playerHand.push(drawCard());
+      dealerHand.push(drawCard());
+      playerHand.push(drawCard());
+      dealerHand.push(drawCard());
+
+      stats.hands = (stats.hands || 0) + 1;
+
+      renderCards();
+
+      const pBJ = isBlackjack(playerHand);
+      const dBJ = isBlackjack(dealerHand);
+
+      if (pBJ || dBJ) {
+        dealerHoleHidden = false;
+        renderCards();
+
+        if (pBJ && dBJ) {
+          bankroll += currentBet;
+          stats.pushes = (stats.pushes || 0) + 1;
+          setStatus('Double blackjack. Absolute toilet stalemate.');
+        } else if (pBJ) {
+          const payout = Math.round(currentBet * 2.5);
+          bankroll += payout;
+          stats.wins = (stats.wins || 0) + 1;
+          setStatus(`Blackjack! Paid $${payout}. Smelled like victory.`);
+        } else {
+          stats.losses = (stats.losses || 0) + 1;
+          setStatus('Dealer blackjack. You got flushed.');
+        }
+
+        roundActive = false;
+        firstDecisionOpen = false;
+      } else {
+        setStatus('Round live. Hit, stand, double, or surrender if the hand is ugly.');
+      }
+
+      updateHud();
+    }
+
+    function playerHit() {
+      if (!roundActive) return;
+      firstDecisionOpen = false;
+      playerHand.push(drawCard());
+      renderCards();
+
+      const value = handValue(playerHand);
+      if (value > 21) {
+        roundActive = false;
+        firstDecisionOpen = false;
+        dealerHoleHidden = false;
+        stats.losses = (stats.losses || 0) + 1;
+        setStatus(`Bust at ${value}. Toilet wins this hand.`);
+      } else if (value === 21) {
+        dealerTurnAndResolve();
+        return;
+      }
+      updateHud();
+    }
+
+    function playerStand() {
+      if (!roundActive) return;
+      firstDecisionOpen = false;
+      dealerTurnAndResolve();
+    }
+
+    function playerDouble() {
+      if (!roundActive) return;
+      if (playerHand.length !== 2) {
+        setStatus('Double is only for your first move. House rules.');
+        return;
+      }
+      if (bankroll < currentBet) {
+        setStatus('Not enough bankroll to double.');
+        return;
+      }
+
+      bankroll -= currentBet;
+      currentBet *= 2;
+      firstDecisionOpen = false;
+      playerHand.push(drawCard());
+      renderCards();
+
+      if (handValue(playerHand) > 21) {
+        roundActive = false;
+        firstDecisionOpen = false;
+        dealerHoleHidden = false;
+        stats.losses = (stats.losses || 0) + 1;
+        setStatus(`Double down bust. $${currentBet} straight to the drain.`);
+        updateHud();
+        return;
+      }
+
+      dealerTurnAndResolve();
+    }
+
+    function playerSurrender() {
+      if (!roundActive || !firstDecisionOpen) return;
+      firstDecisionOpen = false;
+      dealerHoleHidden = false;
+      roundActive = false;
+
+      const refund = Math.floor(currentBet / 2);
+      bankroll += refund;
+      stats.losses = (stats.losses || 0) + 1;
+      stats.surrenders = (stats.surrenders || 0) + 1;
+      setStatus(`Surrender accepted. You recover $${refund} and keep your dignity.`);
+      renderCards();
+      updateHud();
+    }
+
+    function dealerTurnAndResolve() {
+      firstDecisionOpen = false;
+      dealerHoleHidden = false;
+      renderCards();
+
+      while (
+        handValue(dealerHand) < 17 ||
+        (DEALER_HITS_SOFT_17 && isSoft17(dealerHand))
+      ) {
+        dealerHand.push(drawCard());
+      }
+
+      const player = handValue(playerHand);
+      const dealer = handValue(dealerHand);
+
+      if (dealer > 21) {
+        bankroll += currentBet * 2;
+        stats.wins = (stats.wins || 0) + 1;
+        setStatus(`Dealer busts ${dealer}. You win $${currentBet * 2}.`);
+      } else if (player > dealer) {
+        bankroll += currentBet * 2;
+        stats.wins = (stats.wins || 0) + 1;
+        setStatus(`You ${player} vs Dealer ${dealer}. You win.`);
+      } else if (player < dealer) {
+        stats.losses = (stats.losses || 0) + 1;
+        setStatus(`Dealer ${dealer} beats ${player}. Tragic flush.`);
+      } else {
+        bankroll += currentBet;
+        stats.pushes = (stats.pushes || 0) + 1;
+        setStatus(`Push at ${player}. Bet returned.`);
+      }
+
+      roundActive = false;
+      firstDecisionOpen = false;
+      renderCards();
+      updateHud();
+    }
+
+    function newShoe() {
+      if (roundActive) {
+        setStatus('Finish the current round before shuffling.');
+        return;
+      }
+      createShoe(4);
+      setStatus('Fresh shoe shuffled. New poop luck loaded.');
+    }
+
+    function resetBankroll() {
+      if (!confirm('Reset bankroll and stats back to defaults?')) return;
+      bankroll = INITIAL_BANKROLL;
+      currentBet = 0;
+      stats = { hands: 0, wins: 0, losses: 0, pushes: 0, surrenders: 0 };
+      roundActive = false;
+      firstDecisionOpen = false;
+      playerHand = [];
+      dealerHand = [];
+      dealerHoleHidden = true;
+      renderCards();
+      setStatus('Bankroll and stats reset. Start a fresh stink streak.');
+      updateHud();
+    }
+
+    function wireEvents() {
+      document.querySelectorAll('[data-chip]').forEach((btn) => {
+        btn.addEventListener('click', () => addBet(parseInt(btn.dataset.chip, 10)));
+      });
+
+      ui.clearBetBtn.addEventListener('click', clearBet);
+      ui.maxBetBtn.addEventListener('click', maxBet);
+
+      ui.dealBtn.addEventListener('click', startRound);
+      ui.hitBtn.addEventListener('click', playerHit);
+      ui.standBtn.addEventListener('click', playerStand);
+      ui.doubleBtn.addEventListener('click', playerDouble);
+      ui.surrenderBtn.addEventListener('click', playerSurrender);
+
+      ui.newShoeBtn.addEventListener('click', newShoe);
+      ui.resetStatsBtn.addEventListener('click', resetBankroll);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyN') {
+          e.preventDefault();
+          startRound();
+        }
+        if (e.code === 'KeyH') {
+          e.preventDefault();
+          playerHit();
+        }
+        if (e.code === 'KeyS') {
+          e.preventDefault();
+          playerStand();
+        }
+        if (e.code === 'KeyD') {
+          e.preventDefault();
+          playerDouble();
+        }
+        if (e.code === 'KeyX') {
+          e.preventDefault();
+          playerSurrender();
+        }
+        if (e.code === 'KeyC') {
+          e.preventDefault();
+          clearBet();
+        }
+      });
+    }
+
+    function init() {
+      createShoe(4);
+      renderCards();
+      wireEvents();
+      updateHud();
+      setStatus('Welcome to Turdjack 21. Bet responsibly and blame the toilet.');
+    }
+
+    init();
+  </script>
+</body>
+</html>

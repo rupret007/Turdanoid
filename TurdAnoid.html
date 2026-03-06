@@ -259,8 +259,7 @@
           Mouse/Touch: Paddle move<br>
           Space: Launch / Pause<br>
           P: Pause<br>
-          R: Restart<br>
-          M: Mute (if sound enabled)
+          R: Restart
         </div>
       </div>
     </aside>
@@ -279,7 +278,9 @@ let balls = [];
 let bricks = [];
 let powerUps = [];
 let toiletPaperShots = [];
+let laserShots = [];
 let particles = [];
+let floatTexts = [];
 
 let paddleWidth = 120;
 let originalPaddleWidth = 120;
@@ -296,7 +297,11 @@ let gameOver = false;
 let gameWon = false;
 let paused = false;
 let awaitingLaunch = true;
-let statusText = 'Keep it silly and keep the streak alive.';
+let statusText = 'Arkanoid-style chaos, but sillier.';
+let levelPatternName = 'Classic Wall';
+let bigPaddleStacks = 0;
+let stuckBall = null;
+let lastStinkMilestone = 0;
 
 let controlLeft = false;
 let controlRight = false;
@@ -304,14 +309,32 @@ let controlRight = false;
 let activePowerUps = {
   bigPaddle: 0,
   slowBall: 0,
-  toiletPaper: 0
+  toiletPaper: 0,
+  stickyPaddle: 0,
+  laserEyes: 0,
+  stinkBurst: 0
 };
 
 const POWERUP_TYPES = [
-  { type: 'bigPaddle', emoji: '📏', name: 'Big Paddle' },
-  { type: 'extraLife', emoji: '❤️', name: 'Extra Life' },
-  { type: 'slowBall', emoji: '🐌', name: 'Slow Ball' },
-  { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper' }
+  { type: 'bigPaddle', emoji: '📏', name: 'Enlarge (E)', weight: 3.3 },
+  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.45 },
+  { type: 'slowBall', emoji: '🐌', name: 'Slow (S)', weight: 2.5 },
+  { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper Blaster', weight: 2.3 },
+  { type: 'stickyPaddle', emoji: '🧲', name: 'Catch (C)', weight: 2.0 },
+  { type: 'disruption', emoji: '⚽', name: 'Disruption (D)', weight: 1.8 },
+  { type: 'laserEyes', emoji: '🔫', name: 'Laser (L)', weight: 1.8 },
+  { type: 'warpFlush', emoji: '🚽', name: 'Break Flush (B)', weight: 1.1 },
+  { type: 'stinkBurst', emoji: '💨', name: 'Stink Burst', weight: 1.6 }
+];
+
+const LEVEL_PATTERNS = [
+  'Classic Wall',
+  'Checker Gaps',
+  'Tunnel',
+  'Wave',
+  'Fortress',
+  'Spikes',
+  'Chaos Grid'
 ];
 
 function setup() {
@@ -337,6 +360,7 @@ function createBall(x, y, vx, vy, isMain) {
     vx,
     vy,
     isMain,
+    stuck: false,
     trail: [],
     stink: 0
   };
@@ -345,6 +369,7 @@ function createBall(x, y, vx, vy, isMain) {
 function resetBallState() {
   balls = [createBall(paddle.x + paddleWidth / 2, paddle.y - 12, 0, 0, true)];
   awaitingLaunch = true;
+  stuckBall = null;
 }
 
 function resetGame() {
@@ -356,59 +381,142 @@ function resetGame() {
   gameOver = false;
   gameWon = false;
   paused = false;
-  statusText = 'Fresh run started. Try to get extra stinky.';
+  statusText = 'Fresh run. Get stinky, not flushed.';
+  bigPaddleStacks = 0;
+  stuckBall = null;
+  lastStinkMilestone = 0;
 
   paddleWidth = originalPaddleWidth;
   paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
 
   powerUps = [];
   toiletPaperShots = [];
+  laserShots = [];
   particles = [];
-  activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
+  floatTexts = [];
+  activePowerUps = {
+    bigPaddle: 0,
+    slowBall: 0,
+    toiletPaper: 0,
+    stickyPaddle: 0,
+    laserEyes: 0,
+    stinkBurst: 0
+  };
 
   createLevel(level);
   resetBallState();
   updateHud();
 }
 
-function createLevel(levelNumber) {
-  bricks = [];
-  const rows = min(7, 4 + floor((levelNumber - 1) / 2));
-  const cols = 10;
-  const gap = 8;
-  const margin = 24;
-  const totalWidth = width - margin * 2;
-  const brickW = (totalWidth - gap * (cols - 1)) / cols;
-  const brickH = 24;
+function getPatternName(index) {
+  return LEVEL_PATTERNS[index % LEVEL_PATTERNS.length];
+}
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if ((levelNumber + r + c) % 7 === 0 && r > 1) continue;
-      bricks.push({
-        x: margin + c * (brickW + gap),
-        y: 62 + r * (brickH + gap),
-        w: brickW,
-        h: brickH,
-        hp: r < 2 ? 2 : 1,
-        maxHp: r < 2 ? 2 : 1
-      });
+function shouldPlaceBrick(pattern, row, col, rows, cols) {
+  const center = floor(cols / 2);
+  switch (pattern % 7) {
+    case 0:
+      return true;
+    case 1:
+      return (row + col) % 2 === 0 || row < 2;
+    case 2:
+      return abs(col - center) > (row < 2 ? 1 : 0);
+    case 3: {
+      const wave = floor((sin((col / cols) * PI * 2) + 1) * (rows - 1) / 2);
+      return abs(row - wave) <= 1 || row < 2;
     }
+    case 4:
+      return row === 0 || row === rows - 1 || col % 3 !== 1;
+    case 5:
+      return col >= floor(row / 2) && col <= cols - 1 - floor(row / 2);
+    default:
+      return random() > 0.18 || row < 2;
   }
 }
 
-function launchBall() {
-  if (!awaitingLaunch || balls.length === 0) return;
+function createLevel(levelNumber) {
+  bricks = [];
 
-  const speed = min(11, baseBallSpeed + (level - 1) * 0.3);
-  let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.7);
-  if (abs(vx) < 1) vx = vx >= 0 ? 1 : -1;
+  const rows = min(8, 4 + floor((levelNumber - 1) / 2));
+  const cols = 12;
+  const gap = 6;
+  const margin = 24;
+  const totalWidth = width - margin * 2;
+  const brickW = (totalWidth - gap * (cols - 1)) / cols;
+  const brickH = 22;
+  const pattern = (levelNumber - 1) % 7;
+  levelPatternName = getPatternName(pattern);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!shouldPlaceBrick(pattern, r, c, rows, cols)) continue;
+
+      const x = margin + c * (brickW + gap);
+      const y = 58 + r * (brickH + gap);
+      const roll = random();
+
+      let type = 'normal';
+      if (levelNumber >= 3 && roll < 0.12) type = 'explosive';
+      else if (levelNumber >= 4 && roll < 0.30) type = 'silver';
+      else if (levelNumber >= 6 && roll < 0.40) type = 'shifty';
+      else if (levelNumber >= 5 && roll < 0.48) type = 'gold';
+
+      if (r < 2 && type === 'normal' && random() < 0.4) type = 'silver';
+
+      const silverHp = 2 + floor((levelNumber - 1) / 8); // Inspired by Arkanoid silver bricks.
+
+      const hpByType = {
+        normal: 1,
+        explosive: 1,
+        silver: silverHp,
+        shifty: 1 + floor(levelNumber / 6),
+        gold: 9999
+      };
+
+      const destructible = type !== 'gold';
+
+      bricks.push({
+        x,
+        y,
+        w: brickW,
+        h: brickH,
+        type,
+        hp: hpByType[type],
+        maxHp: hpByType[type],
+        destructible,
+        driftPhase: random(TWO_PI),
+        driftBaseX: x,
+        driftAmount: type === 'shifty' ? random(8, 18) : 0,
+        driftSpeed: type === 'shifty' ? random(0.01, 0.03) : 0
+      });
+    }
+  }
+
+  statusText = `Level ${levelNumber}: ${levelPatternName}.`;
+}
+
+function launchBall() {
+  let targetBall = null;
+
+  if (stuckBall) {
+    targetBall = stuckBall;
+    targetBall.stuck = false;
+    stuckBall = null;
+  } else if (awaitingLaunch && balls.length > 0) {
+    targetBall = balls[0];
+  }
+
+  if (!targetBall) return;
+
+  const speed = min(11.5, baseBallSpeed + (level - 1) * 0.35);
+  let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.72);
+  if (abs(vx) < 1.1) vx = vx >= 0 ? 1.1 : -1.1;
   const vy = -sqrt(max(1, speed * speed - vx * vx));
 
-  balls[0].vx = vx;
-  balls[0].vy = vy;
-  balls[0].stink = 0;
+  targetBall.vx = vx;
+  targetBall.vy = vy;
   awaitingLaunch = false;
-  statusText = 'Launched. It will get stinkier the longer it survives.';
+  statusText = 'Poop launched. Let it marinate in mid-air.';
 }
 
 function draw() {
@@ -428,22 +536,25 @@ function draw() {
   }
 
   updatePaddle();
+  updateMovingBricks();
   updatePowerTimers();
   updatePowerUps();
-  updateToiletPaperShots();
+  updateShots();
   updateBalls();
   updateParticles();
+  updateFloatTexts();
 
   if (comboTimer > 0) comboTimer--;
   else combo = 0;
 
-  if (bricks.length === 0) {
+  if (destructibleRemaining() === 0) {
     level++;
-    score += 100 * level;
-    statusText = `Level ${level} started. The poop escalates.`;
+    score += 120 * level;
+    statusText = `Level up! Welcome to level ${level}.`;
     createLevel(level);
     powerUps = [];
     toiletPaperShots = [];
+    laserShots = [];
     resetBallState();
   }
 
@@ -453,9 +564,9 @@ function draw() {
 
 function drawBackground() {
   const g = drawingContext.createLinearGradient(0, 0, width, height);
-  g.addColorStop(0, '#0f241f');
-  g.addColorStop(0.5, '#1d3b33');
-  g.addColorStop(1, '#2f554a');
+  g.addColorStop(0, '#102822');
+  g.addColorStop(0.55, '#1a3e35');
+  g.addColorStop(1, '#35584d');
   drawingContext.fillStyle = g;
   rect(0, 0, width, height);
 
@@ -475,10 +586,36 @@ function updatePaddle() {
     paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
   }
 
-  if (awaitingLaunch && balls.length) {
+  if (awaitingLaunch && balls.length && !stuckBall) {
     balls[0].x = paddle.x + paddleWidth / 2;
     balls[0].y = paddle.y - balls[0].r - 2;
   }
+
+  if (stuckBall) {
+    stuckBall.x = paddle.x + paddleWidth / 2;
+    stuckBall.y = paddle.y - stuckBall.r - 2;
+    stuckBall.vx = 0;
+    stuckBall.vy = 0;
+  }
+}
+
+function updateMovingBricks() {
+  for (const brick of bricks) {
+    if (brick.type !== 'shifty') continue;
+    brick.driftPhase += brick.driftSpeed;
+    brick.x = brick.driftBaseX + sin(brick.driftPhase) * brick.driftAmount;
+  }
+}
+
+function applyPaddleWidth() {
+  if (activePowerUps.bigPaddle > 0 && bigPaddleStacks > 0) {
+    paddleWidth = originalPaddleWidth * (1 + 0.28 * bigPaddleStacks);
+  } else {
+    bigPaddleStacks = 0;
+    paddleWidth = originalPaddleWidth;
+  }
+  paddleWidth = min(originalPaddleWidth * 2.1, paddleWidth);
+  paddle.x = constrain(paddle.x, 0, width - paddleWidth);
 }
 
 function updatePowerTimers() {
@@ -486,14 +623,34 @@ function updatePowerTimers() {
     if (activePowerUps[key] > 0) activePowerUps[key]--;
   }
 
-  if (activePowerUps.bigPaddle > 0) paddleWidth = originalPaddleWidth * 1.5;
-  else paddleWidth = originalPaddleWidth;
+  applyPaddleWidth();
 
-  paddle.x = constrain(paddle.x, 0, width - paddleWidth);
-
-  if (activePowerUps.toiletPaper > 0 && frameCount % 25 === 0 && toiletPaperShots.length < 12) {
-    toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 10, y: paddle.y, w: 20, h: 20, vy: -7 });
+  if (activePowerUps.toiletPaper > 0 && frameCount % 20 === 0 && toiletPaperShots.length < 20) {
+    toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 10, y: paddle.y, w: 20, h: 20, vy: -8, type: 'tp' });
   }
+
+  if (activePowerUps.laserEyes > 0 && frameCount % 11 === 0 && laserShots.length < 36) {
+    laserShots.push({ x: paddle.x + 5, y: paddle.y, w: 4, h: 14, vy: -12, type: 'laser' });
+    laserShots.push({ x: paddle.x + paddleWidth - 9, y: paddle.y, w: 4, h: 14, vy: -12, type: 'laser' });
+  }
+}
+
+function weightedPowerUp() {
+  let total = 0;
+  for (const p of POWERUP_TYPES) total += p.weight;
+
+  let roll = random(total);
+  for (const p of POWERUP_TYPES) {
+    roll -= p.weight;
+    if (roll <= 0) return p;
+  }
+  return POWERUP_TYPES[0];
+}
+
+function createPowerUp(x, y) {
+  if (powerUps.length >= 12) return;
+  const p = weightedPowerUp();
+  powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2.1, angle: 0, ...p });
 }
 
 function updatePowerUps() {
@@ -519,7 +676,7 @@ function updatePowerUps() {
   }
 }
 
-function updateToiletPaperShots() {
+function updateShots() {
   for (let i = toiletPaperShots.length - 1; i >= 0; i--) {
     const shot = toiletPaperShots[i];
     shot.y += shot.vy;
@@ -531,31 +688,60 @@ function updateToiletPaperShots() {
 
     let hit = false;
     for (let j = bricks.length - 1; j >= 0; j--) {
-      const brick = bricks[j];
-      if (rectHit(shot, brick)) {
+      if (rectHit(shot, bricks[j])) {
         damageBrick(j, 1, true);
         hit = true;
         break;
       }
     }
-
     if (hit) toiletPaperShots.splice(i, 1);
+  }
+
+  for (let i = laserShots.length - 1; i >= 0; i--) {
+    const shot = laserShots[i];
+    shot.y += shot.vy;
+
+    if (shot.y < -shot.h) {
+      laserShots.splice(i, 1);
+      continue;
+    }
+
+    let hit = false;
+    for (let j = bricks.length - 1; j >= 0; j--) {
+      if (rectHit(shot, bricks[j])) {
+        damageBrick(j, 1, true);
+        hit = true;
+        break;
+      }
+    }
+    if (hit) laserShots.splice(i, 1);
   }
 }
 
 function updateBalls() {
-  const slow = activePowerUps.slowBall > 0 ? 0.6 : 1;
+  const slow = activePowerUps.slowBall > 0 ? 0.62 : 1;
 
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
+
+    if (b.stuck) {
+      b.x = paddle.x + paddleWidth / 2;
+      b.y = paddle.y - b.r - 2;
+      continue;
+    }
+
     b.x += b.vx * slow;
     b.y += b.vy * slow;
-    b.stink = min(2400, b.stink + 1);
+    b.stink = min(5000, b.stink + 1 + level * 0.18);
 
     emitGas(b);
 
+    if (activePowerUps.stinkBurst > 0 && frameCount % 16 === 0) {
+      emitStinkBurst(b);
+    }
+
     b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > 12) b.trail.shift();
+    if (b.trail.length > 14) b.trail.shift();
 
     if (b.x <= b.r) { b.x = b.r; b.vx = abs(b.vx); }
     if (b.x >= width - b.r) { b.x = width - b.r; b.vx = -abs(b.vx); }
@@ -568,12 +754,20 @@ function updateBalls() {
       b.x - b.r <= paddle.x + paddleWidth &&
       b.vy > 0
     ) {
+      if (activePowerUps.stickyPaddle > 0 && !stuckBall) {
+        b.stuck = true;
+        stuckBall = b;
+        awaitingLaunch = true;
+        statusText = 'Caught! Launch again for a nasty angle.';
+        continue;
+      }
+
       const hitPos = constrain((b.x - paddle.x) / max(1, paddleWidth), 0, 1);
-      const angle = (hitPos - 0.5) * 0.9;
+      const angle = (hitPos - 0.5) * 1.0;
       const speed = max(baseBallSpeed, sqrt(b.vx * b.vx + b.vy * b.vy));
       b.vx = sin(angle) * speed;
       b.vy = -abs(cos(angle) * speed);
-      if (abs(b.vx) < 0.9) b.vx = b.vx >= 0 ? 0.9 : -0.9;
+      if (abs(b.vx) < 1) b.vx = b.vx >= 0 ? 1 : -1;
       b.y = paddle.y - b.r;
       combo = 0;
       comboTimer = 0;
@@ -582,20 +776,30 @@ function updateBalls() {
     for (let j = bricks.length - 1; j >= 0; j--) {
       const brick = bricks[j];
       if (!ballHitsBrick(b, brick)) continue;
+
       damageBrick(j, 1, false);
-      b.vy *= -1;
+
+      if (brick.type !== 'gold') {
+        b.vy *= -1;
+      } else {
+        b.vx *= -1;
+      }
       break;
     }
 
     if (b.y - b.r > height + 4) {
       balls.splice(i, 1);
+      if (b === stuckBall) stuckBall = null;
     }
   }
+
+  checkStinkMilestones();
 
   if (balls.length === 0) {
     lives--;
     combo = 0;
     comboTimer = 0;
+    bigPaddleStacks = 0;
 
     if (lives <= 0) {
       gameOver = true;
@@ -606,55 +810,115 @@ function updateBalls() {
       }
     } else {
       statusText = 'Life lost. Relaunch when ready.';
-      resetBallState();
       powerUps = [];
       toiletPaperShots = [];
-      activePowerUps = { bigPaddle: 0, slowBall: 0, toiletPaper: 0 };
+      laserShots = [];
+      activePowerUps = {
+        bigPaddle: 0,
+        slowBall: 0,
+        toiletPaper: 0,
+        stickyPaddle: 0,
+        laserEyes: 0,
+        stinkBurst: 0
+      };
+      resetBallState();
     }
   }
 }
 
 function emitGas(ball) {
-  const gasChance = map(ball.stink, 0, 2400, 0.02, 0.34, true);
-  const puffs = random() < gasChance * 0.3 ? 2 : 1;
+  const stinkRatio = constrain(ball.stink / 5000, 0, 1);
+  const chance = lerp(0.05, 0.92, stinkRatio);
+  const puffs = random() < 0.35 + stinkRatio * 0.45 ? 2 : 1;
 
   for (let i = 0; i < puffs; i++) {
-    if (random() > gasChance) continue;
+    if (random() > chance) continue;
 
     particles.push({
-      x: ball.x + random(-8, 8),
-      y: ball.y + random(-8, 8),
-      vx: random(-0.8, 0.8),
-      vy: random(-1.6, -0.2),
-      life: random(22, 46),
-      maxLife: 46,
-      size: random(3, 8),
+      x: ball.x + random(-10, 10),
+      y: ball.y + random(-9, 9),
+      vx: random(-1.3, 1.3),
+      vy: random(-2.2, -0.25),
+      life: random(28, 58),
+      maxLife: 58,
+      size: random(4, 10 + stinkRatio * 7),
       kind: 'gas',
-      c: color(random(95, 140), random(210, 255), random(95, 140), 190)
+      c: color(random(95, 145), random(200, 255), random(80, 140), 190)
     });
   }
+}
+
+function emitStinkBurst(ball) {
+  for (let i = bricks.length - 1; i >= 0; i--) {
+    const brick = bricks[i];
+    if (!brick.destructible) continue;
+
+    const bx = brick.x + brick.w / 2;
+    const by = brick.y + brick.h / 2;
+    if (dist(ball.x, ball.y, bx, by) <= 74) {
+      damageBrick(i, 1, true);
+    }
+  }
+
+  particles.push({
+    x: ball.x,
+    y: ball.y,
+    vx: random(-0.5, 0.5),
+    vy: -0.6,
+    life: 40,
+    maxLife: 40,
+    size: random(20, 30),
+    kind: 'burst',
+    c: color(125, 255, 150, 130)
+  });
+}
+
+function destructibleRemaining() {
+  let count = 0;
+  for (const brick of bricks) {
+    if (brick.destructible) count++;
+  }
+  return count;
 }
 
 function damageBrick(index, damage, projectileHit) {
   const brick = bricks[index];
   if (!brick) return;
 
-  brick.hp -= damage;
-  if (brick.hp > 0) {
-    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 4, color(255, 230, 180));
+  if (!brick.destructible) {
+    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 4, color(255, 245, 150));
     return;
   }
 
-  bricks.splice(index, 1);
-  combo++;
-  comboTimer = 180;
+  brick.hp -= damage;
+  if (brick.hp > 0) {
+    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 5, color(220, 235, 255));
+    return;
+  }
 
-  const comboMult = 1 + min(2.4, combo * 0.1);
-  const gain = floor((projectileHit ? 9 : 12) * comboMult);
+  const removed = bricks.splice(index, 1)[0];
+  combo++;
+  comboTimer = 210;
+
+  let gainBase = 12;
+  if (removed.type === 'silver') gainBase = 20;
+  if (removed.type === 'explosive') gainBase = 18;
+  if (removed.type === 'shifty') gainBase = 22;
+
+  const comboMult = 1 + min(2.8, combo * 0.1);
+  const gain = floor((projectileHit ? gainBase * 0.85 : gainBase) * comboMult);
   score = min(Number.MAX_SAFE_INTEGER, score + gain);
 
-  if (random() < 0.25) createPowerUp(brick.x + brick.w / 2, brick.y + brick.h / 2);
-  spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 9, color(255, 180, 120));
+  addFloatText(`+${gain}`, removed.x + removed.w / 2, removed.y + removed.h / 2, color(255, 236, 184));
+
+  if (removed.type === 'explosive') {
+    splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
+  }
+
+  const dropChance = 0.18 + min(0.14, level * 0.01);
+  if (random() < dropChance) createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+
+  spawnBurst(removed.x + removed.w / 2, removed.y + removed.h / 2, 10, color(255, 180, 120));
 
   if (score > highScore) {
     highScore = score;
@@ -662,20 +926,99 @@ function damageBrick(index, damage, projectileHit) {
   }
 }
 
-function createPowerUp(x, y) {
-  if (powerUps.length >= 10) return;
-  const p = POWERUP_TYPES[floor(random(POWERUP_TYPES.length))];
-  powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2, angle: 0, ...p });
+function splashDamage(cx, cy, radius) {
+  for (let i = bricks.length - 1; i >= 0; i--) {
+    const b = bricks[i];
+    if (!b.destructible) continue;
+    const bx = b.x + b.w / 2;
+    const by = b.y + b.h / 2;
+    if (dist(cx, cy, bx, by) <= radius) {
+      damageBrick(i, 1, true);
+    }
+  }
 }
 
 function activatePowerUp(type) {
-  if (type === 'bigPaddle') activePowerUps.bigPaddle = 600;
-  else if (type === 'extraLife') lives = min(9, lives + 1);
-  else if (type === 'slowBall') activePowerUps.slowBall = 450;
-  else if (type === 'toiletPaper') activePowerUps.toiletPaper = 400;
+  switch (type) {
+    case 'bigPaddle':
+      bigPaddleStacks = min(4, bigPaddleStacks + 1);
+      activePowerUps.bigPaddle = min(2600, activePowerUps.bigPaddle + 520);
+      statusText = `Paddle grew to ${bigPaddleStacks}x stink mode.`;
+      break;
+    case 'extraLife':
+      lives = min(6, lives + 1);
+      statusText = 'Rare heart! One extra life.';
+      addFloatText('+1 Life', paddle.x + paddleWidth / 2, paddle.y - 12, color(255, 170, 170));
+      break;
+    case 'slowBall':
+      activePowerUps.slowBall = max(activePowerUps.slowBall, 500);
+      statusText = 'Slow capsule active.';
+      break;
+    case 'toiletPaper':
+      activePowerUps.toiletPaper = max(activePowerUps.toiletPaper, 520);
+      statusText = 'Toilet paper barrage online.';
+      break;
+    case 'stickyPaddle':
+      activePowerUps.stickyPaddle = max(activePowerUps.stickyPaddle, 560);
+      statusText = 'Catch mode: paddle grabs the turd.';
+      break;
+    case 'disruption':
+      spawnDisruptionBalls();
+      statusText = 'Disruption! Triple turd chaos.';
+      break;
+    case 'laserEyes':
+      activePowerUps.laserEyes = max(activePowerUps.laserEyes, 460);
+      statusText = 'Laser mode activated.';
+      break;
+    case 'warpFlush':
+      runWarpFlush();
+      statusText = 'Break Flush! Massive skip clear.';
+      break;
+    case 'stinkBurst':
+      activePowerUps.stinkBurst = max(activePowerUps.stinkBurst, 430);
+      statusText = 'Stink burst cloud damages nearby bricks.';
+      break;
+    default:
+      break;
+  }
 
-  const power = POWERUP_TYPES.find((p) => p.type === type);
-  statusText = power ? `Power-up: ${power.name}` : `Power-up: ${type}`;
+  applyPaddleWidth();
+}
+
+function spawnDisruptionBalls() {
+  if (balls.length === 0) return;
+  const source = balls[0];
+  const maxBalls = 5;
+  const slots = max(0, maxBalls - balls.length);
+  const count = min(2, slots);
+
+  for (let i = 0; i < count; i++) {
+    const vx = source.vx + random(-2, 2);
+    const vy = -abs(source.vy + random(-1.2, 0.6));
+    balls.push(createBall(source.x, source.y, vx, vy, false));
+  }
+}
+
+function runWarpFlush() {
+  const remaining = destructibleRemaining();
+  if (remaining <= 0) return;
+
+  let toClear = max(2, floor(remaining * 0.38));
+  const targets = [];
+
+  for (let i = 0; i < bricks.length; i++) {
+    if (bricks[i].destructible) targets.push(i);
+  }
+
+  while (toClear > 0 && targets.length > 0) {
+    const pick = floor(random(targets.length));
+    const idx = targets.splice(pick, 1)[0];
+    if (bricks[idx]) damageBrick(idx, 999, true);
+    toClear--;
+  }
+
+  score += 80;
+  addFloatText('FLUSH WARP!', width / 2, height * 0.45, color(170, 255, 220));
 }
 
 function spawnBurst(x, y, count, c) {
@@ -685,16 +1028,33 @@ function spawnBurst(x, y, count, c) {
       y,
       vx: random(-3, 3),
       vy: random(-3, 3),
-      life: random(18, 36),
-      maxLife: 36,
+      life: random(18, 38),
+      maxLife: 38,
       size: random(2, 5),
       kind: 'spark',
       c
     });
   }
 
-  if (particles.length > 300) {
-    particles.splice(0, particles.length - 300);
+  if (particles.length > 420) {
+    particles.splice(0, particles.length - 420);
+  }
+}
+
+function addFloatText(text, x, y, c) {
+  floatTexts.push({ text, x, y, vy: -0.6, life: 56, maxLife: 56, c });
+  if (floatTexts.length > 20) floatTexts.splice(0, floatTexts.length - 20);
+}
+
+function checkStinkMilestones() {
+  const stink = getStinkLevel();
+  const step = floor(stink / 25);
+  if (step > lastStinkMilestone) {
+    lastStinkMilestone = step;
+    if (step >= 1) {
+      addFloatText('PFFFFT!', width / 2 + random(-60, 60), height * 0.6 + random(-30, 30), color(160, 255, 170));
+      statusText = `Stink level ${stink}%. It's getting nasty.`;
+    }
   }
 }
 
@@ -706,6 +1066,15 @@ function updateParticles() {
     if (p.kind === 'spark') p.vy += 0.03;
     p.life--;
     if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function updateFloatTexts() {
+  for (let i = floatTexts.length - 1; i >= 0; i--) {
+    const t = floatTexts[i];
+    t.y += t.vy;
+    t.life--;
+    if (t.life <= 0) floatTexts.splice(i, 1);
   }
 }
 
@@ -735,6 +1104,7 @@ function drawGameScene(withGameElements) {
     drawShots();
     drawPowerUps();
     drawParticlesVisual();
+    drawFloatTextsVisual();
     return;
   }
 
@@ -744,6 +1114,7 @@ function drawGameScene(withGameElements) {
   drawShots();
   drawPowerUps();
   drawParticlesVisual();
+  drawFloatTextsVisual();
 
   if (awaitingLaunch) {
     fill(232, 255, 240);
@@ -755,13 +1126,26 @@ function drawGameScene(withGameElements) {
 
 function drawBricks() {
   for (const b of bricks) {
-    const t = b.hp / b.maxHp;
-    const base = color(255, 175, 120);
+    let base = color(255, 175, 120);
+    if (b.type === 'silver') base = color(175, 210, 255);
+    if (b.type === 'gold') base = color(255, 226, 120);
+    if (b.type === 'explosive') base = color(255, 125, 115);
+    if (b.type === 'shifty') base = color(145, 255, 205);
+
+    const t = b.maxHp > 0 && b.maxHp < 9000 ? b.hp / b.maxHp : 1;
     const grad = drawingContext.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
     grad.addColorStop(0, `rgba(${red(base)},${green(base)},${blue(base)},0.95)`);
     grad.addColorStop(1, `rgba(${max(0, red(base) - 70)},${max(0, green(base) - 70)},${max(0, blue(base) - 70)},0.95)`);
     drawingContext.fillStyle = grad;
     rect(b.x, b.y, b.w, b.h, 6);
+
+    if (b.type === 'gold') {
+      stroke(255, 245, 180, 160);
+      strokeWeight(2);
+      line(b.x + 4, b.y + 4, b.x + b.w - 4, b.y + b.h - 4);
+      line(b.x + b.w - 4, b.y + 4, b.x + 4, b.y + b.h - 4);
+      noStroke();
+    }
 
     if (t < 1) {
       fill(20, 30, 28, 200);
@@ -775,19 +1159,31 @@ function drawBricks() {
 function drawPaddle() {
   fill(95, 250, 190);
   rect(paddle.x, paddle.y, paddleWidth, paddleHeight, 8);
+
+  if (activePowerUps.stickyPaddle > 0) {
+    fill(185, 255, 230, 140);
+    rect(paddle.x + 8, paddle.y + 2, paddleWidth - 16, 4, 3);
+  }
 }
 
 function drawBalls() {
   for (const b of balls) {
+    const stinkRatio = constrain(b.stink / 5000, 0, 1);
+
     for (let i = 0; i < b.trail.length; i++) {
       const point = b.trail[i];
-      const a = map(i, 0, b.trail.length - 1, 15, 90);
+      const a = map(i, 0, b.trail.length - 1, 20, 100);
       fill(255, 210, 150, a);
-      circle(point.x, point.y, b.r * 1.2 * (i / max(1, b.trail.length)));
+      circle(point.x, point.y, b.r * 1.3 * (i / max(1, b.trail.length)));
     }
 
-    fill(90, 70, 50);
-    textSize(24);
+    noFill();
+    stroke(120, 255, 160, 40 + stinkRatio * 120);
+    strokeWeight(1.5 + stinkRatio * 2.5);
+    circle(b.x, b.y, b.r * (2.4 + stinkRatio * 2.2));
+    noStroke();
+
+    textSize(24 + stinkRatio * 2);
     textAlign(CENTER, CENTER);
     text('💩', b.x, b.y + 1);
   }
@@ -798,6 +1194,11 @@ function drawShots() {
   textSize(18);
   for (const tp of toiletPaperShots) {
     text('🧻', tp.x + tp.w / 2, tp.y + tp.h / 2);
+  }
+
+  for (const l of laserShots) {
+    fill(255, 120, 255);
+    rect(l.x, l.y, l.w, l.h, 2);
   }
 }
 
@@ -818,7 +1219,21 @@ function drawParticlesVisual() {
   for (const p of particles) {
     const alpha = map(p.life, 0, p.maxLife, 0, 220);
     fill(red(p.c), green(p.c), blue(p.c), alpha);
-    circle(p.x, p.y, p.size);
+    if (p.kind === 'burst') {
+      circle(p.x, p.y, p.size + (p.maxLife - p.life) * 0.7);
+    } else {
+      circle(p.x, p.y, p.size);
+    }
+  }
+}
+
+function drawFloatTextsVisual() {
+  textAlign(CENTER, CENTER);
+  for (const t of floatTexts) {
+    const alpha = map(t.life, 0, t.maxLife, 0, 255);
+    fill(red(t.c), green(t.c), blue(t.c), alpha);
+    textSize(14);
+    text(t.text, t.x, t.y);
   }
 }
 
@@ -851,7 +1266,7 @@ function getStinkLevel() {
   if (balls.length === 0) return 0;
   let total = 0;
   for (const b of balls) total += b.stink;
-  return floor(map(total / balls.length, 0, 2400, 0, 100, true));
+  return floor(map(total / balls.length, 0, 5000, 0, 100, true));
 }
 
 function updateHud() {
@@ -870,9 +1285,9 @@ function updateHud() {
   if (livesEl) livesEl.textContent = String(lives);
   if (levelEl) levelEl.textContent = String(level);
   if (comboEl) comboEl.textContent = String(combo);
-  if (bricksEl) bricksEl.textContent = String(bricks.length);
+  if (bricksEl) bricksEl.textContent = `${destructibleRemaining()}`;
   if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;
-  if (statusEl) statusEl.textContent = statusText;
+  if (statusEl) statusEl.textContent = `${statusText} Pattern: ${levelPatternName}.`;
 
   if (powerListEl) {
     const chips = [];
@@ -880,6 +1295,9 @@ function updateHud() {
       if (activePowerUps[p.type] > 0) {
         chips.push(`<span class="chip">${p.emoji} ${Math.ceil(activePowerUps[p.type] / 60)}s</span>`);
       }
+    }
+    if (bigPaddleStacks > 0 && activePowerUps.bigPaddle > 0) {
+      chips.push(`<span class="chip">📏 x${bigPaddleStacks}</span>`);
     }
     powerListEl.innerHTML = chips.length ? chips.join('') : '<span class="chip">None</span>';
   }
@@ -892,7 +1310,7 @@ function keyPressed() {
   if (key === ' ' || keyCode === 32) {
     if (gameOver || gameWon) resetGame();
     else if (paused) paused = false;
-    else if (awaitingLaunch) launchBall();
+    else if (awaitingLaunch || stuckBall) launchBall();
     else paused = true;
     return false;
   }
@@ -918,7 +1336,7 @@ function mousePressed() {
     resetGame();
     return;
   }
-  if (awaitingLaunch && !paused) launchBall();
+  if ((awaitingLaunch || stuckBall) && !paused) launchBall();
 }
 
 function touchStarted() {
@@ -926,7 +1344,7 @@ function touchStarted() {
     resetGame();
     return false;
   }
-  if (awaitingLaunch && !paused) launchBall();
+  if ((awaitingLaunch || stuckBall) && !paused) launchBall();
   return false;
 }
 
@@ -952,7 +1370,7 @@ if (mobileControls) {
       if (action === 'left') controlLeft = true;
       if (action === 'right') controlRight = true;
       if (action === 'launch') {
-        if (awaitingLaunch) launchBall();
+        if (awaitingLaunch || stuckBall) launchBall();
         else paused = !paused;
       }
     };
@@ -977,5 +1395,7 @@ if (mobileControls) {
 </script>
 </body>
 </html>
+
+
 
 

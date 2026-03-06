@@ -1,6 +1,6 @@
 # Turdanoid Games
 
-A collection of three retro-style browser games with a playful turd theme.
+A collection of four browser games with a playful turd theme.
 
 ## Games
 
@@ -22,10 +22,15 @@ Classic brick-breaker with neon aesthetics. Break blocks with the ball, collect 
 
 ### Turdtris
 
-Tetris-style game with brown-themed pieces.
+Tetris-inspired stacker with modern guideline-style mechanics and progressive chaos.
 
 **Features:**
-- Classic Tetris scoring
+- 7-bag randomizer
+- SRS-style wall kicks
+- Hold and ghost piece systems
+- Combo, back-to-back, T-Spin, and perfect-clear scoring
+- Lock delay + gravity progression
+- Level modifiers with themed progression and garbage pressure
 - High score persistence
 - Responsive layout
 - Touch controls: swipe to move, tap to rotate, swipe down to drop
@@ -34,16 +39,31 @@ Tetris-style game with brown-themed pieces.
 
 ### TurdAnoid
 
-Simple brick-breaker with a turd ball using p5.js.
+Silly Arkanoid variant using p5.js with stink-based effects and capsule madness.
 
 **Features:**
-- Power-ups: Big Paddle, Extra Life, Slow Ball, Toilet Paper (shoots upward)
+- Arkanoid-inspired capsules (Enlarge, Slow, Catch, Disruption, Laser, etc.)
+- Distinct level patterns that get more complex over time
+- Strongly visible stink/gas progression the longer the ball survives
+- Stacking enlarge behavior (multiple length boosts actually stack)
 - Touch and mouse support
 - Responsive canvas (resizes on window change)
 - High score persistence
 - "Tap to play again" on mobile
 
 **Controls:** Mouse or touch to move paddle.
+
+### Turdjack 21
+
+Blackjack with a toilet-dealer vibe and persistent bankroll.
+
+**Features:**
+- 21 rules with dealer logic, blackjack payout, push handling, and double down
+- Betting chips, max/clear bet, keyboard shortcuts
+- Persistent bankroll + hand stats in localStorage
+- Responsive table layout and themed card rendering
+
+**Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).
 
 ## Getting Started
 
@@ -52,6 +72,7 @@ Simple brick-breaker with a turd ball using p5.js.
    - `index.html` - Neon Arkanoid
    - `turdtris.html` - Turdtris
    - `TurdAnoid.html` - TurdAnoid
+   - `turdjack.html` - Turdjack 21
 
 ## Mobile Support
 
@@ -76,6 +97,7 @@ After a minute or two, your games will be live at:
 - **Neon Arkanoid:** https://rupret007.github.io/Turdanoid/index.html
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
+- **Turdjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
 
 The `.nojekyll` file ensures GitHub Pages serves the files as-is.
 
@@ -84,5 +106,6 @@ The `.nojekyll` file ensures GitHub Pages serves the files as-is.
 - **Neon Arkanoid**: Vanilla JavaScript (Canvas API)
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **TurdAnoid**: p5.js
+- **Turdjack 21**: Vanilla JavaScript + DOM/CSS card UI
 
 No build step required. Open in any modern browser.
