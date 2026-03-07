@@ -61,8 +61,12 @@ Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
 if ($jack -match 'bankroll') { Pass("bankroll") } else { Fail("bankroll") }
 if ($jack -match 'double') { Pass("double action") } else { Fail("double action") }
+if ($jack -match 'split') { Pass("split action") } else { Fail("split action") }
+if ($jack -match 'surrender') { Pass("surrender action") } else { Fail("surrender action") }
+if ($jack -match 'hintText') { Pass("strategy hint ui") } else { Fail("strategy hint ui") }
 if ($jack -match 'localStorage') { Pass("localStorage") } else { Fail("localStorage") }
 if ($jack -match 'dealer') { Pass("dealer logic") } else { Fail("dealer logic") }
+if ($jack -match 'DEALER_HITS_SOFT_17') { Pass("soft17 rule flag") } else { Fail("soft17 rule flag") }
 if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
