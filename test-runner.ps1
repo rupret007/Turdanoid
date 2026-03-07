@@ -41,6 +41,7 @@ if ($game -match 'checkCollision') { Pass("checkCollision") } else { Fail("check
 if ($game -match 'localStorage') { Pass("localStorage") } else { Fail("localStorage") }
 if ($game -match 'throw new Error') { Pass("constructor throws") } else { Fail("constructor throws") }
 if ($game -match 'webkitAudioContext') { Pass("Safari audio") } else { Fail("Safari audio") }
+if ($game -match 'maxLevel') { Pass("level cap logic") } else { Fail("level cap logic") }
 
 Write-Host "`n=== turdtris.html ===" -ForegroundColor Cyan
 $tris = Get-Content turdtris.html -Raw
@@ -48,6 +49,7 @@ if ($tris -match 'let highScore = parseInt') { Pass("highScore declared") } else
 if ($tris -match 'if \(canvas\)') { Pass("touch guard") } else { Fail("touch guard") }
 if ($tris -match 'Math\.min\(linesClearedThisTurn') { Pass("lineScores bounds") } else { Fail("lineScores bounds") }
 if ($tris -match 'if \(!matrix\) return getNextTetromino') { Pass("tetromino fallback") } else { Fail("tetromino fallback") }
+if ($tris -match 'getLinesGoalForLevel') { Pass("variable level goals") } else { Fail("variable level goals") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -56,6 +58,8 @@ if ($turd -match 'toiletPaperShots') { Pass("toiletPaperShots") } else { Fail("t
 if ($turd -match 'windowResized') { Pass("windowResized") } else { Fail("windowResized") }
 if ($turd -match 'touchStarted') { Pass("touchStarted") } else { Fail("touchStarted") }
 if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
+if ($turd -match 'MAX_LEVEL') { Pass("max level cap") } else { Fail("max level cap") }
+if ($turd -match 'levelLayoutSignatures') { Pass("non-repeating level signatures") } else { Fail("non-repeating level signatures") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw

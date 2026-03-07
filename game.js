@@ -14,12 +14,14 @@
             comboTimeoutFrames: 210,
             defaultPowerDuration: 600,
             blockDropChance: 0.34,
-            shieldYInset: 14
+            shieldYInset: 14,
+            maxLevel: 69
         };
 
         this.frame = 0;
         this.animationFrameId = null;
         this.gameRunning = true;
+        this.gameWon = false;
         this.paused = false;
         this.awaitingLaunch = true;
 
@@ -31,6 +33,10 @@
         this.runBestCombo = 0;
         this.levelMistakes = 0;
         this.levelPatternName = 'Classic Grid';
+        this.levelProfile = null;
+        this.runSeed = this.createRunSeed();
+        this.levelLayoutSignatures = new Set();
+        this.levelLayoutSignature = '';
 
         this.highScore = this.readNumber('neonArkanoidHighScore', 0);
         this.bestCombo = this.readNumber('neonArkanoidBestCombo', 0);
@@ -75,6 +81,7 @@
         this.ghostCharges = 0;
         this.shieldHits = 0;
         this.levelBlocksTotal = 0;
+        this.extraLifeCooldown = 0;
 
         this.ui = {
             score: document.getElementById('score'),
@@ -90,6 +97,8 @@
             activePowerList: document.getElementById('activePowerList'),
             finalScore: document.getElementById('finalScore'),
             gameOver: document.getElementById('gameOver'),
+            endTitle: document.getElementById('endTitle'),
+            endSubtitle: document.getElementById('endSubtitle'),
             pauseOverlay: document.getElementById('pauseOverlay'),
             achievementsList: document.getElementById('achievementsList'),
             achievementToast: document.getElementById('achievementToast'),
@@ -117,7 +126,7 @@
         this.bindEvents();
         this.updateMuteButton();
         this.updateUI();
-        this.setStatus('Launch the ball and keep the combo alive.');
+        this.setStatus(`Launch the ball and survive the chaos climb to level ${this.config.maxLevel}.`);
         this.gameLoop();
     }
 
@@ -184,8 +193,17 @@
         this.levelMistakes = 0;
         this.combo = 0;
         this.comboTimer = 0;
+        this.levelProfile = null;
 
-        this.generateBlocks();
+        let variation = 0;
+        while (variation < 14) {
+            this.levelProfile = this.buildLevelProfile(this.level, variation);
+            this.generateBlocks();
+            if (!this.levelLayoutSignatures.has(this.levelLayoutSignature) || variation === 13) break;
+            variation++;
+        }
+        this.levelLayoutSignatures.add(this.levelLayoutSignature);
+
         this.resetPaddleSize();
         this.spawnMainBall();
 
@@ -193,9 +211,11 @@
         this.ghostCharges = 0;
         this.shieldHits = 0;
 
-        this.levelPatternName = this.getPatternName(this.level);
-        this.setObjective(`Break ${this.levelBlocksTotal} blocks this round.`);
-        this.setMode(`Pattern: ${this.levelPatternName}`);
+        this.levelPatternName = this.getPatternName(this.levelProfile);
+        this.setObjective(`Break ${this.levelBlocksTotal} blocks this wave. Reach level ${this.config.maxLevel}.`);
+        const bossTag = this.levelProfile.bossLevel ? ' | Boss Wave' : '';
+        const remixTag = this.levelProfile.variation > 0 ? ` | Remix ${this.levelProfile.variation + 1}` : '';
+        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}`);
     }
 
     clearCombatState() {
@@ -222,44 +242,191 @@
         this.balls = [this.mainBall];
     }
 
-    getPatternName(level) {
-        const names = ['Classic Grid', 'Checker Run', 'Tunnel Strike', 'Wave Grid', 'Fortress Lines', 'Spike Field'];
-        return names[(level - 1) % names.length];
+    createRunSeed() {
+        return Math.floor(Math.random() * 1000000000);
     }
 
-    shouldSpawnBlock(patternIndex, row, col, rows, cols) {
-        const center = Math.floor(cols / 2);
-        switch (patternIndex % 6) {
+    levelRandom(level, salt, variation) {
+        const remix = (variation || 0) * 173.317;
+        const x = Math.sin((level * 9283.771) + (salt * 631.97) + this.runSeed * 0.000001 + remix) * 43758.5453123;
+        return x - Math.floor(x);
+    }
+
+    buildLevelProfile(level, variation) {
+        const remix = variation || 0;
+        const tier = Math.min(5, Math.floor((level - 1) / 12));
+        const bossLevel = (level % 10 === 0) || level === this.config.maxLevel;
+        const lateRamp = level >= 56 ? 0.06 : 0;
+        const chaos = this.clamp(0.1 + (level - 1) * 0.014 + tier * 0.018 + lateRamp, 0.1, 0.995);
+        const pattern = Math.floor(this.levelRandom(level, 7, remix) * 14);
+        const variant = Math.floor(this.levelRandom(level, 11, remix) * 5);
+        const rows = Math.min(13, 5 + Math.floor((level - 1) / 2.6));
+        const cols = Math.min(17, 12 + Math.floor((level - 1) / 9));
+        const carveChance = this.clamp((this.levelRandom(level, 13, remix) - 0.5) * 0.22 + chaos * 0.1, 0, 0.26);
+        const fillChance = this.clamp((this.levelRandom(level, 17, remix) - 0.5) * 0.12 + chaos * 0.05 + (bossLevel ? 0.02 : 0), 0, 0.16);
+        const hazardBoost = chaos * 0.27 + Math.floor((level - 1) / 10) * 0.02 + tier * 0.014 + (bossLevel ? 0.06 : 0);
+        const driftBoost = 0.012 + chaos * 0.035 + (bossLevel ? 0.01 : 0);
+        const density = this.clamp(0.82 - chaos * 0.22 + (this.levelRandom(level, 19, remix) - 0.5) * 0.14 + (bossLevel ? 0.03 : 0), 0.56, 0.95);
+        const names = [
+            'Classic Grid',
+            'Checker Run',
+            'Tunnel Strike',
+            'Wave Grid',
+            'Fortress Lines',
+            'Spike Field',
+            'Doom Ring',
+            'Hourglass Trap',
+            'Crossfire',
+            'Zigzag Storm',
+            'Spiral Maze',
+            'Chaos Bloom',
+            'Razor Channel',
+            'Twin Rift'
+        ];
+        const mods = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
+
+        return {
+            level,
+            chaos,
+            chaosPercent: Math.round(chaos * 100),
+            pattern,
+            variant,
+            tier,
+            bossLevel,
+            variation: remix,
+            rows,
+            cols,
+            carveChance,
+            fillChance,
+            hazardBoost,
+            driftBoost,
+            density,
+            name: `${names[pattern]} ${mods[variant]}`
+        };
+    }
+
+    getPatternName(profile) {
+        if (!profile || typeof profile !== 'object') return 'Classic Grid';
+        return profile.name || 'Classic Grid';
+    }
+
+    shouldSpawnBlock(profile, row, col, rows, cols) {
+        const centerCol = (cols - 1) / 2;
+        const centerRow = (rows - 1) / 2;
+        const nx = (col + 0.5) / cols;
+        const ny = (row + 0.5) / rows;
+        const cx = nx - 0.5;
+        const cy = ny - 0.5;
+        const dist = Math.hypot(cx, cy);
+        const angle = Math.atan2(cy, cx);
+        const wave = Math.sin((nx * Math.PI * (2 + profile.variant)) + profile.level * 0.21);
+        const ridge = Math.cos((ny * Math.PI * (3 + (profile.variant % 3))) - profile.level * 0.17);
+        const remix = profile.variation || 0;
+
+        let base = true;
+        switch (profile.pattern % 14) {
             case 0:
-                return true;
+                base = true;
+                break;
             case 1:
-                return (row + col) % 2 === 0 || row < 2;
+                base = ((row + col + profile.variant) % 2 === 0) || row < 2;
+                break;
             case 2: {
-                const tunnelWidth = row < 2 ? 2 : 1;
-                return Math.abs(col - center) > tunnelWidth;
+                const tunnel = Math.max(1, Math.floor((rows - row) / 4) + (profile.variant % 2));
+                base = Math.abs(col - centerCol) > tunnel;
+                break;
             }
             case 3: {
-                const expected = Math.floor((Math.sin((col / cols) * Math.PI * 2) + 1) * (rows - 1) / 2);
-                return Math.abs(row - expected) <= 1 || row < 2;
+                const expected = Math.floor((wave + 1) * (rows - 1) * 0.5);
+                base = Math.abs(row - expected) <= (profile.variant === 2 ? 2 : 1) || row < 2;
+                break;
             }
             case 4:
-                return row === 0 || row === rows - 1 || col % 3 !== 1;
+                base = row === 0 || row === rows - 1 || col === 0 || col === cols - 1 || (col + row) % 3 !== 1;
+                break;
             case 5:
-                return col >= row / 2 && col <= cols - 1 - row / 2;
-            default:
-                return true;
+                base = col >= Math.floor(row / 2) - profile.variant && col <= cols - 1 - Math.floor(row / 2) + profile.variant;
+                break;
+            case 6: {
+                const inner = 0.18 + profile.variant * 0.03;
+                const outer = 0.44 + profile.variant * 0.02;
+                base = dist >= inner && dist <= outer;
+                break;
+            }
+            case 7: {
+                const width = Math.max(1, Math.floor((rows / 2 - Math.abs(row - centerRow)) / 1.25) + (profile.variant % 2));
+                base = Math.abs(col - centerCol) <= width;
+                break;
+            }
+            case 8:
+                base = row === Math.floor(centerRow) || col === Math.floor(centerCol) || Math.abs(row - centerRow) === Math.abs(col - centerCol);
+                break;
+            case 9: {
+                const expected = (row * 2 + profile.variant) % cols;
+                base = Math.abs(col - expected) <= 1 || Math.abs(col - ((cols - 1) - expected)) <= 1;
+                break;
+            }
+            case 10: {
+                const spiral = (Math.sin(angle * 3 + dist * 18 + profile.level * 0.35) + 1) * 0.5;
+                base = spiral > (0.45 - profile.chaos * 0.1);
+                break;
+            }
+            case 12:
+                base = ((row * 2 + col + profile.variant) % 3 !== 1) || Math.abs(col - centerCol) <= 1 + (profile.variant % 2);
+                break;
+            case 13:
+                base = Math.abs(col - centerCol) >= 2 + (profile.variant % 3);
+                if (row === rows - 1 && col % 2 === 1) base = false;
+                break;
+            default: {
+                const noise = this.levelRandom(profile.level, 5000 + row * 97 + col * 57, remix);
+                base = noise < profile.density + 0.06;
+                break;
+            }
         }
+
+        if (row < 2 && this.levelRandom(profile.level, 9000 + row * 37 + col * 17, remix) < 0.88) {
+            base = true;
+        }
+
+        const noise = this.levelRandom(profile.level, 10000 + row * 131 + col * 71, remix);
+        if (base && noise < profile.carveChance) base = false;
+        else if (!base && noise < profile.fillChance) base = true;
+
+        if (!base && ridge > 0.86 && this.levelRandom(profile.level, 12000 + row * 41 + col * 29, remix) < 0.22) {
+            base = true;
+        }
+
+        if (profile.level >= 45 && row % 3 === 0 && this.levelRandom(profile.level, 12500 + row * 11 + col * 19, remix) < profile.chaos * 0.22) {
+            base = !base;
+        }
+
+        if (profile.bossLevel) {
+            const moatWidth = 1 + (profile.variant % 2);
+            const inCore = Math.abs(col - centerCol) <= moatWidth && row > 1 && row < rows - 1;
+            if (inCore && this.levelRandom(profile.level, 13100 + row * 13 + col * 17, remix) < 0.72) base = false;
+            if (!base && row === rows - 1 && this.levelRandom(profile.level, 13300 + col * 7, remix) < 0.55) base = true;
+        }
+
+        return base;
     }
 
-    pickBlockType(row) {
+    pickBlockType(row, profile) {
         const roll = Math.random();
-        const danger = Math.min(0.35, this.level * 0.03);
+        const bossPush = profile.bossLevel ? 0.08 : 0;
+        const eliteChance = this.clamp(0.015 + profile.hazardBoost * 0.25 + (this.level >= 42 ? 0.05 : 0) + bossPush + (this.level >= 60 ? 0.05 : 0), 0.02, 0.4);
+        const movingChance = this.clamp(0.05 + profile.hazardBoost * 0.3 + (row % 3 === 0 ? 0.02 : 0) + bossPush * 0.8, 0.06, 0.46);
+        const explosiveChance = this.clamp(0.08 + profile.hazardBoost * 0.24 + bossPush * 0.6, 0.08, 0.4);
+        const armoredChance = this.clamp(0.22 + profile.hazardBoost * 0.22 + row * 0.015 + bossPush, 0.22, 0.76);
 
-        if (this.level >= 5 && roll < 0.06 + danger / 2) return 'elite';
-        if (this.level >= 3 && roll < 0.13 + danger) return 'moving';
-        if (this.level >= 2 && roll < 0.23 + danger) return 'explosive';
-        if (roll < 0.35 + danger) return 'armored';
-        if (row < 2 && Math.random() < 0.45) return 'armored';
+        let threshold = eliteChance;
+        if (this.level >= 8 && roll < threshold) return 'elite';
+        threshold += movingChance;
+        if (this.level >= 5 && roll < threshold) return 'moving';
+        threshold += explosiveChance;
+        if (this.level >= 3 && roll < threshold) return 'explosive';
+        threshold += armoredChance;
+        if (roll < threshold || (row < 2 && Math.random() < 0.52)) return 'armored';
         return 'normal';
     }
 
@@ -277,37 +444,41 @@
     }
 
     generateBlocks() {
-        const rows = Math.min(8, 5 + Math.floor((this.level - 1) / 2));
-        const cols = 12;
-        const gap = 6;
-        const marginX = 46;
+        const profile = this.levelProfile || this.buildLevelProfile(this.level);
+        const rows = profile.rows;
+        const cols = profile.cols;
+        const gap = Math.max(3, 6 - Math.floor(this.level / 18));
+        const marginX = 32;
         const startY = 64;
         const blockWidth = Math.floor((this.canvas.width - marginX * 2 - gap * (cols - 1)) / cols);
-        const blockHeight = 24;
-        const pattern = (this.level - 1) % 6;
+        const blockHeight = Math.max(16, Math.floor(24 - this.level / 20));
 
         this.blocks = [];
+        let occupancyPattern = '';
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
-                if (!this.shouldSpawnBlock(pattern, row, col, rows, cols)) continue;
+                const spawnBlock = this.shouldSpawnBlock(profile, row, col, rows, cols);
+                occupancyPattern += spawnBlock ? '1' : '0';
+                if (!spawnBlock) continue;
 
                 const x = marginX + col * (blockWidth + gap);
                 const y = startY + row * (blockHeight + gap);
-                const type = this.pickBlockType(row);
+                const type = this.pickBlockType(row, profile);
 
+                const armoredHealth = 2 + Math.floor((this.level - 1) / 8) + (profile.bossLevel ? 1 : 0);
                 const healthByType = {
                     normal: 1,
-                    armored: 2 + Math.floor(this.level / 5),
+                    armored: armoredHealth,
                     explosive: 1,
-                    moving: 1 + Math.floor(this.level / 6),
-                    elite: 3 + Math.floor(this.level / 4)
+                    moving: 1 + Math.floor(this.level / 5),
+                    elite: 3 + Math.floor(this.level / 3)
                 };
                 const valuesByType = {
-                    normal: 12,
-                    armored: 20,
-                    explosive: 18,
-                    moving: 22,
-                    elite: 35
+                    normal: 12 + Math.floor(this.level / 3),
+                    armored: 20 + Math.floor(this.level / 2),
+                    explosive: 18 + Math.floor(this.level / 2),
+                    moving: 22 + Math.floor(this.level / 2),
+                    elite: 35 + Math.floor(this.level * 0.8)
                 };
 
                 const health = healthByType[type] || 1;
@@ -323,10 +494,11 @@
                     color: this.getBlockColor(row, type),
                     baseX: x,
                     driftPhase: Math.random() * Math.PI * 2,
-                    driftSpeed: 0.015 + Math.random() * 0.02 + this.level * 0.0005,
-                    driftAmount: 10 + Math.random() * 12
+                    driftSpeed: profile.driftBoost + Math.random() * (0.01 + profile.chaos * 0.015),
+                    driftAmount: 8 + Math.random() * (10 + profile.chaos * 9)
                 });
             }
+            occupancyPattern += '|';
         }
 
         if (this.blocks.length === 0) {
@@ -347,6 +519,7 @@
             });
         }
 
+        this.levelLayoutSignature = `${rows}x${cols}:${occupancyPattern}`;
         this.levelBlocksTotal = this.blocks.length;
     }
 
@@ -403,6 +576,7 @@
             loseLife: { frequency: 120, duration: 0.2, wave: 'sawtooth', volume: 0.08 },
             level: { frequency: 720, duration: 0.16, wave: 'triangle', volume: 0.08 },
             gameOver: { frequency: 90, duration: 0.25, wave: 'sawtooth', volume: 0.08 },
+            victory: { frequency: 980, duration: 0.22, wave: 'triangle', volume: 0.1 },
             launch: { frequency: 560, duration: 0.08, wave: 'triangle', volume: 0.08 },
             achievement: { frequency: 980, duration: 0.13, wave: 'triangle', volume: 0.1 }
         };
@@ -591,6 +765,7 @@
         if (!this.gameRunning || this.paused) return;
 
         this.frame++;
+        if (this.extraLifeCooldown > 0) this.extraLifeCooldown--;
         this.updatePaddleFromControls();
         this.updateMovingBlocks();
 
@@ -814,6 +989,14 @@
             this.spawnFloatText('PERFECT LEVEL', this.canvas.width / 2, this.canvas.height / 2 - 28, '#ffe08a');
         }
 
+        if (this.level >= this.config.maxLevel) {
+            this.playSound('victory');
+            this.screenShake = 24;
+            this.setStatus(`Level ${this.config.maxLevel} cleared. Chaos mastered.`);
+            this.gameOver(true);
+            return;
+        }
+
         this.playSound('level');
         this.level++;
         this.screenShake = 18;
@@ -821,16 +1004,25 @@
         this.setupLevel();
     }
 
-    gameOver() {
+    gameOver(won) {
+        const isWin = !!won;
         this.gameRunning = false;
+        this.gameWon = isWin;
         this.paused = false;
-        this.playSound('gameOver');
+        if (!isWin) this.playSound('gameOver');
 
         if (this.ui.gameOver) this.ui.gameOver.style.display = 'block';
         if (this.ui.pauseOverlay) this.ui.pauseOverlay.style.display = 'none';
         if (this.ui.finalScore) this.ui.finalScore.textContent = String(this.score);
+        if (this.ui.endTitle) this.ui.endTitle.textContent = isWin ? 'Level 69 Cleared' : 'Run Over';
+        if (this.ui.endSubtitle) {
+            this.ui.endSubtitle.textContent = isWin
+                ? 'You beat the full chaos ladder. Toilet throne secured.'
+                : 'The run got flushed. Reload your luck.';
+        }
 
-        this.setStatus('Run ended. Hit restart to run it back.');
+        this.setStatus(isWin ? `Victory! You conquered level ${this.config.maxLevel}.` : 'Run ended. Hit restart to run it back.');
+        this.checkAchievements();
         this.savePersistentData();
         this.updateUI();
     }
@@ -844,10 +1036,15 @@
         this.runBestCombo = 0;
         this.levelMistakes = 0;
         this.gameRunning = true;
+        this.gameWon = false;
         this.paused = false;
         this.awaitingLaunch = true;
         this.screenShake = 0;
         this.frame = 0;
+        this.runSeed = this.createRunSeed();
+        this.extraLifeCooldown = 0;
+        this.levelLayoutSignatures = new Set();
+        this.levelLayoutSignature = '';
 
         this.activePowerUps = {};
         this.ghostCharges = 0;
@@ -862,6 +1059,8 @@
 
         if (this.ui.gameOver) this.ui.gameOver.style.display = 'none';
         if (this.ui.pauseOverlay) this.ui.pauseOverlay.style.display = 'none';
+        if (this.ui.endTitle) this.ui.endTitle.textContent = 'Run Over';
+        if (this.ui.endSubtitle) this.ui.endSubtitle.textContent = 'The run got flushed. Reload your luck.';
 
         this.setStatus('Fresh run started.');
     }
@@ -899,9 +1098,11 @@
             this.screenShake = Math.max(this.screenShake, 7);
         }
 
+        const baseDropChance = Math.min(0.22, this.config.blockDropChance * 0.35 + this.level * 0.0022);
+        const dropEligible = this.powerUpDrops.length === 0 && this.balls.length <= 1;
         if (block.type === 'elite') {
             this.createPowerUpDrop(block.x + block.width / 2, block.y + block.height / 2, true);
-        } else if (Math.random() < this.config.blockDropChance) {
+        } else if (dropEligible && block.type !== 'armored' && Math.random() < baseDropChance) {
             this.createPowerUpDrop(block.x + block.width / 2, block.y + block.height / 2, false);
         }
     }
@@ -923,7 +1124,7 @@
             { type: 'bigPaddle', name: 'Wide Paddle', color: '#7ffff0', symbol: 'W', duration: 760, weight: 6 },
             { type: 'smallPaddle', name: 'Tiny Paddle', color: '#ffd17c', symbol: 'S', duration: 540, weight: 3 },
             { type: 'slowMotion', name: 'Slow Motion', color: '#7bc8ff', symbol: 'SL', duration: 620, weight: 6 },
-            { type: 'extraLife', name: 'Extra Life', color: '#ff8ea8', symbol: 'L+', duration: 0, weight: 4 },
+            { type: 'extraLife', name: 'Extra Life', color: '#ff8ea8', symbol: 'L+', duration: 0, weight: 1.4 },
             { type: 'laser', name: 'Twin Laser', color: '#ff7afe', symbol: 'LZ', duration: 560, weight: 7 },
             { type: 'magnet', name: 'Magnet', color: '#90f2b1', symbol: 'MG', duration: 680, weight: 6 },
             { type: 'ghostBall', name: 'Ghost Charge', color: '#c8b8ff', symbol: 'GH', duration: 420, weight: 5 },
@@ -936,7 +1137,15 @@
 
     selectPowerUp(forceStrong) {
         const catalog = this.getPowerUpCatalog();
-        const pool = forceStrong ? catalog.filter((item) => item.type !== 'smallPaddle') : catalog;
+        let pool = forceStrong ? catalog.filter((item) => item.type !== 'smallPaddle') : catalog;
+        pool = pool.filter((item) => {
+            if (item.type !== 'extraLife') return true;
+            if (this.extraLifeCooldown > 0) return false;
+            if (this.lives >= 7) return false;
+            if (this.level < 6 && this.lives >= 4) return false;
+            return true;
+        });
+        if (pool.length === 0) pool = catalog.filter((item) => item.type !== 'extraLife');
         let total = 0;
         for (let i = 0; i < pool.length; i++) total += pool[i].weight;
 
@@ -949,7 +1158,8 @@
     }
 
     createPowerUpDrop(x, y, forceStrong) {
-        if (this.powerUpDrops.length > 16) return;
+        if (this.powerUpDrops.length >= 1) return;
+        if (this.balls.length > 1) return;
         const selected = this.selectPowerUp(forceStrong);
 
         this.powerUpDrops.push({
@@ -1018,6 +1228,7 @@
                 break;
             case 'extraLife':
                 this.lives = Math.min(9, this.lives + 1);
+                this.extraLifeCooldown = Math.max(this.extraLifeCooldown, 2200);
                 this.spawnFloatText('LIFE +1', this.paddle.x + this.paddle.width / 2, this.paddle.y - 18, '#ff9ab3');
                 break;
             case 'laser':
@@ -1468,6 +1679,7 @@
         this.tryUnlockAchievement('score_15000', 'Neon Grinder', this.score >= 15000);
         this.tryUnlockAchievement('combo_8', 'Combo Crafter', this.runBestCombo >= 8);
         this.tryUnlockAchievement('level_6', 'Deep Runner', this.level >= 6);
+        this.tryUnlockAchievement('level_69', 'Chaos Crown', this.gameWon || this.level >= this.config.maxLevel);
         this.tryUnlockAchievement('powerup_20', 'Collector', this.powerUpsCollected >= 20);
         this.tryUnlockAchievement('perfect_2', 'No Mistakes', this.perfectLevels >= 2);
     }
@@ -1501,7 +1713,7 @@
         if (this.ui.score) this.ui.score.textContent = String(this.score);
         if (this.ui.highScore) this.ui.highScore.textContent = String(this.highScore);
         if (this.ui.lives) this.ui.lives.textContent = String(this.lives);
-        if (this.ui.level) this.ui.level.textContent = String(this.level);
+        if (this.ui.level) this.ui.level.textContent = `${this.level}/${this.config.maxLevel}`;
         if (this.ui.combo) this.ui.combo.textContent = String(this.combo);
         if (this.ui.bestCombo) this.ui.bestCombo.textContent = String(this.bestCombo);
 

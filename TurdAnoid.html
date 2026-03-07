@@ -264,7 +264,7 @@
       <li><strong>Launch Ball:</strong> <strong>Space</strong> or tap/click</li>
       <li><strong>Pause:</strong> <strong>P</strong> or Space while live</li>
       <li><strong>Restart:</strong> <strong>R</strong></li>
-      <li><strong>Goal:</strong> clear each level pattern without getting flushed</li>
+      <li><strong>Goal:</strong> survive escalating chaos and clear level 69</li>
     </ul>
     <p>Tip: combo streaks and stink buildup make scoring and effects way more intense.</p>
     <button class="btn" onclick="hideWelcomeGuide()">Start Run</button>
@@ -360,6 +360,7 @@ let levelPatternName = 'Classic Wall';
 let bigPaddleStacks = 0;
 let stuckBall = null;
 let lastStinkMilestone = 0;
+let extraLifeCooldown = 0;
 
 let controlLeft = false;
 let controlRight = false;
@@ -375,7 +376,7 @@ let activePowerUps = {
 
 const POWERUP_TYPES = [
   { type: 'bigPaddle', emoji: '📏', name: 'Enlarge (E)', weight: 3.3 },
-  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.45 },
+  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.2 },
   { type: 'slowBall', emoji: '🐌', name: 'Slow (S)', weight: 2.5 },
   { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper Blaster', weight: 2.3 },
   { type: 'stickyPaddle', emoji: '🧲', name: 'Catch (C)', weight: 2.0 },
@@ -385,6 +386,7 @@ const POWERUP_TYPES = [
   { type: 'stinkBurst', emoji: '💨', name: 'Stink Burst', weight: 1.6 }
 ];
 
+const MAX_LEVEL = 69;
 const LEVEL_PATTERNS = [
   'Classic Wall',
   'Checker Gaps',
@@ -392,8 +394,20 @@ const LEVEL_PATTERNS = [
   'Wave',
   'Fortress',
   'Spikes',
-  'Chaos Grid'
+  'Doom Ring',
+  'Hourglass',
+  'Crossfire',
+  'Zigzag Storm',
+  'Spiral Maze',
+  'Chaos Bloom',
+  'Saw Teeth',
+  'Rift Lanes'
 ];
+const LEVEL_MODS = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
+let runSeed = Math.floor(Math.random() * 1000000000);
+let levelChaosProfile = null;
+let levelLayoutSignatures = new Set();
+let levelLayoutSignature = '';
 
 function setup() {
   const c = createCanvas(860, 620);
@@ -454,10 +468,15 @@ function resetGame() {
   gameOver = false;
   gameWon = false;
   paused = false;
-  statusText = 'Fresh run. Get stinky, not flushed.';
+  statusText = `Fresh run. Survive the chaos climb to level ${MAX_LEVEL}.`;
   bigPaddleStacks = 0;
   stuckBall = null;
   lastStinkMilestone = 0;
+  extraLifeCooldown = 0;
+  runSeed = Math.floor(Math.random() * 1000000000);
+  levelChaosProfile = null;
+  levelLayoutSignatures = new Set();
+  levelLayoutSignature = '';
 
   paddleWidth = originalPaddleWidth;
   paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
@@ -481,91 +500,258 @@ function resetGame() {
   updateHud();
 }
 
-function getPatternName(index) {
-  return LEVEL_PATTERNS[index % LEVEL_PATTERNS.length];
+function levelRand(levelNumber, salt, variation) {
+  const remix = (variation || 0) * 173.317;
+  const x = Math.sin((levelNumber * 9283.771) + (salt * 631.97) + runSeed * 0.000001 + remix) * 43758.5453123;
+  return x - Math.floor(x);
 }
 
-function shouldPlaceBrick(pattern, row, col, rows, cols) {
-  const center = floor(cols / 2);
-  switch (pattern % 7) {
+function buildLevelProfile(levelNumber, variation) {
+  const remix = variation || 0;
+  const tier = min(5, floor((levelNumber - 1) / 12));
+  const bossLevel = (levelNumber % 10 === 0) || levelNumber === MAX_LEVEL;
+  const lateRamp = levelNumber >= 56 ? 0.06 : 0;
+  const chaos = constrain(0.1 + (levelNumber - 1) * 0.014 + tier * 0.018 + lateRamp, 0.1, 0.995);
+  const pattern = floor(levelRand(levelNumber, 7, remix) * LEVEL_PATTERNS.length);
+  const variant = floor(levelRand(levelNumber, 11, remix) * LEVEL_MODS.length);
+  const rows = min(13, 5 + floor((levelNumber - 1) / 2.6));
+  const cols = min(17, 12 + floor((levelNumber - 1) / 9));
+  const carveChance = constrain((levelRand(levelNumber, 13, remix) - 0.5) * 0.22 + chaos * 0.1, 0, 0.26);
+  const fillChance = constrain((levelRand(levelNumber, 17, remix) - 0.5) * 0.12 + chaos * 0.05 + (bossLevel ? 0.02 : 0), 0, 0.16);
+  const hazardBoost = chaos * 0.27 + floor((levelNumber - 1) / 10) * 0.02 + tier * 0.014 + (bossLevel ? 0.06 : 0);
+  const driftBoost = 0.012 + chaos * 0.03 + (bossLevel ? 0.01 : 0);
+  const density = constrain(0.82 - chaos * 0.22 + (levelRand(levelNumber, 19, remix) - 0.5) * 0.14 + (bossLevel ? 0.03 : 0), 0.56, 0.95);
+
+  return {
+    level: levelNumber,
+    chaos,
+    chaosPercent: Math.round(chaos * 100),
+    pattern,
+    variant,
+    tier,
+    bossLevel,
+    variation: remix,
+    rows,
+    cols,
+    carveChance,
+    fillChance,
+    hazardBoost,
+    driftBoost,
+    density,
+    name: `${LEVEL_PATTERNS[pattern]} ${LEVEL_MODS[variant]}`
+  };
+}
+
+function getPatternName(profile) {
+  if (!profile) return 'Classic Wall';
+  return profile.name;
+}
+
+function shouldPlaceBrick(profile, row, col, rows, cols) {
+  const centerCol = (cols - 1) / 2;
+  const centerRow = (rows - 1) / 2;
+  const nx = (col + 0.5) / cols;
+  const ny = (row + 0.5) / rows;
+  const cx = nx - 0.5;
+  const cy = ny - 0.5;
+  const distFromCenter = Math.hypot(cx, cy);
+  const angle = Math.atan2(cy, cx);
+  const wave = Math.sin((nx * Math.PI * (2 + profile.variant)) + profile.level * 0.21);
+  const ridge = Math.cos((ny * Math.PI * (3 + (profile.variant % 3))) - profile.level * 0.17);
+  const remix = profile.variation || 0;
+
+  let base = true;
+  switch (profile.pattern % LEVEL_PATTERNS.length) {
     case 0:
-      return true;
+      base = true;
+      break;
     case 1:
-      return (row + col) % 2 === 0 || row < 2;
-    case 2:
-      return abs(col - center) > (row < 2 ? 1 : 0);
+      base = ((row + col + profile.variant) % 2 === 0) || row < 2;
+      break;
+    case 2: {
+      const tunnel = Math.max(1, Math.floor((rows - row) / 4) + (profile.variant % 2));
+      base = Math.abs(col - centerCol) > tunnel;
+      break;
+    }
     case 3: {
-      const wave = floor((sin((col / cols) * PI * 2) + 1) * (rows - 1) / 2);
-      return abs(row - wave) <= 1 || row < 2;
+      const expected = Math.floor((wave + 1) * (rows - 1) * 0.5);
+      base = Math.abs(row - expected) <= (profile.variant === 2 ? 2 : 1) || row < 2;
+      break;
     }
     case 4:
-      return row === 0 || row === rows - 1 || col % 3 !== 1;
+      base = row === 0 || row === rows - 1 || col === 0 || col === cols - 1 || (col + row) % 3 !== 1;
+      break;
     case 5:
-      return col >= floor(row / 2) && col <= cols - 1 - floor(row / 2);
+      base = col >= Math.floor(row / 2) - profile.variant && col <= cols - 1 - Math.floor(row / 2) + profile.variant;
+      break;
+    case 6: {
+      const inner = 0.18 + profile.variant * 0.03;
+      const outer = 0.44 + profile.variant * 0.02;
+      base = distFromCenter >= inner && distFromCenter <= outer;
+      break;
+    }
+    case 7: {
+      const widthFactor = Math.max(1, Math.floor((rows / 2 - Math.abs(row - centerRow)) / 1.25) + (profile.variant % 2));
+      base = Math.abs(col - centerCol) <= widthFactor;
+      break;
+    }
+    case 8:
+      base = row === Math.floor(centerRow) || col === Math.floor(centerCol) || Math.abs(row - centerRow) === Math.abs(col - centerCol);
+      break;
+    case 9: {
+      const expected = (row * 2 + profile.variant) % cols;
+      base = Math.abs(col - expected) <= 1 || Math.abs(col - ((cols - 1) - expected)) <= 1;
+      break;
+    }
+    case 10: {
+      const spiral = (Math.sin(angle * 3 + distFromCenter * 18 + profile.level * 0.35) + 1) * 0.5;
+      base = spiral > (0.45 - profile.chaos * 0.1);
+      break;
+    }
+    case 11:
+      base = levelRand(profile.level, 5000 + row * 97 + col * 57, remix) < profile.density + 0.06;
+      break;
+    case 12:
+      base = ((row * 2 + col + profile.variant) % 3 !== 1) || (Math.abs(col - centerCol) <= 1 + (profile.variant % 2));
+      break;
+    case 13:
+      base = Math.abs(col - centerCol) >= 2 + (profile.variant % 3);
+      if (row === rows - 1 && col % 2 === 1) base = false;
+      break;
     default:
-      return random() > 0.18 || row < 2;
+      base = levelRand(profile.level, 5050 + row * 79 + col * 43, remix) < profile.density;
+      break;
   }
+
+  if (row < 2 && levelRand(profile.level, 9000 + row * 37 + col * 17, remix) < 0.88) {
+    base = true;
+  }
+
+  const noise = levelRand(profile.level, 10000 + row * 131 + col * 71, remix);
+  if (base && noise < profile.carveChance) base = false;
+  else if (!base && noise < profile.fillChance) base = true;
+
+  if (!base && ridge > 0.86 && levelRand(profile.level, 12000 + row * 41 + col * 29, remix) < 0.22) {
+    base = true;
+  }
+
+  if (profile.level >= 45 && row % 3 === 0 && levelRand(profile.level, 12500 + row * 11 + col * 19, remix) < profile.chaos * 0.22) {
+    base = !base;
+  }
+
+  if (profile.bossLevel) {
+    const moatWidth = 1 + (profile.variant % 2);
+    const inCore = Math.abs(col - centerCol) <= moatWidth && row > 1 && row < rows - 1;
+    if (inCore && levelRand(profile.level, 13100 + row * 13 + col * 17, remix) < 0.72) base = false;
+    if (!base && row === rows - 1 && levelRand(profile.level, 13300 + col * 7, remix) < 0.55) base = true;
+  }
+
+  return base;
 }
 
 function createLevel(levelNumber) {
-  bricks = [];
+  let remix = 0;
+  while (remix < 14) {
+    bricks = [];
+    levelChaosProfile = buildLevelProfile(levelNumber, remix);
 
-  const rows = min(8, 4 + floor((levelNumber - 1) / 2));
-  const cols = 12;
-  const gap = 6;
-  const margin = 24;
-  const totalWidth = width - margin * 2;
-  const brickW = (totalWidth - gap * (cols - 1)) / cols;
-  const brickH = 22;
-  const pattern = (levelNumber - 1) % 7;
-  levelPatternName = getPatternName(pattern);
+    const rows = levelChaosProfile.rows;
+    const cols = levelChaosProfile.cols;
+    const gap = max(4, 6 - floor(levelNumber / 18));
+    const margin = 24;
+    const totalWidth = width - margin * 2;
+    const brickW = (totalWidth - gap * (cols - 1)) / cols;
+    const brickH = max(16, floor(22 - levelNumber / 22));
+    let occupancyPattern = '';
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (!shouldPlaceBrick(pattern, r, c, rows, cols)) continue;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const placeBrick = shouldPlaceBrick(levelChaosProfile, r, c, rows, cols);
+        occupancyPattern += placeBrick ? '1' : '0';
+        if (!placeBrick) continue;
 
-      const x = margin + c * (brickW + gap);
-      const y = 58 + r * (brickH + gap);
-      const roll = random();
+        const x = margin + c * (brickW + gap);
+        const y = 58 + r * (brickH + gap);
+        const roll = random();
 
-      let type = 'normal';
-      if (levelNumber >= 3 && roll < 0.12) type = 'explosive';
-      else if (levelNumber >= 4 && roll < 0.30) type = 'silver';
-      else if (levelNumber >= 6 && roll < 0.40) type = 'shifty';
-      else if (levelNumber >= 5 && roll < 0.48) type = 'gold';
+        let type = 'normal';
+        const bossPush = levelChaosProfile.bossLevel ? 0.08 : 0;
+        const eliteChance = constrain(0.03 + levelChaosProfile.hazardBoost * 0.18 + (levelNumber >= 42 ? 0.05 : 0) + bossPush + (levelNumber >= 60 ? 0.05 : 0), 0.03, 0.32);
+        const shiftyChance = constrain(0.06 + levelChaosProfile.hazardBoost * 0.22 + bossPush * 0.8, 0.06, 0.4);
+        const explosiveChance = constrain(0.1 + levelChaosProfile.hazardBoost * 0.2 + bossPush * 0.6, 0.1, 0.4);
+        const silverChance = constrain(0.24 + levelChaosProfile.hazardBoost * 0.18 + bossPush, 0.24, 0.66);
 
-      if (r < 2 && type === 'normal' && random() < 0.4) type = 'silver';
+        let threshold = eliteChance;
+        if (levelNumber >= 7 && roll < threshold) type = 'gold';
+        else {
+          threshold += shiftyChance;
+          if (levelNumber >= 5 && roll < threshold) type = 'shifty';
+          else {
+            threshold += explosiveChance;
+            if (levelNumber >= 3 && roll < threshold) type = 'explosive';
+            else if (roll < threshold + silverChance) type = 'silver';
+          }
+        }
 
-      const silverHp = 2 + floor((levelNumber - 1) / 8); // Inspired by Arkanoid silver bricks.
+        if (r < 2 && type === 'normal' && random() < 0.52) type = 'silver';
 
-      const hpByType = {
-        normal: 1,
-        explosive: 1,
-        silver: silverHp,
-        shifty: 1 + floor(levelNumber / 6),
-        gold: 9999
-      };
+        const silverHp = 2 + floor((levelNumber - 1) / 8);
+        const hpByType = {
+          normal: 1,
+          explosive: 1,
+          silver: silverHp,
+          shifty: 1 + floor(levelNumber / 5),
+          gold: 9999
+        };
 
-      const destructible = type !== 'gold';
+        const destructible = type !== 'gold';
+        bricks.push({
+          x,
+          y,
+          w: brickW,
+          h: brickH,
+          type,
+          hp: hpByType[type],
+          maxHp: hpByType[type],
+          destructible,
+          driftPhase: random(TWO_PI),
+          driftBaseX: x,
+          driftAmount: type === 'shifty' ? random(8, 16 + levelChaosProfile.chaos * 10) : 0,
+          driftSpeed: type === 'shifty'
+            ? levelChaosProfile.driftBoost + random(0.008, 0.02 + levelChaosProfile.chaos * 0.015)
+            : 0
+        });
+      }
+      occupancyPattern += '|';
+    }
 
+    if (bricks.length === 0) {
       bricks.push({
-        x,
-        y,
-        w: brickW,
-        h: brickH,
-        type,
-        hp: hpByType[type],
-        maxHp: hpByType[type],
-        destructible,
-        driftPhase: random(TWO_PI),
-        driftBaseX: x,
-        driftAmount: type === 'shifty' ? random(8, 18) : 0,
-        driftSpeed: type === 'shifty' ? random(0.01, 0.03) : 0
+        x: width / 2 - 62,
+        y: 92,
+        w: 124,
+        h: 24,
+        type: 'silver',
+        hp: 3,
+        maxHp: 3,
+        destructible: true,
+        driftPhase: 0,
+        driftBaseX: width / 2 - 62,
+        driftAmount: 0,
+        driftSpeed: 0
       });
     }
+
+    levelLayoutSignature = `${rows}x${cols}:${occupancyPattern}`;
+    if (!levelLayoutSignatures.has(levelLayoutSignature) || remix === 13) break;
+    remix++;
   }
 
-  statusText = `Level ${levelNumber}: ${levelPatternName}.`;
+  levelLayoutSignatures.add(levelLayoutSignature);
+  levelPatternName = getPatternName(levelChaosProfile);
+  const bossTag = levelChaosProfile.bossLevel ? ' Boss Wave.' : '';
+  const remixTag = levelChaosProfile.variation > 0 ? ` Remix ${levelChaosProfile.variation + 1}.` : '';
+  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}`;
 }
 
 function launchBall() {
@@ -621,14 +807,26 @@ function draw() {
   else combo = 0;
 
   if (destructibleRemaining() === 0) {
-    level++;
-    score += 120 * level;
-    statusText = `Level up! Welcome to level ${level}.`;
-    createLevel(level);
-    powerUps = [];
-    toiletPaperShots = [];
-    laserShots = [];
-    resetBallState();
+    if (level >= MAX_LEVEL) {
+      gameWon = true;
+      paused = false;
+      awaitingLaunch = false;
+      score += 6900;
+      statusText = `Level ${MAX_LEVEL} cleared. Toilet chaos conquered.`;
+      if (score > highScore) {
+        highScore = score;
+        try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
+      }
+    } else {
+      level++;
+      score += 120 * level;
+      statusText = `Level up! Welcome to level ${level}.`;
+      createLevel(level);
+      powerUps = [];
+      toiletPaperShots = [];
+      laserShots = [];
+      resetBallState();
+    }
   }
 
   drawGameScene(true);
@@ -695,6 +893,7 @@ function updatePowerTimers() {
   for (const key in activePowerUps) {
     if (activePowerUps[key] > 0) activePowerUps[key]--;
   }
+  if (extraLifeCooldown > 0) extraLifeCooldown--;
 
   applyPaddleWidth();
 
@@ -709,19 +908,28 @@ function updatePowerTimers() {
 }
 
 function weightedPowerUp() {
+  const pool = POWERUP_TYPES.filter((p) => {
+    if (p.type !== 'extraLife') return true;
+    if (extraLifeCooldown > 0) return false;
+    if (lives >= 5) return false;
+    if (level < 6 && lives >= 3) return false;
+    return true;
+  });
+
   let total = 0;
-  for (const p of POWERUP_TYPES) total += p.weight;
+  for (const p of pool) total += p.weight;
 
   let roll = random(total);
-  for (const p of POWERUP_TYPES) {
+  for (const p of pool) {
     roll -= p.weight;
     if (roll <= 0) return p;
   }
-  return POWERUP_TYPES[0];
+  return pool[0] || POWERUP_TYPES[0];
 }
 
 function createPowerUp(x, y) {
-  if (powerUps.length >= 12) return;
+  if (powerUps.length >= 1) return;
+  if (balls.length > 1) return;
   const p = weightedPowerUp();
   powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2.1, angle: 0, ...p });
 }
@@ -988,8 +1196,9 @@ function damageBrick(index, damage, projectileHit) {
     splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
   }
 
-  const dropChance = 0.18 + min(0.14, level * 0.01);
-  if (random() < dropChance) createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+  const dropChance = 0.12 + min(0.08, level * 0.0025);
+  const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1 && powerUps.length === 0;
+  if (dropEligible && random() < dropChance) createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
 
   spawnBurst(removed.x + removed.w / 2, removed.y + removed.h / 2, 10, color(255, 180, 120));
 
@@ -1020,6 +1229,7 @@ function activatePowerUp(type) {
       break;
     case 'extraLife':
       lives = min(6, lives + 1);
+      extraLifeCooldown = max(extraLifeCooldown, 2200);
       statusText = 'Rare heart! One extra life.';
       addFloatText('+1 Life', paddle.x + paddleWidth / 2, paddle.y - 12, color(255, 170, 170));
       break;
@@ -1328,11 +1538,11 @@ function drawEndScreen() {
   fill(230, 255, 236);
   textAlign(CENTER, CENTER);
   textSize(34);
-  text('Flushed!', width / 2, height / 2 - 26);
+  text(gameWon ? 'Level 69 Cleared!' : 'Flushed!', width / 2, height / 2 - 26);
   textSize(20);
   text(`Score: ${score}`, width / 2, height / 2 + 8);
   textSize(15);
-  text('Tap or click to play again', width / 2, height / 2 + 38);
+  text(gameWon ? 'You conquered the chaos ladder. Tap to restart.' : 'Tap or click to play again', width / 2, height / 2 + 38);
 }
 
 function getStinkLevel() {
@@ -1356,7 +1566,7 @@ function updateHud() {
   if (scoreEl) scoreEl.textContent = String(score);
   if (highEl) highEl.textContent = String(highScore);
   if (livesEl) livesEl.textContent = String(lives);
-  if (levelEl) levelEl.textContent = String(level);
+  if (levelEl) levelEl.textContent = `${level}/${MAX_LEVEL}`;
   if (comboEl) comboEl.textContent = String(combo);
   if (bricksEl) bricksEl.textContent = `${destructibleRemaining()}`;
   if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;

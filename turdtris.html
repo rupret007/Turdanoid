@@ -400,6 +400,7 @@ let highScore = parseInt(localStorage.getItem('turdtrisHighScore') || '0', 10);
 let level = 1;
 let linesCleared = 0;
 let levelLines = 0;
+let levelGoal = 5;
 let combo = 0;
 let b2b = 0;
 let softDrop = false;
@@ -536,6 +537,11 @@ function generateSequence() {
 function getGravityMs() {
   if (level <= gravityTable.length) return gravityTable[level - 1];
   return 1;
+}
+
+function getLinesGoalForLevel(currentLevel) {
+  if (currentLevel <= 15) return currentLevel * 5;
+  return 10;
 }
 
 function copyMatrix(matrix) {
@@ -815,9 +821,10 @@ function lockPiece() {
       floatTexts.push({ text: 'PERFECT CLEAR', x: canvas.width / 2, y: canvas.height * 0.3, life: 52, color: '#8ee8c7' });
     }
 
-    const newLevel = Math.min(999, Math.floor(linesCleared / 10) + 1);
-    if (newLevel > level) {
-      level = newLevel;
+    while (levelLines >= levelGoal && level < 999) {
+      levelLines -= levelGoal;
+      level++;
+      levelGoal = getLinesGoalForLevel(level);
       applyLevelModifier(level);
     }
 
@@ -1011,7 +1018,7 @@ function updateScore() {
   if (linesEl) linesEl.textContent = String(linesCleared);
   if (comboEl) comboEl.textContent = String(combo);
   if (b2bEl) b2bEl.textContent = String(b2b);
-  if (statusEl) statusEl.textContent = `${statusText} Theme: ${themes[(level - 1) % themes.length].name}. Gravity: ${getGravityMs()}ms.`;
+  if (statusEl) statusEl.textContent = `${statusText} Theme: ${themes[(level - 1) % themes.length].name}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
 }
 
 function showGameOver() {
@@ -1051,6 +1058,7 @@ function restartGame() {
   level = 1;
   linesCleared = 0;
   levelLines = 0;
+  levelGoal = getLinesGoalForLevel(level);
   combo = 0;
   b2b = 0;
   softDrop = false;
