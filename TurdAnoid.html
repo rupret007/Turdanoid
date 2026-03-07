@@ -205,6 +205,46 @@
       font-size: 0.9rem;
     }
 
+    .welcome-guide {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 18, 14, 0.86);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 90;
+    }
+
+    .welcome-card {
+      width: min(560px, 100%);
+      border: 1px solid rgba(158, 255, 200, 0.4);
+      border-radius: 16px;
+      background: rgba(8, 24, 19, 0.96);
+      padding: 18px;
+    }
+
+    .welcome-card h2 {
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .welcome-card p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .welcome-card ul {
+      margin: 6px 0 12px 18px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .welcome-card li {
+      margin-bottom: 5px;
+    }
+
     @media (max-width: 980px) {
       .main { grid-template-columns: 1fr; }
       .hud { grid-template-columns: repeat(4, minmax(80px, 1fr)); }
@@ -215,6 +255,22 @@
 <body>
 <a class="hub-link" href="hub.html">&larr; Game Hub</a>
 
+<div class="welcome-guide" id="welcomeGuide">
+  <div class="welcome-card">
+    <h2>TurdAnoid Turbo</h2>
+    <p>Break every destructible brick, keep your lives, and chain silly power-ups for chaos runs.</p>
+    <ul>
+      <li><strong>Move Paddle:</strong> mouse, touch, or <strong>A/D</strong> + arrow keys</li>
+      <li><strong>Launch Ball:</strong> <strong>Space</strong> or tap/click</li>
+      <li><strong>Pause:</strong> <strong>P</strong> or Space while live</li>
+      <li><strong>Restart:</strong> <strong>R</strong></li>
+      <li><strong>Goal:</strong> clear each level pattern without getting flushed</li>
+    </ul>
+    <p>Tip: combo streaks and stink buildup make scoring and effects way more intense.</p>
+    <button class="btn" onclick="hideWelcomeGuide()">Start Run</button>
+  </div>
+</div>
+
 <div class="shell">
   <div class="topbar">
     <div>
@@ -222,6 +278,7 @@
       <p>Sillier poop-breaker: classic power-ups plus a stinkier gas trail over time.</p>
     </div>
     <div class="actions">
+      <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
       <button class="btn" onclick="togglePauseExternal()">Pause / Resume</button>
       <button class="btn" onclick="restartExternal()">Restart</button>
     </div>
@@ -296,6 +353,7 @@ let comboTimer = 0;
 let gameOver = false;
 let gameWon = false;
 let paused = false;
+let onboardingOpen = false;
 let awaitingLaunch = true;
 let statusText = 'Arkanoid-style chaos, but sillier.';
 let levelPatternName = 'Classic Wall';
@@ -342,6 +400,21 @@ function setup() {
   c.parent('game-holder');
   textFont('Trebuchet MS');
   resetGame();
+  showWelcomeGuide();
+}
+
+function showWelcomeGuide() {
+  const guide = document.getElementById('welcomeGuide');
+  if (guide) guide.style.display = 'flex';
+  onboardingOpen = true;
+  paused = true;
+}
+
+function hideWelcomeGuide() {
+  const guide = document.getElementById('welcomeGuide');
+  if (guide) guide.style.display = 'none';
+  onboardingOpen = false;
+  if (!gameOver && !gameWon) paused = false;
 }
 
 function windowResized() {
@@ -1304,6 +1377,11 @@ function updateHud() {
 }
 
 function keyPressed() {
+  if (onboardingOpen) {
+    if (keyCode === ENTER || keyCode === 27 || key === ' ') hideWelcomeGuide();
+    return false;
+  }
+
   if (keyCode === LEFT_ARROW || key === 'a' || key === 'A') controlLeft = true;
   if (keyCode === RIGHT_ARROW || key === 'd' || key === 'D') controlRight = true;
 
@@ -1332,6 +1410,10 @@ function keyReleased() {
 }
 
 function mousePressed() {
+  if (onboardingOpen) {
+    hideWelcomeGuide();
+    return;
+  }
   if (gameOver || gameWon) {
     resetGame();
     return;
@@ -1340,6 +1422,10 @@ function mousePressed() {
 }
 
 function touchStarted() {
+  if (onboardingOpen) {
+    hideWelcomeGuide();
+    return false;
+  }
   if (gameOver || gameWon) {
     resetGame();
     return false;
@@ -1349,6 +1435,7 @@ function touchStarted() {
 }
 
 function togglePauseExternal() {
+  if (onboardingOpen) return;
   if (gameOver || gameWon) return;
   paused = !paused;
 }
@@ -1362,6 +1449,10 @@ if (mobileControls) {
   let holdTimer = null;
 
   mobileControls.addEventListener('pointerdown', (e) => {
+    if (onboardingOpen) {
+      hideWelcomeGuide();
+      return;
+    }
     const target = e.target.closest('[data-action]');
     if (!target) return;
     const action = target.getAttribute('data-action');

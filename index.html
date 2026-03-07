@@ -295,6 +295,16 @@
             margin-bottom: 8px;
         }
 
+        .how-card ul {
+            margin: 8px 0 12px 20px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .how-card li {
+            margin-bottom: 6px;
+        }
+
         .achievement-toast {
             position: fixed;
             left: 50%;
@@ -359,9 +369,15 @@
     <div class="how-to-play" id="howToPlay">
         <div class="how-card">
             <h2>Neon Arkanoid Turbo</h2>
-            <p>Move with mouse/touch or A/D and arrow keys. Launch with Space or tap.</p>
-            <p>Break special blocks, chain combos, and stack power-ups for high scores.</p>
-            <p>Controls: <strong>Space</strong> launch/pause, <strong>P/Esc</strong> pause, <strong>M</strong> mute, <strong>R</strong> restart.</p>
+            <p>Break all blocks, keep your lives, and chase combo-heavy clears.</p>
+            <ul>
+                <li><strong>Move:</strong> Mouse/touch, <strong>A/D</strong>, or <strong>Left/Right</strong></li>
+                <li><strong>Launch:</strong> <strong>Space</strong> or tap/click</li>
+                <li><strong>Pause:</strong> <strong>P</strong>, <strong>Esc</strong>, or Space while in play</li>
+                <li><strong>Restart:</strong> <strong>R</strong></li>
+                <li><strong>Mute:</strong> <strong>M</strong></li>
+            </ul>
+            <p>Tip: keep the ball alive and stack power-ups to build huge score multipliers.</p>
             <button class="btn" onclick="dismissHowToPlay()">Start Playing</button>
         </div>
     </div>
@@ -373,6 +389,7 @@
                 <p>Enhanced gameplay, smarter levels, power stackers, and achievement runs.</p>
             </div>
             <div class="actions">
+                <button class="btn" onclick="showHowToPlay()">How To Play</button>
                 <button class="btn" onclick="togglePause()">Pause / Resume</button>
                 <button class="btn" id="muteBtn" onclick="toggleMute()">Mute</button>
                 <button class="btn" onclick="restartGame()">Restart</button>
@@ -465,17 +482,18 @@
 
     <script src="game.js"></script>
     <script>
+        function showHowToPlay() {
+            const el = document.getElementById('howToPlay');
+            if (el) el.style.display = 'flex';
+        }
+
         function dismissHowToPlay() {
             const el = document.getElementById('howToPlay');
             if (el) el.style.display = 'none';
-            try { localStorage.setItem('neonArkanoidSeenHint', '1'); } catch (error) {}
         }
 
         window.addEventListener('load', function () {
-            if (!localStorage.getItem('neonArkanoidSeenHint')) {
-                const el = document.getElementById('howToPlay');
-                if (el) el.style.display = 'flex';
-            }
+            showHowToPlay();
         });
     </script>
 </body>

@@ -382,6 +382,48 @@
       gap: 8px;
     }
 
+    .welcome-guide {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 16, 12, 0.86);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 90;
+    }
+
+    .welcome-card {
+      width: min(560px, 100%);
+      border: 1px solid rgba(142, 255, 194, 0.4);
+      border-radius: 16px;
+      background: rgba(8, 20, 15, 0.96);
+      padding: 18px;
+    }
+
+    .welcome-card h2 {
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .welcome-card p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+
+    .welcome-card ul {
+      margin: 6px 0 12px 18px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+
+    .welcome-card li {
+      margin-bottom: 5px;
+    }
+
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
       .hud { grid-template-columns: repeat(4, minmax(86px, 1fr)); }
@@ -393,6 +435,24 @@
 <body>
   <a class="hub-link" href="hub.html">&larr; Game Hub</a>
 
+  <div class="welcome-guide" id="welcomeGuide">
+    <div class="welcome-card">
+      <h2>Turdjack 21</h2>
+      <p>Beat the dealer without busting. Manage bankroll, pick smart actions, and use house rules to your advantage.</p>
+      <ul>
+        <li><strong>Deal:</strong> N</li>
+        <li><strong>Hit:</strong> H</li>
+        <li><strong>Stand:</strong> S</li>
+        <li><strong>Double:</strong> D (first action only)</li>
+        <li><strong>Split:</strong> P (when pair eligible)</li>
+        <li><strong>Surrender:</strong> X (if enabled)</li>
+        <li><strong>Clear Bet:</strong> C</li>
+      </ul>
+      <p>Tip: adjust table rules on the right, then follow the strategy hint for cleaner decisions.</p>
+      <button class="btn" id="closeGuideBtn">Start Round</button>
+    </div>
+  </div>
+
   <div class="shell">
     <div class="topbar">
       <div>
@@ -400,6 +460,7 @@
         <p>Blackjack, but the table smells questionable and the dealer is a toilet.</p>
       </div>
       <div class="actions">
+        <button class="btn" id="helpBtn">How To Play</button>
         <button class="btn" id="newShoeBtn">New Shoe</button>
         <button class="btn danger" id="resetStatsBtn">Reset Bank</button>
       </div>
@@ -610,6 +671,7 @@
     let firstDecisionOpen = false;
     let splitRound = false;
     let activeHandIndex = 0;
+    let onboardingOpen = false;
 
     function getActiveHand() {
       return activeHandIndex === 0 ? playerHand : splitHand;
@@ -768,6 +830,18 @@
       updateRuleSummary();
       updateHud();
       setStatus(`Table rules applied. Playing ${blackjackPayoutLabel()} with ${rules.dealerHitsSoft17 ? 'H17' : 'S17'}.`);
+    }
+
+    function showWelcomeGuide() {
+      const guide = document.getElementById('welcomeGuide');
+      if (guide) guide.style.display = 'flex';
+      onboardingOpen = true;
+    }
+
+    function hideWelcomeGuide() {
+      const guide = document.getElementById('welcomeGuide');
+      if (guide) guide.style.display = 'none';
+      onboardingOpen = false;
     }
 
     function createShoe(decks = 4) {
@@ -1427,11 +1501,22 @@
       ui.splitBtn.addEventListener('click', playerSplit);
       ui.surrenderBtn.addEventListener('click', playerSurrender);
       ui.applyRulesBtn.addEventListener('click', applyRulesFromUi);
+      const helpBtn = document.getElementById('helpBtn');
+      const closeGuideBtn = document.getElementById('closeGuideBtn');
+      if (helpBtn) helpBtn.addEventListener('click', showWelcomeGuide);
+      if (closeGuideBtn) closeGuideBtn.addEventListener('click', hideWelcomeGuide);
 
       ui.newShoeBtn.addEventListener('click', newShoe);
       ui.resetStatsBtn.addEventListener('click', resetBankroll);
 
       document.addEventListener('keydown', (e) => {
+        if (onboardingOpen) {
+          if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
+            e.preventDefault();
+            hideWelcomeGuide();
+          }
+          return;
+        }
         if (e.code === 'KeyN') {
           e.preventDefault();
           startRound();
@@ -1471,6 +1556,7 @@
       updateRuleSummary();
       updateHud();
       setStatus('Welcome to Turdjack 21. Bet responsibly and blame the toilet.');
+      showWelcomeGuide();
     }
 
     init();
