@@ -346,6 +346,36 @@
 
     .rules p { margin-bottom: 6px; }
 
+    .rule-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .rule-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .rule-row select {
+      border: 1px solid rgba(142, 255, 194, 0.35);
+      border-radius: 8px;
+      background: rgba(9, 25, 20, 0.88);
+      color: var(--accent);
+      padding: 4px 6px;
+      font-size: 0.74rem;
+      min-width: 116px;
+    }
+
+    .rule-row input[type='checkbox'] {
+      width: 16px;
+      height: 16px;
+      accent-color: #8effc2;
+    }
+
     .action-row {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -447,9 +477,47 @@
           <div class="status" id="hintText">Hint: Place a bet to begin.</div>
         </div>
 
+        <div>
+          <h3>Table Setup</h3>
+          <div class="rule-grid">
+            <div class="rule-row">
+              <span>Dealer soft 17</span>
+              <select id="ruleDealer17">
+                <option value="S17">Stand (S17)</option>
+                <option value="H17">Hit (H17)</option>
+              </select>
+            </div>
+            <div class="rule-row">
+              <span>Blackjack payout</span>
+              <select id="ruleBlackjackPayout">
+                <option value="1.5">3:2</option>
+                <option value="1.2">6:5</option>
+              </select>
+            </div>
+            <label class="rule-row">
+              <span>Double after split</span>
+              <input type="checkbox" id="ruleDas">
+            </label>
+            <label class="rule-row">
+              <span>Late surrender</span>
+              <input type="checkbox" id="ruleSurrender">
+            </label>
+            <label class="rule-row">
+              <span>Insurance offer</span>
+              <input type="checkbox" id="ruleInsurance">
+            </label>
+            <label class="rule-row">
+              <span>Hit split aces</span>
+              <input type="checkbox" id="ruleHitSplitAces">
+            </label>
+            <button class="btn" id="applyRulesBtn">Apply Rules</button>
+          </div>
+          <div class="status" id="ruleSummary">Default table loaded.</div>
+        </div>
+
         <div class="rules">
-          <p><strong>Payouts:</strong> Blackjack pays 3:2, normal win pays 1:1, push returns bet.</p>
-          <p><strong>Table Rules:</strong> Dealer stands on soft 17, one split per round, and surrender is pre-split only.</p>
+          <p id="payoutText"><strong>Payouts:</strong> Blackjack pays 3:2, normal win pays 1:1, push returns bet.</p>
+          <p id="tableRulesText"><strong>Table Rules:</strong> Dealer stands on soft 17, one split per round, and surrender is pre-split only.</p>
           <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet.</p>
           <p><strong>Theme Rule:</strong> If you bust, the toilet flushes your dignity.</p>
         </div>
@@ -460,13 +528,21 @@
   <script>
     const STORAGE = {
       bankroll: 'turdjackBankroll',
-      stats: 'turdjackStats'
+      stats: 'turdjackStats',
+      rules: 'turdjackRules'
     };
 
     const INITIAL_BANKROLL = 1000;
     const MIN_BET = 10;
-    const DEALER_HITS_SOFT_17 = false;
     const ALLOW_ONE_SPLIT = true;
+    const DEFAULT_RULES = {
+      dealerHitsSoft17: false,
+      blackjackPayout: 1.5,
+      allowDoubleAfterSplit: true,
+      allowSurrender: true,
+      allowInsurance: true,
+      allowHitSplitAces: false
+    };
 
     const ui = {
       bankrollText: document.getElementById('bankrollText'),
@@ -479,6 +555,16 @@
       winRateText: document.getElementById('winRateText'),
       statusText: document.getElementById('statusText'),
       hintText: document.getElementById('hintText'),
+      ruleSummary: document.getElementById('ruleSummary'),
+      payoutText: document.getElementById('payoutText'),
+      tableRulesText: document.getElementById('tableRulesText'),
+      ruleDealer17: document.getElementById('ruleDealer17'),
+      ruleBlackjackPayout: document.getElementById('ruleBlackjackPayout'),
+      ruleDas: document.getElementById('ruleDas'),
+      ruleSurrender: document.getElementById('ruleSurrender'),
+      ruleInsurance: document.getElementById('ruleInsurance'),
+      ruleHitSplitAces: document.getElementById('ruleHitSplitAces'),
+      applyRulesBtn: document.getElementById('applyRulesBtn'),
       dealerScoreText: document.getElementById('dealerScoreText'),
       playerScoreText: document.getElementById('playerScoreText'),
       splitScoreText: document.getElementById('splitScoreText'),
@@ -500,7 +586,17 @@
     };
 
     let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
-    let stats = readObject(STORAGE.stats, { hands: 0, wins: 0, losses: 0, pushes: 0, surrenders: 0 });
+    let stats = normalizeStats(readObject(STORAGE.stats, {
+      hands: 0,
+      wins: 0,
+      losses: 0,
+      pushes: 0,
+      surrenders: 0,
+      blackjacks: 0,
+      insuranceBets: 0,
+      insuranceWins: 0
+    }));
+    let rules = normalizeRules(readObject(STORAGE.rules, DEFAULT_RULES));
 
     let shoe = [];
     let discard = [];
@@ -535,6 +631,18 @@
       return splitRound ? `Hand ${index + 1}` : 'Main hand';
     }
 
+    function blackjackPayoutLabel() {
+      return rules.blackjackPayout >= 1.5 ? '3:2' : '6:5';
+    }
+
+    function canDoubleOnActiveHand() {
+      const hand = getActiveHand();
+      const activeBet = getActiveBet();
+      if (!roundActive || !firstDecisionOpen || hand.length !== 2) return false;
+      if (splitRound && !rules.allowDoubleAfterSplit) return false;
+      return bankroll >= activeBet;
+    }
+
     function advanceToNextHand() {
       if (!splitRound || activeHandIndex !== 0) return false;
       activeHandIndex = 1;
@@ -565,11 +673,101 @@
       }
     }
 
+    function normalizeStats(raw) {
+      const source = raw && typeof raw === 'object' ? raw : {};
+      return {
+        hands: Number.isFinite(source.hands) ? source.hands : 0,
+        wins: Number.isFinite(source.wins) ? source.wins : 0,
+        losses: Number.isFinite(source.losses) ? source.losses : 0,
+        pushes: Number.isFinite(source.pushes) ? source.pushes : 0,
+        surrenders: Number.isFinite(source.surrenders) ? source.surrenders : 0,
+        blackjacks: Number.isFinite(source.blackjacks) ? source.blackjacks : 0,
+        insuranceBets: Number.isFinite(source.insuranceBets) ? source.insuranceBets : 0,
+        insuranceWins: Number.isFinite(source.insuranceWins) ? source.insuranceWins : 0
+      };
+    }
+
+    function normalizeRules(raw) {
+      const source = raw && typeof raw === 'object' ? raw : {};
+      const payoutRaw = source.blackjackPayout;
+      let payout = 1.5;
+      if (payoutRaw === 1.2 || payoutRaw === '1.2' || payoutRaw === '6:5') payout = 1.2;
+      if (payoutRaw === 1.5 || payoutRaw === '1.5' || payoutRaw === '3:2') payout = 1.5;
+
+      return {
+        dealerHitsSoft17: !!source.dealerHitsSoft17,
+        blackjackPayout: payout,
+        allowDoubleAfterSplit: source.allowDoubleAfterSplit !== false,
+        allowSurrender: source.allowSurrender !== false,
+        allowInsurance: source.allowInsurance !== false,
+        allowHitSplitAces: !!source.allowHitSplitAces
+      };
+    }
+
     function saveState() {
       try {
         localStorage.setItem(STORAGE.bankroll, String(bankroll));
         localStorage.setItem(STORAGE.stats, JSON.stringify(stats));
+        localStorage.setItem(STORAGE.rules, JSON.stringify(rules));
       } catch (e) {}
+    }
+
+    function randomIntExclusive(max) {
+      if (!Number.isFinite(max) || max <= 0) return 0;
+      if (window.crypto && window.crypto.getRandomValues) {
+        const limit = Math.floor(0x100000000 / max) * max;
+        const pool = new Uint32Array(1);
+        let value = 0;
+        do {
+          window.crypto.getRandomValues(pool);
+          value = pool[0];
+        } while (value >= limit);
+        return value % max;
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function syncRulesToUi() {
+      ui.ruleDealer17.value = rules.dealerHitsSoft17 ? 'H17' : 'S17';
+      ui.ruleBlackjackPayout.value = String(rules.blackjackPayout);
+      ui.ruleDas.checked = rules.allowDoubleAfterSplit;
+      ui.ruleSurrender.checked = rules.allowSurrender;
+      ui.ruleInsurance.checked = rules.allowInsurance;
+      ui.ruleHitSplitAces.checked = rules.allowHitSplitAces;
+    }
+
+    function updateRuleSummary() {
+      const soft17 = rules.dealerHitsSoft17 ? 'Dealer hits soft 17' : 'Dealer stands soft 17';
+      const das = rules.allowDoubleAfterSplit ? 'DAS on' : 'No DAS';
+      const surrender = rules.allowSurrender ? 'Late surrender on' : 'No surrender';
+      const insurance = rules.allowInsurance ? 'Insurance on' : 'Insurance off';
+      const splitAces = rules.allowHitSplitAces ? 'Hit split aces' : 'Split aces get one card';
+      ui.ruleSummary.textContent = `${soft17}. BJ ${blackjackPayoutLabel()}. ${das}. ${surrender}. ${insurance}. ${splitAces}.`;
+      ui.payoutText.innerHTML =
+        `<strong>Payouts:</strong> Blackjack pays ${blackjackPayoutLabel()}, normal win pays 1:1, push returns bet.`;
+      const surrenderLine = rules.allowSurrender ? 'surrender is pre-split only' : 'surrender is disabled';
+      ui.tableRulesText.innerHTML =
+        `<strong>Table Rules:</strong> ${soft17.toLowerCase()}, one split per round, and ${surrenderLine}.`;
+    }
+
+    function applyRulesFromUi() {
+      if (roundActive) {
+        syncRulesToUi();
+        setStatus('Finish the current round before changing table rules.');
+        return;
+      }
+
+      rules = normalizeRules({
+        dealerHitsSoft17: ui.ruleDealer17.value === 'H17',
+        blackjackPayout: parseFloat(ui.ruleBlackjackPayout.value),
+        allowDoubleAfterSplit: ui.ruleDas.checked,
+        allowSurrender: ui.ruleSurrender.checked,
+        allowInsurance: ui.ruleInsurance.checked,
+        allowHitSplitAces: ui.ruleHitSplitAces.checked
+      });
+      updateRuleSummary();
+      updateHud();
+      setStatus(`Table rules applied. Playing ${blackjackPayoutLabel()} with ${rules.dealerHitsSoft17 ? 'H17' : 'S17'}.`);
     }
 
     function createShoe(decks = 4) {
@@ -586,7 +784,7 @@
       }
 
       for (let i = next.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = randomIntExclusive(i + 1);
         [next[i], next[j]] = [next[j], next[i]];
       }
 
@@ -741,7 +939,7 @@
       const up = dealerUpcardValue();
       const total = handValue(hand);
       const soft = isSoftHand(hand);
-      const canDouble = firstDecisionOpen && hand.length === 2 && bankroll >= getActiveBet();
+      const canDouble = canDoubleOnActiveHand();
       const canSplit =
         firstDecisionOpen &&
         ALLOW_ONE_SPLIT &&
@@ -795,7 +993,9 @@
       }
       if (total >= 13 && total <= 16) {
         if (up >= 2 && up <= 6) return 'Hint: Stand.';
-        if (!splitRound && firstDecisionOpen && up >= 9) return 'Hint: Consider surrender if available.';
+        if (rules.allowSurrender && !splitRound && firstDecisionOpen && up >= 9) {
+          return 'Hint: Consider surrender if available.';
+        }
         return 'Hint: Hit.';
       }
       return 'Hint: Stand.';
@@ -813,8 +1013,6 @@
       const winRate = resolvedHands > 0 ? Math.round(((stats.wins || 0) / resolvedHands) * 100) : 0;
       ui.winRateText.textContent = `${winRate}%`;
 
-      const activeHand = getActiveHand();
-      const activeBet = getActiveBet();
       const canSplit =
         roundActive &&
         firstDecisionOpen &&
@@ -828,9 +1026,9 @@
       ui.dealBtn.disabled = roundActive;
       ui.hitBtn.disabled = !roundActive;
       ui.standBtn.disabled = !roundActive;
-      ui.doubleBtn.disabled = !roundActive || !firstDecisionOpen || activeHand.length !== 2 || bankroll < activeBet;
+      ui.doubleBtn.disabled = !canDoubleOnActiveHand();
       ui.splitBtn.disabled = !canSplit;
-      ui.surrenderBtn.disabled = !roundActive || !firstDecisionOpen || splitRound;
+      ui.surrenderBtn.disabled = !roundActive || !firstDecisionOpen || splitRound || !rules.allowSurrender;
 
       const lockedBet = roundActive;
       document.querySelectorAll('[data-chip]').forEach((btn) => {
@@ -903,29 +1101,78 @@
 
       const pBJ = isBlackjack(playerHand);
       const dBJ = isBlackjack(dealerHand);
+      const dealerShowsAce = dealerHand[0] && dealerHand[0].rank === 'A';
+      let insuranceBet = 0;
+      let insuranceNote = '';
+
+      if (dealerShowsAce && rules.allowInsurance) {
+        if (pBJ) {
+          const evenMoney = confirm(
+            `Dealer shows Ace and you have blackjack. Take even money for guaranteed $${currentBet * 2}?`
+          );
+          if (evenMoney) {
+            dealerHoleHidden = false;
+            bankroll += currentBet * 2;
+            stats.wins = (stats.wins || 0) + 1;
+            stats.blackjacks = (stats.blackjacks || 0) + 1;
+            roundActive = false;
+            firstDecisionOpen = false;
+            setStatus(`Even money locked. You bank $${currentBet * 2} and skip the sweat.`);
+            renderCards();
+            updateHud();
+            return;
+          }
+        } else {
+          const premium = Math.floor(currentBet / 2);
+          if (premium > 0 && bankroll >= premium) {
+            const buyInsurance = confirm(
+              `Dealer shows Ace. Buy insurance for $${premium}? (Usually -EV, but funny when it hits.)`
+            );
+            if (buyInsurance) {
+              bankroll -= premium;
+              insuranceBet = premium;
+              stats.insuranceBets = (stats.insuranceBets || 0) + 1;
+            }
+          } else if (premium > 0 && bankroll < premium) {
+            insuranceNote = 'Insurance unavailable: not enough chips behind.';
+          }
+        }
+      }
 
       if (pBJ || dBJ) {
         dealerHoleHidden = false;
         renderCards();
 
+        if (insuranceBet > 0 && dBJ) {
+          bankroll += insuranceBet * 3;
+          stats.insuranceWins = (stats.insuranceWins || 0) + 1;
+          insuranceNote = ` Insurance hit for $${insuranceBet * 3}.`;
+        } else if (insuranceBet > 0) {
+          insuranceNote = ` Insurance burned for $${insuranceBet}.`;
+        }
+
         if (pBJ && dBJ) {
           bankroll += currentBet;
           stats.pushes = (stats.pushes || 0) + 1;
-          setStatus('Double blackjack. Absolute toilet stalemate.');
+          setStatus(`Double blackjack. Absolute toilet stalemate.${insuranceNote}`);
         } else if (pBJ) {
-          const payout = Math.round(currentBet * 2.5);
+          const payout = currentBet + Math.round(currentBet * rules.blackjackPayout);
           bankroll += payout;
           stats.wins = (stats.wins || 0) + 1;
-          setStatus(`Blackjack! Paid $${payout}. Smelled like victory.`);
+          stats.blackjacks = (stats.blackjacks || 0) + 1;
+          setStatus(`Blackjack! Paid $${payout} at ${blackjackPayoutLabel()}.${insuranceNote}`);
         } else {
           stats.losses = (stats.losses || 0) + 1;
-          setStatus('Dealer blackjack. You got flushed.');
+          setStatus(`Dealer blackjack. You got flushed.${insuranceNote}`);
         }
 
         roundActive = false;
         firstDecisionOpen = false;
       } else {
-        setStatus('Round live. Hit, stand, double, split, or surrender if the hand is ugly.');
+        const roundIntro = insuranceBet > 0
+          ? `No dealer blackjack. Insurance burned for $${insuranceBet}.`
+          : insuranceNote;
+        setStatus(`${roundIntro ? `${roundIntro} ` : ''}Round live. Hit, stand, double, split, or surrender if the hand is ugly.`);
       }
 
       updateHud();
@@ -968,6 +1215,10 @@
         setStatus('Double is only for your first move. House rules.');
         return;
       }
+      if (splitRound && !rules.allowDoubleAfterSplit) {
+        setStatus('No DAS table. Double after split is disabled.');
+        return;
+      }
       if (bankroll < activeBet) {
         setStatus('Not enough bankroll to double.');
         return;
@@ -1006,6 +1257,7 @@
         return;
       }
 
+      const splitRank = playerHand[0].rank;
       bankroll -= currentBet;
       splitBet = currentBet;
       splitRound = true;
@@ -1017,12 +1269,23 @@
       firstDecisionOpen = true;
 
       renderCards();
+      if (splitRank === 'A' && !rules.allowHitSplitAces) {
+        firstDecisionOpen = false;
+        setStatus('Split aces dealt one card each. Auto-standing both hands.');
+        dealerTurnAndResolve();
+        return;
+      }
+
       setStatus(`Pair split. Play Hand 1, then Hand 2. $${currentBet + splitBet} total in action.`);
       updateHud();
     }
 
     function playerSurrender() {
       if (!roundActive || !firstDecisionOpen) return;
+      if (!rules.allowSurrender) {
+        setStatus('Surrender is disabled at this table.');
+        return;
+      }
       if (splitRound) {
         setStatus('Surrender is locked after a split.');
         return;
@@ -1055,7 +1318,7 @@
       if (!allBusted) {
         while (
           handValue(dealerHand) < 17 ||
-          (DEALER_HITS_SOFT_17 && isSoft17(dealerHand))
+          (rules.dealerHitsSoft17 && isSoft17(dealerHand))
         ) {
           dealerHand.push(drawCard());
         }
@@ -1126,7 +1389,16 @@
       bankroll = INITIAL_BANKROLL;
       currentBet = 0;
       splitBet = 0;
-      stats = { hands: 0, wins: 0, losses: 0, pushes: 0, surrenders: 0 };
+      stats = {
+        hands: 0,
+        wins: 0,
+        losses: 0,
+        pushes: 0,
+        surrenders: 0,
+        blackjacks: 0,
+        insuranceBets: 0,
+        insuranceWins: 0
+      };
       roundActive = false;
       firstDecisionOpen = false;
       splitRound = false;
@@ -1154,6 +1426,7 @@
       ui.doubleBtn.addEventListener('click', playerDouble);
       ui.splitBtn.addEventListener('click', playerSplit);
       ui.surrenderBtn.addEventListener('click', playerSurrender);
+      ui.applyRulesBtn.addEventListener('click', applyRulesFromUi);
 
       ui.newShoeBtn.addEventListener('click', newShoe);
       ui.resetStatsBtn.addEventListener('click', resetBankroll);
@@ -1194,6 +1467,8 @@
       createShoe(4);
       renderCards();
       wireEvents();
+      syncRulesToUi();
+      updateRuleSummary();
       updateHud();
       setStatus('Welcome to Turdjack 21. Bet responsibly and blame the toilet.');
     }
