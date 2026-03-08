@@ -130,7 +130,7 @@
 
     .hud {
       display: grid;
-      grid-template-columns: repeat(8, minmax(86px, 1fr));
+      grid-template-columns: repeat(10, minmax(76px, 1fr));
       gap: 8px;
       margin-bottom: 10px;
     }
@@ -186,6 +186,12 @@
       line-height: 1.4;
       color: var(--muted);
       min-height: 48px;
+    }
+
+    .history-log {
+      max-height: 130px;
+      overflow-y: auto;
+      white-space: normal;
     }
 
     .hand {
@@ -439,7 +445,7 @@
         border-radius: 18px;
       }
       .layout { grid-template-columns: 1fr; }
-      .hud { grid-template-columns: repeat(4, minmax(86px, 1fr)); }
+      .hud { grid-template-columns: repeat(5, minmax(86px, 1fr)); }
       .table {
         min-height: 500px;
         padding: 10px;
@@ -452,7 +458,7 @@
         font-size: 12px;
       }
       .cards { min-height: 110px; }
-      .playing-card { width: 58px; height: 84px; padding: 6px; }
+      .playing-card { width: 64px; height: 92px; padding: 6px; }
     }
 
     @media (max-width: 680px) {
@@ -465,7 +471,7 @@
         align-items: flex-start;
       }
       .hud {
-        grid-template-columns: repeat(3, minmax(70px, 1fr));
+        grid-template-columns: repeat(4, minmax(70px, 1fr));
         gap: 6px;
       }
       .table {
@@ -477,11 +483,11 @@
         min-height: 42px;
       }
       .cards { min-height: 96px; }
-      .playing-card { width: 54px; height: 78px; padding: 5px; }
-      .playing-card .rank { font-size: 0.8rem; }
-      .playing-card .suit { font-size: 0.8rem; }
-      .playing-card .center { font-size: 1rem; }
-      .playing-card .small { font-size: 0.56rem; }
+      .playing-card { width: 60px; height: 88px; padding: 5px; }
+      .playing-card .rank { font-size: 0.84rem; }
+      .playing-card .suit { font-size: 0.84rem; }
+      .playing-card .center { font-size: 1.08rem; }
+      .playing-card .small { font-size: 0.6rem; }
     }
 
     @media (hover: none) and (pointer: coarse) {
@@ -536,6 +542,8 @@
         <div class="card-stat"><div class="k">Pushes</div><div class="v" id="pushesText">0</div></div>
         <div class="card-stat"><div class="k">Surrenders</div><div class="v" id="surrendersText">0</div></div>
         <div class="card-stat"><div class="k">Win Rate</div><div class="v" id="winRateText">0%</div></div>
+        <div class="card-stat"><div class="k">Hi-Lo</div><div class="v" id="runningCountText">0</div></div>
+        <div class="card-stat"><div class="k">Discipline</div><div class="v" id="disciplineText">0%</div></div>
       </div>
 
     <div class="layout">
@@ -601,6 +609,11 @@
         </div>
 
         <div>
+          <h3>Hand History</h3>
+          <div class="status history-log" id="historyText">No resolved hands yet.</div>
+        </div>
+
+        <div>
           <h3>Table Setup</h3>
           <div class="rule-grid">
             <div class="rule-row">
@@ -615,6 +628,16 @@
               <select id="ruleBlackjackPayout">
                 <option value="1.5">3:2</option>
                 <option value="1.2">6:5</option>
+              </select>
+            </div>
+            <div class="rule-row">
+              <span>Decks</span>
+              <select id="ruleDecks">
+                <option value="1">1 deck</option>
+                <option value="2">2 decks</option>
+                <option value="4" selected>4 decks</option>
+                <option value="6">6 decks</option>
+                <option value="8">8 decks</option>
               </select>
             </div>
             <label class="rule-row">
@@ -662,6 +685,7 @@
     const DEFAULT_RULES = {
       dealerHitsSoft17: false,
       blackjackPayout: 1.5,
+      decks: 4,
       allowDoubleAfterSplit: true,
       allowSurrender: true,
       allowInsurance: true,
@@ -677,13 +701,17 @@
       pushesText: document.getElementById('pushesText'),
       surrendersText: document.getElementById('surrendersText'),
       winRateText: document.getElementById('winRateText'),
+      runningCountText: document.getElementById('runningCountText'),
+      disciplineText: document.getElementById('disciplineText'),
       statusText: document.getElementById('statusText'),
       hintText: document.getElementById('hintText'),
+      historyText: document.getElementById('historyText'),
       ruleSummary: document.getElementById('ruleSummary'),
       payoutText: document.getElementById('payoutText'),
       tableRulesText: document.getElementById('tableRulesText'),
       ruleDealer17: document.getElementById('ruleDealer17'),
       ruleBlackjackPayout: document.getElementById('ruleBlackjackPayout'),
+      ruleDecks: document.getElementById('ruleDecks'),
       ruleDas: document.getElementById('ruleDas'),
       ruleSurrender: document.getElementById('ruleSurrender'),
       ruleInsurance: document.getElementById('ruleInsurance'),
@@ -719,7 +747,10 @@
       surrenders: 0,
       blackjacks: 0,
       insuranceBets: 0,
-      insuranceWins: 0
+      insuranceWins: 0,
+      decisions: 0,
+      correctDecisions: 0,
+      bestDecisionStreak: 0
     }));
     let rules = normalizeRules(readObject(STORAGE.rules, DEFAULT_RULES));
 
@@ -737,6 +768,11 @@
     let splitRound = false;
     let activeHandIndex = 0;
     let onboardingOpen = false;
+    let runningCount = 0;
+    let cutCardsRemaining = 18;
+    let shoeDecks = 4;
+    let decisionStreak = 0;
+    let roundHistory = [];
 
     function getActiveHand() {
       return activeHandIndex === 0 ? playerHand : splitHand;
@@ -810,20 +846,26 @@
         surrenders: Number.isFinite(source.surrenders) ? source.surrenders : 0,
         blackjacks: Number.isFinite(source.blackjacks) ? source.blackjacks : 0,
         insuranceBets: Number.isFinite(source.insuranceBets) ? source.insuranceBets : 0,
-        insuranceWins: Number.isFinite(source.insuranceWins) ? source.insuranceWins : 0
+        insuranceWins: Number.isFinite(source.insuranceWins) ? source.insuranceWins : 0,
+        decisions: Number.isFinite(source.decisions) ? source.decisions : 0,
+        correctDecisions: Number.isFinite(source.correctDecisions) ? source.correctDecisions : 0,
+        bestDecisionStreak: Number.isFinite(source.bestDecisionStreak) ? source.bestDecisionStreak : 0
       };
     }
 
     function normalizeRules(raw) {
       const source = raw && typeof raw === 'object' ? raw : {};
       const payoutRaw = source.blackjackPayout;
+      const decksRaw = parseInt(source.decks, 10);
       let payout = 1.5;
       if (payoutRaw === 1.2 || payoutRaw === '1.2' || payoutRaw === '6:5') payout = 1.2;
       if (payoutRaw === 1.5 || payoutRaw === '1.5' || payoutRaw === '3:2') payout = 1.5;
+      const decks = [1, 2, 4, 6, 8].includes(decksRaw) ? decksRaw : 4;
 
       return {
         dealerHitsSoft17: !!source.dealerHitsSoft17,
         blackjackPayout: payout,
+        decks,
         allowDoubleAfterSplit: source.allowDoubleAfterSplit !== false,
         allowSurrender: source.allowSurrender !== false,
         allowInsurance: source.allowInsurance !== false,
@@ -858,10 +900,26 @@
     function syncRulesToUi() {
       ui.ruleDealer17.value = rules.dealerHitsSoft17 ? 'H17' : 'S17';
       ui.ruleBlackjackPayout.value = String(rules.blackjackPayout);
+      ui.ruleDecks.value = String(rules.decks || 4);
       ui.ruleDas.checked = rules.allowDoubleAfterSplit;
       ui.ruleSurrender.checked = rules.allowSurrender;
       ui.ruleInsurance.checked = rules.allowInsurance;
       ui.ruleHitSplitAces.checked = rules.allowHitSplitAces;
+    }
+
+    function estimateHouseEdge() {
+      let edge = 0.52; // baseline approximation, multi-deck blackjack with decent rules
+      if (rules.dealerHitsSoft17) edge += 0.20;
+      if (rules.blackjackPayout < 1.5) edge += 1.39;
+      if (!rules.allowDoubleAfterSplit) edge += 0.14;
+      if (!rules.allowSurrender) edge += 0.08;
+      if (!rules.allowHitSplitAces) edge += 0.12;
+      if (!rules.allowInsurance) edge -= 0.0;
+      const decks = rules.decks || 4;
+      if (decks === 1) edge -= 0.45;
+      else if (decks === 2) edge -= 0.18;
+      else if (decks >= 6) edge += 0.04;
+      return Math.max(0.1, edge);
     }
 
     function updateRuleSummary() {
@@ -870,12 +928,13 @@
       const surrender = rules.allowSurrender ? 'Late surrender on' : 'No surrender';
       const insurance = rules.allowInsurance ? 'Insurance on' : 'Insurance off';
       const splitAces = rules.allowHitSplitAces ? 'Hit split aces' : 'Split aces get one card';
-      ui.ruleSummary.textContent = `${soft17}. BJ ${blackjackPayoutLabel()}. ${das}. ${surrender}. ${insurance}. ${splitAces}.`;
+      const edge = estimateHouseEdge();
+      ui.ruleSummary.textContent = `${soft17}. BJ ${blackjackPayoutLabel()}. ${rules.decks}-deck shoe. ${das}. ${surrender}. ${insurance}. ${splitAces}. Est. house edge: ~${edge.toFixed(2)}%.`;
       ui.payoutText.innerHTML =
         `<strong>Payouts:</strong> Blackjack pays ${blackjackPayoutLabel()}, normal win pays 1:1, push returns bet.`;
       const surrenderLine = rules.allowSurrender ? 'surrender is pre-split only' : 'surrender is disabled';
       ui.tableRulesText.innerHTML =
-        `<strong>Table Rules:</strong> ${soft17.toLowerCase()}, one split per round, and ${surrenderLine}.`;
+        `<strong>Table Rules:</strong> ${soft17.toLowerCase()}, ${rules.decks}-deck shoe, one split per round, and ${surrenderLine}.`;
     }
 
     function applyRulesFromUi() {
@@ -888,14 +947,16 @@
       rules = normalizeRules({
         dealerHitsSoft17: ui.ruleDealer17.value === 'H17',
         blackjackPayout: parseFloat(ui.ruleBlackjackPayout.value),
+        decks: parseInt(ui.ruleDecks.value, 10),
         allowDoubleAfterSplit: ui.ruleDas.checked,
         allowSurrender: ui.ruleSurrender.checked,
         allowInsurance: ui.ruleInsurance.checked,
         allowHitSplitAces: ui.ruleHitSplitAces.checked
       });
+      createShoe(rules.decks || 4);
       updateRuleSummary();
       updateHud();
-      setStatus(`Table rules applied. Playing ${blackjackPayoutLabel()} with ${rules.dealerHitsSoft17 ? 'H17' : 'S17'}.`);
+      setStatus(`Table rules applied. Playing ${blackjackPayoutLabel()} with ${rules.dealerHitsSoft17 ? 'H17' : 'S17'} in a ${rules.decks}-deck shoe.`);
     }
 
     function showWelcomeGuide() {
@@ -928,16 +989,44 @@
         [next[i], next[j]] = [next[j], next[i]];
       }
 
+      shoeDecks = decks;
       shoe = next;
       discard = [];
+      runningCount = 0;
+      const cutMin = Math.floor(next.length * 0.2);
+      const cutMax = Math.floor(next.length * 0.3);
+      cutCardsRemaining = cutMin + randomIntExclusive(Math.max(1, cutMax - cutMin + 1));
+    }
+
+    function hiLoValue(card) {
+      if (!card) return 0;
+      if (['2', '3', '4', '5', '6'].includes(card.rank)) return 1;
+      if (['10', 'J', 'Q', 'K', 'A'].includes(card.rank)) return -1;
+      return 0;
+    }
+
+    function trueCount() {
+      const decksRemaining = Math.max(0.25, shoe.length / 52);
+      return runningCount / decksRemaining;
+    }
+
+    function logHistory(message) {
+      const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      roundHistory.unshift(`${stamp} ${message}`);
+      if (roundHistory.length > 9) roundHistory.pop();
+      if (ui.historyText) {
+        ui.historyText.innerHTML = roundHistory.length ? roundHistory.join('<br>') : 'No resolved hands yet.';
+      }
     }
 
     function drawCard() {
-      if (shoe.length < 18) {
-        setStatus('Shoe running low. Shuffling fresh poop cards.');
-        createShoe(4);
+      if (shoe.length <= 0) {
+        setStatus('Shoe exhausted. Shuffling fresh poop cards.');
+        createShoe(rules.decks || 4);
       }
-      return shoe.pop();
+      const card = shoe.pop();
+      runningCount += hiLoValue(card);
+      return card;
     }
 
     function cardValue(card) {
@@ -1068,77 +1157,148 @@
       return aces > 0;
     }
 
-    function getBasicHint() {
-      if (!roundActive || dealerHand.length === 0) {
-        return 'Hint: Place a bet and deal to see strategy advice.';
-      }
+    function canSplitActiveHand() {
+      return (
+        roundActive &&
+        firstDecisionOpen &&
+        ALLOW_ONE_SPLIT &&
+        !splitRound &&
+        activeHandIndex === 0 &&
+        playerHand.length === 2 &&
+        isPair(playerHand) &&
+        bankroll >= currentBet
+      );
+    }
+
+    function actionLabel(action) {
+      if (action === 'hit') return 'Hit';
+      if (action === 'stand') return 'Stand';
+      if (action === 'double') return 'Double';
+      if (action === 'split') return 'Split';
+      if (action === 'surrender') return 'Surrender';
+      return 'Wait';
+    }
+
+    function strategyDecision() {
+      if (!roundActive || dealerHand.length === 0) return null;
 
       const hand = getActiveHand();
-      if (hand.length === 0) return 'Hint: Waiting for the next hand.';
+      if (!hand || hand.length === 0) return null;
 
       const up = dealerUpcardValue();
       const total = handValue(hand);
       const soft = isSoftHand(hand);
       const canDouble = canDoubleOnActiveHand();
-      const canSplit =
-        firstDecisionOpen &&
-        ALLOW_ONE_SPLIT &&
-        !splitRound &&
-        activeHandIndex === 0 &&
-        hand.length === 2 &&
-        isPair(hand) &&
-        bankroll >= currentBet;
+      const canSplit = canSplitActiveHand();
+      const canSurrender = roundActive && firstDecisionOpen && !splitRound && rules.allowSurrender && hand.length === 2;
+      const dealerHitsSoft17 = !!rules.dealerHitsSoft17;
 
       if (canSplit) {
         const rank = hand[0].rank;
-        if (rank === 'A' || rank === '8') return 'Hint: Split now.';
-        if (['10', 'J', 'Q', 'K'].includes(rank)) return 'Hint: Stand. Keep the made hand.';
-        if (rank === '9') return (up >= 2 && up <= 6) || up === 8 || up === 9 ? 'Hint: Split.' : 'Hint: Stand.';
-        if (rank === '7') return up <= 7 ? 'Hint: Split.' : 'Hint: Hit.';
-        if (rank === '6') return up >= 2 && up <= 6 ? 'Hint: Split.' : 'Hint: Hit.';
-        if (rank === '5') return canDouble && up <= 9 ? 'Hint: Double if allowed, else hit.' : 'Hint: Hit.';
-        if (rank === '4') return up === 5 || up === 6 ? 'Hint: Split.' : 'Hint: Hit.';
-        if (rank === '3' || rank === '2') return up <= 7 ? 'Hint: Split.' : 'Hint: Hit.';
+        if (rank === 'A' || rank === '8') return { action: 'split', reason: 'Always split aces and eights.' };
+        if (['10', 'J', 'Q', 'K'].includes(rank)) return { action: 'stand', reason: 'Keep a made 20.' };
+        if (rank === '9') {
+          return ([2, 3, 4, 5, 6, 8, 9].includes(up))
+            ? { action: 'split', reason: '9,9 splits into stronger edges here.' }
+            : { action: 'stand', reason: '9,9 should stand versus 7, 10, or Ace.' };
+        }
+        if (rank === '7') return up <= 7
+          ? { action: 'split', reason: '7,7 split window versus weak dealer upcards.' }
+          : { action: 'hit', reason: '7,7 is too weak to split here.' };
+        if (rank === '6') {
+          const splitWindow = rules.allowDoubleAfterSplit ? (up >= 2 && up <= 6) : (up >= 3 && up <= 6);
+          return splitWindow
+            ? { action: 'split', reason: '6,6 split depends on DAS and dealer weakness.' }
+            : { action: 'hit', reason: '6,6 should not split in this matchup.' };
+        }
+        if (rank === '4') {
+          return (rules.allowDoubleAfterSplit && (up === 5 || up === 6))
+            ? { action: 'split', reason: '4,4 split is only good in DAS-friendly spots.' }
+            : { action: 'hit', reason: '4,4 plays better as a hit here.' };
+        }
+        if (rank === '3' || rank === '2') {
+          const splitWindow = rules.allowDoubleAfterSplit ? up <= 7 : (up >= 4 && up <= 7);
+          return splitWindow
+            ? { action: 'split', reason: 'Small pairs split best versus weak dealer ranges.' }
+            : { action: 'hit', reason: 'Small pairs should not split in this spot.' };
+        }
+      }
+
+      if (canSurrender) {
+        if (total === 16 && (up === 9 || up === 10 || up === 11)) {
+          return { action: 'surrender', reason: 'Late surrender trims a very bad EV spot.' };
+        }
+        if (total === 15 && (up === 10 || (dealerHitsSoft17 && up === 11))) {
+          return { action: 'surrender', reason: 'Surrender is strongest on hard 15 versus heavy dealer strength.' };
+        }
       }
 
       if (soft) {
-        if (total <= 17) {
-          if (canDouble && up >= 5 && up <= 6) return 'Hint: Double if allowed, otherwise hit.';
-          return 'Hint: Hit.';
-        }
+        if (total >= 19) return { action: 'stand', reason: 'Soft 19+ is strong enough to stand.' };
         if (total === 18) {
-          if (canDouble && up >= 3 && up <= 6) return 'Hint: Double if allowed, else stand.';
-          if (up >= 9 || up === 11) return 'Hint: Hit.';
-          return 'Hint: Stand.';
+          if (canDouble && ((up >= 3 && up <= 6) || (dealerHitsSoft17 && up === 2))) {
+            return { action: 'double', reason: 'Soft 18 can press value with a double here.' };
+          }
+          if (up >= 9 || up === 11) return { action: 'hit', reason: 'Soft 18 needs improvement versus strong upcards.' };
+          return { action: 'stand', reason: 'Soft 18 is stable against this upcard.' };
         }
-        return 'Hint: Stand.';
+        if (total === 17) {
+          if (canDouble && ((dealerHitsSoft17 && up >= 3 && up <= 6) || (!dealerHitsSoft17 && up >= 4 && up <= 6))) {
+            return { action: 'double', reason: 'Soft 17 has a profitable double window.' };
+          }
+          return { action: 'hit', reason: 'Soft 17 usually needs another card.' };
+        }
+        if (total === 16 || total === 15) {
+          if (canDouble && ((up >= 4 && up <= 6) || (dealerHitsSoft17 && up === 3))) {
+            return { action: 'double', reason: 'Soft mid totals double versus weak dealer ranges.' };
+          }
+          return { action: 'hit', reason: 'Soft mid totals continue as hits here.' };
+        }
+        if (total === 14 || total === 13) {
+          if (canDouble && ((up >= 5 && up <= 6) || (dealerHitsSoft17 && up === 4))) {
+            return { action: 'double', reason: 'Soft low totals only double in narrow spots.' };
+          }
+          return { action: 'hit', reason: 'Soft low totals should hit here.' };
+        }
       }
 
-      if (total <= 8) return 'Hint: Hit.';
-      if (total === 9) {
-        if (canDouble && up >= 3 && up <= 6) return 'Hint: Double if allowed, else hit.';
-        return 'Hint: Hit.';
-      }
-      if (total === 10) {
-        if (canDouble && up <= 9) return 'Hint: Double if allowed, else hit.';
-        return 'Hint: Hit.';
-      }
-      if (total === 11) {
-        if (canDouble && up !== 11) return 'Hint: Double if allowed, else hit.';
-        return 'Hint: Hit.';
+      if (total >= 17) return { action: 'stand', reason: 'Hard 17+ stands.' };
+      if (total >= 13 && total <= 16) {
+        return (up >= 2 && up <= 6)
+          ? { action: 'stand', reason: 'Dealer bust range makes standing best.' }
+          : { action: 'hit', reason: 'Hard mid totals hit versus strong upcards.' };
       }
       if (total === 12) {
-        if (up >= 4 && up <= 6) return 'Hint: Stand.';
-        return 'Hint: Hit.';
+        return (up >= 4 && up <= 6)
+          ? { action: 'stand', reason: 'Hard 12 stands against weak dealer upcards.' }
+          : { action: 'hit', reason: 'Hard 12 hits outside the 4-6 window.' };
       }
-      if (total >= 13 && total <= 16) {
-        if (up >= 2 && up <= 6) return 'Hint: Stand.';
-        if (rules.allowSurrender && !splitRound && firstDecisionOpen && up >= 9) {
-          return 'Hint: Consider surrender if available.';
+      if (total === 11) {
+        if (canDouble && (up !== 11 || dealerHitsSoft17)) {
+          return { action: 'double', reason: 'Hard 11 is a premium double in this rule set.' };
         }
-        return 'Hint: Hit.';
+        return { action: 'hit', reason: 'Hard 11 fallback is a hit when double is unavailable.' };
       }
-      return 'Hint: Stand.';
+      if (total === 10) {
+        return (canDouble && up <= 9)
+          ? { action: 'double', reason: 'Hard 10 doubles versus non-ten dealer upcards.' }
+          : { action: 'hit', reason: 'Hard 10 hits versus dealer ten or ace.' };
+      }
+      if (total === 9) {
+        return (canDouble && up >= 3 && up <= 6)
+          ? { action: 'double', reason: 'Hard 9 doubles in the 3-6 window.' }
+          : { action: 'hit', reason: 'Hard 9 otherwise continues as hit.' };
+      }
+      return { action: 'hit', reason: 'Low totals should hit.' };
+    }
+
+    function getBasicHint() {
+      if (!roundActive || dealerHand.length === 0) {
+        return 'Hint: Place a bet and deal to see strategy advice.';
+      }
+      const advice = strategyDecision();
+      if (!advice) return 'Hint: Waiting for the next hand.';
+      return `Hint: ${actionLabel(advice.action)}. ${advice.reason}`;
     }
 
     function updateHud() {
@@ -1152,16 +1312,14 @@
       const resolvedHands = (stats.wins || 0) + (stats.losses || 0) + (stats.pushes || 0);
       const winRate = resolvedHands > 0 ? Math.round(((stats.wins || 0) / resolvedHands) * 100) : 0;
       ui.winRateText.textContent = `${winRate}%`;
+      ui.runningCountText.textContent = `${runningCount} / ${trueCount().toFixed(1)}`;
+      const discipline = (stats.decisions || 0) > 0
+        ? Math.round(((stats.correctDecisions || 0) / (stats.decisions || 0)) * 100)
+        : 0;
+      ui.disciplineText.textContent = `${discipline}%`;
 
       const canSplit =
-        roundActive &&
-        firstDecisionOpen &&
-        ALLOW_ONE_SPLIT &&
-        !splitRound &&
-        activeHandIndex === 0 &&
-        playerHand.length === 2 &&
-        isPair(playerHand) &&
-        bankroll >= currentBet;
+        canSplitActiveHand();
 
       ui.dealBtn.disabled = roundActive;
       ui.hitBtn.disabled = !roundActive;
@@ -1179,7 +1337,11 @@
       ui.rebetBtn.disabled = lockedBet || lastBet < MIN_BET || lastBet > bankroll;
 
       if (ui.hintText) {
-        ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left.`;
+        ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left (cut at ${cutCardsRemaining}, ${shoeDecks}D).`;
+      }
+
+      if (ui.historyText && roundHistory.length === 0) {
+        ui.historyText.textContent = 'No resolved hands yet.';
       }
 
       saveState();
@@ -1187,6 +1349,20 @@
 
     function setStatus(text) {
       ui.statusText.textContent = text;
+    }
+
+    function trackDecision(action) {
+      if (!roundActive || !dealerHand.length) return;
+      const advice = strategyDecision();
+      if (!advice || !advice.action) return;
+      stats.decisions = (stats.decisions || 0) + 1;
+      if (action === advice.action) {
+        stats.correctDecisions = (stats.correctDecisions || 0) + 1;
+        decisionStreak++;
+        stats.bestDecisionStreak = Math.max(stats.bestDecisionStreak || 0, decisionStreak);
+      } else {
+        decisionStreak = 0;
+      }
     }
 
     function addBet(amount) {
@@ -1235,6 +1411,11 @@
         return;
       }
 
+      if (shoe.length <= cutCardsRemaining) {
+        createShoe(rules.decks || 4);
+        setStatus('Cut card reached. Fresh shoe shuffled.');
+      }
+
       lastBet = currentBet;
       bankroll -= currentBet;
       roundActive = true;
@@ -1275,6 +1456,7 @@
             roundActive = false;
             firstDecisionOpen = false;
             setStatus(`Even money locked. You bank $${currentBet * 2} and skip the sweat.`);
+            logHistory(`Even money cashed for $${currentBet * 2}.`);
             renderCards();
             updateHud();
             return;
@@ -1282,8 +1464,12 @@
         } else {
           const premium = Math.floor(currentBet / 2);
           if (premium > 0 && bankroll >= premium) {
+            const tc = trueCount();
+            const countNote = tc >= 3
+              ? `Running count is hot (TC ${tc.toFixed(1)}), so insurance is less terrible here.`
+              : `Running count is ${tc.toFixed(1)} TC, so insurance is usually -EV.`;
             const buyInsurance = confirm(
-              `Dealer shows Ace. Buy insurance for $${premium}? (Usually -EV, but funny when it hits.)`
+              `Dealer shows Ace. Buy insurance for $${premium}? ${countNote}`
             );
             if (buyInsurance) {
               bankroll -= premium;
@@ -1312,15 +1498,18 @@
           bankroll += currentBet;
           stats.pushes = (stats.pushes || 0) + 1;
           setStatus(`Double blackjack. Absolute toilet stalemate.${insuranceNote}`);
+          logHistory(`Push on double blackjack. Bet $${currentBet}.`);
         } else if (pBJ) {
           const payout = currentBet + Math.round(currentBet * rules.blackjackPayout);
           bankroll += payout;
           stats.wins = (stats.wins || 0) + 1;
           stats.blackjacks = (stats.blackjacks || 0) + 1;
           setStatus(`Blackjack! Paid $${payout} at ${blackjackPayoutLabel()}.${insuranceNote}`);
+          logHistory(`Blackjack paid $${payout} (${blackjackPayoutLabel()}).`);
         } else {
           stats.losses = (stats.losses || 0) + 1;
           setStatus(`Dealer blackjack. You got flushed.${insuranceNote}`);
+          logHistory(`Dealer blackjack beat $${currentBet}.`);
         }
 
         roundActive = false;
@@ -1337,6 +1526,7 @@
 
     function playerHit() {
       if (!roundActive) return;
+      trackDecision('hit');
       const hand = getActiveHand();
       firstDecisionOpen = false;
       hand.push(drawCard());
@@ -1359,6 +1549,7 @@
 
     function playerStand() {
       if (!roundActive) return;
+      trackDecision('stand');
       firstDecisionOpen = false;
       if (advanceToNextHand()) return;
       dealerTurnAndResolve();
@@ -1381,6 +1572,7 @@
         return;
       }
 
+      trackDecision('double');
       bankroll -= activeBet;
       setActiveBet(activeBet * 2);
       firstDecisionOpen = false;
@@ -1414,6 +1606,7 @@
         return;
       }
 
+      trackDecision('split');
       const splitRank = playerHand[0].rank;
       bankroll -= currentBet;
       splitBet = currentBet;
@@ -1447,6 +1640,7 @@
         setStatus('Surrender is locked after a split.');
         return;
       }
+      trackDecision('surrender');
       firstDecisionOpen = false;
       dealerHoleHidden = false;
       roundActive = false;
@@ -1457,6 +1651,7 @@
       stats.losses = (stats.losses || 0) + 1;
       stats.surrenders = (stats.surrenders || 0) + 1;
       setStatus(`Surrender accepted. You recover $${refund} and keep your dignity.`);
+      logHistory(`Surrender. Recovered $${refund} from $${currentBet}.`);
       renderCards();
       updateHud();
     }
@@ -1470,38 +1665,25 @@
         return;
       }
 
-      const hand = getActiveHand();
-      const total = handValue(hand);
-      const up = dealerUpcardValue();
-      const soft = isSoftHand(hand);
-
-      if (rules.allowSurrender && !splitRound && firstDecisionOpen && total === 16 && (up >= 9 || up === 11)) {
+      const advice = strategyDecision();
+      if (!advice) {
+        playerHit();
+        return;
+      }
+      if (advice.action === 'split') {
+        playerSplit();
+        return;
+      }
+      if (advice.action === 'double') {
+        playerDouble();
+        return;
+      }
+      if (advice.action === 'stand') {
+        playerStand();
+        return;
+      }
+      if (advice.action === 'surrender') {
         playerSurrender();
-        return;
-      }
-
-      if (canDoubleOnActiveHand()) {
-        const strongHardDouble =
-          (total === 11 && up !== 11) ||
-          (total === 10 && up <= 9) ||
-          (total === 9 && up >= 3 && up <= 6);
-        const softDouble = soft && total === 18 && up >= 3 && up <= 6;
-        if (strongHardDouble || softDouble) {
-          playerDouble();
-          return;
-        }
-      }
-
-      if (total >= 17) {
-        playerStand();
-        return;
-      }
-      if (total >= 13 && total <= 16 && up >= 2 && up <= 6) {
-        playerStand();
-        return;
-      }
-      if (total === 12 && up >= 4 && up <= 6) {
-        playerStand();
         return;
       }
       playerHit();
@@ -1573,7 +1755,9 @@
       splitBet = 0;
       activeHandIndex = 0;
       dealerHoleHidden = false;
-      setStatus(notes.join(' '));
+      const finalNote = notes.join(' ');
+      setStatus(finalNote);
+      logHistory(finalNote);
       renderCards();
       updateHud();
     }
@@ -1583,8 +1767,9 @@
         setStatus('Finish the current round before shuffling.');
         return;
       }
-      createShoe(4);
+      createShoe(rules.decks || 4);
       setStatus('Fresh shoe shuffled. New poop luck loaded.');
+      logHistory(`Manual shuffle: ${rules.decks}-deck shoe reset.`);
     }
 
     function resetBankroll() {
@@ -1601,8 +1786,13 @@
         surrenders: 0,
         blackjacks: 0,
         insuranceBets: 0,
-        insuranceWins: 0
+        insuranceWins: 0,
+        decisions: 0,
+        correctDecisions: 0,
+        bestDecisionStreak: 0
       };
+      decisionStreak = 0;
+      roundHistory = [];
       roundActive = false;
       firstDecisionOpen = false;
       splitRound = false;
@@ -1611,6 +1801,7 @@
       splitHand = [];
       dealerHand = [];
       dealerHoleHidden = true;
+      createShoe(rules.decks || 4);
       renderCards();
       setStatus('Bankroll and stats reset. Start a fresh stink streak.');
       updateHud();
@@ -1688,7 +1879,7 @@
     }
 
     function init() {
-      createShoe(4);
+      createShoe(rules.decks || 4);
       renderCards();
       wireEvents();
       syncRulesToUi();
