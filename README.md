@@ -53,7 +53,7 @@ Silly Arkanoid variant using p5.js with stink-based effects and capsule madness.
 
 **Controls:** Mouse or touch to move paddle.
 
-### Turdjack 21
+### Crapjack 21
 
 Blackjack with a toilet-dealer vibe and persistent bankroll.
 
@@ -72,7 +72,7 @@ Blackjack with a toilet-dealer vibe and persistent bankroll.
    - `index.html` - Neon Arkanoid
    - `turdtris.html` - Turdtris
    - `TurdAnoid.html` - TurdAnoid
-   - `turdjack.html` - Turdjack 21
+- `turdjack.html` - Crapjack 21
 
 ## Mobile Support
 
@@ -97,7 +97,7 @@ After a minute or two, your games will be live at:
 - **Neon Arkanoid:** https://rupret007.github.io/Turdanoid/index.html
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
-- **Turdjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
+- **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
 
 The `.nojekyll` file ensures GitHub Pages serves the files as-is.
 
@@ -106,6 +106,6 @@ The `.nojekyll` file ensures GitHub Pages serves the files as-is.
 - **Neon Arkanoid**: Vanilla JavaScript (Canvas API)
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **TurdAnoid**: p5.js
-- **Turdjack 21**: Vanilla JavaScript + DOM/CSS card UI
+- **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
 
 No build step required. Open in any modern browser.
