@@ -350,7 +350,7 @@
                 overflow: auto;
             }
             .game-shell {
-                width: min(980px, 92vw);
+                width: min(900px, 88vw);
                 padding: 10px;
                 border-radius: 18px;
             }
@@ -359,12 +359,12 @@
                 justify-items: center;
             }
             .canvas-wrap {
-                width: min(760px, 86vw);
+                width: min(560px, 74vw);
                 margin: 0 auto;
             }
             .sidebar {
                 min-height: auto;
-                width: min(760px, 86vw);
+                width: min(560px, 74vw);
                 padding: 10px;
             }
             .hud-grid {
@@ -390,6 +390,36 @@
                 min-width: 74px;
                 padding: 8px 10px;
                 font-size: 0.82rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .game-shell {
+                width: min(760px, 86vw);
+                padding: 8px;
+            }
+            .canvas-wrap {
+                width: min(430px, 68vw);
+            }
+            .sidebar {
+                width: min(430px, 68vw);
+                padding: 8px;
+            }
+            .hud-grid {
+                grid-template-columns: repeat(2, minmax(72px, 1fr));
+                gap: 6px;
+            }
+            .status-item {
+                min-height: 40px;
+                padding: 7px 8px;
+            }
+            .status-item span {
+                font-size: 0.74rem;
+            }
+            .control-btn {
+                min-width: 62px;
+                padding: 7px 8px;
+                font-size: 0.76rem;
             }
         }
     </style>

@@ -285,14 +285,14 @@ body {
     padding: 10px;
   }
   .layout {
-    width: min(980px, 92vw);
+    width: min(900px, 88vw);
     padding: 10px;
     border-radius: 18px;
   }
   .game-grid { grid-template-columns: 1fr; }
   .hud { grid-template-columns: repeat(3, minmax(90px, 1fr)); }
   #game {
-    width: min(360px, 62vw);
+    width: min(300px, 54vw);
   }
   .card .v {
     font-size: 1rem;
@@ -306,6 +306,29 @@ body {
     min-width: 72px;
     padding: 8px 9px;
     font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .layout {
+    width: min(760px, 86vw);
+    padding: 8px;
+  }
+  .hud {
+    grid-template-columns: repeat(2, minmax(70px, 1fr));
+    gap: 6px;
+  }
+  #game {
+    width: min(250px, 48vw);
+  }
+  .status {
+    font-size: 0.76rem;
+    min-height: 52px;
+  }
+  .control-btn {
+    min-width: 60px;
+    padding: 7px 8px;
+    font-size: 0.76rem;
   }
 }
 </style>

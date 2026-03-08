@@ -251,7 +251,7 @@
         overflow: auto;
       }
       .shell {
-        width: min(980px, 92vw);
+        width: min(900px, 88vw);
         padding: 10px;
         border-radius: 18px;
       }
@@ -261,7 +261,7 @@
         min-height: 0;
       }
       #game-holder canvas {
-        width: min(620px, 76vw) !important;
+        width: min(520px, 66vw) !important;
       }
       .card .v {
         font-size: 0.96rem;
@@ -275,6 +275,32 @@
         min-width: 70px;
         padding: 8px 9px;
         font-size: 0.82rem;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(760px, 86vw);
+        padding: 8px;
+      }
+      .hud {
+        grid-template-columns: repeat(3, minmax(70px, 1fr));
+        gap: 6px;
+      }
+      #game-holder canvas {
+        width: min(420px, 60vw) !important;
+      }
+      .panel {
+        padding: 8px;
+      }
+      .status {
+        font-size: 0.76rem;
+        min-height: 52px;
+      }
+      .control-btn {
+        min-width: 58px;
+        padding: 7px 8px;
+        font-size: 0.76rem;
       }
     }
   </style>
@@ -462,7 +488,7 @@ function hideWelcomeGuide() {
 function windowResized() {
   const targetW = min(860, windowWidth - 38);
   const targetH = min(620, windowHeight - 170);
-  resizeCanvas(max(440, targetW), max(320, targetH));
+  resizeCanvas(max(340, targetW), max(240, targetH));
   createLevel(level);
   resetBallState();
 }

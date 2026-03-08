@@ -429,7 +429,7 @@
         padding: 10px;
       }
       .shell {
-        width: min(980px, 92vw);
+        width: min(900px, 88vw);
         padding: 10px;
         border-radius: 18px;
       }
@@ -447,7 +447,32 @@
         font-size: 11px;
       }
       .cards { min-height: 110px; }
-      .playing-card { width: 58px; height: 84px; padding: 6px; }
+      .playing-card { width: 52px; height: 76px; padding: 5px; }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(760px, 86vw);
+        padding: 8px;
+      }
+      .hud {
+        grid-template-columns: repeat(3, minmax(70px, 1fr));
+        gap: 6px;
+      }
+      .table {
+        min-height: 440px;
+        padding: 8px;
+      }
+      .status {
+        font-size: 0.76rem;
+        min-height: 42px;
+      }
+      .cards { min-height: 96px; }
+      .playing-card { width: 46px; height: 68px; padding: 4px; }
+      .playing-card .rank { font-size: 0.8rem; }
+      .playing-card .suit { font-size: 0.8rem; }
+      .playing-card .center { font-size: 1rem; }
+      .playing-card .small { font-size: 0.56rem; }
     }
   </style>
 </head>
