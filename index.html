@@ -345,20 +345,51 @@
         }
 
         @media (max-width: 1024px) {
+            body {
+                padding: 10px;
+                overflow: auto;
+            }
+            .game-shell {
+                width: min(980px, 92vw);
+                padding: 10px;
+                border-radius: 18px;
+            }
             .play-area {
                 grid-template-columns: 1fr;
+                justify-items: center;
+            }
+            .canvas-wrap {
+                width: min(760px, 86vw);
+                margin: 0 auto;
             }
             .sidebar {
                 min-height: auto;
+                width: min(760px, 86vw);
+                padding: 10px;
             }
             .hud-grid {
                 grid-template-columns: repeat(3, minmax(90px, 1fr));
+            }
+            .stat-card .value {
+                font-size: 1rem;
+            }
+            .btn {
+                padding: 7px 10px;
+                font-size: 11px;
+            }
+            .status-item span {
+                font-size: 0.8rem;
             }
             .status-bar {
                 grid-template-columns: 1fr;
             }
             .mobile-controls {
                 display: flex;
+            }
+            .control-btn {
+                min-width: 74px;
+                padding: 8px 10px;
+                font-size: 0.82rem;
             }
         }
     </style>
