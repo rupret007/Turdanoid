@@ -642,6 +642,24 @@ function isValidMove(matrix, cellRow, cellCol) {
   return true;
 }
 
+function recoverSpawnPlacement(piece) {
+  if (!piece) return false;
+  const rowShifts = [0, -1, -2];
+  const colOffsets = [0, -1, 1, -2, 2, -3, 3];
+  for (let r = 0; r < rowShifts.length; r++) {
+    for (let c = 0; c < colOffsets.length; c++) {
+      const testRow = piece.row + rowShifts[r];
+      const testCol = piece.col + colOffsets[c];
+      if (isValidMove(piece.matrix, testRow, testCol)) {
+        piece.row = testRow;
+        piece.col = testCol;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function getKickData(pieceName, from, to) {
   const key = `${from}>${to}`;
   if (pieceName === 'O') return [[0, 0]];
@@ -691,7 +709,11 @@ function spawnNextPiece() {
   drawHoldPreview();
 
   if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
-    showGameOver();
+    if (!recoverSpawnPlacement(tetromino)) {
+      showGameOver();
+      return;
+    }
+    statusText = 'Spawn squeeze saved. Keep stacking.';
   }
 }
 
@@ -719,7 +741,11 @@ function holdCurrentPiece() {
     };
 
     if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
-      showGameOver();
+      if (!recoverSpawnPlacement(tetromino)) {
+        showGameOver();
+        return;
+      }
+      statusText = `Holding ${holdName}. Spawn squeeze saved.`;
     }
   }
 
@@ -840,6 +866,7 @@ function lockPiece() {
   }
 
   let turnScore = 0;
+  let clutchBonus = 0;
   if (linesClearedThisTurn > 0) {
     const lineIndex = Math.min(linesClearedThisTurn, 4);
 
@@ -871,6 +898,13 @@ function lockPiece() {
       floatTexts.push({ text: 'PERFECT CLEAR', x: canvas.width / 2, y: canvas.height * 0.3, life: 52, color: '#8ee8c7' });
     }
 
+    const stackHeight = getStackHeight();
+    if (stackHeight >= 14) {
+      clutchBonus = Math.floor(turnScore * 0.2);
+      turnScore += clutchBonus;
+      floatTexts.push({ text: `CLUTCH +${clutchBonus}`, x: canvas.width / 2, y: canvas.height * 0.38, life: 48, color: '#ffd68f' });
+    }
+
     while (levelLines >= levelGoal && level < 999) {
       levelLines -= levelGoal;
       level++;
@@ -881,6 +915,7 @@ function lockPiece() {
     statusText = tSpin
       ? `T-Spin x${linesClearedThisTurn}! +${turnScore}`
       : `Cleared ${linesClearedThisTurn} line(s) +${turnScore}`;
+    if (clutchBonus > 0) statusText += ` (Clutch +${clutchBonus})`;
   } else {
     combo = 0;
     if (tSpin) {
@@ -892,6 +927,17 @@ function lockPiece() {
   score = Math.min(Number.MAX_SAFE_INTEGER, score + turnScore);
   updateScore();
   spawnNextPiece();
+}
+
+function getStackHeight() {
+  let firstFilled = rows;
+  for (let row = 0; row < rows; row++) {
+    if (playfield[row].some((cell) => !!cell)) {
+      firstFilled = row;
+      break;
+    }
+  }
+  return firstFilled === rows ? 0 : rows - firstFilled;
 }
 
 function drawCell(x, y, colorHex, alpha) {

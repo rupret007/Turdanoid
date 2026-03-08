@@ -414,6 +414,9 @@ let bigPaddleStacks = 0;
 let stuckBall = null;
 let lastStinkMilestone = 0;
 let extraLifeCooldown = 0;
+let shieldCharges = 0;
+let bricksSinceDrop = 0;
+let levelMutatorText = '';
 
 let controlLeft = false;
 let controlRight = false;
@@ -424,7 +427,11 @@ let activePowerUps = {
   toiletPaper: 0,
   stickyPaddle: 0,
   laserEyes: 0,
-  stinkBurst: 0
+  stinkBurst: 0,
+  toiletShield: 0,
+  fireTurd: 0,
+  magnetSniff: 0,
+  comboBoost: 0
 };
 
 const POWERUP_TYPES = [
@@ -436,7 +443,12 @@ const POWERUP_TYPES = [
   { type: 'disruption', emoji: '⚽', name: 'Disruption (D)', weight: 1.8 },
   { type: 'laserEyes', emoji: '🔫', name: 'Laser (L)', weight: 1.8 },
   { type: 'warpFlush', emoji: '🚽', name: 'Break Flush (B)', weight: 1.1 },
-  { type: 'stinkBurst', emoji: '💨', name: 'Stink Burst', weight: 1.6 }
+  { type: 'stinkBurst', emoji: '💨', name: 'Stink Burst', weight: 1.6 },
+  { type: 'toiletShield', emoji: '🛡️', name: 'Toilet Seat Shield', weight: 1.5 },
+  { type: 'fireTurd', emoji: '🔥', name: 'Fire Turd', weight: 1.4 },
+  { type: 'magnetSniff', emoji: '🌀', name: 'Magnet Sniff', weight: 1.35 },
+  { type: 'comboBoost', emoji: '⚡', name: 'Combo Juice', weight: 1.25 },
+  { type: 'rowFlush', emoji: '🌊', name: 'Row Flush', weight: 1.05 }
 ];
 
 const MAX_LEVEL = 69;
@@ -527,6 +539,9 @@ function resetGame() {
   stuckBall = null;
   lastStinkMilestone = 0;
   extraLifeCooldown = 0;
+  shieldCharges = 0;
+  bricksSinceDrop = 0;
+  levelMutatorText = '';
   runSeed = Math.floor(Math.random() * 1000000000);
   levelChaosProfile = null;
   levelLayoutSignatures = new Set();
@@ -547,7 +562,11 @@ function resetGame() {
     toiletPaper: 0,
     stickyPaddle: 0,
     laserEyes: 0,
-    stinkBurst: 0
+    stinkBurst: 0,
+    toiletShield: 0,
+    fireTurd: 0,
+    magnetSniff: 0,
+    comboBoost: 0
   };
 
   createLevel(level);
@@ -705,6 +724,7 @@ function shouldPlaceBrick(profile, row, col, rows, cols) {
 }
 
 function createLevel(levelNumber) {
+  bricksSinceDrop = 0;
   let remix = 0;
   while (remix < 14) {
     bricks = [];
@@ -804,11 +824,52 @@ function createLevel(levelNumber) {
 
   levelLayoutSignatures.add(levelLayoutSignature);
   levelPatternName = getPatternName(levelChaosProfile);
+  levelMutatorText = applyLevelMutator(levelNumber);
   setupWaldoCameo(levelNumber);
   const bossTag = levelChaosProfile.bossLevel ? ' Boss Wave.' : '';
   const remixTag = levelChaosProfile.variation > 0 ? ` Remix ${levelChaosProfile.variation + 1}.` : '';
   const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
-  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}${waldoTag}`;
+  const mutatorTag = levelMutatorText ? ` ${levelMutatorText}` : '';
+  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}${mutatorTag}${waldoTag}`;
+}
+
+function applyLevelMutator(levelNumber) {
+  const notes = [];
+
+  if (levelNumber >= 12 && levelNumber % 4 === 0) {
+    let converted = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible || b.type !== 'normal') continue;
+      if (random() < 0.14) {
+        b.type = random() < 0.55 ? 'explosive' : 'shifty';
+        b.hp = b.type === 'shifty' ? 1 + floor(levelNumber / 5) : 1;
+        b.maxHp = b.hp;
+        b.driftAmount = b.type === 'shifty' ? random(8, 16 + levelChaosProfile.chaos * 10) : 0;
+        b.driftSpeed = b.type === 'shifty'
+          ? levelChaosProfile.driftBoost + random(0.008, 0.02 + levelChaosProfile.chaos * 0.015)
+          : 0;
+        converted++;
+      }
+    }
+    if (converted > 0) notes.push(`Mutator: ${converted} bricks went feral.`);
+  }
+
+  if (levelNumber >= 24 && levelNumber % 6 === 0) {
+    let reinforced = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible || b.type === 'gold') continue;
+      if (random() < 0.18) {
+        b.hp += 1;
+        b.maxHp += 1;
+        reinforced++;
+      }
+    }
+    if (reinforced > 0) notes.push(`Mutator: ${reinforced} bricks reinforced.`);
+  }
+
+  return notes.join(' ');
 }
 
 function setupWaldoCameo(levelNumber) {
@@ -1062,6 +1123,7 @@ function updatePowerTimers() {
     if (activePowerUps[key] > 0) activePowerUps[key]--;
   }
   if (extraLifeCooldown > 0) extraLifeCooldown--;
+  if (activePowerUps.toiletShield <= 0) shieldCharges = 0;
 
   applyPaddleWidth();
 
@@ -1096,7 +1158,8 @@ function weightedPowerUp() {
 }
 
 function createPowerUp(x, y) {
-  if (powerUps.length >= 1) return;
+  const maxDrops = level >= 18 ? 2 : 1;
+  if (powerUps.length >= maxDrops) return;
   if (balls.length > 1) return;
   const p = weightedPowerUp();
   powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2.1, angle: 0, ...p });
@@ -1107,6 +1170,11 @@ function updatePowerUps() {
     const pu = powerUps[i];
     pu.y += pu.vy;
     pu.angle += 0.08;
+    if (activePowerUps.magnetSniff > 0) {
+      const targetX = paddle.x + paddleWidth / 2 - pu.w / 2;
+      pu.x += (targetX - pu.x) * 0.08;
+      pu.x = constrain(pu.x, 0, width - pu.w);
+    }
 
     if (pu.y > height + pu.h) {
       powerUps.splice(i, 1);
@@ -1169,6 +1237,7 @@ function updateShots() {
 
 function updateBalls() {
   const slow = activePowerUps.slowBall > 0 ? 0.62 : 1;
+  const fireActive = activePowerUps.fireTurd > 0;
 
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
@@ -1226,14 +1295,28 @@ function updateBalls() {
       const brick = bricks[j];
       if (!ballHitsBrick(b, brick)) continue;
 
-      damageBrick(j, 1, false);
+      damageBrick(j, fireActive ? 2 : 1, false);
 
-      if (brick.type !== 'gold') {
+      if (fireActive) {
+        spawnBurst(b.x, b.y, 3, color(255, 180, 90));
+      } else if (brick.type !== 'gold') {
         b.vy *= -1;
       } else {
         b.vx *= -1;
       }
       break;
+    }
+
+    if (activePowerUps.toiletShield > 0 && shieldCharges > 0 && b.vy > 0 && b.y + b.r >= height - 8) {
+      b.y = height - 8 - b.r;
+      b.vy = -abs(b.vy);
+      shieldCharges--;
+      spawnBurst(b.x, height - 8, 6, color(160, 255, 220));
+      if (shieldCharges <= 0) {
+        activePowerUps.toiletShield = 0;
+        statusText = 'Toilet shield cracked.';
+      }
+      continue;
     }
 
     if (b.y - b.r > height + 4) {
@@ -1268,8 +1351,13 @@ function updateBalls() {
         toiletPaper: 0,
         stickyPaddle: 0,
         laserEyes: 0,
-        stinkBurst: 0
+        stinkBurst: 0,
+        toiletShield: 0,
+        fireTurd: 0,
+        magnetSniff: 0,
+        comboBoost: 0
       };
+      shieldCharges = 0;
       resetBallState();
     }
   }
@@ -1355,7 +1443,8 @@ function damageBrick(index, damage, projectileHit) {
   if (removed.type === 'shifty') gainBase = 22;
 
   const comboMult = 1 + min(2.8, combo * 0.1);
-  const gain = floor((projectileHit ? gainBase * 0.85 : gainBase) * comboMult);
+  const comboPower = activePowerUps.comboBoost > 0 ? 1.35 : 1;
+  const gain = floor((projectileHit ? gainBase * 0.85 : gainBase) * comboMult * comboPower);
   score = min(Number.MAX_SAFE_INTEGER, score + gain);
 
   addFloatText(`+${gain}`, removed.x + removed.w / 2, removed.y + removed.h / 2, color(255, 236, 184));
@@ -1364,9 +1453,18 @@ function damageBrick(index, damage, projectileHit) {
     splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
   }
 
-  const dropChance = 0.12 + min(0.08, level * 0.0025);
-  const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1 && powerUps.length === 0;
-  if (dropEligible && random() < dropChance) createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+  if (combo >= 8 && removed.type !== 'explosive' && random() < 0.28) {
+    splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 44);
+  }
+
+  bricksSinceDrop++;
+  const droughtBoost = min(0.2, bricksSinceDrop * 0.012);
+  const dropChance = 0.11 + min(0.1, level * 0.003) + droughtBoost;
+  const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1;
+  if (dropEligible && random() < dropChance) {
+    createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+    bricksSinceDrop = 0;
+  }
 
   spawnBurst(removed.x + removed.w / 2, removed.y + removed.h / 2, 10, color(255, 180, 120));
 
@@ -1429,6 +1527,27 @@ function activatePowerUp(type) {
       activePowerUps.stinkBurst = max(activePowerUps.stinkBurst, 430);
       statusText = 'Stink burst cloud damages nearby bricks.';
       break;
+    case 'toiletShield':
+      activePowerUps.toiletShield = max(activePowerUps.toiletShield, 620);
+      shieldCharges = max(shieldCharges, 2 + floor(level / 10));
+      statusText = `Toilet shield deployed. Charges: ${shieldCharges}.`;
+      break;
+    case 'fireTurd':
+      activePowerUps.fireTurd = max(activePowerUps.fireTurd, 460);
+      statusText = 'Fire turd active: melts through bricks.';
+      break;
+    case 'magnetSniff':
+      activePowerUps.magnetSniff = max(activePowerUps.magnetSniff, 560);
+      statusText = 'Magnet sniff: power-ups drift toward your paddle.';
+      break;
+    case 'comboBoost':
+      activePowerUps.comboBoost = max(activePowerUps.comboBoost, 520);
+      statusText = 'Combo juice: boosted score on every break.';
+      break;
+    case 'rowFlush':
+      runRowFlush();
+      statusText = 'Row flush fired. Densest lane washed out.';
+      break;
     default:
       break;
   }
@@ -1470,6 +1589,36 @@ function runWarpFlush() {
 
   score += 80;
   addFloatText('FLUSH WARP!', width / 2, height * 0.45, color(170, 255, 220));
+}
+
+function runRowFlush() {
+  const buckets = new Map();
+  for (let i = 0; i < bricks.length; i++) {
+    const b = bricks[i];
+    if (!b.destructible) continue;
+    const key = floor((b.y + b.h * 0.5) / 28);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(i);
+  }
+
+  if (buckets.size === 0) return;
+  let bestKey = null;
+  let bestCount = -1;
+  for (const [key, indexes] of buckets.entries()) {
+    if (indexes.length > bestCount) {
+      bestCount = indexes.length;
+      bestKey = key;
+    }
+  }
+
+  const targetIndexes = (buckets.get(bestKey) || []).slice().sort((a, b) => b - a);
+  for (const idx of targetIndexes) {
+    if (!bricks[idx]) continue;
+    damageBrick(idx, 999, true);
+  }
+
+  score += 90 + bestCount * 12;
+  addFloatText('ROW FLUSH!', width / 2, height * 0.42, color(140, 235, 255));
 }
 
 function spawnBurst(x, y, count, c) {
@@ -1553,6 +1702,7 @@ function drawGameScene(withGameElements) {
     drawWaldoCameo();
     drawPaddle();
     drawBalls();
+    drawBottomShield();
     drawShots();
     drawPowerUps();
     drawParticlesVisual();
@@ -1564,6 +1714,7 @@ function drawGameScene(withGameElements) {
   drawWaldoCameo();
   drawPaddle();
   drawBalls();
+  drawBottomShield();
   drawShots();
   drawPowerUps();
   drawParticlesVisual();
@@ -1620,6 +1771,7 @@ function drawPaddle() {
 }
 
 function drawBalls() {
+  const fireActive = activePowerUps.fireTurd > 0;
   for (const b of balls) {
     const stinkRatio = constrain(b.stink / 5000, 0, 1);
 
@@ -1640,7 +1792,27 @@ function drawBalls() {
     textSize(24 + stinkRatio * 2);
     textAlign(CENTER, CENTER);
     text('💩', b.x, b.y + 1);
+
+    if (fireActive) {
+      noFill();
+      stroke(255, 130, 70, 170);
+      strokeWeight(2);
+      circle(b.x, b.y, b.r * 2.9);
+      noStroke();
+    }
   }
+}
+
+function drawBottomShield() {
+  if (activePowerUps.toiletShield <= 0 || shieldCharges <= 0) return;
+  const alpha = 80 + sin(frameCount * 0.12) * 28;
+  noStroke();
+  fill(130, 255, 220, alpha);
+  rect(0, height - 12, width, 6, 3);
+  fill(210, 255, 242, 220);
+  textAlign(CENTER, CENTER);
+  textSize(12);
+  text(`Shield ${shieldCharges}`, width / 2, height - 17);
 }
 
 function drawShots() {
@@ -1758,6 +1930,9 @@ function updateHud() {
     }
     if (bigPaddleStacks > 0 && activePowerUps.bigPaddle > 0) {
       chips.push(`<span class="chip">📏 x${bigPaddleStacks}</span>`);
+    }
+    if (shieldCharges > 0 && activePowerUps.toiletShield > 0) {
+      chips.push(`<span class="chip">🛡️ x${shieldCharges}</span>`);
     }
     powerListEl.innerHTML = chips.length ? chips.join('') : '<span class="chip">None</span>';
   }

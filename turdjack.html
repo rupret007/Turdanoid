@@ -562,6 +562,7 @@
           <div class="action-row" style="margin-top:8px;">
             <button class="btn" id="clearBetBtn">Clear Bet</button>
             <button class="btn" id="maxBetBtn">Max Bet</button>
+            <button class="btn" id="rebetBtn">Rebet</button>
           </div>
         </div>
 
@@ -623,7 +624,7 @@
         <div class="rules">
           <p id="payoutText"><strong>Payouts:</strong> Blackjack pays 3:2, normal win pays 1:1, push returns bet.</p>
           <p id="tableRulesText"><strong>Table Rules:</strong> Dealer stands on soft 17, one split per round, and surrender is pre-split only.</p>
-          <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet.</p>
+          <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet, `B` rebet, `Enter` smart action.</p>
           <p><strong>Theme Rule:</strong> If you bust, the toilet flushes your dignity.</p>
         </div>
       </aside>
@@ -634,7 +635,8 @@
     const STORAGE = {
       bankroll: 'turdjackBankroll',
       stats: 'turdjackStats',
-      rules: 'turdjackRules'
+      rules: 'turdjackRules',
+      lastBet: 'turdjackLastBet'
     };
 
     const INITIAL_BANKROLL = 1000;
@@ -686,6 +688,7 @@
       surrenderBtn: document.getElementById('surrenderBtn'),
       clearBetBtn: document.getElementById('clearBetBtn'),
       maxBetBtn: document.getElementById('maxBetBtn'),
+      rebetBtn: document.getElementById('rebetBtn'),
       newShoeBtn: document.getElementById('newShoeBtn'),
       resetStatsBtn: document.getElementById('resetStatsBtn')
     };
@@ -709,6 +712,7 @@
     let dealerHand = [];
     let splitHand = [];
     let currentBet = 0;
+    let lastBet = Math.max(MIN_BET, readNumber(STORAGE.lastBet, MIN_BET));
     let splitBet = 0;
     let roundActive = false;
     let dealerHoleHidden = true;
@@ -815,6 +819,7 @@
         localStorage.setItem(STORAGE.bankroll, String(bankroll));
         localStorage.setItem(STORAGE.stats, JSON.stringify(stats));
         localStorage.setItem(STORAGE.rules, JSON.stringify(rules));
+        localStorage.setItem(STORAGE.lastBet, String(lastBet));
       } catch (e) {}
     }
 
@@ -1154,6 +1159,7 @@
       });
       ui.clearBetBtn.disabled = lockedBet || currentBet === 0;
       ui.maxBetBtn.disabled = lockedBet;
+      ui.rebetBtn.disabled = lockedBet || lastBet < MIN_BET || lastBet > bankroll;
 
       if (ui.hintText) {
         ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left.`;
@@ -1186,6 +1192,21 @@
       updateHud();
     }
 
+    function rebetLast() {
+      if (roundActive) return;
+      if (lastBet < MIN_BET) {
+        setStatus(`No saved rebet yet. Place at least $${MIN_BET} first.`);
+        return;
+      }
+      if (lastBet > bankroll) {
+        setStatus(`Saved rebet is $${lastBet}, but bankroll is only $${bankroll}.`);
+        return;
+      }
+      currentBet = lastBet;
+      setStatus(`Rebet loaded: $${currentBet}.`);
+      updateHud();
+    }
+
     function startRound() {
       if (roundActive) return;
       if (currentBet < MIN_BET) {
@@ -1197,6 +1218,7 @@
         return;
       }
 
+      lastBet = currentBet;
       bankroll -= currentBet;
       roundActive = true;
       firstDecisionOpen = true;
@@ -1422,6 +1444,52 @@
       updateHud();
     }
 
+    function smartAction() {
+      if (!roundActive) {
+        if (currentBet < MIN_BET && lastBet >= MIN_BET && lastBet <= bankroll) {
+          currentBet = lastBet;
+        }
+        startRound();
+        return;
+      }
+
+      const hand = getActiveHand();
+      const total = handValue(hand);
+      const up = dealerUpcardValue();
+      const soft = isSoftHand(hand);
+
+      if (rules.allowSurrender && !splitRound && firstDecisionOpen && total === 16 && (up >= 9 || up === 11)) {
+        playerSurrender();
+        return;
+      }
+
+      if (canDoubleOnActiveHand()) {
+        const strongHardDouble =
+          (total === 11 && up !== 11) ||
+          (total === 10 && up <= 9) ||
+          (total === 9 && up >= 3 && up <= 6);
+        const softDouble = soft && total === 18 && up >= 3 && up <= 6;
+        if (strongHardDouble || softDouble) {
+          playerDouble();
+          return;
+        }
+      }
+
+      if (total >= 17) {
+        playerStand();
+        return;
+      }
+      if (total >= 13 && total <= 16 && up >= 2 && up <= 6) {
+        playerStand();
+        return;
+      }
+      if (total === 12 && up >= 4 && up <= 6) {
+        playerStand();
+        return;
+      }
+      playerHit();
+    }
+
     function dealerTurnAndResolve() {
       firstDecisionOpen = false;
       dealerHoleHidden = false;
@@ -1506,6 +1574,7 @@
       if (!confirm('Reset bankroll and stats back to defaults?')) return;
       bankroll = INITIAL_BANKROLL;
       currentBet = 0;
+      lastBet = MIN_BET;
       splitBet = 0;
       stats = {
         hands: 0,
@@ -1537,6 +1606,7 @@
 
       ui.clearBetBtn.addEventListener('click', clearBet);
       ui.maxBetBtn.addEventListener('click', maxBet);
+      ui.rebetBtn.addEventListener('click', rebetLast);
 
       ui.dealBtn.addEventListener('click', startRound);
       ui.hitBtn.addEventListener('click', playerHit);
@@ -1588,6 +1658,14 @@
         if (e.code === 'KeyC') {
           e.preventDefault();
           clearBet();
+        }
+        if (e.code === 'KeyB') {
+          e.preventDefault();
+          rebetLast();
+        }
+        if (e.code === 'Enter') {
+          e.preventDefault();
+          smartAction();
         }
       });
     }
