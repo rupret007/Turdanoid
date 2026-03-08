@@ -215,10 +215,7 @@
 
         this.levelPatternName = this.getPatternName(this.levelProfile);
         this.setObjective(`Break ${this.levelBlocksTotal} blocks this wave. Reach level ${this.config.maxLevel}.`);
-        const bossTag = this.levelProfile.bossLevel ? ' | Boss Wave' : '';
-        const remixTag = this.levelProfile.variation > 0 ? ` | Remix ${this.levelProfile.variation + 1}` : '';
-        const waldoTag = this.waldo && this.waldo.active ? ' | Waldo?' : '';
-        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}${waldoTag}`);
+        this.updateModeSummary();
     }
 
     clearCombatState() {
@@ -566,6 +563,7 @@
 
         if (waldo.life <= 0) {
             waldo.active = false;
+            this.updateModeSummary();
             return;
         }
 
@@ -586,6 +584,7 @@
                 this.spawnFloatText(`WALDO +${bonus}`, waldo.x, waldo.y - 12, '#ffed8a');
                 this.setStatus(`You found Waldo. +${bonus} bonus chaos points.`);
                 this.screenShake = Math.max(this.screenShake, 8);
+                this.updateModeSummary();
                 break;
             }
         }
@@ -607,6 +606,14 @@
 
     setMode(text) {
         if (this.ui.pattern) this.ui.pattern.textContent = text;
+    }
+
+    updateModeSummary() {
+        if (!this.levelProfile) return;
+        const bossTag = this.levelProfile.bossLevel ? ' | Boss Wave' : '';
+        const remixTag = this.levelProfile.variation > 0 ? ` | Remix ${this.levelProfile.variation + 1}` : '';
+        const waldoTag = this.waldo && this.waldo.active ? ' | Waldo?' : '';
+        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}${waldoTag}`);
     }
 
     updateMuteButton() {

@@ -400,7 +400,7 @@ let highScore = parseInt(localStorage.getItem('turdtrisHighScore') || '0', 10);
 let level = 1;
 let linesCleared = 0;
 let levelLines = 0;
-let levelGoal = 5;
+let levelGoal = 8;
 let combo = 0;
 let b2b = 0;
 let softDrop = false;
@@ -540,8 +540,12 @@ function getGravityMs() {
 }
 
 function getLinesGoalForLevel(currentLevel) {
-  if (currentLevel <= 15) return currentLevel * 5;
-  return 10;
+  if (currentLevel <= 5) return 8;
+  if (currentLevel <= 15) return 10;
+  if (currentLevel <= 30) return 12;
+  if (currentLevel <= 45) return 14;
+  if (currentLevel <= 60) return 16;
+  return 18;
 }
 
 function copyMatrix(matrix) {
