@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Neon Arkanoid Turbo</title>
     <style>
         :root {
@@ -26,6 +26,7 @@
 
         body {
             min-height: 100vh;
+            min-height: 100dvh;
             font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
             color: var(--ink);
             background:
@@ -35,7 +36,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: clamp(8px, 2.2vw, 18px);
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .hub-link {
@@ -96,6 +99,7 @@
             color: var(--accent);
             background: rgba(10, 19, 36, 0.55);
             padding: 8px 12px;
+            min-height: 38px;
             font-size: 12px;
             border-radius: 10px;
             cursor: pointer;
@@ -336,6 +340,7 @@
 
         .control-btn {
             min-width: 90px;
+            min-height: 42px;
             border: 1px solid rgba(128, 220, 255, 0.45);
             background: rgba(11, 22, 42, 0.8);
             color: var(--ink);
@@ -346,11 +351,10 @@
 
         @media (max-width: 1024px) {
             body {
-                padding: 10px;
-                overflow: auto;
+                padding: clamp(8px, 2.5vw, 12px);
             }
             .game-shell {
-                width: min(900px, 88vw);
+                width: min(980px, 94vw);
                 padding: 10px;
                 border-radius: 18px;
             }
@@ -359,12 +363,12 @@
                 justify-items: center;
             }
             .canvas-wrap {
-                width: min(700px, 84vw);
+                width: min(840px, 94vw);
                 margin: 0 auto;
             }
             .sidebar {
                 min-height: auto;
-                width: min(700px, 84vw);
+                width: min(840px, 94vw);
                 padding: 10px;
             }
             .hud-grid {
@@ -374,8 +378,8 @@
                 font-size: 1rem;
             }
             .btn {
-                padding: 7px 10px;
-                font-size: 11px;
+                padding: 8px 11px;
+                font-size: 12px;
             }
             .status-item span {
                 font-size: 0.8rem;
@@ -387,22 +391,30 @@
                 display: flex;
             }
             .control-btn {
-                min-width: 74px;
-                padding: 8px 10px;
-                font-size: 0.82rem;
+                min-width: 84px;
+                min-height: 42px;
+                padding: 8px 11px;
+                font-size: 0.88rem;
             }
         }
 
         @media (max-width: 680px) {
             .game-shell {
-                width: min(760px, 86vw);
+                width: min(760px, 94vw);
                 padding: 8px;
             }
+            .title-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .actions {
+                justify-content: flex-start;
+            }
             .canvas-wrap {
-                width: min(520px, 78vw);
+                width: min(700px, 95vw);
             }
             .sidebar {
-                width: min(520px, 78vw);
+                width: min(700px, 95vw);
                 padding: 8px;
             }
             .hud-grid {
@@ -417,9 +429,18 @@
                 font-size: 0.74rem;
             }
             .control-btn {
-                min-width: 68px;
-                padding: 8px 9px;
-                font-size: 0.8rem;
+                min-width: 82px;
+                min-height: 42px;
+                padding: 8px 10px;
+                font-size: 0.86rem;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .btn,
+            .control-btn,
+            .hub-link {
+                min-height: 44px;
             }
         }
     </style>

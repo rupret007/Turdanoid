@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Crapjack 21</title>
   <style>
     :root {
@@ -29,6 +29,7 @@
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
       color: var(--ink);
       background:
@@ -38,7 +39,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 14px;
+      padding: clamp(8px, 2.2vw, 14px);
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .hub-link {
@@ -99,6 +102,7 @@
       color: var(--accent);
       border-radius: 10px;
       padding: 8px 12px;
+      min-height: 38px;
       font-size: 12px;
       cursor: pointer;
       transition: transform 0.18s ease, background 0.2s ease;
@@ -325,6 +329,7 @@
       color: var(--chip);
       border-radius: 999px;
       padding: 8px 10px;
+      min-height: 38px;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
@@ -426,10 +431,10 @@
 
     @media (max-width: 980px) {
       body {
-        padding: 10px;
+        padding: clamp(8px, 2.5vw, 12px);
       }
       .shell {
-        width: min(900px, 88vw);
+        width: min(900px, 94vw);
         padding: 10px;
         border-radius: 18px;
       }
@@ -443,17 +448,21 @@
         font-size: 0.98rem;
       }
       .btn {
-        padding: 7px 10px;
-        font-size: 11px;
+        padding: 8px 11px;
+        font-size: 12px;
       }
       .cards { min-height: 110px; }
-      .playing-card { width: 52px; height: 76px; padding: 5px; }
+      .playing-card { width: 58px; height: 84px; padding: 6px; }
     }
 
     @media (max-width: 680px) {
       .shell {
-        width: min(760px, 86vw);
+        width: min(760px, 94vw);
         padding: 8px;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
       }
       .hud {
         grid-template-columns: repeat(3, minmax(70px, 1fr));
@@ -468,11 +477,19 @@
         min-height: 42px;
       }
       .cards { min-height: 96px; }
-      .playing-card { width: 46px; height: 68px; padding: 4px; }
+      .playing-card { width: 54px; height: 78px; padding: 5px; }
       .playing-card .rank { font-size: 0.8rem; }
       .playing-card .suit { font-size: 0.8rem; }
       .playing-card .center { font-size: 1rem; }
       .playing-card .small { font-size: 0.56rem; }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .btn,
+      .chip-btn,
+      .hub-link {
+        min-height: 44px;
+      }
     }
   </style>
 </head>

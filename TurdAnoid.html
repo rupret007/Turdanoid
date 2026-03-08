@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>TurdAnoid Turbo</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
   <style>
@@ -21,6 +21,7 @@
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
       color: var(--ink);
       background:
@@ -30,8 +31,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 16px;
-      overflow: hidden;
+      padding: clamp(8px, 2.2vw, 16px);
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .hub-link {
@@ -91,6 +93,7 @@
       border-radius: 10px;
       font-size: 12px;
       padding: 8px 12px;
+      min-height: 38px;
       cursor: pointer;
     }
 
@@ -142,7 +145,7 @@
 
     #game-holder canvas {
       display: block;
-      width: min(860px, 74vw) !important;
+      width: min(860px, 82vw) !important;
       height: auto !important;
     }
 
@@ -201,6 +204,7 @@
       color: var(--ink);
       border-radius: 10px;
       min-width: 84px;
+      min-height: 42px;
       padding: 9px 10px;
       font-size: 0.9rem;
     }
@@ -247,11 +251,10 @@
 
     @media (max-width: 980px) {
       body {
-        padding: 10px;
-        overflow: auto;
+        padding: clamp(8px, 2.5vw, 12px);
       }
       .shell {
-        width: min(900px, 88vw);
+        width: min(900px, 94vw);
         padding: 10px;
         border-radius: 18px;
       }
@@ -261,34 +264,39 @@
         min-height: 0;
       }
       #game-holder canvas {
-        width: min(700px, 82vw) !important;
+        width: min(780px, 92vw) !important;
       }
       .card .v {
         font-size: 0.96rem;
       }
       .btn {
-        padding: 7px 10px;
-        font-size: 11px;
+        padding: 8px 11px;
+        font-size: 12px;
       }
       .mobile-controls { display: flex; }
       .control-btn {
-        min-width: 70px;
-        padding: 8px 9px;
-        font-size: 0.82rem;
+        min-width: 82px;
+        min-height: 42px;
+        padding: 8px 10px;
+        font-size: 0.88rem;
       }
     }
 
     @media (max-width: 680px) {
       .shell {
-        width: min(760px, 86vw);
+        width: min(760px, 94vw);
         padding: 8px;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
       }
       .hud {
         grid-template-columns: repeat(3, minmax(70px, 1fr));
         gap: 6px;
       }
       #game-holder canvas {
-        width: min(560px, 74vw) !important;
+        width: min(620px, 94vw) !important;
       }
       .panel {
         padding: 8px;
@@ -298,9 +306,18 @@
         min-height: 52px;
       }
       .control-btn {
-        min-width: 58px;
-        padding: 7px 8px;
-        font-size: 0.76rem;
+        min-width: 78px;
+        min-height: 42px;
+        padding: 7px 9px;
+        font-size: 0.84rem;
+      }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .btn,
+      .control-btn,
+      .hub-link {
+        min-height: 44px;
       }
     }
   </style>
@@ -498,9 +515,21 @@ function hideWelcomeGuide() {
 }
 
 function windowResized() {
-  const targetW = min(860, windowWidth - 38);
-  const targetH = min(620, windowHeight - 170);
-  resizeCanvas(max(420, targetW), max(300, targetH));
+  const aspect = 860 / 620;
+  const narrow = windowWidth <= 700;
+  const widthPad = narrow ? 20 : 40;
+  const chromePad = narrow ? 250 : 180;
+  const maxWidth = min(860, windowWidth - widthPad);
+  const maxHeight = min(620, windowHeight - chromePad);
+
+  let nextW = max(300, maxWidth);
+  let nextH = nextW / aspect;
+  if (nextH > maxHeight) {
+    nextH = max(240, maxHeight);
+    nextW = nextH * aspect;
+  }
+
+  resizeCanvas(floor(nextW), floor(nextH));
   createLevel(level);
   resetBallState();
 }
