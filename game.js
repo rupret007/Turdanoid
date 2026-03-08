@@ -82,6 +82,7 @@
         this.shieldHits = 0;
         this.levelBlocksTotal = 0;
         this.extraLifeCooldown = 0;
+        this.waldo = null;
 
         this.ui = {
             score: document.getElementById('score'),
@@ -210,12 +211,14 @@
         this.activePowerUps = {};
         this.ghostCharges = 0;
         this.shieldHits = 0;
+        this.setupWaldo();
 
         this.levelPatternName = this.getPatternName(this.levelProfile);
         this.setObjective(`Break ${this.levelBlocksTotal} blocks this wave. Reach level ${this.config.maxLevel}.`);
         const bossTag = this.levelProfile.bossLevel ? ' | Boss Wave' : '';
         const remixTag = this.levelProfile.variation > 0 ? ` | Remix ${this.levelProfile.variation + 1}` : '';
-        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}`);
+        const waldoTag = this.waldo && this.waldo.active ? ' | Waldo?' : '';
+        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}${waldoTag}`);
     }
 
     clearCombatState() {
@@ -523,6 +526,71 @@
         this.levelBlocksTotal = this.blocks.length;
     }
 
+    setupWaldo() {
+        const chance = this.clamp(0.14 + this.level * 0.004, 0.14, 0.48);
+        if (Math.random() > chance) {
+            this.waldo = null;
+            return;
+        }
+
+        const size = 18 + Math.min(12, Math.floor(this.level / 5));
+        const minY = 56;
+        const maxY = Math.min(this.canvas.height * 0.42, 210 + this.level * 1.3);
+        const speed = 0.45 + Math.random() * 0.7 + this.level * 0.01;
+
+        this.waldo = {
+            active: true,
+            found: false,
+            x: size + Math.random() * Math.max(1, this.canvas.width - size * 2),
+            y: minY + Math.random() * Math.max(1, maxY - minY),
+            size,
+            vx: Math.random() > 0.5 ? speed : -speed,
+            life: 620 + this.level * 12,
+            blink: Math.random() * Math.PI * 2
+        };
+    }
+
+    updateWaldo() {
+        if (!this.waldo || !this.waldo.active) return;
+
+        const waldo = this.waldo;
+        waldo.blink += 0.13;
+        waldo.life--;
+        waldo.x += waldo.vx;
+
+        const half = waldo.size * 0.5;
+        if (waldo.x <= half || waldo.x >= this.canvas.width - half) {
+            waldo.vx *= -1;
+            waldo.x = this.clamp(waldo.x, half, this.canvas.width - half);
+        }
+
+        if (waldo.life <= 0) {
+            waldo.active = false;
+            return;
+        }
+
+        const hitW = waldo.size * 0.52;
+        const hitH = waldo.size * 0.78;
+        for (let i = 0; i < this.balls.length; i++) {
+            const ball = this.balls[i];
+            if (
+                ball.x + ball.radius >= waldo.x - hitW &&
+                ball.x - ball.radius <= waldo.x + hitW &&
+                ball.y + ball.radius >= waldo.y - hitH &&
+                ball.y - ball.radius <= waldo.y + hitH
+            ) {
+                waldo.active = false;
+                waldo.found = true;
+                const bonus = 169 + this.level * 9;
+                this.score += bonus;
+                this.spawnFloatText(`WALDO +${bonus}`, waldo.x, waldo.y - 12, '#ffed8a');
+                this.setStatus(`You found Waldo. +${bonus} bonus chaos points.`);
+                this.screenShake = Math.max(this.screenShake, 8);
+                break;
+            }
+        }
+    }
+
     getBaseBallSpeed() {
         const levelSpeed = this.config.baseBallSpeed + (this.level - 1) * 0.33;
         const overdriveBoost = this.activePowerUps.overdrive ? 1.1 : 0;
@@ -781,6 +849,7 @@
             this.updateBalls();
         }
 
+        this.updateWaldo();
         this.updateProjectiles();
         this.updatePowerUpDrops();
         this.updateActivePowerUps();
@@ -1043,6 +1112,7 @@
         this.frame = 0;
         this.runSeed = this.createRunSeed();
         this.extraLifeCooldown = 0;
+        this.waldo = null;
         this.levelLayoutSignatures = new Set();
         this.levelLayoutSignature = '';
 
@@ -1525,6 +1595,60 @@
         }
     }
 
+    drawWaldo() {
+        if (!this.waldo || !this.waldo.active) return;
+
+        const waldo = this.waldo;
+        const s = waldo.size;
+        const x = waldo.x;
+        const y = waldo.y;
+        const stripeAlpha = 0.7 + Math.sin(waldo.blink) * 0.2;
+
+        this.ctx.save();
+        this.ctx.translate(x, y);
+        this.ctx.globalAlpha = 0.95;
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, s * 0.54, s * 0.42, s * 0.14, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffd8b1';
+        this.ctx.beginPath();
+        this.ctx.arc(0, -s * 0.38, s * 0.19, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-s * 0.26, -s * 0.18, s * 0.52, s * 0.46);
+        this.ctx.fillStyle = `rgba(220, 45, 55, ${stripeAlpha})`;
+        for (let i = 0; i < 4; i++) {
+            this.ctx.fillRect(-s * 0.26, -s * 0.17 + i * (s * 0.11), s * 0.52, s * 0.055);
+        }
+
+        this.ctx.fillStyle = '#4974d3';
+        this.ctx.fillRect(-s * 0.22, s * 0.26, s * 0.44, s * 0.22);
+
+        this.ctx.fillStyle = '#dd2d37';
+        this.ctx.fillRect(-s * 0.22, -s * 0.58, s * 0.44, s * 0.12);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-s * 0.22, -s * 0.52, s * 0.44, s * 0.055);
+        this.ctx.fillStyle = '#dd2d37';
+        this.ctx.fillRect(-s * 0.22, -s * 0.475, s * 0.44, s * 0.055);
+
+        this.ctx.strokeStyle = '#2d394f';
+        this.ctx.lineWidth = 1.4;
+        this.ctx.beginPath();
+        this.ctx.arc(-s * 0.07, -s * 0.395, s * 0.038, 0, Math.PI * 2);
+        this.ctx.arc(s * 0.07, -s * 0.395, s * 0.038, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+        this.ctx.font = 'bold 11px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('?', 0, -s * 0.82);
+        this.ctx.restore();
+    }
+
     drawPaddle() {
         this.ctx.save();
         const gradient = this.ctx.createLinearGradient(this.paddle.x, this.paddle.y, this.paddle.x, this.paddle.y + this.paddle.height);
@@ -1755,6 +1879,7 @@
 
         this.drawBackground();
         this.drawBlocks();
+        this.drawWaldo();
         this.drawPaddle();
         this.drawBalls();
         this.drawPowerUps();

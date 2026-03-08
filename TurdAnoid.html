@@ -408,6 +408,7 @@ let runSeed = Math.floor(Math.random() * 1000000000);
 let levelChaosProfile = null;
 let levelLayoutSignatures = new Set();
 let levelLayoutSignature = '';
+let waldoCameo = null;
 
 function setup() {
   const c = createCanvas(860, 620);
@@ -477,6 +478,7 @@ function resetGame() {
   levelChaosProfile = null;
   levelLayoutSignatures = new Set();
   levelLayoutSignature = '';
+  waldoCameo = null;
 
   paddleWidth = originalPaddleWidth;
   paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
@@ -749,9 +751,121 @@ function createLevel(levelNumber) {
 
   levelLayoutSignatures.add(levelLayoutSignature);
   levelPatternName = getPatternName(levelChaosProfile);
+  setupWaldoCameo(levelNumber);
   const bossTag = levelChaosProfile.bossLevel ? ' Boss Wave.' : '';
   const remixTag = levelChaosProfile.variation > 0 ? ` Remix ${levelChaosProfile.variation + 1}.` : '';
-  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}`;
+  const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
+  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}${waldoTag}`;
+}
+
+function setupWaldoCameo(levelNumber) {
+  const chance = constrain(0.14 + levelNumber * 0.004, 0.14, 0.48);
+  if (random() > chance) {
+    waldoCameo = null;
+    return;
+  }
+
+  const size = 20 + min(10, floor(levelNumber / 5));
+  const minY = 52;
+  const maxY = min(height * 0.42, 210 + levelNumber * 1.3);
+  const speed = 0.45 + random(0.2, 0.9) + levelNumber * 0.01;
+  waldoCameo = {
+    active: true,
+    found: false,
+    x: random(size, width - size),
+    y: random(minY, maxY),
+    size,
+    vx: random() < 0.5 ? -speed : speed,
+    life: 620 + levelNumber * 12,
+    blink: random(TWO_PI)
+  };
+}
+
+function updateWaldoCameo() {
+  if (!waldoCameo || !waldoCameo.active) return;
+
+  waldoCameo.blink += 0.13;
+  waldoCameo.life--;
+  waldoCameo.x += waldoCameo.vx;
+
+  const half = waldoCameo.size * 0.5;
+  if (waldoCameo.x <= half || waldoCameo.x >= width - half) {
+    waldoCameo.vx *= -1;
+    waldoCameo.x = constrain(waldoCameo.x, half, width - half);
+  }
+
+  if (waldoCameo.life <= 0) {
+    waldoCameo.active = false;
+    return;
+  }
+
+  const hitW = waldoCameo.size * 0.52;
+  const hitH = waldoCameo.size * 0.78;
+  for (const b of balls) {
+    if (
+      b.x + b.r >= waldoCameo.x - hitW &&
+      b.x - b.r <= waldoCameo.x + hitW &&
+      b.y + b.r >= waldoCameo.y - hitH &&
+      b.y - b.r <= waldoCameo.y + hitH
+    ) {
+      waldoCameo.active = false;
+      waldoCameo.found = true;
+      const bonus = 169 + level * 9;
+      score = min(Number.MAX_SAFE_INTEGER, score + bonus);
+      addFloatText(`WALDO +${bonus}`, waldoCameo.x, waldoCameo.y - 12, color(255, 236, 150));
+      statusText = `You found Waldo. +${bonus} bonus chaos points.`;
+      break;
+    }
+  }
+}
+
+function drawWaldoCameo() {
+  if (!waldoCameo || !waldoCameo.active) return;
+
+  const s = waldoCameo.size;
+  const x = waldoCameo.x;
+  const y = waldoCameo.y;
+  const stripeAlpha = 170 + sin(waldoCameo.blink) * 45;
+
+  push();
+  translate(x, y);
+
+  noStroke();
+  fill(0, 0, 0, 65);
+  ellipse(0, s * 0.54, s * 0.8, s * 0.24);
+
+  fill(255, 216, 177);
+  circle(0, -s * 0.38, s * 0.38);
+
+  fill(245, 245, 245);
+  rect(-s * 0.26, -s * 0.18, s * 0.52, s * 0.46, 2);
+  fill(220, 45, 55, stripeAlpha);
+  for (let i = 0; i < 4; i++) {
+    rect(-s * 0.26, -s * 0.17 + i * (s * 0.11), s * 0.52, s * 0.055, 1);
+  }
+
+  fill(73, 116, 211);
+  rect(-s * 0.22, s * 0.26, s * 0.44, s * 0.22, 2);
+
+  fill(221, 45, 55);
+  rect(-s * 0.22, -s * 0.58, s * 0.44, s * 0.12, 2);
+  fill(245, 245, 245);
+  rect(-s * 0.22, -s * 0.52, s * 0.44, s * 0.055, 1);
+  fill(221, 45, 55);
+  rect(-s * 0.22, -s * 0.475, s * 0.44, s * 0.055, 1);
+
+  stroke(45, 57, 79);
+  strokeWeight(1.3);
+  noFill();
+  circle(-s * 0.07, -s * 0.395, s * 0.075);
+  circle(s * 0.07, -s * 0.395, s * 0.075);
+
+  noStroke();
+  fill(255, 255, 255, 245);
+  textAlign(CENTER, CENTER);
+  textSize(11);
+  text('?', 0, -s * 0.82);
+  pop();
 }
 
 function launchBall() {
@@ -800,6 +914,7 @@ function draw() {
   updatePowerUps();
   updateShots();
   updateBalls();
+  updateWaldoCameo();
   updateParticles();
   updateFloatTexts();
 
@@ -1382,6 +1497,7 @@ function rectHit(rectObj, brick) {
 function drawGameScene(withGameElements) {
   if (!withGameElements) {
     drawBricks();
+    drawWaldoCameo();
     drawPaddle();
     drawBalls();
     drawShots();
@@ -1392,6 +1508,7 @@ function drawGameScene(withGameElements) {
   }
 
   drawBricks();
+  drawWaldoCameo();
   drawPaddle();
   drawBalls();
   drawShots();

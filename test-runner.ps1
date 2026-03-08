@@ -42,6 +42,7 @@ if ($game -match 'localStorage') { Pass("localStorage") } else { Fail("localStor
 if ($game -match 'throw new Error') { Pass("constructor throws") } else { Fail("constructor throws") }
 if ($game -match 'webkitAudioContext') { Pass("Safari audio") } else { Fail("Safari audio") }
 if ($game -match 'maxLevel') { Pass("level cap logic") } else { Fail("level cap logic") }
+if ($game -match 'setupWaldo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
 
 Write-Host "`n=== turdtris.html ===" -ForegroundColor Cyan
 $tris = Get-Content turdtris.html -Raw
@@ -60,6 +61,7 @@ if ($turd -match 'touchStarted') { Pass("touchStarted") } else { Fail("touchStar
 if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
 if ($turd -match 'MAX_LEVEL') { Pass("max level cap") } else { Fail("max level cap") }
 if ($turd -match 'levelLayoutSignatures') { Pass("non-repeating level signatures") } else { Fail("non-repeating level signatures") }
+if ($turd -match 'setupWaldoCameo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
