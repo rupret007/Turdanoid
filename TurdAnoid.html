@@ -261,7 +261,7 @@
         min-height: 0;
       }
       #game-holder canvas {
-        width: min(520px, 66vw) !important;
+        width: min(700px, 82vw) !important;
       }
       .card .v {
         font-size: 0.96rem;
@@ -288,7 +288,7 @@
         gap: 6px;
       }
       #game-holder canvas {
-        width: min(420px, 60vw) !important;
+        width: min(560px, 74vw) !important;
       }
       .panel {
         padding: 8px;
@@ -488,7 +488,7 @@ function hideWelcomeGuide() {
 function windowResized() {
   const targetW = min(860, windowWidth - 38);
   const targetH = min(620, windowHeight - 170);
-  resizeCanvas(max(340, targetW), max(240, targetH));
+  resizeCanvas(max(420, targetW), max(300, targetH));
   createLevel(level);
   resetBallState();
 }
