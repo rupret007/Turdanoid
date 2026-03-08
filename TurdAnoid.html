@@ -486,11 +486,66 @@ const LEVEL_PATTERNS = [
   'Rift Lanes'
 ];
 const LEVEL_MODS = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
+const LEVEL_STAGE_NAMES = ['Warmup', 'Arcade', 'Remix', 'Mayhem', 'Chaos', 'Madness'];
+const PATTERN_STAGE_POOLS = [
+  [0, 1],
+  [0, 1, 2, 3, 4],
+  [2, 3, 4, 5, 7, 8],
+  [4, 5, 6, 7, 8, 9, 10],
+  [6, 8, 9, 10, 11, 12, 13],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+];
+const POWERUP_UNLOCK_LEVEL = {
+  bigPaddle: 1,
+  extraLife: 1,
+  slowBall: 1,
+  stickyPaddle: 1,
+  toiletPaper: 2,
+  disruption: 4,
+  laserEyes: 5,
+  warpFlush: 10,
+  stinkBurst: 8,
+  toiletShield: 12,
+  magnetSniff: 14,
+  fireTurd: 16,
+  comboBoost: 18,
+  rowFlush: 22
+};
 let runSeed = Math.floor(Math.random() * 1000000000);
 let levelChaosProfile = null;
 let levelLayoutSignatures = new Set();
 let levelLayoutSignature = '';
 let waldoCameo = null;
+
+function stageForLevel(levelNumber) {
+  if (levelNumber <= 4) return 0;
+  if (levelNumber <= 12) return 1;
+  if (levelNumber <= 24) return 2;
+  if (levelNumber <= 40) return 3;
+  if (levelNumber <= 55) return 4;
+  return 5;
+}
+
+function stageBounds(stage) {
+  const ranges = [
+    [1, 4],
+    [5, 12],
+    [13, 24],
+    [25, 40],
+    [41, 55],
+    [56, MAX_LEVEL]
+  ];
+  return ranges[constrain(stage, 0, ranges.length - 1)];
+}
+
+function chaosForLevel(levelNumber) {
+  if (levelNumber <= 4) return map(levelNumber, 1, 4, 0.06, 0.12);
+  if (levelNumber <= 12) return map(levelNumber, 5, 12, 0.13, 0.24);
+  if (levelNumber <= 24) return map(levelNumber, 13, 24, 0.25, 0.45);
+  if (levelNumber <= 40) return map(levelNumber, 25, 40, 0.46, 0.66);
+  if (levelNumber <= 55) return map(levelNumber, 41, 55, 0.67, 0.82);
+  return map(levelNumber, 56, MAX_LEVEL, 0.83, 0.96);
+}
 
 function setup() {
   const c = createCanvas(860, 620);
@@ -611,19 +666,29 @@ function levelRand(levelNumber, salt, variation) {
 
 function buildLevelProfile(levelNumber, variation) {
   const remix = variation || 0;
+  const stage = stageForLevel(levelNumber);
+  const [stageStart, stageEnd] = stageBounds(stage);
+  const stageSpan = max(1, stageEnd - stageStart);
+  const stageProgress = constrain((levelNumber - stageStart) / stageSpan, 0, 1);
   const tier = min(5, floor((levelNumber - 1) / 12));
   const bossLevel = (levelNumber % 10 === 0) || levelNumber === MAX_LEVEL;
-  const lateRamp = levelNumber >= 56 ? 0.06 : 0;
-  const chaos = constrain(0.1 + (levelNumber - 1) * 0.014 + tier * 0.018 + lateRamp, 0.1, 0.995);
-  const pattern = floor(levelRand(levelNumber, 7, remix) * LEVEL_PATTERNS.length);
+  const patternPool = PATTERN_STAGE_POOLS[stage] || PATTERN_STAGE_POOLS[PATTERN_STAGE_POOLS.length - 1];
+  const pattern = patternPool[floor(levelRand(levelNumber, 7, remix) * patternPool.length)];
   const variant = floor(levelRand(levelNumber, 11, remix) * LEVEL_MODS.length);
-  const rows = min(13, 5 + floor((levelNumber - 1) / 2.6));
-  const cols = min(17, 12 + floor((levelNumber - 1) / 9));
-  const carveChance = constrain((levelRand(levelNumber, 13, remix) - 0.5) * 0.22 + chaos * 0.1, 0, 0.26);
-  const fillChance = constrain((levelRand(levelNumber, 17, remix) - 0.5) * 0.12 + chaos * 0.05 + (bossLevel ? 0.02 : 0), 0, 0.16);
-  const hazardBoost = chaos * 0.27 + floor((levelNumber - 1) / 10) * 0.02 + tier * 0.014 + (bossLevel ? 0.06 : 0);
+  const chaosJitter = (levelRand(levelNumber, 5, remix) - 0.5) * 0.04;
+  const chaos = constrain(chaosForLevel(levelNumber) + chaosJitter + (bossLevel ? 0.05 : 0), 0.05, 0.995);
+
+  const baseRows = [4, 5, 6, 7, 8, 9][stage];
+  const baseCols = [10, 11, 12, 13, 14, 15][stage];
+  const rows = min(13, baseRows + floor((levelNumber - 1) / 4));
+  const cols = min(17, baseCols + floor((levelNumber - 1) / 11));
+
+  const carveChance = constrain((levelRand(levelNumber, 13, remix) - 0.5) * (0.08 + stage * 0.03) + chaos * (0.04 + stage * 0.018), 0, 0.28);
+  const fillChance = constrain((levelRand(levelNumber, 17, remix) - 0.5) * (0.04 + stage * 0.018) + chaos * 0.03 + (bossLevel ? 0.02 : 0), 0, 0.2);
+  const hazardBoost = chaos * 0.24 + floor((levelNumber - 1) / 10) * 0.016 + stage * 0.03 + (bossLevel ? 0.06 : 0);
   const driftBoost = 0.012 + chaos * 0.03 + (bossLevel ? 0.01 : 0);
-  const density = constrain(0.82 - chaos * 0.22 + (levelRand(levelNumber, 19, remix) - 0.5) * 0.14 + (bossLevel ? 0.03 : 0), 0.56, 0.95);
+  const densityBase = 0.9 - stage * 0.05 - stageProgress * 0.03;
+  const density = constrain(densityBase - chaos * 0.16 + (levelRand(levelNumber, 19, remix) - 0.5) * (0.08 + stage * 0.02) + (bossLevel ? 0.03 : 0), 0.5, 0.96);
 
   return {
     level: levelNumber,
@@ -631,6 +696,8 @@ function buildLevelProfile(levelNumber, variation) {
     chaosPercent: Math.round(chaos * 100),
     pattern,
     variant,
+    stage,
+    stageName: LEVEL_STAGE_NAMES[stage] || LEVEL_STAGE_NAMES[LEVEL_STAGE_NAMES.length - 1],
     tier,
     bossLevel,
     variation: remix,
@@ -726,13 +793,21 @@ function shouldPlaceBrick(profile, row, col, rows, cols) {
       break;
   }
 
-  if (row < 2 && levelRand(profile.level, 9000 + row * 37 + col * 17, remix) < 0.88) {
+  if (profile.stage === 0) {
+    if (profile.pattern === 0) base = row < rows - 1;
+    if (profile.pattern === 1) base = row < rows - 1 && (((row + col) % 2 === 0) || row < 2);
+    if (profile.level <= 2 && row > floor(rows * 0.65)) base = false;
+  }
+
+  if (row < 2 && levelRand(profile.level, 9000 + row * 37 + col * 17, remix) < (profile.stage === 0 ? 0.94 : 0.88)) {
     base = true;
   }
 
+  const carveChance = profile.stage === 0 ? min(0.03, profile.carveChance) : profile.carveChance;
+  const fillChance = profile.stage === 0 ? min(0.015, profile.fillChance) : profile.fillChance;
   const noise = levelRand(profile.level, 10000 + row * 131 + col * 71, remix);
-  if (base && noise < profile.carveChance) base = false;
-  else if (!base && noise < profile.fillChance) base = true;
+  if (base && noise < carveChance) base = false;
+  else if (!base && noise < fillChance) base = true;
 
   if (!base && ridge > 0.86 && levelRand(profile.level, 12000 + row * 41 + col * 29, remix) < 0.22) {
     base = true;
@@ -750,6 +825,108 @@ function shouldPlaceBrick(profile, row, col, rows, cols) {
   }
 
   return base;
+}
+
+function configureBrickType(brick, type, levelNumber, profile) {
+  const silverHp = 2 + floor((levelNumber - 1) / 8);
+  brick.type = type;
+  brick.destructible = type !== 'gold';
+  brick.driftBaseX = brick.x;
+  if (!Number.isFinite(brick.driftPhase)) brick.driftPhase = random(TWO_PI);
+
+  if (type === 'gold') {
+    brick.hp = 9999;
+    brick.maxHp = 9999;
+    brick.driftAmount = 0;
+    brick.driftSpeed = 0;
+    return;
+  }
+  if (type === 'silver') {
+    brick.hp = silverHp;
+    brick.maxHp = silverHp;
+    brick.driftAmount = 0;
+    brick.driftSpeed = 0;
+    return;
+  }
+  if (type === 'shifty') {
+    const hp = 1 + floor(levelNumber / 5);
+    brick.hp = hp;
+    brick.maxHp = hp;
+    brick.driftAmount = random(8, 16 + profile.chaos * 10);
+    brick.driftSpeed = profile.driftBoost + random(0.008, 0.02 + profile.chaos * 0.015);
+    return;
+  }
+  if (type === 'explosive') {
+    brick.hp = 1;
+    brick.maxHp = 1;
+    brick.driftAmount = 0;
+    brick.driftSpeed = 0;
+    return;
+  }
+
+  brick.hp = 1;
+  brick.maxHp = 1;
+  brick.driftAmount = 0;
+  brick.driftSpeed = 0;
+}
+
+function enforceLevelFlavor(levelNumber, profile) {
+  if (levelNumber <= 4) {
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (b.type === 'gold' || b.type === 'shifty' || b.type === 'explosive') {
+        configureBrickType(b, random() < 0.12 ? 'silver' : 'normal', levelNumber, profile);
+      }
+    }
+    return;
+  }
+
+  const stage = profile.stage;
+  const desiredSpecialRatio = stage >= 3 ? (0.16 + stage * 0.05) : (0.06 + stage * 0.025);
+  const targetSpecials = floor(bricks.length * desiredSpecialRatio);
+  let currentSpecials = 0;
+  for (let i = 0; i < bricks.length; i++) {
+    const t = bricks[i].type;
+    if (t === 'shifty' || t === 'explosive' || t === 'gold') currentSpecials++;
+  }
+
+  if (currentSpecials < targetSpecials) {
+    const candidates = bricks.filter((b) => b.destructible && b.type === 'normal');
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = floor(random(i + 1));
+      const tmp = candidates[i];
+      candidates[i] = candidates[j];
+      candidates[j] = tmp;
+    }
+
+    let need = targetSpecials - currentSpecials;
+    for (let i = 0; i < candidates.length && need > 0; i++) {
+      const b = candidates[i];
+      let type = random() < 0.55 ? 'explosive' : 'shifty';
+      if (stage >= 4 && random() < 0.08) type = 'gold';
+      configureBrickType(b, type, levelNumber, profile);
+      need--;
+    }
+  }
+
+  if (stage >= 5) {
+    let shiftyCount = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (b.type !== 'shifty') continue;
+      shiftyCount++;
+      b.driftAmount += random(6, 18);
+      b.driftSpeed += random(0.006, 0.024);
+    }
+
+    if (shiftyCount < floor(bricks.length * 0.2)) {
+      const extra = bricks.filter((b) => b.destructible && b.type === 'normal');
+      const promote = min(extra.length, floor(bricks.length * 0.2) - shiftyCount);
+      for (let i = 0; i < promote; i++) {
+        configureBrickType(extra[i], 'shifty', levelNumber, profile);
+      }
+    }
+  }
 }
 
 function createLevel(levelNumber) {
@@ -779,72 +956,72 @@ function createLevel(levelNumber) {
         const roll = random();
 
         let type = 'normal';
-        const bossPush = levelChaosProfile.bossLevel ? 0.08 : 0;
-        const eliteChance = constrain(0.03 + levelChaosProfile.hazardBoost * 0.18 + (levelNumber >= 42 ? 0.05 : 0) + bossPush + (levelNumber >= 60 ? 0.05 : 0), 0.03, 0.32);
-        const shiftyChance = constrain(0.06 + levelChaosProfile.hazardBoost * 0.22 + bossPush * 0.8, 0.06, 0.4);
-        const explosiveChance = constrain(0.1 + levelChaosProfile.hazardBoost * 0.2 + bossPush * 0.6, 0.1, 0.4);
-        const silverChance = constrain(0.24 + levelChaosProfile.hazardBoost * 0.18 + bossPush, 0.24, 0.66);
+        const stage = levelChaosProfile.stage;
+        if (levelNumber <= 4) {
+          type = roll < 0.14 ? 'silver' : 'normal';
+        } else if (levelNumber <= 8) {
+          if (roll < 0.08 + levelChaosProfile.chaos * 0.06) type = 'explosive';
+          else if (roll < 0.3 + levelChaosProfile.chaos * 0.1) type = 'silver';
+        } else {
+          const bossPush = levelChaosProfile.bossLevel ? 0.08 : 0;
+          const eliteChance = levelNumber >= 16
+            ? constrain(0.02 + stage * 0.025 + levelChaosProfile.hazardBoost * 0.12 + (levelNumber >= 60 ? 0.04 : 0) + bossPush, 0.02, 0.3)
+            : 0;
+          const shiftyChance = levelNumber >= 9
+            ? constrain(0.04 + stage * 0.03 + levelChaosProfile.hazardBoost * 0.14 + bossPush * 0.7, 0.04, 0.42)
+            : 0;
+          const explosiveChance = levelNumber >= 5
+            ? constrain(0.08 + stage * 0.022 + levelChaosProfile.hazardBoost * 0.12 + bossPush * 0.45, 0.08, 0.38)
+            : 0;
+          const silverChance = constrain(0.2 + stage * 0.03 + levelChaosProfile.hazardBoost * 0.1 + bossPush, 0.2, 0.6);
 
-        let threshold = eliteChance;
-        if (levelNumber >= 7 && roll < threshold) type = 'gold';
-        else {
-          threshold += shiftyChance;
-          if (levelNumber >= 5 && roll < threshold) type = 'shifty';
+          let threshold = eliteChance;
+          if (roll < threshold) type = 'gold';
           else {
-            threshold += explosiveChance;
-            if (levelNumber >= 3 && roll < threshold) type = 'explosive';
-            else if (roll < threshold + silverChance) type = 'silver';
+            threshold += shiftyChance;
+            if (roll < threshold) type = 'shifty';
+            else {
+              threshold += explosiveChance;
+              if (roll < threshold) type = 'explosive';
+              else if (roll < threshold + silverChance) type = 'silver';
+            }
           }
         }
 
-        if (r < 2 && type === 'normal' && random() < 0.52) type = 'silver';
+        if (r < 2 && type === 'normal' && random() < (levelNumber <= 8 ? 0.36 : 0.5)) type = 'silver';
 
-        const silverHp = 2 + floor((levelNumber - 1) / 8);
-        const hpByType = {
-          normal: 1,
-          explosive: 1,
-          silver: silverHp,
-          shifty: 1 + floor(levelNumber / 5),
-          gold: 9999
-        };
-
-        const destructible = type !== 'gold';
-        bricks.push({
+        const brick = {
           x,
           y,
           w: brickW,
           h: brickH,
-          type,
-          hp: hpByType[type],
-          maxHp: hpByType[type],
-          destructible,
           driftPhase: random(TWO_PI),
           driftBaseX: x,
-          driftAmount: type === 'shifty' ? random(8, 16 + levelChaosProfile.chaos * 10) : 0,
-          driftSpeed: type === 'shifty'
-            ? levelChaosProfile.driftBoost + random(0.008, 0.02 + levelChaosProfile.chaos * 0.015)
-            : 0
-        });
+          driftAmount: 0,
+          driftSpeed: 0
+        };
+        configureBrickType(brick, type, levelNumber, levelChaosProfile);
+        bricks.push(brick);
       }
       occupancyPattern += '|';
     }
 
     if (bricks.length === 0) {
-      bricks.push({
+      const fallback = {
         x: width / 2 - 62,
         y: 92,
         w: 124,
         h: 24,
-        type: 'silver',
-        hp: 3,
-        maxHp: 3,
-        destructible: true,
         driftPhase: 0,
         driftBaseX: width / 2 - 62,
         driftAmount: 0,
         driftSpeed: 0
-      });
+      };
+      configureBrickType(fallback, 'silver', levelNumber, levelChaosProfile);
+      bricks.push(fallback);
     }
+
+    enforceLevelFlavor(levelNumber, levelChaosProfile);
 
     levelLayoutSignature = `${rows}x${cols}:${occupancyPattern}`;
     if (!levelLayoutSignatures.has(levelLayoutSignature) || remix === 13) break;
@@ -857,13 +1034,16 @@ function createLevel(levelNumber) {
   setupWaldoCameo(levelNumber);
   const bossTag = levelChaosProfile.bossLevel ? ' Boss Wave.' : '';
   const remixTag = levelChaosProfile.variation > 0 ? ` Remix ${levelChaosProfile.variation + 1}.` : '';
+  const stageTag = ` Stage ${levelChaosProfile.stageName}.`;
   const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
   const mutatorTag = levelMutatorText ? ` ${levelMutatorText}` : '';
-  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${bossTag}${remixTag}${mutatorTag}${waldoTag}`;
+  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${stageTag}${bossTag}${remixTag}${mutatorTag}${waldoTag}`;
 }
 
 function applyLevelMutator(levelNumber) {
   const notes = [];
+  const profile = levelChaosProfile || buildLevelProfile(levelNumber, 0);
+  const stage = profile.stage;
 
   if (levelNumber >= 12 && levelNumber % 4 === 0) {
     let converted = 0;
@@ -871,13 +1051,7 @@ function applyLevelMutator(levelNumber) {
       const b = bricks[i];
       if (!b.destructible || b.type !== 'normal') continue;
       if (random() < 0.14) {
-        b.type = random() < 0.55 ? 'explosive' : 'shifty';
-        b.hp = b.type === 'shifty' ? 1 + floor(levelNumber / 5) : 1;
-        b.maxHp = b.hp;
-        b.driftAmount = b.type === 'shifty' ? random(8, 16 + levelChaosProfile.chaos * 10) : 0;
-        b.driftSpeed = b.type === 'shifty'
-          ? levelChaosProfile.driftBoost + random(0.008, 0.02 + levelChaosProfile.chaos * 0.015)
-          : 0;
+        configureBrickType(b, random() < 0.55 ? 'explosive' : 'shifty', levelNumber, profile);
         converted++;
       }
     }
@@ -896,6 +1070,71 @@ function applyLevelMutator(levelNumber) {
       }
     }
     if (reinforced > 0) notes.push(`Mutator: ${reinforced} bricks reinforced.`);
+  }
+
+  if (levelNumber >= 32 && levelNumber % 5 === 0) {
+    let lanes = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible) continue;
+      const nx = (b.x + b.w * 0.5) / max(1, width);
+      const edge = abs(nx - 0.5);
+      if (edge > 0.32 && random() < 0.34) {
+        configureBrickType(b, random() < 0.12 ? 'gold' : 'silver', levelNumber, profile);
+        if (b.type === 'silver') {
+          b.hp += 1;
+          b.maxHp += 1;
+        }
+        lanes++;
+      } else if (edge < 0.15 && random() < 0.26) {
+        configureBrickType(b, 'shifty', levelNumber, profile);
+        b.driftAmount += random(6, 16);
+        b.driftSpeed += random(0.004, 0.015);
+        lanes++;
+      }
+    }
+    if (lanes > 0) notes.push(`Mutator: gauntlet lanes engaged (${lanes}).`);
+  }
+
+  if (levelNumber >= 44 && levelNumber % 7 === 0) {
+    const seamPhase = levelRand(levelNumber, 17100, profile.variation) * TWO_PI;
+    let seamHits = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible) continue;
+      const nx = (b.x + b.w * 0.5) / max(1, width);
+      const ny = (b.y + b.h * 0.5) / max(1, height);
+      const wave = (sin(nx * PI * (4 + stage) + seamPhase) + 1) * 0.35;
+      if (abs(ny - wave) < 0.065 && random() < 0.45) {
+        configureBrickType(b, random() < 0.5 ? 'explosive' : 'shifty', levelNumber, profile);
+        seamHits++;
+      }
+    }
+    if (seamHits > 0) notes.push(`Mutator: marble seams warped ${seamHits} bricks.`);
+  }
+
+  if (levelNumber >= 56) {
+    let madness = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible) continue;
+      if (random() < 0.16 + profile.chaos * 0.22) {
+        const nextType = random() < 0.58 ? 'shifty' : 'explosive';
+        configureBrickType(b, nextType, levelNumber, profile);
+        if (nextType === 'shifty') {
+          b.driftAmount += random(10, 24);
+          b.driftSpeed += random(0.008, 0.024);
+        }
+        madness++;
+      }
+    }
+    if (madness > 0) notes.push(`Mutator: Marble madness twisted ${madness} bricks.`);
+  }
+
+  if (destructibleRemaining() <= 0 && bricks.length > 0) {
+    const rescue = bricks[floor(random(bricks.length))];
+    configureBrickType(rescue, 'silver', levelNumber, profile);
+    notes.push('Mutator fail-safe: one lane reopened.');
   }
 
   return notes.join(' ');
@@ -1167,20 +1406,59 @@ function updatePowerTimers() {
 }
 
 function weightedPowerUp() {
-  const pool = POWERUP_TYPES.filter((p) => {
-    if (p.type !== 'extraLife') return true;
-    if (extraLifeCooldown > 0) return false;
-    if (lives >= 5) return false;
-    if (level < 6 && lives >= 3) return false;
-    return true;
-  });
+  const stage = stageForLevel(level);
+  const pool = POWERUP_TYPES
+    .filter((p) => {
+      const unlock = POWERUP_UNLOCK_LEVEL[p.type] || 1;
+      if (level < unlock) return false;
+      if (p.type !== 'extraLife') return true;
+      if (extraLifeCooldown > 0) return false;
+      if (lives >= 5) return false;
+      if (level < 6 && lives >= 3) return false;
+      return true;
+    })
+    .map((p) => {
+      let weight = p.weight;
+      switch (p.type) {
+        case 'bigPaddle':
+        case 'slowBall':
+          weight *= stage <= 1 ? 1.25 : 0.95;
+          break;
+        case 'stickyPaddle':
+          weight *= stage <= 2 ? 1.16 : 1;
+          break;
+        case 'extraLife':
+          if (lives <= 1) weight *= 2.8;
+          else if (lives >= 4) weight *= 0.28;
+          break;
+        case 'disruption':
+        case 'laserEyes':
+          weight *= 0.85 + stage * 0.1;
+          break;
+        case 'toiletShield':
+          if (lives <= 2) weight *= 1.55;
+          break;
+        case 'magnetSniff':
+          weight *= 0.8 + stage * 0.14;
+          break;
+        case 'fireTurd':
+        case 'comboBoost':
+        case 'rowFlush':
+          weight *= 0.7 + stage * 0.16;
+          break;
+        default:
+          break;
+      }
+      if (combo >= 8 && p.type === 'comboBoost') weight *= 1.7;
+      return { ...p, tunedWeight: max(0.05, weight) };
+    });
 
   let total = 0;
-  for (const p of pool) total += p.weight;
+  for (const p of pool) total += p.tunedWeight;
 
   let roll = random(total);
   for (const p of pool) {
-    roll -= p.weight;
+    roll -= p.tunedWeight;
     if (roll <= 0) return p;
   }
   return pool[0] || POWERUP_TYPES[0];
