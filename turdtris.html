@@ -90,6 +90,35 @@ body {
   flex-wrap: wrap;
 }
 
+.mobile-menu {
+  display: none;
+  width: 100%;
+}
+
+.mobile-menu details {
+  border: 1px solid rgba(255, 203, 135, 0.35);
+  border-radius: 10px;
+  background: rgba(23, 14, 10, 0.84);
+  padding: 6px 8px;
+}
+
+.mobile-menu summary {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mobile-menu-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .btn {
   border: 1px solid rgba(255, 203, 135, 0.45);
   color: var(--accent);
@@ -230,9 +259,38 @@ body {
 .mobile-controls {
   display: none;
   gap: 8px;
-  justify-content: center;
+  width: 100%;
   margin-top: 12px;
-  flex-wrap: wrap;
+}
+
+.mobile-controls-main {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mobile-extra {
+  border: 1px solid rgba(255, 203, 135, 0.28);
+  border-radius: 10px;
+  background: rgba(22, 14, 9, 0.8);
+  padding: 6px 8px;
+}
+
+.mobile-extra summary {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mobile-extra-grid {
+  margin-top: 7px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .control-btn {
@@ -307,7 +365,7 @@ body {
     padding: 8px 11px;
     font-size: 12px;
   }
-  .mobile-controls { display: flex; }
+  .mobile-controls { display: grid; }
   .control-btn {
     min-width: 82px;
     min-height: 42px;
@@ -325,6 +383,12 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+  .top-actions {
+    display: none;
+  }
+  .mobile-menu {
+    display: block;
+  }
   .hud {
     grid-template-columns: repeat(2, minmax(70px, 1fr));
     gap: 6px;
@@ -335,6 +399,15 @@ body {
   .status {
     font-size: 0.76rem;
     min-height: 52px;
+  }
+  .mobile-menu-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mobile-controls-main {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .mobile-extra-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .control-btn {
     min-width: 78px;
@@ -383,6 +456,16 @@ body {
       <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
       <button class="btn" onclick="togglePause()">Pause / Resume</button>
       <button class="btn" onclick="restartGame()">Restart</button>
+    </div>
+    <div class="mobile-menu">
+      <details>
+        <summary>Run Menu</summary>
+        <div class="mobile-menu-actions">
+          <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
+          <button class="btn" onclick="togglePause()">Pause</button>
+          <button class="btn" onclick="restartGame()">Restart</button>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -450,12 +533,20 @@ body {
   </div>
 
   <div class="mobile-controls" id="mobileControls">
-    <button class="control-btn" data-action="left">Left</button>
-    <button class="control-btn" data-action="rotate">Rotate</button>
-    <button class="control-btn" data-action="right">Right</button>
-    <button class="control-btn" data-action="down">Down</button>
-    <button class="control-btn" data-action="drop">Drop</button>
-    <button class="control-btn" data-action="hold">Hold</button>
+    <div class="mobile-controls-main">
+      <button class="control-btn" data-action="left">Left</button>
+      <button class="control-btn" data-action="rotate">Rotate</button>
+      <button class="control-btn" data-action="right">Right</button>
+      <button class="control-btn" data-action="drop">Drop</button>
+    </div>
+    <details class="mobile-extra">
+      <summary>More Controls</summary>
+      <div class="mobile-extra-grid">
+        <button class="control-btn" data-action="down">Down</button>
+        <button class="control-btn" data-action="hold">Hold</button>
+        <button class="control-btn" data-action="pause">Pause</button>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -1342,6 +1433,7 @@ if (mobileControls) {
       }
       if (action === 'drop') hardDrop();
       if (action === 'hold') holdCurrentPiece();
+      if (action === 'pause') togglePause();
     };
 
     run();

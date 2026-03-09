@@ -96,6 +96,35 @@
       justify-content: flex-end;
     }
 
+    .mobile-menu {
+      display: none;
+      width: 100%;
+    }
+
+    .mobile-menu details {
+      border: 1px solid rgba(142, 255, 194, 0.35);
+      border-radius: 10px;
+      background: rgba(9, 24, 18, 0.8);
+      padding: 6px 8px;
+    }
+
+    .mobile-menu summary {
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .mobile-menu-actions {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
     .btn {
       border: 1px solid rgba(142, 255, 194, 0.45);
       background: rgba(12, 30, 24, 0.75);
@@ -393,6 +422,45 @@
       gap: 8px;
     }
 
+    .mobile-pit {
+      display: none;
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: max(8px, env(safe-area-inset-bottom));
+      border: 1px solid rgba(142, 255, 194, 0.35);
+      border-radius: 14px;
+      background: rgba(7, 19, 15, 0.95);
+      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.45);
+      padding: 8px;
+      gap: 7px;
+      z-index: 70;
+      backdrop-filter: blur(8px);
+    }
+
+    .mobile-pit-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .mobile-pit .btn,
+    .mobile-pit .chip-btn {
+      min-height: 38px;
+      font-size: 0.76rem;
+      padding: 7px 6px;
+    }
+
+    .mobile-pit-more {
+      display: none;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .mobile-pit-more.open {
+      display: grid;
+    }
+
     .welcome-guide {
       position: fixed;
       inset: 0;
@@ -438,6 +506,7 @@
     @media (max-width: 980px) {
       body {
         padding: clamp(8px, 2.5vw, 12px);
+        padding-bottom: 208px;
       }
       .shell {
         width: min(900px, 94vw);
@@ -459,6 +528,8 @@
       }
       .cards { min-height: 110px; }
       .playing-card { width: 64px; height: 92px; padding: 6px; }
+      .sidebar .desktop-controls { display: none; }
+      .mobile-pit { display: grid; }
     }
 
     @media (max-width: 680px) {
@@ -469,6 +540,12 @@
       .topbar {
         flex-direction: column;
         align-items: flex-start;
+      }
+      .actions {
+        display: none;
+      }
+      .mobile-menu {
+        display: block;
       }
       .hud {
         grid-template-columns: repeat(4, minmax(70px, 1fr));
@@ -488,6 +565,23 @@
       .playing-card .suit { font-size: 0.84rem; }
       .playing-card .center { font-size: 1.08rem; }
       .playing-card .small { font-size: 0.6rem; }
+      .mobile-menu-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .mobile-pit {
+        padding: 7px;
+      }
+      .mobile-pit-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .mobile-pit-more {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .mobile-pit .btn,
+      .mobile-pit .chip-btn {
+        min-height: 36px;
+        font-size: 0.72rem;
+      }
     }
 
     @media (hover: none) and (pointer: coarse) {
@@ -495,6 +589,10 @@
       .chip-btn,
       .hub-link {
         min-height: 44px;
+      }
+      .mobile-pit .btn,
+      .mobile-pit .chip-btn {
+        min-height: 42px;
       }
     }
   </style>
@@ -530,6 +628,16 @@
         <button class="btn" id="helpBtn">How To Play</button>
         <button class="btn" id="newShoeBtn">New Shoe</button>
         <button class="btn danger" id="resetStatsBtn">Reset Bank</button>
+      </div>
+      <div class="mobile-menu">
+        <details>
+          <summary>Table Menu</summary>
+          <div class="mobile-menu-actions">
+            <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
+            <button class="btn" onclick="newShoe()">New Shoe</button>
+            <button class="btn danger" onclick="resetBankroll()">Reset Bank</button>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -576,7 +684,7 @@
       </section>
 
       <aside class="sidebar">
-        <div>
+        <div class="desktop-controls">
           <h3>Bet Chips</h3>
           <div class="bet-grid">
             <button class="chip-btn" data-chip="10">+$10</button>
@@ -591,7 +699,7 @@
           </div>
         </div>
 
-        <div>
+        <div class="desktop-controls">
           <h3>Round Actions</h3>
           <div class="action-row">
             <button class="btn hot" id="dealBtn">Deal</button>
@@ -669,6 +777,30 @@
         </div>
       </aside>
     </div>
+
+    <div class="mobile-pit" id="mobilePit">
+      <div class="mobile-pit-row">
+        <button class="chip-btn" data-chip="10">+$10</button>
+        <button class="chip-btn" data-chip="25">+$25</button>
+        <button class="chip-btn" data-chip="50">+$50</button>
+        <button class="chip-btn" data-chip="100">+$100</button>
+      </div>
+      <div class="mobile-pit-row">
+        <button class="btn hot" data-mobile-action="deal">Deal</button>
+        <button class="btn" data-mobile-action="hit">Hit</button>
+        <button class="btn" data-mobile-action="stand">Stand</button>
+        <button class="btn" id="mobileMoreBtn" data-mobile-action="toggle-more">More</button>
+      </div>
+      <div class="mobile-pit-more" id="mobileMorePanel">
+        <button class="btn" data-mobile-action="double">Double</button>
+        <button class="btn" data-mobile-action="split">Split</button>
+        <button class="btn danger" data-mobile-action="surrender">Surrender</button>
+        <button class="btn" data-mobile-action="clear-bet">Clear</button>
+        <button class="btn" data-mobile-action="rebet">Rebet</button>
+        <button class="btn" data-mobile-action="max-bet">Max</button>
+        <button class="btn" data-mobile-action="new-shoe">New Shoe</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -735,7 +867,9 @@
       maxBetBtn: document.getElementById('maxBetBtn'),
       rebetBtn: document.getElementById('rebetBtn'),
       newShoeBtn: document.getElementById('newShoeBtn'),
-      resetStatsBtn: document.getElementById('resetStatsBtn')
+      resetStatsBtn: document.getElementById('resetStatsBtn'),
+      mobileMoreBtn: document.getElementById('mobileMoreBtn'),
+      mobileMorePanel: document.getElementById('mobileMorePanel')
     };
 
     let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
@@ -1335,6 +1469,7 @@
       ui.clearBetBtn.disabled = lockedBet || currentBet === 0;
       ui.maxBetBtn.disabled = lockedBet;
       ui.rebetBtn.disabled = lockedBet || lastBet < MIN_BET || lastBet > bankroll;
+      ui.newShoeBtn.disabled = roundActive;
 
       if (ui.hintText) {
         ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left (cut at ${cutCardsRemaining}, ${shoeDecks}D).`;
@@ -1344,7 +1479,31 @@
         ui.historyText.textContent = 'No resolved hands yet.';
       }
 
+      syncMobileControls();
       saveState();
+    }
+
+    function setMobileActionState(action, disabled) {
+      document.querySelectorAll(`[data-mobile-action="${action}"]`).forEach((btn) => {
+        btn.disabled = disabled;
+      });
+    }
+
+    function syncMobileControls() {
+      setMobileActionState('deal', ui.dealBtn.disabled);
+      setMobileActionState('hit', ui.hitBtn.disabled);
+      setMobileActionState('stand', ui.standBtn.disabled);
+      setMobileActionState('double', ui.doubleBtn.disabled);
+      setMobileActionState('split', ui.splitBtn.disabled);
+      setMobileActionState('surrender', ui.surrenderBtn.disabled);
+      setMobileActionState('clear-bet', ui.clearBetBtn.disabled);
+      setMobileActionState('max-bet', ui.maxBetBtn.disabled);
+      setMobileActionState('rebet', ui.rebetBtn.disabled);
+      setMobileActionState('new-shoe', ui.newShoeBtn.disabled);
+
+      if (ui.mobileMoreBtn && ui.mobileMorePanel) {
+        ui.mobileMoreBtn.textContent = ui.mobileMorePanel.classList.contains('open') ? 'Less' : 'More';
+      }
     }
 
     function setStatus(text) {
@@ -1807,9 +1966,66 @@
       updateHud();
     }
 
+    function setMobileMore(openState) {
+      if (!ui.mobileMorePanel) return;
+      ui.mobileMorePanel.classList.toggle('open', openState);
+      if (ui.mobileMoreBtn) ui.mobileMoreBtn.textContent = openState ? 'Less' : 'More';
+    }
+
+    function runMobileAction(action) {
+      if (action === 'toggle-more') {
+        if (!ui.mobileMorePanel) return;
+        setMobileMore(!ui.mobileMorePanel.classList.contains('open'));
+        return;
+      }
+      if (action === 'deal') {
+        startRound();
+        return;
+      }
+      if (action === 'hit') {
+        playerHit();
+        return;
+      }
+      if (action === 'stand') {
+        playerStand();
+        return;
+      }
+      if (action === 'double') {
+        playerDouble();
+        return;
+      }
+      if (action === 'split') {
+        playerSplit();
+        return;
+      }
+      if (action === 'surrender') {
+        playerSurrender();
+        return;
+      }
+      if (action === 'clear-bet') {
+        clearBet();
+        return;
+      }
+      if (action === 'max-bet') {
+        maxBet();
+        return;
+      }
+      if (action === 'rebet') {
+        rebetLast();
+        return;
+      }
+      if (action === 'new-shoe') {
+        newShoe();
+      }
+    }
+
     function wireEvents() {
       document.querySelectorAll('[data-chip]').forEach((btn) => {
         btn.addEventListener('click', () => addBet(parseInt(btn.dataset.chip, 10)));
+      });
+
+      document.querySelectorAll('[data-mobile-action]').forEach((btn) => {
+        btn.addEventListener('click', () => runMobileAction(btn.dataset.mobileAction));
       });
 
       ui.clearBetBtn.addEventListener('click', clearBet);
@@ -1876,6 +2092,10 @@
           smartAction();
         }
       });
+
+      if (ui.mobileMorePanel) {
+        setMobileMore(false);
+      }
     }
 
     function init() {

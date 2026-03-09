@@ -94,6 +94,35 @@
             justify-content: flex-end;
         }
 
+        .mobile-menu {
+            display: none;
+            width: 100%;
+        }
+
+        .mobile-menu details {
+            border: 1px solid rgba(123, 230, 255, 0.35);
+            border-radius: 10px;
+            background: rgba(8, 16, 32, 0.84);
+            padding: 6px 8px;
+        }
+
+        .mobile-menu summary {
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .mobile-menu-actions {
+            margin-top: 8px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
         .btn {
             border: 1px solid rgba(115, 255, 215, 0.4);
             color: var(--accent);
@@ -408,7 +437,10 @@
                 align-items: flex-start;
             }
             .actions {
-                justify-content: flex-start;
+                display: none;
+            }
+            .mobile-menu {
+                display: block;
             }
             .canvas-wrap {
                 width: min(700px, 95vw);
@@ -427,6 +459,9 @@
             }
             .status-item span {
                 font-size: 0.74rem;
+            }
+            .mobile-menu-actions {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
             .control-btn {
                 min-width: 82px;
@@ -473,8 +508,19 @@
             <div class="actions">
                 <button class="btn" onclick="showHowToPlay()">How To Play</button>
                 <button class="btn" onclick="togglePause()">Pause / Resume</button>
-                <button class="btn" id="muteBtn" onclick="toggleMute()">Mute</button>
+                <button class="btn" id="muteBtn" data-mute-btn onclick="toggleMute()">Mute</button>
                 <button class="btn" onclick="restartGame()">Restart</button>
+            </div>
+            <div class="mobile-menu">
+                <details>
+                    <summary>Run Menu</summary>
+                    <div class="mobile-menu-actions">
+                        <button class="btn" onclick="showHowToPlay()">How To Play</button>
+                        <button class="btn" onclick="togglePause()">Pause</button>
+                        <button class="btn" data-mute-btn onclick="toggleMute()">Mute</button>
+                        <button class="btn" onclick="restartGame()">Restart</button>
+                    </div>
+                </details>
             </div>
         </div>
 

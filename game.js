@@ -617,7 +617,11 @@
     }
 
     updateMuteButton() {
-        if (this.ui.muteBtn) this.ui.muteBtn.textContent = this.muted ? 'Unmute' : 'Mute';
+        const label = this.muted ? 'Unmute' : 'Mute';
+        if (this.ui.muteBtn) this.ui.muteBtn.textContent = label;
+        document.querySelectorAll('[data-mute-btn]').forEach((btn) => {
+            btn.textContent = label;
+        });
     }
 
     toggleMute() {
