@@ -337,6 +337,7 @@
       <li><strong>Goal:</strong> survive escalating chaos and clear level 69</li>
     </ul>
     <p>Tip: combo streaks and stink buildup make scoring and effects way more intense.</p>
+    <p>Optional startup anthem: add <code>assets/turd-down-for-what.mp3</code>.</p>
     <button class="btn" onclick="hideWelcomeGuide()">Start Run</button>
   </div>
 </div>
@@ -437,6 +438,13 @@ let levelMutatorText = '';
 
 let controlLeft = false;
 let controlRight = false;
+let startupThemePlayed = false;
+let startupFallbackPlayed = false;
+let startupAudio = null;
+let startupAudioTried = false;
+let startupAudioContext = null;
+
+const STARTUP_THEME_PATH = 'assets/turd-down-for-what.mp3';
 
 let activePowerUps = {
   bigPaddle: 0,
@@ -565,8 +573,75 @@ function showWelcomeGuide() {
 function hideWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'none';
+  playStartupTheme();
   onboardingOpen = false;
   if (!gameOver && !gameWon) paused = false;
+}
+
+function playStartupTheme() {
+  if (startupThemePlayed) return;
+  startupThemePlayed = true;
+
+  try {
+    if (!startupAudio) {
+      startupAudio = new Audio(STARTUP_THEME_PATH);
+      startupAudio.preload = 'auto';
+      startupAudio.volume = 0.52;
+    }
+
+    if (!startupAudioTried) {
+      startupAudioTried = true;
+      startupAudio.onerror = () => {
+        startupAudio = null;
+        playFallbackStartupRiff();
+      };
+    }
+
+    const playPromise = startupAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => playFallbackStartupRiff());
+    }
+  } catch (err) {
+    playFallbackStartupRiff();
+  }
+}
+
+function getStartupAudioContext() {
+  if (startupAudioContext) return startupAudioContext;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  startupAudioContext = new AC();
+  return startupAudioContext;
+}
+
+function playFallbackStartupRiff() {
+  if (startupFallbackPlayed) return;
+  startupFallbackPlayed = true;
+  const ctx = getStartupAudioContext();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+
+  const now = ctx.currentTime + 0.02;
+  const notes = [196, 196, 262, 175, 147, 196];
+  const lengths = [0.08, 0.08, 0.12, 0.12, 0.12, 0.2];
+
+  for (let i = 0; i < notes.length; i++) {
+    const start = now + i * 0.12;
+    const stop = start + lengths[i];
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = i % 2 === 0 ? 'square' : 'sawtooth';
+    osc.frequency.setValueAtTime(notes[i], start);
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.linearRampToValueAtTime(0.07, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, stop);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(stop + 0.01);
+  }
 }
 
 function windowResized() {
@@ -1263,7 +1338,8 @@ function launchBall() {
 
   if (!targetBall) return;
 
-  const speed = min(11.5, baseBallSpeed + (level - 1) * 0.35);
+  const earlyLevelFloor = level <= 4 ? 6.3 : baseBallSpeed;
+  const speed = min(11.7, max(earlyLevelFloor, baseBallSpeed + (level - 1) * 0.35));
   let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.72);
   if (abs(vx) < 1.1) vx = vx >= 0 ? 1.1 : -1.1;
   const vy = -sqrt(max(1, speed * speed - vx * vx));
