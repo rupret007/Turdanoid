@@ -1,60 +1,23 @@
 # Turdanoid Games
 
-A collection of four browser games with a playful turd theme.
+A collection of four active browser games with a playful turd theme.
 
 ## Version
 
-- **Current build:** `v2.8.0`
+- **Current build:** `v2.9.0`
 - **Build date:** March 9, 2026
 
 ## Changelog (Latest)
 
-- Mobile UX pass across all games:
-  - Compact mobile menus for top actions.
-  - Sticky/fixed mobile control areas for faster thumb access.
-  - Crapjack mobile pit now supports quick betting and core round actions without scrolling.
-- Onboarding pass:
-  - Added quick-start entry buttons to game welcome overlays.
-- Progression and balancing upgrades:
-  - TurdAnoid: expanded late-game pattern pool and mutator variety.
-  - Turdtris: richer level mutators beyond simple garbage injection.
-  - Neon Arkanoid: balance constants and stronger late-wave mutator pressure.
-- Regression checks expanded in `test-runner.ps1` for new mobile/UX hooks.
+- Hub refresh:
+  - TurdAnoid moved to the top card in `hub.html`.
+  - Neon Arkanoid removed from hub card list.
+  - New **TurdRummy** (Gin Rummy) added as the bottom hub card.
+- New game added:
+  - `turdrummy.html` with meld/deadwood analyzer, knock/gin scoring, layoff/undercut flow, and mobile-first action dock.
+- Regression checks expanded in `test-runner.ps1` for TurdRummy and updated hub link/order expectations.
 
 ## Games
-
-### Neon Arkanoid
-
-Classic brick-breaker with neon aesthetics. Break blocks with the ball, collect power-ups, and level up!
-
-**Features:**
-- Combo multiplier for consecutive block hits (displayed in UI)
-- Power-ups: Toilet Paper, Multi-Ball, Big/Small Paddle, Slow Motion, Extra Life, Laser, Magnet, Ghost Ball, Fire Ball
-- Screen shake on life loss and level clear
-- Level-up celebration particles
-- Sound effects with mute toggle
-- High score persistence (localStorage)
-- Responsive canvas and touch support
-- "How to play" hint on first visit
-
-**Controls:** Mouse or touch to move paddle. Space or P to pause. R to restart (when implemented). Mute button in UI.
-
-### Turdtris
-
-Tetris-inspired stacker with modern guideline-style mechanics and progressive chaos.
-
-**Features:**
-- 7-bag randomizer
-- SRS-style wall kicks
-- Hold and ghost piece systems
-- Combo, back-to-back, T-Spin, and perfect-clear scoring
-- Lock delay + gravity progression
-- Level modifiers with themed progression and garbage pressure
-- High score persistence
-- Responsive layout
-- Touch controls: swipe to move, tap to rotate, swipe down to drop
-
-**Controls:** Arrow keys or touch gestures.
 
 ### TurdAnoid
 
@@ -68,37 +31,66 @@ Silly Arkanoid variant using p5.js with stink-based effects and capsule madness.
 - Touch and mouse support
 - Responsive canvas (resizes on window change)
 - High score persistence
-- "Tap to play again" on mobile
 
 **Controls:** Mouse or touch to move paddle.
+
+### Turdtris
+
+Tetris-inspired stacker with modern guideline-style mechanics and progressive chaos.
+
+**Features:**
+- 7-bag randomizer
+- SRS-style wall kicks
+- Hold and ghost piece systems
+- Combo, back-to-back, T-Spin, and perfect-clear scoring
+- Lock delay + gravity progression
+- Level modifiers with themed progression and garbage pressure
+- High score persistence
+
+**Controls:** Arrow keys or touch gestures.
 
 ### Crapjack 21
 
 Blackjack with a toilet-dealer vibe and persistent bankroll.
 
 **Features:**
-- 21 rules with dealer logic, blackjack payout, push handling, and double down
-- Betting chips, max/clear bet, keyboard shortcuts
-- Persistent bankroll + hand stats in localStorage
+- Blackjack rules with dealer logic, blackjack payout, push handling, and double down/split/surrender support
+- Betting chips and quick mobile action controls
+- Persistent bankroll + stats in localStorage
 - Responsive table layout and themed card rendering
 
 **Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).
 
+### TurdRummy
+
+Gin Rummy game themed to match the rest of the hub.
+
+**Features:**
+- Real meld/deadwood hand analysis
+- Knock and gin decisions from your selected discard
+- Layoff and undercut scoring logic
+- AI draw/discard logic tuned for reasonable play
+- Fixed mobile control dock for draw/discard/knock/gin actions
+- Round/match scoring with localStorage persistence
+
+**Controls:** Tap/click cards to select discard, then use bottom action buttons.
+
+## Legacy Game (Direct Link)
+
+- `index.html` - Neon Arkanoid (still available directly, no longer surfaced in hub cards)
+
 ## Getting Started
 
-1. Open `hub.html` in a browser to access all games from one place
-2. Or open individual game files directly:
-   - `index.html` - Neon Arkanoid
-   - `turdtris.html` - Turdtris
+1. Open `hub.html` in a browser to access the current game lineup.
+2. Or open an individual file:
    - `TurdAnoid.html` - TurdAnoid
-- `turdjack.html` - Crapjack 21
+   - `turdtris.html` - Turdtris
+   - `turdjack.html` - Crapjack 21
+   - `turdrummy.html` - TurdRummy
 
 ## Mobile Support
 
-All games support:
-- Touch controls
-- Responsive layouts
-- Viewport scaling for small screens
+All games support touch controls and responsive layouts, with primary actions placed for easier thumb reach.
 
 ## Play Online (GitHub Pages)
 
@@ -110,21 +102,23 @@ All games support:
 4. Set **Branch** to `main`, **Folder** to `/ (root)`
 5. Click **Save**
 
-After a minute or two, your games will be live at:
+After deployment:
 
 - **Game Hub:** https://rupret007.github.io/Turdanoid/hub.html
-- **Neon Arkanoid:** https://rupret007.github.io/Turdanoid/index.html
-- **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
+- **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
+- **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
+- **Neon Arkanoid (legacy):** https://rupret007.github.io/Turdanoid/index.html
 
-The `.nojekyll` file ensures GitHub Pages serves the files as-is.
+The `.nojekyll` file ensures GitHub Pages serves files as-is.
 
 ## Technical Notes
 
-- **Neon Arkanoid**: Vanilla JavaScript (Canvas API)
-- **Turdtris**: Vanilla JavaScript (Canvas API)
 - **TurdAnoid**: p5.js
+- **Turdtris**: Vanilla JavaScript (Canvas API)
 - **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
+- **TurdRummy**: Vanilla JavaScript + DOM/CSS card UI
+- **Neon Arkanoid (legacy)**: Vanilla JavaScript (Canvas API)
 
 No build step required. Open in any modern browser.

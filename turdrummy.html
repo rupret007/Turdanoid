@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TurdRummy - Gin Rummy</title>
+  <style>
+    :root {
+      --bg-a: #2a3f27;
+      --bg-b: #18311f;
+      --bg-c: #112219;
+      --ink: #eef9f0;
+      --muted: #b9d6c1;
+      --accent: #9cff73;
+      --panel: rgba(7, 20, 13, 0.82);
+      --panel-border: rgba(156, 255, 115, 0.34);
+      --dock-bg: rgba(6, 16, 11, 0.95);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 14%, rgba(156, 255, 115, 0.18), transparent 36%),
+        radial-gradient(circle at 76% 8%, rgba(255, 220, 120, 0.14), transparent 34%),
+        linear-gradient(130deg, var(--bg-a), var(--bg-b), var(--bg-c));
+      display: flex;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .app {
+      width: min(1100px, 100%);
+      min-height: calc(100vh - 16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .topbar {
+      padding: 10px;
+      border-bottom: 1px solid rgba(156, 255, 115, 0.25);
+      background: rgba(10, 28, 17, 0.85);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-group h1 {
+      color: var(--accent);
+      font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+      text-transform: uppercase;
+    }
+
+    .title-group p {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 2px;
+    }
+
+    .btn, .top-links a {
+      border: 1px solid rgba(156, 255, 115, 0.38);
+      background: rgba(16, 45, 28, 0.85);
+      color: var(--ink);
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: none;
+      line-height: 1;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .top-links {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .warn {
+      border-color: rgba(255, 142, 142, 0.6);
+      background: rgba(61, 23, 23, 0.85);
+      color: #ffdede;
+    }
+
+    .status {
+      border-bottom: 1px solid rgba(156, 255, 115, 0.18);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+      background: rgba(8, 23, 15, 0.78);
+    }
+
+    .stat {
+      border: 1px solid rgba(156, 255, 115, 0.2);
+      border-radius: 8px;
+      padding: 6px;
+      background: rgba(14, 36, 24, 0.7);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.67rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      color: var(--ink);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .table {
+      padding: 8px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+      overflow: auto;
+    }
+
+    .zone {
+      border: 1px solid rgba(156, 255, 115, 0.2);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(10, 27, 18, 0.72);
+    }
+
+    .zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+      gap: 8px;
+    }
+
+    .zone-title {
+      color: var(--accent);
+      font-size: 0.84rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .zone-meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .card-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .card {
+      width: clamp(38px, 7vw, 58px);
+      height: clamp(56px, 10.5vw, 84px);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.35);
+      background: #f6fbf8;
+      color: #12231a;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 3px 4px;
+      font-weight: 700;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .card.red {
+      color: #b93044;
+    }
+
+    .card-face {
+      font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+    }
+
+    .card-suit {
+      align-self: center;
+      justify-self: center;
+      font-size: clamp(0.75rem, 2.2vw, 1rem);
+      font-weight: 800;
+    }
+
+    .card-button {
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .card-button.selected {
+      border-color: #ffd27e;
+      box-shadow: 0 0 0 2px rgba(255, 210, 126, 0.3);
+    }
+
+    .back-card {
+      width: clamp(30px, 5.3vw, 44px);
+      height: clamp(44px, 8vw, 62px);
+      border-radius: 7px;
+      border: 1px solid rgba(0, 0, 0, 0.36);
+      background: repeating-linear-gradient(135deg, #2d5938 0 7px, #4c8760 7px 14px);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+    }
+
+    .piles {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pile {
+      border: 1px solid rgba(156, 255, 115, 0.24);
+      border-radius: 9px;
+      padding: 7px;
+      min-width: 124px;
+      background: rgba(10, 31, 19, 0.74);
+    }
+
+    .pile h3 {
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .pile-body {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      min-height: 55px;
+    }
+
+    .message {
+      border: 1px solid rgba(156, 255, 115, 0.22);
+      border-radius: 9px;
+      margin-top: 8px;
+      padding: 7px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+      background: rgba(12, 34, 22, 0.74);
+    }
+
+    .message strong {
+      color: var(--accent);
+    }
+
+    .melds {
+      margin-top: 8px;
+      border-top: 1px dashed rgba(156, 255, 115, 0.28);
+      padding-top: 7px;
+      color: var(--muted);
+      font-size: 0.77rem;
+      line-height: 1.35;
+    }
+
+    .action-dock {
+      position: sticky;
+      bottom: 0;
+      border-top: 1px solid rgba(156, 255, 115, 0.24);
+      background: var(--dock-bg);
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      z-index: 20;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .action-grid .btn {
+      width: 100%;
+      padding: 9px 6px;
+      font-size: 0.78rem;
+    }
+
+    .primary {
+      background: rgba(31, 72, 42, 0.95);
+      border-color: rgba(156, 255, 115, 0.72);
+      color: #f4ffe8;
+      font-weight: 700;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-align: center;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 10, 6, 0.86);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      z-index: 50;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .overlay-card {
+      width: min(760px, 100%);
+      border: 1px solid rgba(156, 255, 115, 0.32);
+      border-radius: 12px;
+      background: rgba(8, 22, 14, 0.96);
+      padding: 14px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.46);
+    }
+
+    .overlay-card h2 {
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .overlay-card p {
+      color: var(--muted);
+      margin-bottom: 8px;
+      line-height: 1.4;
+      font-size: 0.86rem;
+    }
+
+    .overlay-card ul {
+      margin-left: 18px;
+      color: var(--ink);
+      font-size: 0.84rem;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .overlay-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 920px) {
+      .status {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .action-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .action-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="title-group">
+        <h1>TurdRummy</h1>
+        <p>Gin Rummy with mild toilet chaos.</p>
+      </div>
+      <div class="top-links">
+        <button class="btn" id="quickGuideBtn">Rules</button>
+        <button class="btn" id="newRoundBtn">New Round</button>
+        <button class="btn warn" id="resetMatchBtn">Reset Match</button>
+        <a href="hub.html" aria-label="Back to game hub">Hub</a>
+      </div>
+    </header>
+
+    <section class="status">
+      <div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="roundValue">0</div></div>
+      <div class="stat"><div class="stat-label">Player Score</div><div class="stat-value" id="playerScoreValue">0</div></div>
+      <div class="stat"><div class="stat-label">AI Score</div><div class="stat-value" id="aiScoreValue">0</div></div>
+      <div class="stat"><div class="stat-label">Stock Left</div><div class="stat-value" id="stockValue">0</div></div>
+      <div class="stat"><div class="stat-label">Your Deadwood</div><div class="stat-value" id="deadwoodValue">0</div></div>
+      <div class="stat"><div class="stat-label">Target</div><div class="stat-value" id="targetValue">100</div></div>
+    </section>
+
+    <main class="table">
+      <section class="zone">
+        <div class="zone-header">
+          <div class="zone-title">Opponent Hand</div>
+          <div class="zone-meta" id="aiMeta">10 cards</div>
+        </div>
+        <div class="card-row" id="opponentCards"></div>
+      </section>
+
+      <section class="zone">
+        <div class="zone-header">
+          <div class="zone-title">Table Center</div>
+          <div class="zone-meta" id="turnMeta">Turn: Player</div>
+        </div>
+        <div class="piles">
+          <div class="pile">
+            <h3>Stock</h3>
+            <div class="pile-body" id="stockPile"></div>
+          </div>
+          <div class="pile">
+            <h3>Discard Top</h3>
+            <div class="pile-body" id="discardPile"></div>
+          </div>
+        </div>
+        <div class="message" id="messageBox"></div>
+      </section>
+
+      <section class="zone">
+        <div class="zone-header">
+          <div class="zone-title">Your Hand</div>
+          <div class="zone-meta" id="selectionMeta">Select a card</div>
+        </div>
+        <div class="card-row" id="playerHand"></div>
+        <div class="melds" id="meldPreview"></div>
+      </section>
+    </main>
+
+    <footer class="action-dock">
+      <div class="action-grid">
+        <button class="btn primary" id="drawStockBtn" data-mobile-action="draw-stock">Draw Stock</button>
+        <button class="btn primary" id="drawDiscardBtn" data-mobile-action="draw-discard">Draw Discard</button>
+        <button class="btn" id="discardBtn" data-mobile-action="discard">Discard</button>
+        <button class="btn" id="knockBtn" data-mobile-action="knock">Knock</button>
+        <button class="btn" id="ginBtn" data-mobile-action="gin">Gin</button>
+        <button class="btn" id="sortSuitBtn">Sort Suit</button>
+        <button class="btn" id="sortRankBtn">Sort Rank</button>
+      </div>
+      <div class="footer-note">Core controls stay fixed at bottom for mobile play.</div>
+    </footer>
+
+    <div class="overlay show" id="guideOverlay">
+      <div class="overlay-card">
+        <h2>How TurdRummy Works</h2>
+        <p>Goal: first to 100 by making melds and minimizing deadwood.</p>
+        <ul>
+          <li>Set = 3-4 of the same rank.</li>
+          <li>Run = 3+ consecutive cards in one suit.</li>
+          <li>Knock when your post-discard deadwood is 10 or less.</li>
+          <li>Gin when post-discard deadwood is exactly 0.</li>
+          <li>Undercut gives bonus points to the defender.</li>
+        </ul>
+        <p>On mobile, draw/discard/knock/gin are grouped in one button dock.</p>
+        <div class="overlay-actions">
+          <button class="btn primary" id="startRoundBtn">Start Round</button>
+          <button class="btn" id="closeGuideBtn">Close Guide</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TURDRUMMY_BALANCE = {
+      knockLimit: 10,
+      ginBonus: 25,
+      undercutBonus: 25,
+      matchTarget: 100
+    };
+
+    const STORAGE_KEY = "turdrummy_stats_v1";
+    const SUITS = ["C", "D", "H", "S"];
+    const SUIT_ORDER = { C: 0, D: 1, H: 2, S: 3 };
+    const SUIT_SYMBOLS = { C: "♣", D: "♦", H: "♥", S: "♠" };
+    const RED_SUITS = new Set(["D", "H"]);
+    const RANK_LABELS = { 1: "A", 11: "J", 12: "Q", 13: "K" };
+
+    const state = {
+      round: 0,
+      dealer: "player",
+      turn: "player",
+      phase: "draw",
+      playerScore: 0,
+      aiScore: 0,
+      stock: [],
+      discard: [],
+      playerHand: [],
+      aiHand: [],
+      selectedCardId: null,
+      drawnCardId: null,
+      drawnCardSource: null,
+      playerSortMode: "suit",
+      message: "Press Start Round to begin.",
+      roundSummary: "",
+      lastAiAction: "",
+      roundOver: false,
+      initialized: false,
+      stats: {
+        roundsPlayed: 0,
+        playerRoundWins: 0,
+        aiRoundWins: 0,
+        playerGins: 0,
+        aiGins: 0,
+        undercuts: 0
+      }
+    };
+
+    const el = {
+      roundValue: document.getElementById("roundValue"),
+      playerScoreValue: document.getElementById("playerScoreValue"),
+      aiScoreValue: document.getElementById("aiScoreValue"),
+      stockValue: document.getElementById("stockValue"),
+      deadwoodValue: document.getElementById("deadwoodValue"),
+      targetValue: document.getElementById("targetValue"),
+      aiMeta: document.getElementById("aiMeta"),
+      turnMeta: document.getElementById("turnMeta"),
+      selectionMeta: document.getElementById("selectionMeta"),
+      opponentCards: document.getElementById("opponentCards"),
+      stockPile: document.getElementById("stockPile"),
+      discardPile: document.getElementById("discardPile"),
+      messageBox: document.getElementById("messageBox"),
+      playerHand: document.getElementById("playerHand"),
+      meldPreview: document.getElementById("meldPreview"),
+      drawStockBtn: document.getElementById("drawStockBtn"),
+      drawDiscardBtn: document.getElementById("drawDiscardBtn"),
+      discardBtn: document.getElementById("discardBtn"),
+      knockBtn: document.getElementById("knockBtn"),
+      ginBtn: document.getElementById("ginBtn"),
+      sortSuitBtn: document.getElementById("sortSuitBtn"),
+      sortRankBtn: document.getElementById("sortRankBtn"),
+      newRoundBtn: document.getElementById("newRoundBtn"),
+      resetMatchBtn: document.getElementById("resetMatchBtn"),
+      quickGuideBtn: document.getElementById("quickGuideBtn"),
+      guideOverlay: document.getElementById("guideOverlay"),
+      closeGuideBtn: document.getElementById("closeGuideBtn"),
+      startRoundBtn: document.getElementById("startRoundBtn")
+    };
+
+    function randomIntExclusive(max) {
+      if (max <= 0) return 0;
+      if (window.crypto && window.crypto.getRandomValues) {
+        const maxUint = 0xFFFFFFFF;
+        const threshold = maxUint - ((maxUint + 1) % max);
+        const bucket = new Uint32Array(1);
+        while (true) {
+          window.crypto.getRandomValues(bucket);
+          if (bucket[0] <= threshold) {
+            return bucket[0] % max;
+          }
+        }
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function loadStats() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          state.playerScore = Number(parsed.playerScore) || 0;
+          state.aiScore = Number(parsed.aiScore) || 0;
+          state.stats = Object.assign({}, state.stats, parsed.stats || {});
+          state.round = Number(parsed.round) || 0;
+        }
+      } catch (err) {
+        console.warn("Could not load TurdRummy stats:", err);
+      }
+    }
+
+    function saveStats() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          playerScore: state.playerScore,
+          aiScore: state.aiScore,
+          round: state.round,
+          stats: state.stats
+        }));
+      } catch (err) {
+        console.warn("Could not save TurdRummy stats:", err);
+      }
+    }
+
+    function rankLabel(rank) {
+      return RANK_LABELS[rank] || String(rank);
+    }
+
+    function cardText(card) {
+      return rankLabel(card.rank) + SUIT_SYMBOLS[card.suit];
+    }
+
+    function cardDeadwoodValue(card) {
+      if (card.rank === 1) return 1;
+      if (card.rank >= 10) return 10;
+      return card.rank;
+    }
+
+    function sortBySuitThenRank(a, b) {
+      const suitDiff = SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
+      if (suitDiff !== 0) return suitDiff;
+      return a.rank - b.rank;
+    }
+
+    function sortByRankThenSuit(a, b) {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
+    }
+
+    function createDeck() {
+      const deck = [];
+      let idx = 0;
+      for (const suit of SUITS) {
+        for (let rank = 1; rank <= 13; rank += 1) {
+          deck.push({ suit, rank, id: suit + String(rank) + "-" + String(idx) });
+          idx += 1;
+        }
+      }
+      return deck;
+    }
+
+    function shuffleDeck(deck) {
+      for (let i = deck.length - 1; i > 0; i -= 1) {
+        const j = randomIntExclusive(i + 1);
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    function sortPlayerHand() {
+      if (state.playerSortMode === "rank") {
+        state.playerHand.sort(sortByRankThenSuit);
+      } else {
+        state.playerHand.sort(sortBySuitThenRank);
+      }
+    }
+
+    function sortAiHand() {
+      state.aiHand.sort(sortBySuitThenRank);
+    }
+
+    function handAfterDiscard(hand, discardId) {
+      return hand.filter((card) => card.id !== discardId);
+    }
+
+    function getSelectedCard() {
+      if (!state.selectedCardId) return null;
+      return state.playerHand.find((card) => card.id === state.selectedCardId) || null;
+    }
+
+    function getCombinations(cards, k) {
+      const out = [];
+      function helper(start, choose, acc) {
+        if (choose === 0) {
+          out.push(acc.slice());
+          return;
+        }
+        for (let i = start; i <= cards.length - choose; i += 1) {
+          acc.push(cards[i]);
+          helper(i + 1, choose - 1, acc);
+          acc.pop();
+        }
+      }
+      helper(0, k, []);
+      return out;
+    }
+
+    function createMeld(type, cards, indexById) {
+      let mask = 0;
+      for (const card of cards) {
+        const idx = indexById.get(card.id);
+        mask |= (1 << idx);
+      }
+      return {
+        type,
+        cards: cards.slice().sort(sortByRankThenSuit),
+        mask
+      };
+    }
+
+    function isBetterAnalysis(a, b) {
+      if (!b) return true;
+      if (a.deadwoodScore !== b.deadwoodScore) return a.deadwoodScore < b.deadwoodScore;
+      if (a.meldCardCount !== b.meldCardCount) return a.meldCardCount > b.meldCardCount;
+      return a.deadwoodCards.length < b.deadwoodCards.length;
+    }
+
+    function analyzeHand(hand) {
+      const cards = hand.slice().sort(sortByRankThenSuit);
+      const indexById = new Map(cards.map((card, idx) => [card.id, idx]));
+      const melds = [];
+
+      const byRank = new Map();
+      for (const card of cards) {
+        if (!byRank.has(card.rank)) byRank.set(card.rank, []);
+        byRank.get(card.rank).push(card);
+      }
+      byRank.forEach((group) => {
+        if (group.length >= 3) {
+          const triples = getCombinations(group, 3);
+          for (const combo of triples) {
+            melds.push(createMeld("set", combo, indexById));
+          }
+          if (group.length === 4) {
+            melds.push(createMeld("set", group, indexById));
+          }
+        }
+      });
+
+      const bySuit = new Map();
+      for (const card of cards) {
+        if (!bySuit.has(card.suit)) bySuit.set(card.suit, []);
+        bySuit.get(card.suit).push(card);
+      }
+      bySuit.forEach((group) => {
+        group.sort((a, b) => a.rank - b.rank);
+        for (let start = 0; start < group.length; start += 1) {
+          const run = [group[start]];
+          for (let end = start + 1; end < group.length; end += 1) {
+            if (group[end].rank === group[end - 1].rank + 1) {
+              run.push(group[end]);
+              if (run.length >= 3) {
+                melds.push(createMeld("run", run, indexById));
+              }
+            } else {
+              break;
+            }
+          }
+        }
+      });
+
+      const memo = new Map();
+      function solve(meldIdx, usedMask) {
+        const key = String(meldIdx) + "|" + String(usedMask);
+        if (memo.has(key)) return memo.get(key);
+
+        let result;
+        if (meldIdx >= melds.length) {
+          const deadwoodCards = [];
+          let deadwoodScore = 0;
+          for (let i = 0; i < cards.length; i += 1) {
+            if ((usedMask & (1 << i)) === 0) {
+              deadwoodCards.push(cards[i]);
+              deadwoodScore += cardDeadwoodValue(cards[i]);
+            }
+          }
+          result = {
+            deadwoodScore,
+            deadwoodCards,
+            melds: [],
+            meldCardCount: cards.length - deadwoodCards.length
+          };
+        } else {
+          const skip = solve(meldIdx + 1, usedMask);
+          let best = skip;
+          const meld = melds[meldIdx];
+          if ((usedMask & meld.mask) === 0) {
+            const withMeld = solve(meldIdx + 1, usedMask | meld.mask);
+            const candidate = {
+              deadwoodScore: withMeld.deadwoodScore,
+              deadwoodCards: withMeld.deadwoodCards,
+              melds: [{ type: meld.type, cards: meld.cards.slice() }].concat(withMeld.melds),
+              meldCardCount: withMeld.meldCardCount
+            };
+            if (isBetterAnalysis(candidate, best)) {
+              best = candidate;
+            }
+          }
+          result = best;
+        }
+
+        memo.set(key, result);
+        return result;
+      }
+
+      return solve(0, 0);
+    }
+
+    function createCardHtml(card, interactive, selected) {
+      const redClass = RED_SUITS.has(card.suit) ? "red" : "";
+      const selectedClass = selected ? "selected" : "";
+      const buttonClass = interactive ? "card-button " + selectedClass : "";
+      const label = cardText(card);
+      if (interactive) {
+        return `
+          <button class="card ${redClass} ${buttonClass}" data-card-id="${card.id}" aria-label="${label}">
+            <div class="card-face">${rankLabel(card.rank)}</div>
+            <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
+            <div class="card-face">${rankLabel(card.rank)}</div>
+          </button>
+        `;
+      }
+      return `
+        <div class="card ${redClass}">
+          <div class="card-face">${rankLabel(card.rank)}</div>
+          <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
+          <div class="card-face">${rankLabel(card.rank)}</div>
+        </div>
+      `;
+    }
+
+    function renderOpponentCards() {
+      const count = state.aiHand.length;
+      el.aiMeta.textContent = count + " cards";
+      let html = "";
+      for (let i = 0; i < count; i += 1) {
+        html += '<div class="back-card" aria-hidden="true"></div>';
+      }
+      el.opponentCards.innerHTML = html;
+    }
+
+    function renderPiles() {
+      const stockCount = state.stock.length;
+      el.stockValue.textContent = String(stockCount);
+      if (stockCount > 0) {
+        el.stockPile.innerHTML = `
+          <div class="back-card" aria-hidden="true"></div>
+          <span>${stockCount} in stock</span>
+        `;
+      } else {
+        el.stockPile.innerHTML = "<span>Stock empty</span>";
+      }
+
+      const topDiscard = state.discard[state.discard.length - 1];
+      if (topDiscard) {
+        el.discardPile.innerHTML = createCardHtml(topDiscard, false, false) + `<span>${cardText(topDiscard)}</span>`;
+      } else {
+        el.discardPile.innerHTML = "<span>No discard</span>";
+      }
+    }
+
+    function renderPlayerHand() {
+      sortPlayerHand();
+      const interactive = state.turn === "player" && !state.roundOver;
+      el.playerHand.innerHTML = state.playerHand
+        .map((card) => createCardHtml(card, interactive, card.id === state.selectedCardId))
+        .join("");
+    }
+
+    function formatMeld(meld) {
+      const prefix = meld.type === "set" ? "Set" : "Run";
+      return prefix + ": " + meld.cards.map(cardText).join(" ");
+    }
+
+    function getAnalysisWithSelectedDiscard() {
+      const selected = getSelectedCard();
+      if (!selected || state.phase !== "discard") return null;
+      return analyzeHand(handAfterDiscard(state.playerHand, selected.id));
+    }
+
+    function renderMeldPreview() {
+      const analysis = analyzeHand(state.playerHand);
+      const selected = getSelectedCard();
+      el.deadwoodValue.textContent = String(analysis.deadwoodScore);
+      const lines = [];
+      if (analysis.melds.length > 0) {
+        lines.push("Best melds: " + analysis.melds.map(formatMeld).join(" | "));
+      } else {
+        lines.push("No melds yet.");
+      }
+      lines.push("Deadwood: " + (analysis.deadwoodCards.map(cardText).join(", ") || "none"));
+      const selectedAnalysis = getAnalysisWithSelectedDiscard();
+      if (selected && selectedAnalysis) {
+        lines.push("If discarding " + cardText(selected) + ": deadwood -> " + selectedAnalysis.deadwoodScore);
+      }
+      el.meldPreview.innerHTML = lines.join("<br>");
+      el.selectionMeta.textContent = selected ? ("Selected: " + cardText(selected)) : "Select a card";
+    }
+
+    function setMessage(text, summary) {
+      state.message = text;
+      if (summary !== undefined) state.roundSummary = summary;
+      const roundText = state.roundSummary ? "<br><strong>Round:</strong> " + state.roundSummary : "";
+      el.messageBox.innerHTML = "<strong>Status:</strong> " + state.message + roundText;
+    }
+
+    function updateTurnMeta() {
+      if (state.roundOver) {
+        el.turnMeta.textContent = "Round over";
+        return;
+      }
+      const turn = state.turn === "player" ? "Player" : "AI";
+      const phase = state.phase === "draw" ? "Draw" : "Discard";
+      el.turnMeta.textContent = "Turn: " + turn + " (" + phase + ")";
+    }
+
+    function renderStatus() {
+      el.roundValue.textContent = String(state.round);
+      el.playerScoreValue.textContent = String(state.playerScore);
+      el.aiScoreValue.textContent = String(state.aiScore);
+      el.targetValue.textContent = String(TURDRUMMY_BALANCE.matchTarget);
+      updateTurnMeta();
+    }
+
+    function isPlayerDrawPhase() {
+      return state.turn === "player" && state.phase === "draw" && !state.roundOver;
+    }
+
+    function isPlayerDiscardPhase() {
+      return state.turn === "player" && state.phase === "discard" && !state.roundOver;
+    }
+
+    function updateActionButtons() {
+      const canDraw = isPlayerDrawPhase();
+      const canDiscard = isPlayerDiscardPhase();
+      const selected = getSelectedCard();
+      const selectedAnalysis = getAnalysisWithSelectedDiscard();
+      const sameAsTakenDiscard = Boolean(
+        selected &&
+        state.drawnCardSource === "discard" &&
+        state.drawnCardId === selected.id
+      );
+
+      el.drawStockBtn.disabled = !canDraw;
+      el.drawDiscardBtn.disabled = !canDraw || state.discard.length === 0;
+      el.discardBtn.disabled = !canDiscard || !selected || sameAsTakenDiscard;
+      el.knockBtn.disabled = !canDiscard || !selected || sameAsTakenDiscard || !selectedAnalysis ||
+        selectedAnalysis.deadwoodScore > TURDRUMMY_BALANCE.knockLimit;
+      el.ginBtn.disabled = !canDiscard || !selected || sameAsTakenDiscard || !selectedAnalysis ||
+        selectedAnalysis.deadwoodScore !== 0;
+    }
+
+    function renderAll() {
+      renderStatus();
+      renderOpponentCards();
+      renderPiles();
+      renderPlayerHand();
+      renderMeldPreview();
+      updateActionButtons();
+      setMessage(state.message, state.roundSummary);
+    }
+
+    function refillStockIfNeeded() {
+      if (state.stock.length > 0) return true;
+      if (state.discard.length <= 1) return false;
+      const top = state.discard.pop();
+      state.stock = state.discard.splice(0, state.discard.length);
+      shuffleDeck(state.stock);
+      state.discard = [top];
+      return true;
+    }
+
+    function drawFromStock() {
+      if (!refillStockIfNeeded()) return null;
+      return state.stock.pop() || null;
+    }
+
+    function selectCard(cardId) {
+      if (!state.playerHand.some((card) => card.id === cardId)) return;
+      state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
+      renderAll();
+    }
+
+    function dealRound() {
+      state.round += 1;
+      state.dealer = state.round === 1 ? "player" : (state.dealer === "player" ? "ai" : "player");
+      state.stock = shuffleDeck(createDeck());
+      state.discard = [];
+      state.playerHand = [];
+      state.aiHand = [];
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.roundOver = false;
+      state.roundSummary = "";
+      state.lastAiAction = "";
+
+      for (let i = 0; i < 10; i += 1) {
+        state.playerHand.push(state.stock.pop());
+        state.aiHand.push(state.stock.pop());
+      }
+      sortPlayerHand();
+      sortAiHand();
+      state.discard.push(state.stock.pop());
+
+      state.turn = state.dealer === "player" ? "ai" : "player";
+      state.phase = "draw";
+      state.message = state.turn === "player" ? "Round started. Your draw." : "Round started. AI draws first.";
+      saveStats();
+      renderAll();
+      if (state.turn === "ai") {
+        window.setTimeout(aiTurn, 650);
+      }
+    }
+
+    function playerDrawFromStock() {
+      if (!isPlayerDrawPhase()) return;
+      const drawn = drawFromStock();
+      if (!drawn) {
+        state.message = "No stock left. Draw discard or start a new round.";
+        renderAll();
+        return;
+      }
+      state.playerHand.push(drawn);
+      sortPlayerHand();
+      state.phase = "discard";
+      state.drawnCardId = drawn.id;
+      state.drawnCardSource = "stock";
+      state.message = "You drew from stock. Select a discard.";
+      renderAll();
+    }
+
+    function playerDrawFromDiscard() {
+      if (!isPlayerDrawPhase()) return;
+      const drawn = state.discard.pop();
+      if (!drawn) {
+        state.message = "Discard pile is empty.";
+        renderAll();
+        return;
+      }
+      state.playerHand.push(drawn);
+      sortPlayerHand();
+      state.phase = "discard";
+      state.drawnCardId = drawn.id;
+      state.drawnCardSource = "discard";
+      state.message = "You drew " + cardText(drawn) + " from discard.";
+      renderAll();
+    }
+
+    function endPlayerTurnNormal(discardCard) {
+      state.discard.push(discardCard);
+      state.turn = "ai";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.message = "You discarded " + cardText(discardCard) + ". AI turn...";
+      renderAll();
+      window.setTimeout(aiTurn, 700);
+    }
+
+    function playerDiscardSelected() {
+      if (!isPlayerDiscardPhase()) return;
+      const selected = getSelectedCard();
+      if (!selected) {
+        state.message = "Pick a card first.";
+        renderAll();
+        return;
+      }
+      if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
+        state.message = "You cannot draw discard and toss the same card immediately.";
+        renderAll();
+        return;
+      }
+      state.playerHand = handAfterDiscard(state.playerHand, selected.id);
+      endPlayerTurnNormal(selected);
+    }
+
+    function playerKnockOrGin(requestGin) {
+      if (!isPlayerDiscardPhase()) return;
+      const selected = getSelectedCard();
+      if (!selected) {
+        state.message = "Select your discard first.";
+        renderAll();
+        return;
+      }
+      if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
+        state.message = "Cannot discard the same up-card this turn.";
+        renderAll();
+        return;
+      }
+
+      const reduced = handAfterDiscard(state.playerHand, selected.id);
+      const analysis = analyzeHand(reduced);
+      if (requestGin && analysis.deadwoodScore !== 0) {
+        state.message = "Not gin yet. Need deadwood of 0.";
+        renderAll();
+        return;
+      }
+      if (!requestGin && analysis.deadwoodScore > TURDRUMMY_BALANCE.knockLimit) {
+        state.message = "Too much deadwood to knock.";
+        renderAll();
+        return;
+      }
+
+      state.playerHand = reduced;
+      state.discard.push(selected);
+      finishRound("player", analysis.deadwoodScore === 0, analysis.deadwoodScore, analysis.melds);
+    }
+
+    function chooseBestDiscard(hand, blockedCardId) {
+      let best = null;
+      for (const card of hand) {
+        if (blockedCardId && card.id === blockedCardId) continue;
+        const remaining = hand.filter((c) => c.id !== card.id);
+        const analysis = analyzeHand(remaining);
+        const candidate = {
+          card,
+          analysis,
+          deadwood: analysis.deadwoodScore,
+          penalty: cardDeadwoodValue(card)
+        };
+        if (!best || candidate.deadwood < best.deadwood ||
+          (candidate.deadwood === best.deadwood && candidate.penalty > best.penalty)) {
+          best = candidate;
+        }
+      }
+      return best;
+    }
+
+    function cardLikelyUsefulForMeld(hand, card) {
+      const sameRank = hand.filter((c) => c.rank === card.rank).length;
+      if (sameRank >= 2) return true;
+      const suitRanks = hand.filter((c) => c.suit === card.suit).map((c) => c.rank);
+      return suitRanks.includes(card.rank - 1) || suitRanks.includes(card.rank + 1);
+    }
+
+    function aiShouldTakeDiscard(topCard) {
+      if (!topCard) return false;
+      const current = analyzeHand(state.aiHand).deadwoodScore;
+      const withTop = state.aiHand.concat([topCard]);
+      const best = chooseBestDiscard(withTop, topCard.id);
+      if (!best) return false;
+      if (best.deadwood < current) return true;
+      return best.deadwood === current && cardLikelyUsefulForMeld(state.aiHand, topCard);
+    }
+
+    function cloneMelds(melds) {
+      return melds.map((meld) => ({
+        type: meld.type,
+        cards: meld.cards.map((card) => ({ suit: card.suit, rank: card.rank, id: card.id }))
+      }));
+    }
+
+    function canCardAttachToMeld(card, meld) {
+      if (meld.type === "set") {
+        if (card.rank !== meld.cards[0].rank) return false;
+        if (meld.cards.length >= 4) return false;
+        return !meld.cards.some((m) => m.suit === card.suit);
+      }
+      if (meld.type === "run") {
+        if (card.suit !== meld.cards[0].suit) return false;
+        const ranks = meld.cards.map((m) => m.rank).sort((a, b) => a - b);
+        const min = ranks[0];
+        const max = ranks[ranks.length - 1];
+        return card.rank === min - 1 || card.rank === max + 1;
+      }
+      return false;
+    }
+
+    function attachCardToMeld(card, meld) {
+      meld.cards.push({ suit: card.suit, rank: card.rank, id: card.id });
+      if (meld.type === "run") meld.cards.sort((a, b) => a.rank - b.rank);
+    }
+
+    function applyLayoff(defenderHand, knockerMelds) {
+      const base = analyzeHand(defenderHand);
+      if (!knockerMelds || knockerMelds.length === 0 || base.deadwoodCards.length === 0) {
+        return { deadwoodScore: base.deadwoodScore, deadwoodCards: base.deadwoodCards.slice(), laidOffCards: [] };
+      }
+      const remaining = base.deadwoodCards.slice().sort((a, b) => cardDeadwoodValue(b) - cardDeadwoodValue(a));
+      const tableMelds = cloneMelds(knockerMelds);
+      const laidOff = [];
+      let progress = true;
+      while (progress && remaining.length > 0) {
+        progress = false;
+        for (let i = 0; i < remaining.length; i += 1) {
+          const card = remaining[i];
+          const target = tableMelds.find((meld) => canCardAttachToMeld(card, meld));
+          if (!target) continue;
+          attachCardToMeld(card, target);
+          laidOff.push(card);
+          remaining.splice(i, 1);
+          i -= 1;
+          progress = true;
+        }
+      }
+      const deadwoodScore = remaining.reduce((sum, card) => sum + cardDeadwoodValue(card), 0);
+      return { deadwoodScore, deadwoodCards: remaining, laidOffCards: laidOff };
+    }
+
+    function finishRound(knocker, isGin, knockerDeadwood, knockerMelds) {
+      state.roundOver = true;
+      state.stats.roundsPlayed += 1;
+      const defender = knocker === "player" ? "ai" : "player";
+      const defenderHand = defender === "player" ? state.playerHand : state.aiHand;
+      const defenderBase = analyzeHand(defenderHand);
+      let defenderDeadwood = defenderBase.deadwoodScore;
+      let layoffText = "";
+
+      if (!isGin) {
+        const layoff = applyLayoff(defenderHand, knockerMelds);
+        defenderDeadwood = layoff.deadwoodScore;
+        if (layoff.laidOffCards.length > 0) {
+          layoffText = " Layoff: " + layoff.laidOffCards.map(cardText).join(", ") + ".";
+        }
+      }
+
+      let points = 0;
+      let awardedTo = "";
+      let summary = "";
+      if (isGin) {
+        points = TURDRUMMY_BALANCE.ginBonus + defenderDeadwood;
+        awardedTo = knocker;
+        summary = (knocker === "player" ? "You called GIN!" : "AI called GIN!") + " +" + points + ".";
+        if (knocker === "player") state.stats.playerGins += 1;
+        else state.stats.aiGins += 1;
+      } else if (knockerDeadwood < defenderDeadwood) {
+        points = defenderDeadwood - knockerDeadwood;
+        awardedTo = knocker;
+        summary = (knocker === "player" ? "You knocked." : "AI knocked.") + " +" + points + "." + layoffText;
+      } else {
+        points = TURDRUMMY_BALANCE.undercutBonus + (knockerDeadwood - defenderDeadwood);
+        awardedTo = defender;
+        summary = "Undercut! " + (defender === "player" ? "You" : "AI") + " gain +" + points + "." + layoffText;
+        state.stats.undercuts += 1;
+      }
+
+      if (awardedTo === "player") {
+        state.playerScore += points;
+        state.stats.playerRoundWins += 1;
+      } else {
+        state.aiScore += points;
+        state.stats.aiRoundWins += 1;
+      }
+
+      if (state.playerScore >= TURDRUMMY_BALANCE.matchTarget || state.aiScore >= TURDRUMMY_BALANCE.matchTarget) {
+        const winner = state.playerScore >= TURDRUMMY_BALANCE.matchTarget ? "Player" : "AI";
+        summary += " Match winner: " + winner + ".";
+      }
+
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.message = state.lastAiAction || "Round complete.";
+      state.roundSummary = summary + " Knocker deadwood: " + knockerDeadwood + ", defender deadwood: " + defenderDeadwood + ".";
+      saveStats();
+      renderAll();
+    }
+
+    function aiTurn() {
+      if (state.roundOver || state.turn !== "ai") return;
+      state.phase = "draw";
+
+      let drawn = null;
+      let source = "stock";
+      const topDiscard = state.discard[state.discard.length - 1];
+      if (aiShouldTakeDiscard(topDiscard)) {
+        drawn = state.discard.pop();
+        source = "discard";
+      } else {
+        drawn = drawFromStock();
+        if (!drawn && state.discard.length > 0) {
+          drawn = state.discard.pop();
+          source = "discard";
+        }
+      }
+
+      if (!drawn) {
+        state.roundOver = true;
+        state.message = "AI could not draw. Start a new round.";
+        renderAll();
+        return;
+      }
+
+      state.aiHand.push(drawn);
+      sortAiHand();
+      const bestDiscard = chooseBestDiscard(state.aiHand, source === "discard" ? drawn.id : null);
+      if (!bestDiscard) {
+        state.roundOver = true;
+        state.message = "AI discard logic failed. Start new round.";
+        renderAll();
+        return;
+      }
+
+      state.aiHand = handAfterDiscard(state.aiHand, bestDiscard.card.id);
+      state.discard.push(bestDiscard.card);
+      sortAiHand();
+      state.lastAiAction = "AI drew from " + source + ", discarded " + cardText(bestDiscard.card) + ".";
+
+      const deadwood = bestDiscard.analysis.deadwoodScore;
+      const ginNow = deadwood === 0;
+      const knockNow = deadwood <= 7 || (state.round >= 6 && deadwood <= TURDRUMMY_BALANCE.knockLimit);
+      if (ginNow) {
+        finishRound("ai", true, deadwood, bestDiscard.analysis.melds);
+        return;
+      }
+      if (knockNow) {
+        finishRound("ai", false, deadwood, bestDiscard.analysis.melds);
+        return;
+      }
+
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.message = state.lastAiAction + " Your draw.";
+      renderAll();
+    }
+
+    function resetMatch() {
+      state.playerScore = 0;
+      state.aiScore = 0;
+      state.round = 0;
+      state.dealer = "player";
+      state.stock = [];
+      state.discard = [];
+      state.playerHand = [];
+      state.aiHand = [];
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.roundOver = false;
+      state.roundSummary = "";
+      state.lastAiAction = "";
+      state.message = "Match reset. Start a new round.";
+      state.stats = {
+        roundsPlayed: 0,
+        playerRoundWins: 0,
+        aiRoundWins: 0,
+        playerGins: 0,
+        aiGins: 0,
+        undercuts: 0
+      };
+      saveStats();
+      renderAll();
+    }
+
+    function openGuide() {
+      el.guideOverlay.classList.add("show");
+    }
+
+    function closeGuide() {
+      el.guideOverlay.classList.remove("show");
+    }
+
+    function startFirstRoundIfNeeded() {
+      if (state.initialized) return;
+      state.initialized = true;
+      dealRound();
+    }
+
+    function bindEvents() {
+      el.playerHand.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-card-id]");
+        if (!target) return;
+        selectCard(target.dataset.cardId);
+      });
+
+      el.drawStockBtn.addEventListener("click", playerDrawFromStock);
+      el.drawDiscardBtn.addEventListener("click", playerDrawFromDiscard);
+      el.discardBtn.addEventListener("click", playerDiscardSelected);
+      el.knockBtn.addEventListener("click", () => playerKnockOrGin(false));
+      el.ginBtn.addEventListener("click", () => playerKnockOrGin(true));
+
+      el.sortSuitBtn.addEventListener("click", () => {
+        state.playerSortMode = "suit";
+        sortPlayerHand();
+        renderAll();
+      });
+
+      el.sortRankBtn.addEventListener("click", () => {
+        state.playerSortMode = "rank";
+        sortPlayerHand();
+        renderAll();
+      });
+
+      el.newRoundBtn.addEventListener("click", () => {
+        if (!state.initialized) {
+          startFirstRoundIfNeeded();
+          return;
+        }
+        dealRound();
+      });
+
+      el.resetMatchBtn.addEventListener("click", resetMatch);
+      el.quickGuideBtn.addEventListener("click", openGuide);
+      el.closeGuideBtn.addEventListener("click", closeGuide);
+      el.startRoundBtn.addEventListener("click", () => {
+        closeGuide();
+        startFirstRoundIfNeeded();
+      });
+    }
+
+    function init() {
+      loadStats();
+      bindEvents();
+      renderAll();
+      openGuide();
+    }
+
+    init();
+  </script>
+</body>
+</html>

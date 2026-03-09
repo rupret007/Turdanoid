@@ -9,7 +9,7 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','game.js','README.md') | ForEach-Object {
+@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','turdrummy.html','game.js','README.md') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 
@@ -28,10 +28,12 @@ if ($idx -match 'quickStartPlay') { Pass("quick start handler") } else { Fail("q
 
 Write-Host "`n=== hub.html ===" -ForegroundColor Cyan
 $hub = Get-Content hub.html -Raw
-if ($hub -match 'href="index\.html"') { Pass("link to index") } else { Fail("link to index") }
 if ($hub -match 'href="turdtris\.html"') { Pass("link to turdtris") } else { Fail("link to turdtris") }
 if ($hub -match 'href="TurdAnoid\.html"') { Pass("link to TurdAnoid") } else { Fail("link to TurdAnoid") }
 if ($hub -match 'href="turdjack\.html"') { Pass("link to turdjack") } else { Fail("link to turdjack") }
+if ($hub -match 'href="turdrummy\.html"') { Pass("link to turdrummy") } else { Fail("link to turdrummy") }
+if ($hub -match '(?s)<div class="games">\s*<a href="TurdAnoid\.html"') { Pass("TurdAnoid is first card") } else { Fail("TurdAnoid is first card") }
+if ($hub -notmatch 'Neon Arkanoid') { Pass("Neon removed from hub cards") } else { Fail("Neon removed from hub cards") }
 
 Write-Host "`n=== game.js ===" -ForegroundColor Cyan
 $game = Get-Content game.js -Raw
@@ -94,6 +96,19 @@ if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport met
 if ($jack -match 'quickStartRound') { Pass("quick start handler") } else { Fail("quick start handler") }
 if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } else { Fail("guide quick start button") }
 if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
+
+Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
+$rummy = Get-Content turdrummy.html -Raw
+if ($rummy -match 'Gin Rummy') { Pass("gin rummy title") } else { Fail("gin rummy title") }
+if ($rummy -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
+if ($rummy -match 'TURDRUMMY_BALANCE') { Pass("balance config") } else { Fail("balance config") }
+if ($rummy -match 'analyzeHand') { Pass("meld/deadwood analyzer") } else { Fail("meld/deadwood analyzer") }
+if ($rummy -match 'applyLayoff') { Pass("layoff logic") } else { Fail("layoff logic") }
+if ($rummy -match 'finishRound') { Pass("round scoring flow") } else { Fail("round scoring flow") }
+if ($rummy -match 'data-mobile-action=\"draw-stock\"') { Pass("mobile draw control") } else { Fail("mobile draw control") }
+if ($rummy -match 'data-mobile-action=\"gin\"') { Pass("mobile gin control") } else { Fail("mobile gin control") }
+if ($rummy -match 'quickGuideBtn') { Pass("rules guide button") } else { Fail("rules guide button") }
+if ($rummy -match 'localStorage') { Pass("localStorage stats") } else { Fail("localStorage stats") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green
