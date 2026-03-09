@@ -125,7 +125,7 @@ body {
   background: rgba(37, 22, 14, 0.72);
   border-radius: 10px;
   padding: 8px 12px;
-  min-height: 38px;
+  min-height: 40px;
   font-size: 12px;
   cursor: pointer;
 }
@@ -304,8 +304,9 @@ body {
   background: rgba(20, 12, 8, 0.8);
   color: var(--ink);
   border-radius: 10px;
+  width: 100%;
   min-width: 86px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 9px 10px;
   font-size: 0.9rem;
 }
@@ -378,6 +379,7 @@ body {
   .btn {
     padding: 8px 11px;
     font-size: 12px;
+    min-height: 42px;
   }
   .mobile-controls {
     display: grid;
@@ -388,10 +390,11 @@ body {
     border-radius: 12px;
     background: rgba(26, 16, 10, 0.92);
     padding: 7px;
+    padding-bottom: max(7px, env(safe-area-inset-bottom));
   }
   .control-btn {
     min-width: 82px;
-    min-height: 42px;
+    min-height: 44px;
     padding: 8px 10px;
     font-size: 0.88rem;
   }
@@ -437,7 +440,7 @@ body {
   }
   .control-btn {
     min-width: 78px;
-    min-height: 42px;
+    min-height: 44px;
     padding: 7px 9px;
     font-size: 0.84rem;
   }

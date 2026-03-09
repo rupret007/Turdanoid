@@ -73,6 +73,7 @@
       color: var(--ink);
       border-radius: 9px;
       padding: 8px 10px;
+      min-height: 40px;
       font-size: 0.82rem;
       cursor: pointer;
       text-decoration: none;
@@ -275,6 +276,7 @@
       border-top: 1px solid rgba(156, 255, 115, 0.24);
       background: var(--dock-bg);
       padding: 8px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
       display: grid;
       gap: 6px;
       z-index: 20;
@@ -288,6 +290,7 @@
 
     .action-grid .btn {
       width: 100%;
+      min-height: 42px;
       padding: 9px 6px;
       font-size: 0.78rem;
     }
@@ -471,7 +474,16 @@
       knockLimit: 10,
       ginBonus: 25,
       undercutBonus: 25,
-      matchTarget: 100
+      matchTarget: 100,
+      ai: {
+        takeDiscardGain: 2,
+        takeDiscardLateRound: 8,
+        meldPotentialBias: 2.4,
+        highCardDumpBias: 1.1,
+        knockBase: 6,
+        knockWhenBehindBy: 8,
+        knockWhenAheadBy: 5
+      }
     };
 
     const STORAGE_KEY = "turdrummy_stats_v1";
@@ -1083,41 +1095,102 @@
       finishRound("player", analysis.deadwoodScore === 0, analysis.deadwoodScore, analysis.melds);
     }
 
+    function cardLikelyUsefulForMeld(hand, card) {
+      const sameRank = hand.filter((c) => c.rank === card.rank).length;
+      if (sameRank >= 2) return true;
+      const suitRanks = hand.filter((c) => c.suit === card.suit).map((c) => c.rank);
+      return (
+        suitRanks.includes(card.rank - 1) ||
+        suitRanks.includes(card.rank + 1) ||
+        suitRanks.includes(card.rank - 2) ||
+        suitRanks.includes(card.rank + 2)
+      );
+    }
+
+    function cardMeldPotential(hand, card) {
+      const sameRank = hand.filter((c) => c.rank === card.rank).length;
+      const suitRanks = hand.filter((c) => c.suit === card.suit).map((c) => c.rank);
+      let potential = 0;
+
+      if (sameRank >= 2) potential += 2.8;
+      else if (sameRank === 1) potential += 1.2;
+
+      const hasLeft = suitRanks.includes(card.rank - 1);
+      const hasRight = suitRanks.includes(card.rank + 1);
+      const hasNearLeft = suitRanks.includes(card.rank - 2);
+      const hasNearRight = suitRanks.includes(card.rank + 2);
+
+      if (hasLeft || hasRight) potential += 1.7;
+      if (hasNearLeft || hasNearRight) potential += 0.6;
+      if (hasLeft && hasRight) potential += 1.2;
+
+      return potential;
+    }
+
+    function scoreDiscardCandidate(hand, card, blockedCardId) {
+      if (blockedCardId && card.id === blockedCardId) return null;
+      const remaining = hand.filter((c) => c.id !== card.id);
+      const analysis = analyzeHand(remaining);
+      const deadwoodValue = cardDeadwoodValue(card);
+      const potential = cardMeldPotential(remaining, card);
+
+      // Lower score is better: keep deadwood low while preserving meld-building cards.
+      let score = analysis.deadwoodScore * 10;
+      score += potential * TURDRUMMY_BALANCE.ai.meldPotentialBias;
+      score -= deadwoodValue * TURDRUMMY_BALANCE.ai.highCardDumpBias;
+      if (analysis.deadwoodScore === 0) score -= 18;
+      if (deadwoodValue >= 10 && !cardLikelyUsefulForMeld(remaining, card)) score -= 1.6;
+
+      return {
+        card,
+        analysis,
+        deadwood: analysis.deadwoodScore,
+        penalty: deadwoodValue,
+        score
+      };
+    }
+
     function chooseBestDiscard(hand, blockedCardId) {
       let best = null;
       for (const card of hand) {
-        if (blockedCardId && card.id === blockedCardId) continue;
-        const remaining = hand.filter((c) => c.id !== card.id);
-        const analysis = analyzeHand(remaining);
-        const candidate = {
-          card,
-          analysis,
-          deadwood: analysis.deadwoodScore,
-          penalty: cardDeadwoodValue(card)
-        };
-        if (!best || candidate.deadwood < best.deadwood ||
-          (candidate.deadwood === best.deadwood && candidate.penalty > best.penalty)) {
+        const candidate = scoreDiscardCandidate(hand, card, blockedCardId);
+        if (!candidate) continue;
+        if (
+          !best ||
+          candidate.score < best.score ||
+          (candidate.score === best.score && candidate.penalty > best.penalty)
+        ) {
           best = candidate;
         }
       }
       return best;
     }
 
-    function cardLikelyUsefulForMeld(hand, card) {
-      const sameRank = hand.filter((c) => c.rank === card.rank).length;
-      if (sameRank >= 2) return true;
-      const suitRanks = hand.filter((c) => c.suit === card.suit).map((c) => c.rank);
-      return suitRanks.includes(card.rank - 1) || suitRanks.includes(card.rank + 1);
+    function getAiKnockThreshold() {
+      const aiCfg = TURDRUMMY_BALANCE.ai;
+      const diff = state.playerScore - state.aiScore;
+      let threshold = aiCfg.knockBase;
+      if (diff >= 20) threshold = aiCfg.knockWhenBehindBy;
+      else if (diff <= -20) threshold = aiCfg.knockWhenAheadBy;
+      if (state.round >= aiCfg.takeDiscardLateRound) threshold += 1;
+      return Math.max(3, Math.min(TURDRUMMY_BALANCE.knockLimit, threshold));
     }
 
     function aiShouldTakeDiscard(topCard) {
       if (!topCard) return false;
-      const current = analyzeHand(state.aiHand).deadwoodScore;
+      const currentBest = chooseBestDiscard(state.aiHand, null);
+      if (!currentBest) return false;
       const withTop = state.aiHand.concat([topCard]);
       const best = chooseBestDiscard(withTop, topCard.id);
       if (!best) return false;
-      if (best.deadwood < current) return true;
-      return best.deadwood === current && cardLikelyUsefulForMeld(state.aiHand, topCard);
+      const gain = currentBest.deadwood - best.deadwood;
+      if (best.analysis.deadwoodScore === 0) return true;
+      if (best.analysis.deadwoodScore <= getAiKnockThreshold() && gain >= 0) return true;
+      if (gain >= TURDRUMMY_BALANCE.ai.takeDiscardGain) return true;
+      if (gain >= 1 && cardLikelyUsefulForMeld(state.aiHand, topCard)) return true;
+      return state.round >= TURDRUMMY_BALANCE.ai.takeDiscardLateRound &&
+        gain >= 0 &&
+        cardLikelyUsefulForMeld(state.aiHand, topCard);
     }
 
     function cloneMelds(melds) {
@@ -1277,12 +1350,14 @@
 
       const deadwood = bestDiscard.analysis.deadwoodScore;
       const ginNow = deadwood === 0;
-      const knockNow = deadwood <= 7 || (state.round >= 6 && deadwood <= TURDRUMMY_BALANCE.knockLimit);
+      const knockThreshold = getAiKnockThreshold();
+      const knockNow = deadwood <= knockThreshold;
       if (ginNow) {
         finishRound("ai", true, deadwood, bestDiscard.analysis.melds);
         return;
       }
       if (knockNow) {
+        state.lastAiAction += " AI knocks at " + deadwood + " deadwood.";
         finishRound("ai", false, deadwood, bestDiscard.analysis.melds);
         return;
       }

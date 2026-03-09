@@ -122,7 +122,7 @@
       border-radius: 10px;
       font-size: 12px;
       padding: 8px 12px;
-      min-height: 38px;
+      min-height: 40px;
       cursor: pointer;
     }
 
@@ -227,10 +227,8 @@
 
     .mobile-controls {
       display: none;
-      justify-content: center;
       gap: 8px;
       margin-top: 10px;
-      flex-wrap: wrap;
     }
 
     .control-btn {
@@ -238,8 +236,9 @@
       background: rgba(6, 20, 15, 0.82);
       color: var(--ink);
       border-radius: 10px;
+      width: 100%;
       min-width: 84px;
-      min-height: 42px;
+      min-height: 44px;
       padding: 9px 10px;
       font-size: 0.9rem;
     }
@@ -315,9 +314,11 @@
       .btn {
         padding: 8px 11px;
         font-size: 12px;
+        min-height: 42px;
       }
       .mobile-controls {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         position: sticky;
         bottom: max(8px, env(safe-area-inset-bottom));
         z-index: 35;
@@ -328,7 +329,7 @@
       }
       .control-btn {
         min-width: 82px;
-        min-height: 42px;
+        min-height: 44px;
         padding: 8px 10px;
         font-size: 0.88rem;
       }
@@ -371,7 +372,7 @@
       }
       .control-btn {
         min-width: 78px;
-        min-height: 42px;
+        min-height: 44px;
         padding: 7px 9px;
         font-size: 0.84rem;
       }
@@ -491,19 +492,21 @@ let originalPaddleWidth = 120;
 let paddleHeight = 16;
 const TURDANOID_BALANCE = {
   launch: {
-    baseSpeed: 5.25,
-    perLevel: 0.38,
+    baseSpeed: 5.95,
+    perLevel: 0.41,
     earlyFloorLevel: 5,
-    earlyFloorSpeed: 6.8,
-    maxSpeed: 12.15,
-    minHorizontal: 1.15
+    earlyFloorSpeed: 7.25,
+    maxSpeed: 12.45,
+    minHorizontal: 1.32
   },
   drops: {
-    baseChance: 0.102,
-    perLevel: 0.0032,
-    perDroughtBrick: 0.013,
-    droughtCap: 0.22,
-    maxChance: 0.34
+    baseChance: 0.088,
+    perLevel: 0.0036,
+    perDroughtBrick: 0.015,
+    droughtCap: 0.24,
+    maxChance: 0.36,
+    forceDropBricks: 16,
+    forceDropLevelScale: 9
   },
   power: {
     maxDropSlotsLow: 1,
@@ -514,7 +517,7 @@ const TURDANOID_BALANCE = {
     bigPaddleDurationCap: 3000,
     extraLifeMaxLives: 5,
     extraLifeEarlyLifeCap: 3,
-    extraLifeCooldownFrames: 2500
+    extraLifeCooldownFrames: 3200
   }
 };
 
@@ -559,7 +562,7 @@ let activePowerUps = {
 
 const POWERUP_TYPES = [
   { type: 'bigPaddle', emoji: '📏', name: 'Enlarge (E)', weight: 3.3 },
-  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.2 },
+  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.13 },
   { type: 'slowBall', emoji: '🐌', name: 'Slow (S)', weight: 2.5 },
   { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper Blaster', weight: 2.3 },
   { type: 'stickyPaddle', emoji: '🧲', name: 'Catch (C)', weight: 2.0 },
@@ -1613,8 +1616,9 @@ function weightedPowerUp() {
           weight *= stage <= 2 ? 1.16 : 1;
           break;
         case 'extraLife':
-          if (lives <= 1) weight *= 2.8;
-          else if (lives >= 4) weight *= 0.28;
+          if (lives <= 1) weight *= 2.2;
+          else if (lives >= 4) weight *= 0.12;
+          if (stage >= 3) weight *= 0.84;
           break;
         case 'disruption':
         case 'laserEyes':
@@ -1956,9 +1960,12 @@ function damageBrick(index, damage, projectileHit) {
   const droughtBoost = min(dropCfg.droughtCap, bricksSinceDrop * dropCfg.perDroughtBrick);
   const levelBoost = level * dropCfg.perLevel;
   const dropChance = min(dropCfg.maxChance, dropCfg.baseChance + levelBoost + droughtBoost);
+  const droughtThreshold = max(8, dropCfg.forceDropBricks - floor(level / dropCfg.forceDropLevelScale));
+  const forceDrop = bricksSinceDrop >= droughtThreshold;
   const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1;
-  if (dropEligible && random() < dropChance) {
+  if (dropEligible && (forceDrop || random() < dropChance)) {
     createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+    if (forceDrop) statusText = 'Drought breaker capsule dropped.';
     bricksSinceDrop = 0;
   }
 
@@ -1991,7 +1998,7 @@ function activatePowerUp(type) {
       statusText = `Paddle grew to ${bigPaddleStacks}x stink mode.`;
       break;
     case 'extraLife':
-      lives = min(powerCfg.extraLifeMaxLives + 1, lives + 1);
+      lives = min(powerCfg.extraLifeMaxLives, lives + 1);
       extraLifeCooldown = max(extraLifeCooldown, powerCfg.extraLifeCooldownFrames);
       statusText = 'Rare heart! One extra life.';
       addFloatText('+1 Life', paddle.x + paddleWidth / 2, paddle.y - 12, color(255, 170, 170));
