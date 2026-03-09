@@ -126,6 +126,12 @@
       cursor: pointer;
     }
 
+    .btn.subtle {
+      border-color: rgba(158, 255, 200, 0.26);
+      color: #dff7eb;
+      background: rgba(8, 22, 18, 0.55);
+    }
+
     .hud {
       display: grid;
       grid-template-columns: repeat(7, minmax(85px, 1fr));
@@ -278,9 +284,17 @@
       margin-bottom: 5px;
     }
 
+    .welcome-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 980px) {
       body {
         padding: clamp(8px, 2.5vw, 12px);
+        padding-bottom: 90px;
       }
       .shell {
         width: min(900px, 94vw);
@@ -302,7 +316,16 @@
         padding: 8px 11px;
         font-size: 12px;
       }
-      .mobile-controls { display: flex; }
+      .mobile-controls {
+        display: flex;
+        position: sticky;
+        bottom: max(8px, env(safe-area-inset-bottom));
+        z-index: 35;
+        border: 1px solid rgba(158, 255, 200, 0.25);
+        border-radius: 12px;
+        background: rgba(8, 20, 16, 0.9);
+        padding: 7px;
+      }
       .control-btn {
         min-width: 82px;
         min-height: 42px;
@@ -343,6 +366,9 @@
       .mobile-menu-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+      .welcome-actions .btn {
+        flex: 1 1 140px;
+      }
       .control-btn {
         min-width: 78px;
         min-height: 42px;
@@ -375,7 +401,10 @@
       <li><strong>Goal:</strong> survive escalating chaos and clear level 69</li>
     </ul>
     <p>Tip: combo streaks and stink buildup make scoring and effects way more intense.</p>
-    <button class="btn" onclick="hideWelcomeGuide()">Start Run</button>
+    <div class="welcome-actions">
+      <button class="btn" onclick="quickStartRun()">Quick Start</button>
+      <button class="btn subtle" onclick="hideWelcomeGuide()">Review Then Start</button>
+    </div>
   </div>
 </div>
 
@@ -460,7 +489,36 @@ let floatTexts = [];
 let paddleWidth = 120;
 let originalPaddleWidth = 120;
 let paddleHeight = 16;
-let baseBallSpeed = 5;
+const TURDANOID_BALANCE = {
+  launch: {
+    baseSpeed: 5.25,
+    perLevel: 0.38,
+    earlyFloorLevel: 5,
+    earlyFloorSpeed: 6.8,
+    maxSpeed: 12.15,
+    minHorizontal: 1.15
+  },
+  drops: {
+    baseChance: 0.102,
+    perLevel: 0.0032,
+    perDroughtBrick: 0.013,
+    droughtCap: 0.22,
+    maxChance: 0.34
+  },
+  power: {
+    maxDropSlotsLow: 1,
+    maxDropSlotsHigh: 2,
+    highDropLevel: 18,
+    bigPaddleMaxStacks: 5,
+    bigPaddleDurationGain: 560,
+    bigPaddleDurationCap: 3000,
+    extraLifeMaxLives: 5,
+    extraLifeEarlyLifeCap: 3,
+    extraLifeCooldownFrames: 2500
+  }
+};
+
+let baseBallSpeed = TURDANOID_BALANCE.launch.baseSpeed;
 
 let score = 0;
 let highScore = parseInt(localStorage.getItem('turdanoidHighScore') || '0', 10);
@@ -531,7 +589,10 @@ const LEVEL_PATTERNS = [
   'Spiral Maze',
   'Chaos Bloom',
   'Saw Teeth',
-  'Rift Lanes'
+  'Rift Lanes',
+  'Vortex Cage',
+  'Pinball Lattice',
+  'Waldo Mirage'
 ];
 const LEVEL_MODS = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
 const LEVEL_STAGE_NAMES = ['Warmup', 'Arcade', 'Remix', 'Mayhem', 'Chaos', 'Madness'];
@@ -540,8 +601,8 @@ const PATTERN_STAGE_POOLS = [
   [0, 1, 2, 3, 4],
   [2, 3, 4, 5, 7, 8],
   [4, 5, 6, 7, 8, 9, 10],
-  [6, 8, 9, 10, 11, 12, 13],
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  [6, 8, 9, 10, 11, 12, 13, 14, 15],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 ];
 const POWERUP_UNLOCK_LEVEL = {
   bigPaddle: 1,
@@ -615,6 +676,12 @@ function hideWelcomeGuide() {
   if (guide) guide.style.display = 'none';
   onboardingOpen = false;
   if (!gameOver && !gameWon) paused = false;
+}
+
+function quickStartRun() {
+  hideWelcomeGuide();
+  statusText = 'Quick start live. Launch and keep the combo alive.';
+  if ((awaitingLaunch || stuckBall) && !paused && !gameOver && !gameWon) launchBall();
 }
 
 function windowResized() {
@@ -836,6 +903,26 @@ function shouldPlaceBrick(profile, row, col, rows, cols) {
       base = Math.abs(col - centerCol) >= 2 + (profile.variant % 3);
       if (row === rows - 1 && col % 2 === 1) base = false;
       break;
+    case 14: {
+      const laneArc = abs(distFromCenter - (0.22 + 0.12 * sin(angle * (3 + (profile.variant % 2)) + profile.level * 0.18)));
+      const cross = abs(sin(angle * 6 + profile.variant)) > 0.54;
+      base = laneArc < 0.09 || cross || row < 2;
+      break;
+    }
+    case 15: {
+      const laneA = ((row + profile.variant) % 4 === 0);
+      const laneB = ((col * 2 + row + profile.variant) % 5 === 0);
+      const pockets = abs(col - centerCol) <= 1 && row % 2 === 0;
+      base = laneA || laneB || pockets || row < 2;
+      break;
+    }
+    case 16: {
+      const mirage = sin((nx + ny) * PI * (3 + profile.variant * 0.45) + profile.level * 0.31);
+      const mirrorCross = abs(col - centerCol) <= 1 || abs(row - centerRow) <= 1;
+      base = mirage > -0.08 || mirrorCross;
+      if ((row + col + profile.variant) % 5 === 0) base = !base;
+      break;
+    }
     default:
       base = levelRand(profile.level, 5050 + row * 79 + col * 43, remix) < profile.density;
       break;
@@ -1179,6 +1266,51 @@ function applyLevelMutator(levelNumber) {
     if (madness > 0) notes.push(`Mutator: Marble madness twisted ${madness} bricks.`);
   }
 
+  if (levelNumber >= 48 && levelNumber % 8 === 0) {
+    let wells = 0;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible) continue;
+      const nx = (b.x + b.w * 0.5) / max(1, width) - 0.5;
+      const ny = (b.y + b.h * 0.5) / max(1, height) - 0.32;
+      const radius = sqrt(nx * nx + ny * ny);
+      if (radius < 0.2 && random() < 0.34) {
+        configureBrickType(b, random() < 0.5 ? 'silver' : 'gold', levelNumber, profile);
+        if (b.type === 'silver') {
+          b.hp += 1;
+          b.maxHp += 1;
+        }
+        wells++;
+      } else if (radius > 0.34 && random() < 0.18) {
+        configureBrickType(b, 'shifty', levelNumber, profile);
+        b.driftAmount += random(8, 20);
+        b.driftSpeed += random(0.006, 0.018);
+        wells++;
+      }
+    }
+    if (wells > 0) notes.push(`Mutator: vortex wells remapped ${wells} lanes.`);
+  }
+
+  if (levelNumber >= 60 && levelNumber % 9 === 0) {
+    let portals = 0;
+    const pivot = levelRand(levelNumber, 18510, profile.variation || 0) * width;
+    for (let i = 0; i < bricks.length; i++) {
+      const b = bricks[i];
+      if (!b.destructible) continue;
+      const centerX = b.x + b.w * 0.5;
+      const phase = abs(centerX - pivot) / max(1, width);
+      if (phase < 0.16 && random() < 0.58) {
+        configureBrickType(b, random() < 0.55 ? 'explosive' : 'shifty', levelNumber, profile);
+        if (b.type === 'shifty') {
+          b.driftAmount += random(10, 26);
+          b.driftSpeed += random(0.008, 0.024);
+        }
+        portals++;
+      }
+    }
+    if (portals > 0) notes.push(`Mutator: portal strip flipped ${portals} bricks.`);
+  }
+
   if (destructibleRemaining() <= 0 && bricks.length > 0) {
     const rescue = bricks[floor(random(bricks.length))];
     configureBrickType(rescue, 'silver', levelNumber, profile);
@@ -1311,10 +1443,14 @@ function launchBall() {
 
   if (!targetBall) return;
 
-  const earlyLevelFloor = level <= 4 ? 6.3 : baseBallSpeed;
-  const speed = min(11.7, max(earlyLevelFloor, baseBallSpeed + (level - 1) * 0.35));
+  const launchCfg = TURDANOID_BALANCE.launch;
+  const earlyLevelFloor = level <= launchCfg.earlyFloorLevel ? launchCfg.earlyFloorSpeed : baseBallSpeed;
+  const speed = min(
+    launchCfg.maxSpeed,
+    max(earlyLevelFloor, launchCfg.baseSpeed + (level - 1) * launchCfg.perLevel)
+  );
   let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.72);
-  if (abs(vx) < 1.1) vx = vx >= 0 ? 1.1 : -1.1;
+  if (abs(vx) < launchCfg.minHorizontal) vx = vx >= 0 ? launchCfg.minHorizontal : -launchCfg.minHorizontal;
   const vy = -sqrt(max(1, speed * speed - vx * vx));
 
   targetBall.vx = vx;
@@ -1462,8 +1598,8 @@ function weightedPowerUp() {
       if (level < unlock) return false;
       if (p.type !== 'extraLife') return true;
       if (extraLifeCooldown > 0) return false;
-      if (lives >= 5) return false;
-      if (level < 6 && lives >= 3) return false;
+      if (lives >= TURDANOID_BALANCE.power.extraLifeMaxLives) return false;
+      if (level < 6 && lives >= TURDANOID_BALANCE.power.extraLifeEarlyLifeCap) return false;
       return true;
     })
     .map((p) => {
@@ -1514,7 +1650,9 @@ function weightedPowerUp() {
 }
 
 function createPowerUp(x, y) {
-  const maxDrops = level >= 18 ? 2 : 1;
+  const maxDrops = level >= TURDANOID_BALANCE.power.highDropLevel
+    ? TURDANOID_BALANCE.power.maxDropSlotsHigh
+    : TURDANOID_BALANCE.power.maxDropSlotsLow;
   if (powerUps.length >= maxDrops) return;
   if (balls.length > 1) return;
   const p = weightedPowerUp();
@@ -1814,8 +1952,10 @@ function damageBrick(index, damage, projectileHit) {
   }
 
   bricksSinceDrop++;
-  const droughtBoost = min(0.2, bricksSinceDrop * 0.012);
-  const dropChance = 0.11 + min(0.1, level * 0.003) + droughtBoost;
+  const dropCfg = TURDANOID_BALANCE.drops;
+  const droughtBoost = min(dropCfg.droughtCap, bricksSinceDrop * dropCfg.perDroughtBrick);
+  const levelBoost = level * dropCfg.perLevel;
+  const dropChance = min(dropCfg.maxChance, dropCfg.baseChance + levelBoost + droughtBoost);
   const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1;
   if (dropEligible && random() < dropChance) {
     createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
@@ -1843,15 +1983,16 @@ function splashDamage(cx, cy, radius) {
 }
 
 function activatePowerUp(type) {
+  const powerCfg = TURDANOID_BALANCE.power;
   switch (type) {
     case 'bigPaddle':
-      bigPaddleStacks = min(4, bigPaddleStacks + 1);
-      activePowerUps.bigPaddle = min(2600, activePowerUps.bigPaddle + 520);
+      bigPaddleStacks = min(powerCfg.bigPaddleMaxStacks, bigPaddleStacks + 1);
+      activePowerUps.bigPaddle = min(powerCfg.bigPaddleDurationCap, activePowerUps.bigPaddle + powerCfg.bigPaddleDurationGain);
       statusText = `Paddle grew to ${bigPaddleStacks}x stink mode.`;
       break;
     case 'extraLife':
-      lives = min(6, lives + 1);
-      extraLifeCooldown = max(extraLifeCooldown, 2200);
+      lives = min(powerCfg.extraLifeMaxLives + 1, lives + 1);
+      extraLifeCooldown = max(extraLifeCooldown, powerCfg.extraLifeCooldownFrames);
       statusText = 'Rare heart! One extra life.';
       addFloatText('+1 Life', paddle.x + paddleWidth / 2, paddle.y - 12, color(255, 170, 170));
       break;

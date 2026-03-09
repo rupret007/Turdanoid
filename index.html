@@ -135,6 +135,12 @@
             transition: transform 0.2s ease, background 0.2s ease;
         }
 
+        .btn.subtle {
+            border-color: rgba(115, 255, 215, 0.25);
+            color: #d8eef7;
+            background: rgba(8, 16, 30, 0.58);
+        }
+
         .btn:hover {
             transform: translateY(-1px);
             background: rgba(28, 48, 88, 0.7);
@@ -338,6 +344,13 @@
             margin-bottom: 6px;
         }
 
+        .guide-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .achievement-toast {
             position: fixed;
             left: 50%;
@@ -381,6 +394,7 @@
         @media (max-width: 1024px) {
             body {
                 padding: clamp(8px, 2.5vw, 12px);
+                padding-bottom: 84px;
             }
             .game-shell {
                 width: min(980px, 94vw);
@@ -418,6 +432,13 @@
             }
             .mobile-controls {
                 display: flex;
+                position: sticky;
+                bottom: max(8px, env(safe-area-inset-bottom));
+                z-index: 32;
+                border: 1px solid rgba(123, 230, 255, 0.25);
+                border-radius: 12px;
+                background: rgba(8, 16, 32, 0.9);
+                padding: 7px;
             }
             .control-btn {
                 min-width: 84px;
@@ -463,6 +484,9 @@
             .mobile-menu-actions {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+            .guide-actions .btn {
+                flex: 1 1 140px;
+            }
             .control-btn {
                 min-width: 82px;
                 min-height: 42px;
@@ -495,7 +519,10 @@
                 <li><strong>Mute:</strong> <strong>M</strong></li>
             </ul>
             <p>Tip: keep the ball alive and stack power-ups to build huge score multipliers.</p>
-            <button class="btn" onclick="dismissHowToPlay()">Start Playing</button>
+            <div class="guide-actions">
+                <button class="btn" onclick="quickStartPlay()">Quick Start</button>
+                <button class="btn subtle" onclick="dismissHowToPlay()">Review Then Start</button>
+            </div>
         </div>
     </div>
 
@@ -619,6 +646,16 @@
         function dismissHowToPlay() {
             const el = document.getElementById('howToPlay');
             if (el) el.style.display = 'none';
+        }
+
+        function quickStartPlay() {
+            dismissHowToPlay();
+            if (window.gameInstance && window.gameInstance.awaitingLaunch && window.gameInstance.launchBall) {
+                window.gameInstance.launchBall();
+                if (window.gameInstance.setStatus) {
+                    window.gameInstance.setStatus('Quick start live. Keep the combo chain rolling.');
+                }
+            }
         }
 
         window.addEventListener('load', function () {

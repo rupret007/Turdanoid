@@ -2,6 +2,25 @@
 
 A collection of four browser games with a playful turd theme.
 
+## Version
+
+- **Current build:** `v2.8.0`
+- **Build date:** March 9, 2026
+
+## Changelog (Latest)
+
+- Mobile UX pass across all games:
+  - Compact mobile menus for top actions.
+  - Sticky/fixed mobile control areas for faster thumb access.
+  - Crapjack mobile pit now supports quick betting and core round actions without scrolling.
+- Onboarding pass:
+  - Added quick-start entry buttons to game welcome overlays.
+- Progression and balancing upgrades:
+  - TurdAnoid: expanded late-game pattern pool and mutator variety.
+  - Turdtris: richer level mutators beyond simple garbage injection.
+  - Neon Arkanoid: balance constants and stronger late-wave mutator pressure.
+- Regression checks expanded in `test-runner.ps1` for new mobile/UX hooks.
+
 ## Games
 
 ### Neon Arkanoid

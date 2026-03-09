@@ -23,6 +23,8 @@ if ($idx -match 'id="muteBtn"') { Pass("muteBtn") } else { Fail("muteBtn") }
 if ($idx -match 'game\.js') { Pass("game.js script") } else { Fail("game.js script") }
 if ($idx -match 'restartGame') { Pass("restartGame") } else { Fail("restartGame") }
 if ($idx -match 'togglePause') { Pass("togglePause") } else { Fail("togglePause") }
+if ($idx -match 'mobile-menu') { Pass("mobile menu ui") } else { Fail("mobile menu ui") }
+if ($idx -match 'quickStartPlay') { Pass("quick start handler") } else { Fail("quick start handler") }
 
 Write-Host "`n=== hub.html ===" -ForegroundColor Cyan
 $hub = Get-Content hub.html -Raw
@@ -43,6 +45,10 @@ if ($game -match 'throw new Error') { Pass("constructor throws") } else { Fail("
 if ($game -match 'webkitAudioContext') { Pass("Safari audio") } else { Fail("Safari audio") }
 if ($game -match 'maxLevel') { Pass("level cap logic") } else { Fail("level cap logic") }
 if ($game -match 'setupWaldo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
+if ($game -match 'NEON_BALANCE') { Pass("balance config") } else { Fail("balance config") }
+if ($game -match 'applyLevelMutators') { Pass("level mutator hook") } else { Fail("level mutator hook") }
+if ($game -match 'blocksSinceDrop') { Pass("drop drought logic") } else { Fail("drop drought logic") }
+if ($game -match 'patternCount') { Pass("expanded pattern count") } else { Fail("expanded pattern count") }
 
 Write-Host "`n=== turdtris.html ===" -ForegroundColor Cyan
 $tris = Get-Content turdtris.html -Raw
@@ -51,6 +57,10 @@ if ($tris -match 'if \(canvas\)') { Pass("touch guard") } else { Fail("touch gua
 if ($tris -match 'Math\.min\(linesClearedThisTurn') { Pass("lineScores bounds") } else { Fail("lineScores bounds") }
 if ($tris -match 'if \(!matrix\) return getNextTetromino') { Pass("tetromino fallback") } else { Fail("tetromino fallback") }
 if ($tris -match 'getLinesGoalForLevel') { Pass("variable level goals") } else { Fail("variable level goals") }
+if ($tris -match 'TURDTRIS_BALANCE') { Pass("balance config") } else { Fail("balance config") }
+if ($tris -match 'buildLevelMutator') { Pass("mutator builder") } else { Fail("mutator builder") }
+if ($tris -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($tris -match 'data-action=\"pause\"') { Pass("mobile pause control") } else { Fail("mobile pause control") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -62,6 +72,9 @@ if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport met
 if ($turd -match 'MAX_LEVEL') { Pass("max level cap") } else { Fail("max level cap") }
 if ($turd -match 'levelLayoutSignatures') { Pass("non-repeating level signatures") } else { Fail("non-repeating level signatures") }
 if ($turd -match 'setupWaldoCameo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
+if ($turd -match 'TURDANOID_BALANCE') { Pass("balance config") } else { Fail("balance config") }
+if ($turd -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($turd -match 'Vortex Cage') { Pass("expanded pattern set") } else { Fail("expanded pattern set") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -78,6 +91,9 @@ if ($jack -match 'dealer') { Pass("dealer logic") } else { Fail("dealer logic") 
 if ($jack -match 'dealerHitsSoft17') { Pass("soft17 rule flag") } else { Fail("soft17 rule flag") }
 if ($jack -match 'randomIntExclusive') { Pass("secure shuffle helper") } else { Fail("secure shuffle helper") }
 if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
+if ($jack -match 'quickStartRound') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } else { Fail("guide quick start button") }
+if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

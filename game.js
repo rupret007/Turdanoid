@@ -1,4 +1,28 @@
-﻿class Game {
+const NEON_BALANCE = {
+    launch: {
+        baseBallSpeed: 4.95,
+        speedPerLevel: 0.36,
+        earlyFloorLevel: 5,
+        earlyFloorSpeed: 6.05,
+        maxBallSpeed: 13.6
+    },
+    drops: {
+        baseDropChance: 0.34,
+        perLevel: 0.0026,
+        droughtPerBlock: 0.012,
+        droughtCap: 0.2,
+        maxDropChance: 0.37
+    },
+    power: {
+        defaultDuration: 620,
+        extraLifeCooldown: 2400
+    },
+    progression: {
+        patternCount: 17,
+        maxRemixes: 16
+    }
+};
+class Game {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         if (!this.canvas) throw new Error('Canvas element not found');
@@ -7,13 +31,21 @@
         if (!this.ctx) throw new Error('Could not get 2D context');
 
         this.config = {
-            baseBallSpeed: 4.4,
-            maxBallSpeed: 13,
+            baseBallSpeed: NEON_BALANCE.launch.baseBallSpeed,
+            speedPerLevel: NEON_BALANCE.launch.speedPerLevel,
+            earlyFloorLevel: NEON_BALANCE.launch.earlyFloorLevel,
+            earlyFloorSpeed: NEON_BALANCE.launch.earlyFloorSpeed,
+            maxBallSpeed: NEON_BALANCE.launch.maxBallSpeed,
             paddleSpeed: 10,
             maxParticles: 340,
             comboTimeoutFrames: 210,
-            defaultPowerDuration: 600,
-            blockDropChance: 0.34,
+            defaultPowerDuration: NEON_BALANCE.power.defaultDuration,
+            blockDropChance: NEON_BALANCE.drops.baseDropChance,
+            dropChancePerLevel: NEON_BALANCE.drops.perLevel,
+            droughtPerBlock: NEON_BALANCE.drops.droughtPerBlock,
+            droughtCap: NEON_BALANCE.drops.droughtCap,
+            maxDropChance: NEON_BALANCE.drops.maxDropChance,
+            maxRemixes: NEON_BALANCE.progression.maxRemixes,
             shieldYInset: 14,
             maxLevel: 69
         };
@@ -34,6 +66,7 @@
         this.levelMistakes = 0;
         this.levelPatternName = 'Classic Grid';
         this.levelProfile = null;
+        this.levelMutatorText = '';
         this.runSeed = this.createRunSeed();
         this.levelLayoutSignatures = new Set();
         this.levelLayoutSignature = '';
@@ -82,6 +115,7 @@
         this.shieldHits = 0;
         this.levelBlocksTotal = 0;
         this.extraLifeCooldown = 0;
+        this.blocksSinceDrop = 0;
         this.waldo = null;
 
         this.ui = {
@@ -194,16 +228,19 @@
         this.levelMistakes = 0;
         this.combo = 0;
         this.comboTimer = 0;
+        this.blocksSinceDrop = 0;
         this.levelProfile = null;
+        this.levelMutatorText = '';
 
         let variation = 0;
-        while (variation < 14) {
+        while (variation < this.config.maxRemixes) {
             this.levelProfile = this.buildLevelProfile(this.level, variation);
             this.generateBlocks();
             if (!this.levelLayoutSignatures.has(this.levelLayoutSignature) || variation === 13) break;
             variation++;
         }
         this.levelLayoutSignatures.add(this.levelLayoutSignature);
+        this.applyLevelMutators(this.levelProfile);
 
         this.resetPaddleSize();
         this.spawnMainBall();
@@ -258,7 +295,7 @@
         const bossLevel = (level % 10 === 0) || level === this.config.maxLevel;
         const lateRamp = level >= 56 ? 0.06 : 0;
         const chaos = this.clamp(0.1 + (level - 1) * 0.014 + tier * 0.018 + lateRamp, 0.1, 0.995);
-        const pattern = Math.floor(this.levelRandom(level, 7, remix) * 14);
+        const pattern = Math.floor(this.levelRandom(level, 7, remix) * NEON_BALANCE.progression.patternCount);
         const variant = Math.floor(this.levelRandom(level, 11, remix) * 5);
         const rows = Math.min(13, 5 + Math.floor((level - 1) / 2.6));
         const cols = Math.min(17, 12 + Math.floor((level - 1) / 9));
@@ -281,7 +318,10 @@
             'Spiral Maze',
             'Chaos Bloom',
             'Razor Channel',
-            'Twin Rift'
+            'Twin Rift',
+            'Vortex Cage',
+            'Pinball Lattice',
+            'Waldo Mirage'
         ];
         const mods = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
 
@@ -324,7 +364,7 @@
         const remix = profile.variation || 0;
 
         let base = true;
-        switch (profile.pattern % 14) {
+        switch (profile.pattern % NEON_BALANCE.progression.patternCount) {
             case 0:
                 base = true;
                 break;
@@ -378,6 +418,26 @@
                 base = Math.abs(col - centerCol) >= 2 + (profile.variant % 3);
                 if (row === rows - 1 && col % 2 === 1) base = false;
                 break;
+            case 14: {
+                const laneArc = Math.abs(dist - (0.22 + 0.12 * Math.sin(angle * (3 + (profile.variant % 2)) + profile.level * 0.18)));
+                const cross = Math.abs(Math.sin(angle * 6 + profile.variant)) > 0.54;
+                base = laneArc < 0.09 || cross || row < 2;
+                break;
+            }
+            case 15: {
+                const laneA = ((row + profile.variant) % 4 === 0);
+                const laneB = ((col * 2 + row + profile.variant) % 5 === 0);
+                const pockets = Math.abs(col - centerCol) <= 1 && row % 2 === 0;
+                base = laneA || laneB || pockets || row < 2;
+                break;
+            }
+            case 16: {
+                const mirage = Math.sin((nx + ny) * Math.PI * (3 + profile.variant * 0.45) + profile.level * 0.31);
+                const cross = Math.abs(col - centerCol) <= 1 || Math.abs(row - centerRow) <= 1;
+                base = mirage > -0.08 || cross;
+                if ((row + col + profile.variant) % 5 === 0) base = !base;
+                break;
+            }
             default: {
                 const noise = this.levelRandom(profile.level, 5000 + row * 97 + col * 57, remix);
                 base = noise < profile.density + 0.06;
@@ -523,6 +583,58 @@
         this.levelBlocksTotal = this.blocks.length;
     }
 
+    applyLevelMutators(profile) {
+        if (!profile || !this.blocks || this.blocks.length === 0) {
+            this.levelMutatorText = '';
+            return;
+        }
+
+        const notes = [];
+
+        if (this.level >= 36) {
+            let feral = 0;
+            for (let i = 0; i < this.blocks.length; i++) {
+                const block = this.blocks[i];
+                if (block.type !== 'normal') continue;
+                if (Math.random() < 0.08 + profile.chaos * 0.12) {
+                    block.type = Math.random() < 0.58 ? 'explosive' : 'moving';
+                    block.health = block.type === 'moving' ? 2 + Math.floor(this.level / 6) : 1;
+                    block.maxHealth = block.health;
+                    block.color = block.type === 'moving' ? '#76ffd7' : '#ff6f61';
+                    feral++;
+                }
+            }
+            if (feral > 0) notes.push(`${feral} feral blocks`);
+        }
+
+        if (this.level >= 52 && this.level % 4 === 0) {
+            let reinforced = 0;
+            for (let i = 0; i < this.blocks.length; i++) {
+                const block = this.blocks[i];
+                if (block.type === 'elite' || Math.random() < 0.16) {
+                    block.health += 1;
+                    block.maxHealth += 1;
+                    reinforced++;
+                }
+            }
+            if (reinforced > 0) notes.push(`${reinforced} reinforced cores`);
+        }
+
+        if (this.level >= 60) {
+            let drifted = 0;
+            for (let i = 0; i < this.blocks.length; i++) {
+                const block = this.blocks[i];
+                if (block.type !== 'moving') continue;
+                block.driftAmount += 6 + Math.random() * 10;
+                block.driftSpeed += 0.006 + Math.random() * 0.012;
+                drifted++;
+            }
+            if (drifted > 0) notes.push(`${drifted} overdrive drifters`);
+        }
+
+        this.levelMutatorText = notes.length ? `Mutator: ${notes.join(', ')}.` : '';
+    }
+
     setupWaldo() {
         const chance = this.clamp(0.14 + this.level * 0.004, 0.14, 0.48);
         if (Math.random() > chance) {
@@ -591,9 +703,10 @@
     }
 
     getBaseBallSpeed() {
-        const levelSpeed = this.config.baseBallSpeed + (this.level - 1) * 0.33;
+        const levelSpeed = this.config.baseBallSpeed + (this.level - 1) * this.config.speedPerLevel;
+        const floorSpeed = this.level <= this.config.earlyFloorLevel ? this.config.earlyFloorSpeed : this.config.baseBallSpeed;
         const overdriveBoost = this.activePowerUps.overdrive ? 1.1 : 0;
-        return Math.min(this.config.maxBallSpeed, levelSpeed + overdriveBoost);
+        return Math.min(this.config.maxBallSpeed, Math.max(floorSpeed, levelSpeed + overdriveBoost));
     }
 
     setObjective(text) {
@@ -613,7 +726,8 @@
         const bossTag = this.levelProfile.bossLevel ? ' | Boss Wave' : '';
         const remixTag = this.levelProfile.variation > 0 ? ` | Remix ${this.levelProfile.variation + 1}` : '';
         const waldoTag = this.waldo && this.waldo.active ? ' | Waldo?' : '';
-        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}${waldoTag}`);
+        const mutatorTag = this.levelMutatorText ? ` | ${this.levelMutatorText}` : '';
+        this.setMode(`Pattern: ${this.levelPatternName} | Chaos ${this.levelProfile.chaosPercent}%${bossTag}${remixTag}${waldoTag}${mutatorTag}`);
     }
 
     updateMuteButton() {
@@ -1123,6 +1237,7 @@
         this.frame = 0;
         this.runSeed = this.createRunSeed();
         this.extraLifeCooldown = 0;
+        this.blocksSinceDrop = 0;
         this.waldo = null;
         this.levelLayoutSignatures = new Set();
         this.levelLayoutSignature = '';
@@ -1179,12 +1294,19 @@
             this.screenShake = Math.max(this.screenShake, 7);
         }
 
-        const baseDropChance = Math.min(0.22, this.config.blockDropChance * 0.35 + this.level * 0.0022);
+        this.blocksSinceDrop++;
+        const droughtBoost = Math.min(this.config.droughtCap, this.blocksSinceDrop * this.config.droughtPerBlock);
+        const baseDropChance = Math.min(
+            this.config.maxDropChance,
+            this.config.blockDropChance * 0.35 + this.level * this.config.dropChancePerLevel + droughtBoost
+        );
         const dropEligible = this.powerUpDrops.length === 0 && this.balls.length <= 1;
         if (block.type === 'elite') {
             this.createPowerUpDrop(block.x + block.width / 2, block.y + block.height / 2, true);
+            this.blocksSinceDrop = 0;
         } else if (dropEligible && block.type !== 'armored' && Math.random() < baseDropChance) {
             this.createPowerUpDrop(block.x + block.width / 2, block.y + block.height / 2, false);
+            this.blocksSinceDrop = 0;
         }
     }
 
@@ -1309,7 +1431,7 @@
                 break;
             case 'extraLife':
                 this.lives = Math.min(9, this.lives + 1);
-                this.extraLifeCooldown = Math.max(this.extraLifeCooldown, 2200);
+                this.extraLifeCooldown = Math.max(this.extraLifeCooldown, NEON_BALANCE.power.extraLifeCooldown);
                 this.spawnFloatText('LIFE +1', this.paddle.x + this.paddle.width / 2, this.paddle.y - 18, '#ff9ab3');
                 break;
             case 'laser':
