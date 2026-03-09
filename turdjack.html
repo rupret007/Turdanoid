@@ -430,18 +430,13 @@
 
     .mobile-pit {
       display: none;
-      position: fixed;
-      left: 8px;
-      right: 8px;
-      bottom: max(8px, env(safe-area-inset-bottom));
+      margin-top: 8px;
       border: 1px solid rgba(142, 255, 194, 0.35);
       border-radius: 14px;
-      background: rgba(7, 19, 15, 0.95);
-      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.45);
+      background: rgba(7, 19, 15, 0.92);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.32);
       padding: 8px;
-      gap: 7px;
-      z-index: 70;
-      backdrop-filter: blur(8px);
+      gap: 6px;
     }
 
     .mobile-pit-row {
@@ -455,16 +450,6 @@
       min-height: 38px;
       font-size: 0.76rem;
       padding: 7px 6px;
-    }
-
-    .mobile-pit-more {
-      display: none;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6px;
-    }
-
-    .mobile-pit-more.open {
-      display: grid;
     }
 
     .welcome-guide {
@@ -519,7 +504,6 @@
     @media (max-width: 980px) {
       body {
         padding: clamp(8px, 2.5vw, 12px);
-        padding-bottom: 208px;
       }
       .shell {
         width: min(900px, 94vw);
@@ -589,9 +573,6 @@
       }
       .mobile-pit-row {
         grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-      .mobile-pit-more {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .mobile-pit .btn,
       .mobile-pit .chip-btn {
@@ -700,6 +681,27 @@
           </div>
           <div class="cards" id="splitCards"></div>
         </div>
+
+        <div class="mobile-pit" id="mobilePit">
+          <div class="mobile-pit-row">
+            <button class="btn hot" data-mobile-action="deal">Deal</button>
+            <button class="btn" data-mobile-action="hit">Hit</button>
+            <button class="btn" data-mobile-action="stand">Stand</button>
+            <button class="btn" data-mobile-action="smart">Smart</button>
+          </div>
+          <div class="mobile-pit-row">
+            <button class="btn" data-mobile-action="double">Double</button>
+            <button class="btn" data-mobile-action="split">Split</button>
+            <button class="btn danger" data-mobile-action="surrender">Surrender</button>
+            <button class="btn" data-mobile-action="clear-bet">Clear</button>
+          </div>
+          <div class="mobile-pit-row">
+            <button class="chip-btn" data-chip="10">+$10</button>
+            <button class="chip-btn" data-chip="25">+$25</button>
+            <button class="btn" data-mobile-action="rebet">Rebet</button>
+            <button class="btn" data-mobile-action="max-bet">Max</button>
+          </div>
+        </div>
       </section>
 
       <aside class="sidebar">
@@ -797,30 +799,6 @@
       </aside>
     </div>
 
-    <div class="mobile-pit" id="mobilePit">
-      <div class="mobile-pit-row">
-        <button class="chip-btn" data-chip="10">+$10</button>
-        <button class="chip-btn" data-chip="25">+$25</button>
-        <button class="chip-btn" data-chip="50">+$50</button>
-        <button class="chip-btn" data-chip="100">+$100</button>
-      </div>
-      <div class="mobile-pit-row">
-        <button class="btn hot" data-mobile-action="deal">Deal</button>
-        <button class="btn" data-mobile-action="hit">Hit</button>
-        <button class="btn" data-mobile-action="stand">Stand</button>
-        <button class="btn" id="mobileMoreBtn" data-mobile-action="toggle-more">More</button>
-      </div>
-      <div class="mobile-pit-more" id="mobileMorePanel">
-        <button class="btn" data-mobile-action="smart">Smart</button>
-        <button class="btn" data-mobile-action="double">Double</button>
-        <button class="btn" data-mobile-action="split">Split</button>
-        <button class="btn danger" data-mobile-action="surrender">Surrender</button>
-        <button class="btn" data-mobile-action="clear-bet">Clear</button>
-        <button class="btn" data-mobile-action="rebet">Rebet</button>
-        <button class="btn" data-mobile-action="max-bet">Max</button>
-        <button class="btn" data-mobile-action="new-shoe">New Shoe</button>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -887,9 +865,7 @@
       maxBetBtn: document.getElementById('maxBetBtn'),
       rebetBtn: document.getElementById('rebetBtn'),
       newShoeBtn: document.getElementById('newShoeBtn'),
-      resetStatsBtn: document.getElementById('resetStatsBtn'),
-      mobileMoreBtn: document.getElementById('mobileMoreBtn'),
-      mobileMorePanel: document.getElementById('mobileMorePanel')
+      resetStatsBtn: document.getElementById('resetStatsBtn')
     };
 
     let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
@@ -1542,10 +1518,6 @@
       setMobileActionState('rebet', ui.rebetBtn.disabled);
       setMobileActionState('new-shoe', ui.newShoeBtn.disabled);
       setMobileActionState('smart', false);
-
-      if (ui.mobileMoreBtn && ui.mobileMorePanel) {
-        ui.mobileMoreBtn.textContent = ui.mobileMorePanel.classList.contains('open') ? 'Less' : 'More';
-      }
     }
 
     function setStatus(text) {
@@ -2008,18 +1980,7 @@
       updateHud();
     }
 
-    function setMobileMore(openState) {
-      if (!ui.mobileMorePanel) return;
-      ui.mobileMorePanel.classList.toggle('open', openState);
-      if (ui.mobileMoreBtn) ui.mobileMoreBtn.textContent = openState ? 'Less' : 'More';
-    }
-
     function runMobileAction(action) {
-      if (action === 'toggle-more') {
-        if (!ui.mobileMorePanel) return;
-        setMobileMore(!ui.mobileMorePanel.classList.contains('open'));
-        return;
-      }
       if (action === 'deal') {
         startRound();
         return;
@@ -2140,10 +2101,6 @@
           smartAction();
         }
       });
-
-      if (ui.mobileMorePanel) {
-        setMobileMore(false);
-      }
     }
 
     function init() {
