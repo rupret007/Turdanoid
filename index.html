@@ -41,21 +41,6 @@
             overflow-y: auto;
         }
 
-        .hub-link {
-            position: fixed;
-            top: 14px;
-            right: 18px;
-            z-index: 40;
-            color: var(--accent);
-            text-decoration: none;
-            border: 1px solid rgba(115, 255, 215, 0.35);
-            border-radius: 999px;
-            padding: 7px 14px;
-            font-size: 13px;
-            background: rgba(7, 12, 24, 0.55);
-            backdrop-filter: blur(6px);
-        }
-
         .game-shell {
             width: min(1180px, 96vw);
             background: var(--panel);
@@ -119,7 +104,7 @@
         .mobile-menu-actions {
             margin-top: 8px;
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
         }
 
@@ -497,16 +482,13 @@
 
         @media (hover: none) and (pointer: coarse) {
             .btn,
-            .control-btn,
-            .hub-link {
+            .control-btn {
                 min-height: 44px;
             }
         }
     </style>
 </head>
 <body>
-    <a class="hub-link" href="hub.html">&larr; Game Hub</a>
-
     <div class="how-to-play" id="howToPlay">
         <div class="how-card">
             <h2>Neon Arkanoid Turbo</h2>
@@ -533,19 +515,21 @@
                 <p>Enhanced gameplay, smarter levels, power stackers, and achievement runs.</p>
             </div>
             <div class="actions">
-                <button class="btn" onclick="showHowToPlay()">How To Play</button>
-                <button class="btn" onclick="togglePause()">Pause / Resume</button>
-                <button class="btn" id="muteBtn" data-mute-btn onclick="toggleMute()">Mute</button>
-                <button class="btn" onclick="restartGame()">Restart</button>
+                <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+                <button class="btn" onclick="showHowToPlay()">❓ How To Play</button>
+                <button class="btn" onclick="togglePause()">⏯ Pause / Resume</button>
+                <button class="btn" id="muteBtn" data-mute-btn onclick="toggleMute()">🔇 Mute</button>
+                <button class="btn" onclick="restartGame()">↻ Restart</button>
             </div>
             <div class="mobile-menu">
                 <details>
                     <summary>Run Menu</summary>
                     <div class="mobile-menu-actions">
-                        <button class="btn" onclick="showHowToPlay()">How To Play</button>
-                        <button class="btn" onclick="togglePause()">Pause</button>
-                        <button class="btn" data-mute-btn onclick="toggleMute()">Mute</button>
-                        <button class="btn" onclick="restartGame()">Restart</button>
+                        <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+                        <button class="btn" onclick="showHowToPlay()">❓ Guide</button>
+                        <button class="btn" onclick="togglePause()">⏯ Pause</button>
+                        <button class="btn" data-mute-btn onclick="toggleMute()">🔇 Mute</button>
+                        <button class="btn" onclick="restartGame()">↻ Restart</button>
                     </div>
                 </details>
             </div>

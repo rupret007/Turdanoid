@@ -44,20 +44,6 @@
       overflow-y: auto;
     }
 
-    .hub-link {
-      position: fixed;
-      top: 12px;
-      right: 14px;
-      color: var(--accent);
-      border: 1px solid rgba(142, 255, 194, 0.4);
-      border-radius: 999px;
-      padding: 6px 12px;
-      text-decoration: none;
-      font-size: 13px;
-      background: rgba(0, 0, 0, 0.25);
-      z-index: 40;
-    }
-
     .shell {
       width: min(1160px, 96vw);
       background: var(--panel);
@@ -121,7 +107,7 @@
     .mobile-menu-actions {
       margin-top: 8px;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -612,8 +598,7 @@
 
     @media (hover: none) and (pointer: coarse) {
       .btn,
-      .chip-btn,
-      .hub-link {
+      .chip-btn {
         min-height: 44px;
       }
       .mobile-pit .btn,
@@ -624,8 +609,6 @@
   </style>
 </head>
 <body>
-  <a class="hub-link" href="hub.html">&larr; Game Hub</a>
-
   <div class="welcome-guide" id="welcomeGuide">
     <div class="welcome-card">
           <h2>Crapjack 21</h2>
@@ -654,17 +637,19 @@
         <p>Blackjack, but the table smells questionable and the dealer is a toilet.</p>
       </div>
       <div class="actions">
-        <button class="btn" id="helpBtn">How To Play</button>
-        <button class="btn" id="newShoeBtn">New Shoe</button>
-        <button class="btn danger" id="resetStatsBtn">Reset Bank</button>
+        <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+        <button class="btn" id="helpBtn">❓ How To Play</button>
+        <button class="btn" id="newShoeBtn">🃏 New Shoe</button>
+        <button class="btn danger" id="resetStatsBtn">↻ Reset Bank</button>
       </div>
       <div class="mobile-menu">
         <details>
           <summary>Table Menu</summary>
           <div class="mobile-menu-actions">
-            <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
-            <button class="btn" onclick="newShoe()">New Shoe</button>
-            <button class="btn danger" onclick="resetBankroll()">Reset Bank</button>
+            <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+            <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
+            <button class="btn" onclick="newShoe()">🃏 New Shoe</button>
+            <button class="btn danger" onclick="resetBankroll()">↻ Reset Bank</button>
           </div>
         </details>
       </div>

@@ -91,6 +91,15 @@
       align-items: center;
     }
 
+    .top-links .btn,
+    .top-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      text-align: center;
+    }
+
     .warn {
       border-color: rgba(255, 142, 142, 0.6);
       background: rgba(61, 23, 23, 0.85);
@@ -373,6 +382,17 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
+
+    @media (max-width: 760px) {
+      .topbar {
+        align-items: flex-start;
+      }
+      .top-links {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -383,10 +403,10 @@
         <p>Gin Rummy with mild toilet chaos.</p>
       </div>
       <div class="top-links">
-        <button class="btn" id="quickGuideBtn">Rules</button>
-        <button class="btn" id="newRoundBtn">New Round</button>
-        <button class="btn warn" id="resetMatchBtn">Reset Match</button>
-        <a href="hub.html" aria-label="Back to game hub">Hub</a>
+        <a href="hub.html" aria-label="Back to game hub">🏠 Hub</a>
+        <button class="btn" id="quickGuideBtn">❓ Rules</button>
+        <button class="btn" id="newRoundBtn">🃏 New Round</button>
+        <button class="btn warn" id="resetMatchBtn">↻ Reset Match</button>
       </div>
     </header>
 

@@ -41,19 +41,6 @@ body {
   overflow-y: auto;
 }
 
-.hub-link {
-  position: fixed;
-  top: 12px;
-  right: 14px;
-  color: var(--accent);
-  border: 1px solid rgba(255, 203, 135, 0.35);
-  border-radius: 999px;
-  padding: 6px 12px;
-  text-decoration: none;
-  font-size: 13px;
-  background: rgba(0, 0, 0, 0.25);
-}
-
 .layout {
   width: min(1120px, 96vw);
   background: var(--panel);
@@ -115,7 +102,7 @@ body {
 .mobile-menu-actions {
   margin-top: 8px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -448,16 +435,13 @@ body {
 
 @media (hover: none) and (pointer: coarse) {
   .btn,
-  .control-btn,
-  .hub-link {
+  .control-btn {
     min-height: 44px;
   }
 }
 </style>
 </head>
 <body>
-<a class="hub-link" href="hub.html">&larr; Game Hub</a>
-
 <div class="welcome-guide" id="welcomeGuide">
   <div class="welcome-card">
     <h2>Turdtris Turbo</h2>
@@ -485,17 +469,19 @@ body {
       <p>Hold system, ghost piece, combo chains, better drops, and touch controls.</p>
     </div>
     <div class="top-actions">
-      <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
-      <button class="btn" onclick="togglePause()">Pause / Resume</button>
-      <button class="btn" onclick="restartGame()">Restart</button>
+      <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+      <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
+      <button class="btn" onclick="togglePause()">⏯ Pause / Resume</button>
+      <button class="btn" onclick="restartGame()">↻ Restart</button>
     </div>
     <div class="mobile-menu">
       <details>
         <summary>Run Menu</summary>
         <div class="mobile-menu-actions">
-          <button class="btn" onclick="showWelcomeGuide()">How To Play</button>
-          <button class="btn" onclick="togglePause()">Pause</button>
-          <button class="btn" onclick="restartGame()">Restart</button>
+          <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+          <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
+          <button class="btn" onclick="togglePause()">⏯ Pause</button>
+          <button class="btn" onclick="restartGame()">↻ Restart</button>
         </div>
       </details>
     </div>
