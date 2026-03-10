@@ -2584,6 +2584,12 @@ function restartExternal() {
 const mobileControls = document.getElementById('mobileControls');
 if (mobileControls) {
   let holdTimer = null;
+  const clearHoldTimer = () => {
+    if (holdTimer) {
+      clearInterval(holdTimer);
+      holdTimer = null;
+    }
+  };
 
   mobileControls.addEventListener('pointerdown', (e) => {
     if (onboardingOpen) {
@@ -2593,6 +2599,9 @@ if (mobileControls) {
     const target = e.target.closest('[data-action]');
     if (!target) return;
     const action = target.getAttribute('data-action');
+    clearHoldTimer();
+    controlLeft = false;
+    controlRight = false;
 
     const run = () => {
       if (action === 'left') controlLeft = true;
@@ -2610,10 +2619,7 @@ if (mobileControls) {
   const stop = () => {
     controlLeft = false;
     controlRight = false;
-    if (holdTimer) {
-      clearInterval(holdTimer);
-      holdTimer = null;
-    }
+    clearHoldTimer();
   };
 
   mobileControls.addEventListener('pointerup', stop);
