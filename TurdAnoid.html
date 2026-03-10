@@ -1600,10 +1600,13 @@ function updatePaddle() {
   if (controlLeft) paddle.x -= paddle.speed;
   if (controlRight) paddle.x += paddle.speed;
 
-  if (touches.length > 0) {
-    paddle.x = constrain(touches[0].x - paddleWidth / 2, 0, width - paddleWidth);
-  } else {
-    paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
+  const directionalControlActive = controlLeft || controlRight;
+  if (!directionalControlActive) {
+    if (touches.length > 0) {
+      paddle.x = constrain(touches[0].x - paddleWidth / 2, 0, width - paddleWidth);
+    } else {
+      paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
+    }
   }
 
   if (awaitingLaunch && balls.length && !stuckBall) {

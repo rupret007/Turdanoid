@@ -510,7 +510,7 @@ body {
 
       <div class="overlay" id="gameOverOverlay">
         <div class="overlay-card">
-          <h2>Game Over</h2>
+          <h2 id="endTitle">Game Over</h2>
           <p>Final Score: <span id="finalScore">0</span></p>
           <p>Lines Cleared: <span id="finalLines">0</span></p>
           <button class="btn" onclick="restartGame()">Play Again</button>
@@ -609,6 +609,7 @@ const TURDTRIS_BALANCE = {
 const grid = 32;
 const rows = 22; // 20 visible + 2 hidden
 const cols = 10;
+const MAX_LEVEL = 69;
 const lockDelayMs = 500;
 const maxMoveResets = 12;
 
@@ -1130,11 +1131,19 @@ function lockPiece() {
       floatTexts.push({ text: `CLUTCH +${clutchBonus}`, x: canvas.width / 2, y: canvas.height * 0.38, life: 48, color: '#ffd68f' });
     }
 
-    while (levelLines >= levelGoal && level < 999) {
+    while (levelLines >= levelGoal && level < MAX_LEVEL) {
       levelLines -= levelGoal;
       level++;
+      if (level >= MAX_LEVEL) break;
       levelGoal = getLinesGoalForLevel(level);
       applyLevelModifier(level);
+    }
+
+    if (level >= MAX_LEVEL) {
+      level = MAX_LEVEL;
+      statusText = `Level ${MAX_LEVEL} reached. Turdtris conquered.`;
+      showGameOver(true);
+      return;
     }
 
     statusText = tSpin
@@ -1344,7 +1353,8 @@ function updateScore() {
   }
 }
 
-function showGameOver() {
+function showGameOver(won) {
+  const isWin = !!won;
   gameOver = true;
   paused = false;
   if (rAF) {
@@ -1353,9 +1363,11 @@ function showGameOver() {
   }
 
   const overlayEl = document.getElementById('gameOverOverlay');
+  const endTitleEl = document.getElementById('endTitle');
   const finalScoreEl = document.getElementById('finalScore');
   const finalLinesEl = document.getElementById('finalLines');
 
+  if (endTitleEl) endTitleEl.textContent = isWin ? `Level ${MAX_LEVEL} Cleared!` : 'Game Over';
   if (overlayEl) overlayEl.style.display = 'grid';
   if (finalScoreEl) finalScoreEl.textContent = String(score);
   if (finalLinesEl) finalLinesEl.textContent = String(linesCleared);

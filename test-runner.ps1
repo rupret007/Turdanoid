@@ -63,6 +63,8 @@ if ($tris -match 'TURDTRIS_BALANCE') { Pass("balance config") } else { Fail("bal
 if ($tris -match 'buildLevelMutator') { Pass("mutator builder") } else { Fail("mutator builder") }
 if ($tris -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
 if ($tris -match 'data-action=\"pause\"') { Pass("mobile pause control") } else { Fail("mobile pause control") }
+if ($tris -match 'const MAX_LEVEL = 69;') { Pass("max level cap") } else { Fail("max level cap") }
+if ($tris -match 'showGameOver\(true\);') { Pass("level 69 win path") } else { Fail("level 69 win path") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -81,6 +83,7 @@ if ($turd -match 'if \(prevW <= 0 \|\| prevH <= 0\) return;') { Pass("resize gua
 if ($turd -match 'if \(powerUps\.length >= maxDrops\) return false;' -and $turd -match 'powerUps\.push\(\{ x: x - 15, y, w: 30, h: 30, vy: 2\.1, angle: 0, \.\.\.p \}\);\s*return true;') { Pass("power-up spawn returns success") } else { Fail("power-up spawn returns success") }
 if ($turd -match 'targets\.push\(bricks\[i\]\)') { Pass("warp flush stable targets") } else { Fail("warp flush stable targets") }
 if ($turd -match 'buckets\.get\(key\)\.push\(b\)') { Pass("row flush stable targets") } else { Fail("row flush stable targets") }
+if ($turd -match 'const directionalControlActive = controlLeft \|\| controlRight;') { Pass("control precedence fix") } else { Fail("control precedence fix") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -100,6 +103,7 @@ if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport met
 if ($jack -match 'quickStartRound') { Pass("quick start handler") } else { Fail("quick start handler") }
 if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } else { Fail("guide quick start button") }
 if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
+if ($jack -match '(?s)function newShoe\(\)\s*\{.*?updateHud\(\);') { Pass("new shoe hud refresh") } else { Fail("new shoe hud refresh") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw

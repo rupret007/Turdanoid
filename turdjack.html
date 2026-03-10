@@ -1960,6 +1960,7 @@
       createShoe(rules.decks || 4);
       setStatus('Fresh shoe shuffled. New poop luck loaded.');
       logHistory(`Manual shuffle: ${rules.decks}-deck shoe reset.`);
+      updateHud();
     }
 
     function resetBankroll() {
