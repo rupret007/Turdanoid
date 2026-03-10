@@ -982,6 +982,22 @@
       return state.stock.pop() || null;
     }
 
+    function resolveStockStall(reasonText) {
+      if (state.roundOver) return;
+      state.roundOver = true;
+      state.stats.roundsPlayed += 1;
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.lastAiAction = "";
+      state.message = reasonText || "Stock exhausted.";
+      state.roundSummary = "No legal draw remained. Round is a draw (0 points).";
+      saveStats();
+      renderAll();
+    }
+
     function selectCard(cardId) {
       if (!state.playerHand.some((card) => card.id === cardId)) return;
       state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
@@ -1024,6 +1040,10 @@
       if (!isPlayerDrawPhase()) return;
       const drawn = drawFromStock();
       if (!drawn) {
+        if (state.stock.length === 0 && state.discard.length === 0) {
+          resolveStockStall("Stock exhausted. Round ends in a draw.");
+          return;
+        }
         state.message = "No stock left. Draw discard or start a new round.";
         renderAll();
         return;
@@ -1198,12 +1218,11 @@
 
     function aiShouldTakeDiscard(topCard) {
       if (!topCard) return false;
-      const currentBest = chooseBestDiscard(state.aiHand, null);
-      if (!currentBest) return false;
+      const currentDeadwood = analyzeHand(state.aiHand).deadwoodScore;
       const withTop = state.aiHand.concat([topCard]);
       const best = chooseBestDiscard(withTop, topCard.id);
       if (!best) return false;
-      const gain = currentBest.deadwood - best.deadwood;
+      const gain = currentDeadwood - best.analysis.deadwoodScore;
       if (best.analysis.deadwoodScore === 0) return true;
       if (best.analysis.deadwoodScore <= getAiKnockThreshold() && gain >= 0) return true;
       if (gain >= TURDRUMMY_BALANCE.ai.takeDiscardGain) return true;
@@ -1246,25 +1265,42 @@
       if (!knockerMelds || knockerMelds.length === 0 || base.deadwoodCards.length === 0) {
         return { deadwoodScore: base.deadwoodScore, deadwoodCards: base.deadwoodCards.slice(), laidOffCards: [] };
       }
-      const remaining = base.deadwoodCards.slice().sort((a, b) => cardDeadwoodValue(b) - cardDeadwoodValue(a));
+      const deadwoodCards = base.deadwoodCards.slice().sort((a, b) => cardDeadwoodValue(b) - cardDeadwoodValue(a));
       const tableMelds = cloneMelds(knockerMelds);
-      const laidOff = [];
-      let progress = true;
-      while (progress && remaining.length > 0) {
-        progress = false;
-        for (let i = 0; i < remaining.length; i += 1) {
-          const card = remaining[i];
-          const target = tableMelds.find((meld) => canCardAttachToMeld(card, meld));
-          if (!target) continue;
-          attachCardToMeld(card, target);
-          laidOff.push(card);
-          remaining.splice(i, 1);
-          i -= 1;
-          progress = true;
+
+      let bestScore = base.deadwoodScore;
+      let bestDeadwood = deadwoodCards.slice();
+      let bestLaidOff = [];
+
+      function search(index, melds, keptCards, laidOffCards, deadwoodScore) {
+        if (index >= deadwoodCards.length) {
+          if (deadwoodScore < bestScore) {
+            bestScore = deadwoodScore;
+            bestDeadwood = keptCards.slice();
+            bestLaidOff = laidOffCards.slice();
+          }
+          return;
+        }
+
+        const card = deadwoodCards[index];
+        const value = cardDeadwoodValue(card);
+
+        keptCards.push(card);
+        search(index + 1, melds, keptCards, laidOffCards, deadwoodScore);
+        keptCards.pop();
+
+        for (let i = 0; i < melds.length; i += 1) {
+          if (!canCardAttachToMeld(card, melds[i])) continue;
+          const nextMelds = cloneMelds(melds);
+          attachCardToMeld(card, nextMelds[i]);
+          laidOffCards.push(card);
+          search(index + 1, nextMelds, keptCards, laidOffCards, deadwoodScore - value);
+          laidOffCards.pop();
         }
       }
-      const deadwoodScore = remaining.reduce((sum, card) => sum + cardDeadwoodValue(card), 0);
-      return { deadwoodScore, deadwoodCards: remaining, laidOffCards: laidOff };
+
+      search(0, tableMelds, [], [], base.deadwoodScore);
+      return { deadwoodScore: bestScore, deadwoodCards: bestDeadwood, laidOffCards: bestLaidOff };
     }
 
     function finishRound(knocker, isGin, knockerDeadwood, knockerMelds) {
@@ -1347,9 +1383,7 @@
       }
 
       if (!drawn) {
-        state.roundOver = true;
-        state.message = "AI could not draw. Start a new round.";
-        renderAll();
+        resolveStockStall("Stock exhausted. Round ends in a draw.");
         return;
       }
 

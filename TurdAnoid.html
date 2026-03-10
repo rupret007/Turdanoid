@@ -673,6 +673,8 @@ function quickStartRun() {
 }
 
 function windowResized() {
+  const prevW = width;
+  const prevH = height;
   const aspect = 860 / 620;
   const narrow = windowWidth <= 700;
   const widthPad = narrow ? 20 : 40;
@@ -688,8 +690,85 @@ function windowResized() {
   }
 
   resizeCanvas(floor(nextW), floor(nextH));
-  createLevel(level);
-  resetBallState();
+
+  if (prevW <= 0 || prevH <= 0) return;
+
+  const sx = width / prevW;
+  const sy = height / prevH;
+  const speedScale = sqrt(max(0.01, sx * sy));
+
+  paddle.x = constrain(paddle.x * sx, 0, width - paddleWidth);
+  paddle.y = height - 36;
+
+  for (const brick of bricks) {
+    brick.x *= sx;
+    brick.y *= sy;
+    brick.w *= sx;
+    brick.h *= sy;
+    if (typeof brick.driftBaseX === 'number') brick.driftBaseX *= sx;
+    if (typeof brick.driftAmount === 'number') brick.driftAmount *= sx;
+  }
+
+  for (const b of balls) {
+    if (awaitingLaunch || b.stuck || b === stuckBall) {
+      b.x = paddle.x + paddleWidth / 2;
+      b.y = paddle.y - b.r - 2;
+      b.vx = 0;
+      b.vy = 0;
+    } else {
+      b.x *= sx;
+      b.y *= sy;
+      b.vx *= speedScale;
+      b.vy *= speedScale;
+    }
+  }
+
+  for (const pu of powerUps) {
+    pu.x *= sx;
+    pu.y *= sy;
+    pu.w *= sx;
+    pu.h *= sy;
+    pu.vy *= sy;
+  }
+
+  for (const shot of toiletPaperShots) {
+    shot.x *= sx;
+    shot.y *= sy;
+    shot.w *= sx;
+    shot.h *= sy;
+    shot.vy *= sy;
+  }
+
+  for (const shot of laserShots) {
+    shot.x *= sx;
+    shot.y *= sy;
+    shot.w *= sx;
+    shot.h *= sy;
+    shot.vy *= sy;
+  }
+
+  for (const p of particles) {
+    p.x *= sx;
+    p.y *= sy;
+    p.vx *= speedScale;
+    p.vy *= speedScale;
+    p.size *= min(sx, sy);
+  }
+
+  for (const t of floatTexts) {
+    t.x *= sx;
+    t.y *= sy;
+    t.vy *= sy;
+  }
+
+  if (waldoCameo && waldoCameo.active) {
+    waldoCameo.x *= sx;
+    waldoCameo.y *= sy;
+    waldoCameo.size *= min(sx, sy);
+    waldoCameo.vx *= sx;
+  }
+
+  applyPaddleWidth();
 }
 
 function createBall(x, y, vx, vy, isMain) {
@@ -1642,10 +1721,11 @@ function createPowerUp(x, y) {
   const maxDrops = level >= TURDANOID_BALANCE.power.highDropLevel
     ? TURDANOID_BALANCE.power.maxDropSlotsHigh
     : TURDANOID_BALANCE.power.maxDropSlotsLow;
-  if (powerUps.length >= maxDrops) return;
-  if (balls.length > 1) return;
+  if (powerUps.length >= maxDrops) return false;
+  if (balls.length > 1) return false;
   const p = weightedPowerUp();
   powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2.1, angle: 0, ...p });
+  return true;
 }
 
 function updatePowerUps() {
@@ -1949,9 +2029,9 @@ function damageBrick(index, damage, projectileHit) {
   const forceDrop = bricksSinceDrop >= droughtThreshold;
   const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1;
   if (dropEligible && (forceDrop || random() < dropChance)) {
-    createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
-    if (forceDrop) statusText = 'Drought breaker capsule dropped.';
-    bricksSinceDrop = 0;
+    const spawned = createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
+    if (forceDrop && spawned) statusText = 'Drought breaker capsule dropped.';
+    if (spawned) bricksSinceDrop = 0;
   }
 
   spawnBurst(removed.x + removed.w / 2, removed.y + removed.h / 2, 10, color(255, 180, 120));
@@ -2066,13 +2146,15 @@ function runWarpFlush() {
   const targets = [];
 
   for (let i = 0; i < bricks.length; i++) {
-    if (bricks[i].destructible) targets.push(i);
+    if (bricks[i].destructible) targets.push(bricks[i]);
   }
 
   while (toClear > 0 && targets.length > 0) {
     const pick = floor(random(targets.length));
-    const idx = targets.splice(pick, 1)[0];
-    if (bricks[idx]) damageBrick(idx, 999, true);
+    const targetBrick = targets.splice(pick, 1)[0];
+    const idx = bricks.indexOf(targetBrick);
+    if (idx < 0 || !bricks[idx]) continue;
+    damageBrick(idx, 999, true);
     toClear--;
   }
 
@@ -2087,7 +2169,7 @@ function runRowFlush() {
     if (!b.destructible) continue;
     const key = floor((b.y + b.h * 0.5) / 28);
     if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(i);
+    buckets.get(key).push(b);
   }
 
   if (buckets.size === 0) return;
@@ -2100,9 +2182,10 @@ function runRowFlush() {
     }
   }
 
-  const targetIndexes = (buckets.get(bestKey) || []).slice().sort((a, b) => b - a);
-  for (const idx of targetIndexes) {
-    if (!bricks[idx]) continue;
+  const targetBricks = (buckets.get(bestKey) || []).slice();
+  for (const target of targetBricks) {
+    const idx = bricks.indexOf(target);
+    if (idx < 0 || !bricks[idx]) continue;
     damageBrick(idx, 999, true);
   }
 
