@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TurdSpades</title>
+  <style>
+    :root {
+      --bg1: #193127;
+      --bg2: #102016;
+      --ink: #eff9f1;
+      --muted: #bed5c4;
+      --accent: #9cff79;
+      --panel: rgba(8, 21, 14, 0.84);
+      --edge: rgba(156, 255, 121, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(156,255,121,.18), transparent 36%),
+        radial-gradient(circle at 84% 8%, rgba(255,220,130,.14), transparent 28%),
+        linear-gradient(130deg, var(--bg1), var(--bg2));
+      padding: 8px;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: min(1100px, 100%);
+      min-height: calc(100vh - 16px);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 20px 44px rgba(0,0,0,.38);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border-bottom: 1px solid rgba(156,255,121,.22);
+      background: rgba(9,24,16,.86);
+    }
+    .title h1 {
+      font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .title p { color: var(--muted); font-size: .78rem; margin-top: 2px; }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn, .actions a {
+      border: 1px solid rgba(156,255,121,.35);
+      background: rgba(16,40,27,.86);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-height: 38px;
+      text-decoration: none;
+      font-size: .8rem;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: .48; cursor: not-allowed; }
+    .stats {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0,1fr));
+      gap: 6px;
+      border-bottom: 1px solid rgba(156,255,121,.18);
+      background: rgba(8,22,15,.78);
+    }
+    .stat {
+      border: 1px solid rgba(156,255,121,.2);
+      border-radius: 8px;
+      padding: 6px;
+      background: rgba(12,32,21,.7);
+    }
+    .k { color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .05em; }
+    .v { color: var(--ink); font-size: .88rem; font-weight: 700; margin-top: 2px; }
+    .message {
+      border-bottom: 1px solid rgba(156,255,121,.14);
+      padding: 8px;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.45;
+      background: rgba(9,25,16,.72);
+    }
+    .table { overflow: auto; padding: 8px; display: grid; gap: 8px; }
+    .zone {
+      border: 1px solid rgba(156,255,121,.2);
+      border-radius: 9px;
+      background: rgba(10,26,17,.72);
+      padding: 8px;
+    }
+    .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .name { color: var(--accent); font-size: .8rem; font-weight: 700; text-transform: uppercase; }
+    .meta { color: var(--muted); font-size: .74rem; }
+    .mid {
+      display: grid;
+      grid-template-columns: 1fr minmax(220px,1.2fr) 1fr;
+      gap: 8px;
+    }
+    .backs, .cards { display: flex; flex-wrap: wrap; gap: 4px; }
+    .back {
+      width: clamp(24px,4.8vw,34px);
+      height: clamp(34px,6.8vw,48px);
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,.35);
+      background: repeating-linear-gradient(135deg,#2b5a3a 0 6px,#4d8b62 6px 12px);
+    }
+    .card {
+      width: clamp(40px,7vw,56px);
+      height: clamp(58px,10vw,82px);
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background: #f7fbf8;
+      color: #112019;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .card.red { color: #b42f45; }
+    .card.illegal { opacity: .43; cursor: not-allowed; }
+    .card.selected { border-color: #ffd784; box-shadow: 0 0 0 2px rgba(255,215,132,.24); }
+    .r { font-size: clamp(.68rem,1.7vw,.84rem); }
+    .s { align-self: center; justify-self: center; font-size: clamp(.78rem,2.1vw,1rem); }
+    .trick { border-color: rgba(255,215,132,.4); background: rgba(48,39,14,.36); }
+    .trick-pile { min-height: 96px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+    .entry {
+      border: 1px solid rgba(255,215,132,.35);
+      border-radius: 7px;
+      background: rgba(49,40,16,.35);
+      color: #ffe9bf;
+      font-size: .75rem;
+      padding: 5px;
+    }
+    .dock {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      border-top: 1px solid rgba(156,255,121,.22);
+      background: rgba(7,18,12,.95);
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+    }
+    .dock-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; }
+    .bid-box {
+      border: 1px solid rgba(255,215,132,.4);
+      border-radius: 8px;
+      background: rgba(52,41,14,.5);
+      padding: 7px;
+      display: grid;
+      gap: 6px;
+    }
+    .bid-controls { display: grid; grid-template-columns: 40px 1fr 40px auto; gap: 6px; align-items: center; }
+    .bid-v { text-align: center; color: #ffe8bf; font-size: 1rem; font-weight: 700; }
+    .guide {
+      position: fixed;
+      inset: 0;
+      background: rgba(4,12,8,.82);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      z-index: 30;
+    }
+    .guide.show { display: flex; }
+    .guide-card {
+      width: min(760px, 96vw);
+      max-height: 90vh;
+      overflow: auto;
+      border: 1px solid rgba(156,255,121,.42);
+      border-radius: 11px;
+      background: rgba(8,22,15,.97);
+      padding: 12px;
+    }
+    .guide-card h2 { color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
+    .guide-card p, .guide-card li { color: var(--muted); font-size: .85rem; line-height: 1.45; }
+    .guide-card ul { margin: 7px 0 7px 18px; }
+    .guide-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+    @media (max-width: 920px) {
+      .stats { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .mid { grid-template-columns: 1fr; }
+      .dock-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .bid-controls { grid-template-columns: 40px 1fr 40px; }
+      .bid-controls .btn.lock { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="guide" id="guide">
+    <div class="guide-card">
+      <h2>TurdSpades</h2>
+      <p>Classic 4-player Spades: you + North partner vs West/East bots.</p>
+      <ul>
+        <li>Bid tricks before play starts.</li>
+        <li>You must follow lead suit when possible.</li>
+        <li>Spades are trump and cannot lead until broken, unless your hand is all spades.</li>
+        <li>Make bid: +10 per bid trick, plus +1 per overtrick bag.</li>
+        <li>Every 10 bags = -100 penalty.</li>
+      </ul>
+      <p><strong>Controls:</strong> choose bid with +/- then Lock Bid. During play, select card then Play Selected. Press Enter to confirm bid/play.</p>
+      <div class="guide-actions">
+        <button class="btn" id="quickStart">Quick Start</button>
+        <button class="btn" id="closeGuide">Review Then Play</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="topbar">
+      <div class="title">
+        <h1>♠ TurdSpades</h1>
+        <p>Partnership spades with bags, trash talk, and questionable hygiene.</p>
+      </div>
+      <div class="actions">
+        <a href="hub.html">🏠 Hub</a>
+        <button class="btn" id="helpBtn">❓ Guide</button>
+        <button class="btn" id="nextRoundTop">🃏 Next Round</button>
+        <button class="btn" id="newMatchBtn">↻ New Match</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Round</div><div class="v" id="roundV">1</div></div>
+      <div class="stat"><div class="k">Turn</div><div class="v" id="turnV">-</div></div>
+      <div class="stat"><div class="k">Spades</div><div class="v" id="spadeV">Unbroken</div></div>
+      <div class="stat"><div class="k">You + North</div><div class="v" id="teamAV">0 (bags 0)</div></div>
+      <div class="stat"><div class="k">West + East</div><div class="v" id="teamBV">0 (bags 0)</div></div>
+      <div class="stat"><div class="k">Bids/Tricks</div><div class="v" id="bidTrickV">-</div></div>
+    </div>
+
+    <div class="message" id="msg">Set your bid to start the hand.</div>
+
+    <div class="table">
+      <div class="zone">
+        <div class="head"><div class="name">North (Partner)</div><div class="meta" id="northMeta"></div></div>
+        <div class="backs" id="northBack"></div>
+      </div>
+
+      <div class="mid">
+        <div class="zone">
+          <div class="head"><div class="name">West Bot</div><div class="meta" id="westMeta"></div></div>
+          <div class="backs" id="westBack"></div>
+        </div>
+
+        <div class="zone trick">
+          <div class="head"><div class="name">Current Trick</div><div class="meta" id="trickMeta">No cards</div></div>
+          <div class="trick-pile" id="trickPile"></div>
+        </div>
+
+        <div class="zone">
+          <div class="head"><div class="name">East Bot</div><div class="meta" id="eastMeta"></div></div>
+          <div class="backs" id="eastBack"></div>
+        </div>
+      </div>
+
+      <div class="zone">
+        <div class="head"><div class="name">Your Hand</div><div class="meta" id="youMeta"></div></div>
+        <div class="cards" id="youCards"></div>
+      </div>
+    </div>
+
+    <div class="dock">
+      <div class="bid-box" id="bidBox">
+        <div class="name">Your Bid</div>
+        <div class="bid-controls">
+          <button class="btn" id="bidDown">-</button>
+          <div class="bid-v" id="bidV">4</div>
+          <button class="btn" id="bidUp">+</button>
+          <button class="btn lock" id="lockBid">Lock Bid</button>
+        </div>
+      </div>
+      <div class="dock-grid">
+        <button class="btn" id="playBtn">Play Selected</button>
+        <button class="btn" id="sortSuit">Sort Suit</button>
+        <button class="btn" id="sortRank">Sort Rank</button>
+        <button class="btn" id="nextRoundDock">Next Round</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TARGET = 250;
+    const SUITS = ['C', 'D', 'H', 'S'];
+    const SUIT_SYMBOL = { C: '♣', D: '♦', H: '♥', S: '♠' };
+    const SUIT_ORDER = { C: 0, D: 1, H: 2, S: 3 };
+    const NAMES = ['You', 'West', 'North', 'East'];
+    const TEAM = [[0, 2], [1, 3]];
+
+    const state = {
+      round: 0, dealer: 0, leader: 1, currentPlayer: 1, bidTurn: 1,
+      phase: 'bidding', scores: [0, 0], bags: [0, 0], bids: [null, null, null, null],
+      tricks: [0, 0, 0, 0], hands: [[], [], [], []], trick: [],
+      spadesBroken: false, selected: null, bidChoice: 4, sortMode: 'suit',
+      msg: 'Set your bid to start.', summary: ''
+    };
+
+    const el = {
+      roundV: document.getElementById('roundV'), turnV: document.getElementById('turnV'),
+      spadeV: document.getElementById('spadeV'), teamAV: document.getElementById('teamAV'),
+      teamBV: document.getElementById('teamBV'), bidTrickV: document.getElementById('bidTrickV'),
+      msg: document.getElementById('msg'), northMeta: document.getElementById('northMeta'),
+      westMeta: document.getElementById('westMeta'), eastMeta: document.getElementById('eastMeta'),
+      youMeta: document.getElementById('youMeta'), northBack: document.getElementById('northBack'),
+      westBack: document.getElementById('westBack'), eastBack: document.getElementById('eastBack'),
+      trickMeta: document.getElementById('trickMeta'), trickPile: document.getElementById('trickPile'),
+      youCards: document.getElementById('youCards'), bidBox: document.getElementById('bidBox'),
+      bidV: document.getElementById('bidV'), bidDown: document.getElementById('bidDown'),
+      bidUp: document.getElementById('bidUp'), lockBid: document.getElementById('lockBid'),
+      playBtn: document.getElementById('playBtn'), sortSuit: document.getElementById('sortSuit'),
+      sortRank: document.getElementById('sortRank'), nextRoundTop: document.getElementById('nextRoundTop'),
+      nextRoundDock: document.getElementById('nextRoundDock'), newMatchBtn: document.getElementById('newMatchBtn'),
+      guide: document.getElementById('guide'), helpBtn: document.getElementById('helpBtn'),
+      quickStart: document.getElementById('quickStart'), closeGuide: document.getElementById('closeGuide')
+    };
+
+    function rng(max) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const maxUint = 0xFFFFFFFF;
+        const threshold = maxUint - ((maxUint + 1) % max);
+        const buf = new Uint32Array(1);
+        while (true) {
+          window.crypto.getRandomValues(buf);
+          if (buf[0] <= threshold) return buf[0] % max;
+        }
+      }
+      return Math.floor(Math.random() * max);
+    }
+    const rankLabel = (r) => r === 14 ? 'A' : r === 13 ? 'K' : r === 12 ? 'Q' : r === 11 ? 'J' : String(r);
+    const cardText = (c) => rankLabel(c.rank) + SUIT_SYMBOL[c.suit];
+    const teamOf = (p) => p % 2 === 0 ? 0 : 1;
+    const partnerOf = (p) => (p + 2) % 4;
+
+    function setMessage(text, summary) {
+      state.msg = text;
+      if (summary !== undefined) state.summary = summary;
+      el.msg.innerHTML = `<strong>Status:</strong> ${state.msg}${state.summary ? `<br><strong>Round:</strong> ${state.summary}` : ''}`;
+    }
+
+    function makeDeck() {
+      const deck = [];
+      let id = 0;
+      for (const s of SUITS) for (let r = 2; r <= 14; r++) deck.push({ id: `${s}${r}-${id++}`, suit: s, rank: r });
+      for (let i = deck.length - 1; i > 0; i--) { const j = rng(i + 1); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+      return deck;
+    }
+
+    function sortHand(hand) {
+      hand.sort((a, b) => state.sortMode === 'rank'
+        ? (a.rank - b.rank) || (SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit])
+        : (SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit]) || (a.rank - b.rank));
+    }
+
+    function resetRoundState() {
+      state.bids = [null, null, null, null];
+      state.tricks = [0, 0, 0, 0];
+      state.hands = [[], [], [], []];
+      state.trick = [];
+      state.spadesBroken = false;
+      state.selected = null;
+      state.summary = '';
+    }
+
+    function startMatch() {
+      state.scores = [0, 0];
+      state.bags = [0, 0];
+      state.round = 0;
+      state.dealer = 0;
+      startRound();
+    }
+
+    function startRound() {
+      state.round += 1;
+      if (state.round > 1) state.dealer = (state.dealer + 1) % 4;
+      resetRoundState();
+      const deck = makeDeck();
+      for (let i = 0; i < 13; i++) for (let p = 0; p < 4; p++) state.hands[p].push(deck.pop());
+      sortHand(state.hands[0]);
+      state.phase = 'bidding';
+      state.leader = (state.dealer + 1) % 4;
+      state.currentPlayer = state.leader;
+      state.bidTurn = state.leader;
+      setMessage(`${NAMES[state.bidTurn]} bids first.`, '');
+      runBidFlow();
+      render();
+    }
+
+    function aiBid(hand) {
+      let v = 0, s = 0;
+      for (const c of hand) {
+        if (c.suit === 'S') { s++; if (c.rank >= 14) v += 1; else if (c.rank >= 13) v += .8; else if (c.rank >= 11) v += .5; }
+        else if (c.rank === 14) v += .75;
+        else if (c.rank === 13) v += .45;
+        else if (c.rank === 12) v += .25;
+      }
+      if (s >= 5) v += .9;
+      if (s >= 6) v += .7;
+      return Math.max(1, Math.min(9, Math.round(v)));
+    }
+
+    function runBidFlow() {
+      while (state.phase === 'bidding') {
+        if (state.bids.every((b) => b !== null)) {
+          state.phase = 'play';
+          state.currentPlayer = state.leader;
+          setMessage(`${NAMES[state.currentPlayer]} leads the first trick.`, `Race to ${TARGET}.`);
+          break;
+        }
+        if (state.bidTurn === 0) { setMessage('Set your bid and lock it.', ''); break; }
+        const b = aiBid(state.hands[state.bidTurn]);
+        state.bids[state.bidTurn] = b;
+        state.bidTurn = (state.bidTurn + 1) % 4;
+      }
+      if (state.phase === 'play') runAiTurns();
+    }
+
+    function legalCards(player) {
+      const hand = state.hands[player];
+      if (state.trick.length === 0) {
+        if (state.spadesBroken) return hand.slice();
+        const non = hand.filter((c) => c.suit !== 'S');
+        return non.length ? non : hand.slice();
+      }
+      const lead = state.trick[0].card.suit;
+      const follow = hand.filter((c) => c.suit === lead);
+      return follow.length ? follow : hand.slice();
+    }
+
+    function winnerEntry(trick) {
+      if (!trick.length) return null;
+      const lead = trick[0].card.suit;
+      let best = trick[0];
+      for (let i = 1; i < trick.length; i++) {
+        const e = trick[i], c = e.card, b = best.card;
+        if (c.suit === 'S') { if (b.suit !== 'S' || c.rank > b.rank) best = e; continue; }
+        if (b.suit === 'S') continue;
+        if (c.suit === lead && (b.suit !== lead || c.rank > b.rank)) best = e;
+      }
+      return best;
+    }
+
+    function beats(card, best, lead) {
+      if (!best) return true;
+      if (card.suit === 'S') return best.suit !== 'S' || card.rank > best.rank;
+      if (best.suit === 'S') return false;
+      return card.suit === lead && (best.suit !== lead || card.rank > best.rank);
+    }
+
+    function low(cards) { return cards.slice().sort((a, b) => a.rank - b.rank || SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit])[0]; }
+    function high(cards) { return cards.slice().sort((a, b) => b.rank - a.rank || SUIT_ORDER[b.suit] - SUIT_ORDER[a.suit])[0]; }
+
+    function aiCard(player) {
+      const legal = legalCards(player), partner = partnerOf(player);
+      const need = (state.bids[player] + state.bids[partner]) - (state.tricks[player] + state.tricks[partner]);
+      if (!state.trick.length) return need > 0 ? high(legal.filter((c) => c.suit !== 'S').length ? legal.filter((c) => c.suit !== 'S') : legal) : low(legal);
+      const lead = state.trick[0].card.suit, best = winnerEntry(state.trick)?.card;
+      const follow = legal.filter((c) => c.suit === lead);
+      if (follow.length) {
+        if (need > 0) {
+          const canWin = follow.filter((c) => beats(c, best, lead));
+          if (canWin.length) return low(canWin);
+        }
+        return low(follow);
+      }
+      const spades = legal.filter((c) => c.suit === 'S');
+      if (spades.length) {
+        if (need > 0) {
+          const canWin = spades.filter((c) => beats(c, best, lead));
+          if (canWin.length) return low(canWin);
+        }
+        return low(spades);
+      }
+      return high(legal);
+    }
+
+    function removeCard(player, id) {
+      const hand = state.hands[player];
+      const i = hand.findIndex((c) => c.id === id);
+      if (i < 0) return null;
+      return hand.splice(i, 1)[0];
+    }
+
+    function playCard(player, card) {
+      const lead = state.trick.length ? state.trick[0].card.suit : null;
+      if (!state.spadesBroken && card.suit === 'S') {
+        if (lead) state.spadesBroken = true;
+        else if (!state.hands[player].some((c) => c.id !== card.id && c.suit !== 'S')) state.spadesBroken = true;
+      }
+      state.trick.push({ player, card });
+      if (state.trick.length < 4) { state.currentPlayer = (player + 1) % 4; return; }
+      const win = winnerEntry(state.trick);
+      state.tricks[win.player] += 1;
+      const trickText = state.trick.map((e) => `${NAMES[e.player]} ${cardText(e.card)}`).join(' | ');
+      state.trick = [];
+      state.leader = win.player;
+      state.currentPlayer = win.player;
+      if (state.hands.every((h) => h.length === 0)) scoreRound(trickText);
+      else setMessage(`${NAMES[win.player]} won the trick.`, trickText);
+    }
+
+    function scoreRound(lastTrick) {
+      const line = [];
+      for (let t = 0; t < 2; t++) {
+        const [a, b] = TEAM[t], bid = (state.bids[a] || 0) + (state.bids[b] || 0), took = state.tricks[a] + state.tricks[b];
+        let delta = 0;
+        if (took >= bid) {
+          const over = took - bid;
+          delta = bid * 10 + over;
+          state.bags[t] += over;
+          while (state.bags[t] >= 10) { state.bags[t] -= 10; delta -= 100; }
+        } else delta = -bid * 10;
+        state.scores[t] += delta;
+        line.push(`${t === 0 ? 'You+North' : 'West+East'} bid ${bid}, took ${took}, ${delta >= 0 ? '+' : ''}${delta}.`);
+      }
+      state.phase = (state.scores[0] >= TARGET || state.scores[1] >= TARGET) ? 'matchEnd' : 'roundEnd';
+      const winner = state.scores[0] === state.scores[1] ? 'Match tied.' : (state.scores[0] > state.scores[1] ? 'You + North win the match.' : 'West + East win the match.');
+      setMessage(state.phase === 'matchEnd' ? `Match complete. ${winner}` : 'Round complete. Press Next Round.', `${line.join(' ')} Last trick: ${lastTrick}`);
+    }
+
+    function runAiTurns() {
+      let guard = 0;
+      while (state.phase === 'play' && state.currentPlayer !== 0 && guard < 80) {
+        const p = state.currentPlayer, card = aiCard(p);
+        removeCard(p, card.id);
+        playCard(p, card);
+        guard++;
+      }
+      render();
+    }
+
+    function playSelected() {
+      if (state.phase !== 'play' || state.currentPlayer !== 0) return;
+      if (!state.selected) { setMessage('Select a card first.', state.summary); render(); return; }
+      const card = state.hands[0].find((c) => c.id === state.selected);
+      if (!card) { state.selected = null; render(); return; }
+      if (!legalCards(0).some((c) => c.id === card.id)) { setMessage('Illegal play: follow suit if you can.', state.summary); render(); return; }
+      removeCard(0, card.id);
+      state.selected = null;
+      playCard(0, card);
+      runAiTurns();
+      render();
+    }
+
+    function renderBack(target, count) {
+      target.innerHTML = Array.from({ length: count }, () => '<div class="back"></div>').join('');
+    }
+
+    function renderCards() {
+      sortHand(state.hands[0]);
+      const active = state.phase === 'play' && state.currentPlayer === 0;
+      const legalSet = new Set(active ? legalCards(0).map((c) => c.id) : []);
+      el.youCards.innerHTML = state.hands[0].map((c) => {
+        const red = (c.suit === 'H' || c.suit === 'D') ? 'red' : '';
+        const legal = !active || legalSet.has(c.id);
+        const illegal = legal ? '' : 'illegal';
+        const sel = state.selected === c.id ? 'selected' : '';
+        return `<button class="card ${red} ${illegal} ${sel}" data-id="${c.id}" ${legal ? '' : 'disabled'}>
+          <div class="r">${rankLabel(c.rank)}</div><div class="s">${SUIT_SYMBOL[c.suit]}</div><div class="r">${rankLabel(c.rank)}</div></button>`;
+      }).join('');
+    }
+
+    function renderTrick() {
+      if (!state.trick.length) {
+        el.trickMeta.textContent = 'No cards';
+        el.trickPile.innerHTML = '<div class="entry">Waiting for lead...</div>';
+        return;
+      }
+      el.trickMeta.textContent = `${state.trick.length}/4 cards`;
+      el.trickPile.innerHTML = state.trick.map((e) => `<div class="entry"><strong>${NAMES[e.player]}</strong><br>${cardText(e.card)}</div>`).join('');
+    }
+
+    function renderStats() {
+      const bidA = state.bids[0] === null || state.bids[2] === null ? '-' : state.bids[0] + state.bids[2];
+      const bidB = state.bids[1] === null || state.bids[3] === null ? '-' : state.bids[1] + state.bids[3];
+      const trickA = state.tricks[0] + state.tricks[2];
+      const trickB = state.tricks[1] + state.tricks[3];
+      const turn = state.phase === 'bidding' ? `${NAMES[state.bidTurn]} (bid)` : state.phase === 'play' ? NAMES[state.currentPlayer] : '-';
+      el.roundV.textContent = String(state.round);
+      el.turnV.textContent = turn;
+      el.spadeV.textContent = state.spadesBroken ? 'Broken' : 'Unbroken';
+      el.teamAV.textContent = `${state.scores[0]} (bags ${state.bags[0]})`;
+      el.teamBV.textContent = `${state.scores[1]} (bags ${state.bags[1]})`;
+      el.bidTrickV.textContent = `${bidA}/${trickA} vs ${bidB}/${trickB}`;
+      el.northMeta.textContent = `${state.hands[2].length} cards | bid ${state.bids[2] ?? '-'} | tricks ${state.tricks[2]}`;
+      el.westMeta.textContent = `${state.hands[1].length} cards | bid ${state.bids[1] ?? '-'} | tricks ${state.tricks[1]}`;
+      el.eastMeta.textContent = `${state.hands[3].length} cards | bid ${state.bids[3] ?? '-'} | tricks ${state.tricks[3]}`;
+      el.youMeta.textContent = `bid ${state.bids[0] ?? '-'} | tricks ${state.tricks[0]} | ${state.hands[0].length} cards`;
+      setMessage(state.msg, state.summary);
+    }
+
+    function renderControls() {
+      const bidMode = state.phase === 'bidding' && state.bidTurn === 0;
+      const playMode = state.phase === 'play' && state.currentPlayer === 0;
+      const nextMode = state.phase === 'roundEnd';
+      el.bidBox.style.display = bidMode ? 'grid' : 'none';
+      el.bidV.textContent = String(state.bidChoice);
+      el.bidDown.disabled = !bidMode || state.bidChoice <= 0;
+      el.bidUp.disabled = !bidMode || state.bidChoice >= 13;
+      el.lockBid.disabled = !bidMode;
+      el.playBtn.disabled = !playMode || !state.selected;
+      el.nextRoundTop.disabled = !nextMode;
+      el.nextRoundDock.disabled = !nextMode;
+      el.sortSuit.disabled = state.phase === 'matchEnd';
+      el.sortRank.disabled = state.phase === 'matchEnd';
+    }
+
+    function render() {
+      renderBack(el.northBack, state.hands[2].length);
+      renderBack(el.westBack, state.hands[1].length);
+      renderBack(el.eastBack, state.hands[3].length);
+      renderCards();
+      renderTrick();
+      renderStats();
+      renderControls();
+    }
+
+    function bind() {
+      el.youCards.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-id]');
+        if (!btn || btn.disabled || state.phase !== 'play' || state.currentPlayer !== 0) return;
+        state.selected = (state.selected === btn.dataset.id) ? null : btn.dataset.id;
+        render();
+      });
+      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(0, state.bidChoice - 1); render(); });
+      el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); render(); });
+      el.lockBid.addEventListener('click', () => {
+        if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
+        state.bids[0] = state.bidChoice;
+        state.bidTurn = 1;
+        runBidFlow();
+        render();
+      });
+      el.playBtn.addEventListener('click', playSelected);
+      el.sortSuit.addEventListener('click', () => { state.sortMode = 'suit'; render(); });
+      el.sortRank.addEventListener('click', () => { state.sortMode = 'rank'; render(); });
+      el.nextRoundTop.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
+      el.nextRoundDock.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
+      el.newMatchBtn.addEventListener('click', startMatch);
+      el.helpBtn.addEventListener('click', () => el.guide.classList.add('show'));
+      el.quickStart.addEventListener('click', () => el.guide.classList.remove('show'));
+      el.closeGuide.addEventListener('click', () => el.guide.classList.remove('show'));
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Enter') {
+          e.preventDefault();
+          if (state.phase === 'bidding' && state.bidTurn === 0) el.lockBid.click();
+          else playSelected();
+        }
+      });
+    }
+
+    bind();
+    startMatch();
+    el.guide.classList.add('show');
+  </script>
+</body>
+</html>

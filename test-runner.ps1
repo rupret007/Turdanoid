@@ -9,7 +9,7 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','turdrummy.html','game.js','README.md') | ForEach-Object {
+@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','turdrummy.html','turdspades.html','game.js','README.md') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 
@@ -32,6 +32,7 @@ if ($hub -match 'href="turdtris\.html"') { Pass("link to turdtris") } else { Fai
 if ($hub -match 'href="TurdAnoid\.html"') { Pass("link to TurdAnoid") } else { Fail("link to TurdAnoid") }
 if ($hub -match 'href="turdjack\.html"') { Pass("link to turdjack") } else { Fail("link to turdjack") }
 if ($hub -match 'href="turdrummy\.html"') { Pass("link to turdrummy") } else { Fail("link to turdrummy") }
+if ($hub -match 'href="turdspades\.html"') { Pass("link to turdspades") } else { Fail("link to turdspades") }
 if ($hub -match '(?s)<div class="games">\s*<a href="TurdAnoid\.html"') { Pass("TurdAnoid is first card") } else { Fail("TurdAnoid is first card") }
 if ($hub -notmatch 'Neon Arkanoid') { Pass("Neon removed from hub cards") } else { Fail("Neon removed from hub cards") }
 
@@ -120,6 +121,18 @@ if ($rummy -match 'localStorage') { Pass("localStorage stats") } else { Fail("lo
 if ($rummy -match 'resolveStockStall') { Pass("stock stall resolution") } else { Fail("stock stall resolution") }
 if ($rummy -match 'state\.discard\.length === 0') { Pass("stock draw fallback message path") } else { Fail("stock draw fallback message path") }
 if ($rummy -match 'function search\(index, melds, keptCards, laidOffCards, deadwoodScore\)') { Pass("layoff backtracking") } else { Fail("layoff backtracking") }
+
+Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
+$spades = Get-Content turdspades.html -Raw
+if ($spades -match 'TurdSpades') { Pass("turdspades title") } else { Fail("turdspades title") }
+if ($spades -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
+if ($spades -match 'const TARGET = 250') { Pass("match target") } else { Fail("match target") }
+if ($spades -match 'runBidFlow') { Pass("bidding flow") } else { Fail("bidding flow") }
+if ($spades -match 'legalCards') { Pass("legal card rules") } else { Fail("legal card rules") }
+if ($spades -match 'scoreRound') { Pass("round scoring") } else { Fail("round scoring") }
+if ($spades -match 'state\.spadesBroken') { Pass("spades break logic") } else { Fail("spades break logic") }
+if ($spades -match 'Play Selected') { Pass("mobile action") } else { Fail("mobile action") }
+if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules guide overlay") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

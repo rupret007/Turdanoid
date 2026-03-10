@@ -1,11 +1,11 @@
 # Turdanoid Games
 
-A collection of four active browser games with a playful turd theme.
+A collection of five active browser games with a playful turd theme.
 
 ## Version
 
-- **Current build:** `v2.9.0`
-- **Build date:** March 9, 2026
+- **Current build:** `v3.0.0`
+- **Build date:** March 10, 2026
 
 ## Changelog (Latest)
 
@@ -15,6 +15,8 @@ A collection of four active browser games with a playful turd theme.
   - New **TurdRummy** (Gin Rummy) added as the bottom hub card.
 - New game added:
   - `turdrummy.html` with meld/deadwood analyzer, knock/gin scoring, layoff/undercut flow, and mobile-first action dock.
+- New game added:
+  - `turdspades.html` with 4-player partnership Spades, bidding flow, trick resolution, bag penalties, and match scoring.
 - Regression checks expanded in `test-runner.ps1` for TurdRummy and updated hub link/order expectations.
 
 ## Games
@@ -75,6 +77,21 @@ Gin Rummy game themed to match the rest of the hub.
 
 **Controls:** Tap/click cards to select discard, then use bottom action buttons.
 
+### TurdSpades
+
+Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
+
+**Features:**
+- You + North partner vs West/East bot team
+- Full bidding phase each round
+- Trick-taking with suit-following and trump-spade rules
+- Spades break logic
+- Team scoring with bags and 10-bag penalty
+- Match target race and round summaries
+- Mobile-friendly action dock and on-entry rules guide
+
+**Controls:** Tap/click card to select, then `Play Selected`; use bid controls (`-`, `+`, `Lock Bid`) in bid phase.
+
 ## Legacy Game (Direct Link)
 
 - `index.html` - Neon Arkanoid (still available directly, no longer surfaced in hub cards)
@@ -87,6 +104,7 @@ Gin Rummy game themed to match the rest of the hub.
    - `turdtris.html` - Turdtris
    - `turdjack.html` - Crapjack 21
    - `turdrummy.html` - TurdRummy
+   - `turdspades.html` - TurdSpades
 
 ## Mobile Support
 
@@ -109,6 +127,7 @@ After deployment:
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
 - **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
+- **TurdSpades:** https://rupret007.github.io/Turdanoid/turdspades.html
 - **Neon Arkanoid (legacy):** https://rupret007.github.io/Turdanoid/index.html
 
 The `.nojekyll` file ensures GitHub Pages serves files as-is.
@@ -119,6 +138,7 @@ The `.nojekyll` file ensures GitHub Pages serves files as-is.
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
 - **TurdRummy**: Vanilla JavaScript + DOM/CSS card UI
+- **TurdSpades**: Vanilla JavaScript + DOM/CSS card UI
 - **Neon Arkanoid (legacy)**: Vanilla JavaScript (Canvas API)
 
 No build step required. Open in any modern browser.
