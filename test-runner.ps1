@@ -104,7 +104,8 @@ if ($jack -match 'viewport') { Pass("viewport meta") } else { Fail("viewport met
 if ($jack -match 'quickStartRound') { Pass("quick start handler") } else { Fail("quick start handler") }
 if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } else { Fail("guide quick start button") }
 if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
-if ($jack -match '(?s)function newShoe\(\)\s*\{.*?updateHud\(\);') { Pass("new shoe hud refresh") } else { Fail("new shoe hud refresh") }
+if ($jack -match '(?s)function newShoe\(\)\s*\{\s*if\s*\(roundActive\)\s*\{\s*setStatus\([^)]*\);\s*updateHud\(\);\s*return;') { Pass("new shoe blocked-path hud refresh") } else { Fail("new shoe blocked-path hud refresh") }
+if ($jack -match '(?s)function newShoe\(\)\s*\{.*?createShoe\([^)]*\);\s*setStatus\([^)]*\);\s*logHistory\([^)]*\);\s*updateHud\(\);') { Pass("new shoe success-path hud refresh") } else { Fail("new shoe success-path hud refresh") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw
