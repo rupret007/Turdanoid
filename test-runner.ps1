@@ -66,6 +66,8 @@ if ($tris -match 'quickStartRun') { Pass("quick start handler") } else { Fail("q
 if ($tris -match 'data-action=\"pause\"') { Pass("mobile pause control") } else { Fail("mobile pause control") }
 if ($tris -match 'const MAX_LEVEL = 69;') { Pass("max level cap") } else { Fail("max level cap") }
 if ($tris -match 'showGameOver\(true\);') { Pass("level 69 win path") } else { Fail("level 69 win path") }
+if ($tris -match 'const clearHoldInterval = \(\) =>') { Pass("mobile hold interval helper") } else { Fail("mobile hold interval helper") }
+if ($tris -match 'clearHoldInterval\(\);') { Pass("mobile hold interval reset") } else { Fail("mobile hold interval reset") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw

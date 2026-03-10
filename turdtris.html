@@ -1545,6 +1545,13 @@ document.addEventListener('keyup', (e) => {
 const mobileControls = document.getElementById('mobileControls');
 let holdInterval = null;
 if (mobileControls) {
+  const clearHoldInterval = () => {
+    if (holdInterval) {
+      clearInterval(holdInterval);
+      holdInterval = null;
+    }
+  };
+
   mobileControls.addEventListener('pointerdown', (e) => {
     if (onboardingOpen) return;
     const target = e.target.closest('[data-action]');
@@ -1552,6 +1559,8 @@ if (mobileControls) {
     e.preventDefault();
 
     const action = target.getAttribute('data-action');
+    clearHoldInterval();
+    if (action !== 'down') softDrop = false;
     const run = () => {
       if (action === 'left') movePiece(-1);
       if (action === 'right') movePiece(1);
@@ -1573,10 +1582,7 @@ if (mobileControls) {
 
   const endHold = () => {
     softDrop = false;
-    if (holdInterval) {
-      clearInterval(holdInterval);
-      holdInterval = null;
-    }
+    clearHoldInterval();
   };
 
   mobileControls.addEventListener('pointerup', endHold);
