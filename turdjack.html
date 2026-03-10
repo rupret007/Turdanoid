@@ -1955,6 +1955,7 @@
     function newShoe() {
       if (roundActive) {
         setStatus('Finish the current round before shuffling.');
+        updateHud();
         return;
       }
       createShoe(rules.decks || 4);
