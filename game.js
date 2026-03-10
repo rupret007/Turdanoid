@@ -705,7 +705,8 @@ class Game {
     getBaseBallSpeed() {
         const levelSpeed = this.config.baseBallSpeed + (this.level - 1) * this.config.speedPerLevel;
         const floorSpeed = this.level <= this.config.earlyFloorLevel ? this.config.earlyFloorSpeed : this.config.baseBallSpeed;
-        const overdriveBoost = this.activePowerUps.overdrive ? 1.1 : 0;
+        const overdriveActive = this.activePowerUps && this.activePowerUps.overdrive > 0;
+        const overdriveBoost = overdriveActive ? 1.1 : 0;
         return Math.min(this.config.maxBallSpeed, Math.max(floorSpeed, levelSpeed + overdriveBoost));
     }
 
@@ -838,18 +839,28 @@ class Game {
     }
 
     handleVirtualControl(event, isPressed) {
+        if (!isPressed) {
+            event.preventDefault();
+            this.controls.left = false;
+            this.controls.right = false;
+            return;
+        }
+
         const button = event.target.closest('[data-action]');
         if (!button) return;
 
         event.preventDefault();
         const action = button.getAttribute('data-action');
+
         if (action === 'left') {
-            this.controls.left = isPressed;
-            if (isPressed) this.controls.pointerActive = false;
+            this.controls.left = true;
+            this.controls.right = false;
+            this.controls.pointerActive = false;
         } else if (action === 'right') {
-            this.controls.right = isPressed;
-            if (isPressed) this.controls.pointerActive = false;
-        } else if (action === 'launch' && isPressed) {
+            this.controls.right = true;
+            this.controls.left = false;
+            this.controls.pointerActive = false;
+        } else if (action === 'launch') {
             this.handleCanvasInteraction();
         }
     }

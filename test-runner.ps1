@@ -52,6 +52,10 @@ if ($game -match 'NEON_BALANCE') { Pass("balance config") } else { Fail("balance
 if ($game -match 'applyLevelMutators') { Pass("level mutator hook") } else { Fail("level mutator hook") }
 if ($game -match 'blocksSinceDrop') { Pass("drop drought logic") } else { Fail("drop drought logic") }
 if ($game -match 'patternCount') { Pass("expanded pattern count") } else { Fail("expanded pattern count") }
+if ($game -match '(?s)handleVirtualControl\(event, isPressed\).*?if \(!isPressed\)\s*\{.*?this\.controls\.left = false;\s*this\.controls\.right = false;\s*return;') { Pass("virtual control release reset") } else { Fail("virtual control release reset") }
+if ($game -match "if \(action === 'left'\) \{\s*this\.controls\.left = true;\s*this\.controls\.right = false;") { Pass("virtual control left exclusivity") } else { Fail("virtual control left exclusivity") }
+if ($game -match "if \(action === 'right'\) \{\s*this\.controls\.right = true;\s*this\.controls\.left = false;") { Pass("virtual control right exclusivity") } else { Fail("virtual control right exclusivity") }
+if ($game -match 'const overdriveActive = this\.activePowerUps && this\.activePowerUps\.overdrive > 0;') { Pass("base speed overdrive guard") } else { Fail("base speed overdrive guard") }
 
 Write-Host "`n=== turdtris.html ===" -ForegroundColor Cyan
 $tris = Get-Content turdtris.html -Raw
