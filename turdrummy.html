@@ -542,6 +542,7 @@
         undercuts: 0
       }
     };
+    let aiTurnTimeoutId = null;
 
     const el = {
       roundValue: document.getElementById("roundValue"),
@@ -617,6 +618,21 @@
       } catch (err) {
         console.warn("Could not save TurdRummy stats:", err);
       }
+    }
+
+    function clearAiTurnTimeout() {
+      if (aiTurnTimeoutId !== null) {
+        window.clearTimeout(aiTurnTimeoutId);
+        aiTurnTimeoutId = null;
+      }
+    }
+
+    function queueAiTurn(delayMs) {
+      clearAiTurnTimeout();
+      aiTurnTimeoutId = window.setTimeout(() => {
+        aiTurnTimeoutId = null;
+        aiTurn();
+      }, delayMs);
     }
 
     function rankLabel(rank) {
@@ -984,6 +1000,7 @@
 
     function resolveStockStall(reasonText) {
       if (state.roundOver) return;
+      clearAiTurnTimeout();
       state.roundOver = true;
       state.stats.roundsPlayed += 1;
       state.turn = "player";
@@ -1005,6 +1022,7 @@
     }
 
     function dealRound() {
+      clearAiTurnTimeout();
       state.round += 1;
       state.dealer = state.round === 1 ? "player" : (state.dealer === "player" ? "ai" : "player");
       state.stock = shuffleDeck(createDeck());
@@ -1032,7 +1050,7 @@
       saveStats();
       renderAll();
       if (state.turn === "ai") {
-        window.setTimeout(aiTurn, 650);
+        queueAiTurn(650);
       }
     }
 
@@ -1083,7 +1101,7 @@
       state.drawnCardSource = null;
       state.message = "You discarded " + cardText(discardCard) + ". AI turn...";
       renderAll();
-      window.setTimeout(aiTurn, 700);
+      queueAiTurn(700);
     }
 
     function playerDiscardSelected() {
@@ -1304,6 +1322,7 @@
     }
 
     function finishRound(knocker, isGin, knockerDeadwood, knockerMelds) {
+      clearAiTurnTimeout();
       state.roundOver = true;
       state.stats.roundsPlayed += 1;
       const defender = knocker === "player" ? "ai" : "player";
@@ -1426,6 +1445,7 @@
     }
 
     function resetMatch() {
+      clearAiTurnTimeout();
       state.playerScore = 0;
       state.aiScore = 0;
       state.round = 0;

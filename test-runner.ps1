@@ -130,6 +130,15 @@ if ($rummy -match 'localStorage') { Pass("localStorage stats") } else { Fail("lo
 if ($rummy -match 'resolveStockStall') { Pass("stock stall resolution") } else { Fail("stock stall resolution") }
 if ($rummy -match 'state\.discard\.length === 0') { Pass("stock draw fallback message path") } else { Fail("stock draw fallback message path") }
 if ($rummy -match 'function search\(index, melds, keptCards, laidOffCards, deadwoodScore\)') { Pass("layoff backtracking") } else { Fail("layoff backtracking") }
+if ($rummy -match 'let aiTurnTimeoutId = null;') { Pass("ai timeout state") } else { Fail("ai timeout state") }
+if ($rummy -match 'function clearAiTurnTimeout\(\)') { Pass("ai timeout clear helper") } else { Fail("ai timeout clear helper") }
+if ($rummy -match 'function queueAiTurn\(delayMs\)') { Pass("ai timeout queue helper") } else { Fail("ai timeout queue helper") }
+if ($rummy -match '(?s)function resolveStockStall\([^)]*\)\s*\{\s*if \(state\.roundOver\) return;\s*clearAiTurnTimeout\(\);') { Pass("stock stall clears ai timeout") } else { Fail("stock stall clears ai timeout") }
+if ($rummy -match '(?s)function dealRound\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("deal round clears ai timeout") } else { Fail("deal round clears ai timeout") }
+if ($rummy -match 'queueAiTurn\(650\);') { Pass("deal round queues ai turn") } else { Fail("deal round queues ai turn") }
+if ($rummy -match 'queueAiTurn\(700\);') { Pass("player end turn queues ai turn") } else { Fail("player end turn queues ai turn") }
+if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("finish round clears ai timeout") } else { Fail("finish round clears ai timeout") }
+if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("reset match clears ai timeout") } else { Fail("reset match clears ai timeout") }
 
 Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
 $spades = Get-Content turdspades.html -Raw
