@@ -151,6 +151,8 @@ if ($spades -match 'scoreRound') { Pass("round scoring") } else { Fail("round sc
 if ($spades -match 'state\.spadesBroken') { Pass("spades break logic") } else { Fail("spades break logic") }
 if ($spades -match 'Play Selected') { Pass("mobile action") } else { Fail("mobile action") }
 if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules guide overlay") }
+if ($spades -match 'const tiedAtOrAboveTarget = teamAReached && teamBReached && state\.scores\[0\] === state\.scores\[1\];') { Pass("spades tie-break detection") } else { Fail("spades tie-break detection") }
+if ($spades -match "Scores tied above target\. Play a tiebreaker round\.") { Pass("spades tie-break status text") } else { Fail("spades tie-break status text") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

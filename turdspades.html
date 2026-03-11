@@ -523,9 +523,15 @@
         state.scores[t] += delta;
         line.push(`${t === 0 ? 'You+North' : 'West+East'} bid ${bid}, took ${took}, ${delta >= 0 ? '+' : ''}${delta}.`);
       }
-      state.phase = (state.scores[0] >= TARGET || state.scores[1] >= TARGET) ? 'matchEnd' : 'roundEnd';
-      const winner = state.scores[0] === state.scores[1] ? 'Match tied.' : (state.scores[0] > state.scores[1] ? 'You + North win the match.' : 'West + East win the match.');
-      setMessage(state.phase === 'matchEnd' ? `Match complete. ${winner}` : 'Round complete. Press Next Round.', `${line.join(' ')} Last trick: ${lastTrick}`);
+      const teamAReached = state.scores[0] >= TARGET;
+      const teamBReached = state.scores[1] >= TARGET;
+      const tiedAtOrAboveTarget = teamAReached && teamBReached && state.scores[0] === state.scores[1];
+      state.phase = (teamAReached || teamBReached) && !tiedAtOrAboveTarget ? 'matchEnd' : 'roundEnd';
+      const winner = state.scores[0] > state.scores[1] ? 'You + North win the match.' : 'West + East win the match.';
+      const status = state.phase === 'matchEnd'
+        ? `Match complete. ${winner}`
+        : (tiedAtOrAboveTarget ? 'Scores tied above target. Play a tiebreaker round.' : 'Round complete. Press Next Round.');
+      setMessage(status, `${line.join(' ')} Last trick: ${lastTrick}`);
     }
 
     function runAiTurns() {
