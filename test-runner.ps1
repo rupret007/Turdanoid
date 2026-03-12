@@ -93,6 +93,12 @@ if ($turd -match 'buckets\.get\(key\)\.push\(b\)') { Pass("row flush stable targ
 if ($turd -match 'const directionalControlActive = controlLeft \|\| controlRight;') { Pass("control precedence fix") } else { Fail("control precedence fix") }
 if ($turd -match 'const clearHoldTimer = \(\) =>') { Pass("mobile hold timer helper") } else { Fail("mobile hold timer helper") }
 if ($turd -match 'clearHoldTimer\(\);') { Pass("mobile hold timer reset") } else { Fail("mobile hold timer reset") }
+if ($turd -match '\.mobile-controls\s*\{[^}]*touch-action:\s*none;') { Pass("mobile controls touch-action lock") } else { Fail("mobile controls touch-action lock") }
+if ($turd -match 'let mouseInputActive = true;') { Pass("mouse input activity guard") } else { Fail("mouse input activity guard") }
+if ($turd -match 'mouseInputActive = false;\s*paddle\.x = constrain\(touches\[0\]\.x - paddleWidth / 2') { Pass("touch input disables mouse fallback") } else { Fail("touch input disables mouse fallback") }
+if ($turd -match 'else if \(mouseInputActive\) \{') { Pass("mouse fallback gated by activity") } else { Fail("mouse fallback gated by activity") }
+if ($turd -match 'function mouseMoved\(\)\s*\{\s*mouseInputActive = true;\s*\}') { Pass("mouse moved re-enables mouse input") } else { Fail("mouse moved re-enables mouse input") }
+if ($turd -match 'mobileControls\.addEventListener\(''pointerdown'', \(e\) => \{\s*e\.preventDefault\(\);') { Pass("mobile pointerdown prevents default") } else { Fail("mobile pointerdown prevents default") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -139,6 +145,8 @@ if ($rummy -match 'queueAiTurn\(650\);') { Pass("deal round queues ai turn") } e
 if ($rummy -match 'queueAiTurn\(700\);') { Pass("player end turn queues ai turn") } else { Fail("player end turn queues ai turn") }
 if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("finish round clears ai timeout") } else { Fail("finish round clears ai timeout") }
 if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("reset match clears ai timeout") } else { Fail("reset match clears ai timeout") }
+if ($rummy -match 'const winner = state\.playerScore === state\.aiScore\s*\?\s*"Tie"\s*:\s*\(state\.playerScore > state\.aiScore \? "Player" : "AI"\);') { Pass("rummy match winner compares both scores") } else { Fail("rummy match winner compares both scores") }
+if ($rummy -match 'Match tied at target\.') { Pass("rummy tie-at-target summary") } else { Fail("rummy tie-at-target summary") }
 
 Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
 $spades = Get-Content turdspades.html -Raw
@@ -153,6 +161,7 @@ if ($spades -match 'Play Selected') { Pass("mobile action") } else { Fail("mobil
 if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules guide overlay") }
 if ($spades -match 'const tiedAtOrAboveTarget = teamAReached && teamBReached && state\.scores\[0\] === state\.scores\[1\];') { Pass("spades tie-break detection") } else { Fail("spades tie-break detection") }
 if ($spades -match "Scores tied above target\. Play a tiebreaker round\.") { Pass("spades tie-break status text") } else { Fail("spades tie-break status text") }
+if ($spades -match 'state\.bidTurn = \(state\.bidTurn \+ 1\) % 4;') { Pass("spades bid turn advance not hardcoded") } else { Fail("spades bid turn advance not hardcoded") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

@@ -215,6 +215,7 @@
       display: none;
       gap: 8px;
       margin-top: 10px;
+      touch-action: none;
     }
 
     .control-btn {
@@ -531,6 +532,7 @@ let levelMutatorText = '';
 
 let controlLeft = false;
 let controlRight = false;
+let mouseInputActive = true;
 
 let activePowerUps = {
   bigPaddle: 0,
@@ -1603,8 +1605,9 @@ function updatePaddle() {
   const directionalControlActive = controlLeft || controlRight;
   if (!directionalControlActive) {
     if (touches.length > 0) {
+      mouseInputActive = false;
       paddle.x = constrain(touches[0].x - paddleWidth / 2, 0, width - paddleWidth);
-    } else {
+    } else if (mouseInputActive) {
       paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
     }
   }
@@ -2559,6 +2562,7 @@ function mousePressed() {
 }
 
 function touchStarted() {
+  mouseInputActive = false;
   if (onboardingOpen) {
     hideWelcomeGuide();
     return false;
@@ -2569,6 +2573,14 @@ function touchStarted() {
   }
   if ((awaitingLaunch || stuckBall) && !paused) launchBall();
   return false;
+}
+
+function mouseMoved() {
+  mouseInputActive = true;
+}
+
+function mouseDragged() {
+  mouseInputActive = true;
 }
 
 function togglePauseExternal() {
@@ -2592,6 +2604,8 @@ if (mobileControls) {
   };
 
   mobileControls.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    mouseInputActive = false;
     if (onboardingOpen) {
       hideWelcomeGuide();
       return;

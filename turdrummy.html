@@ -1368,8 +1368,12 @@
       }
 
       if (state.playerScore >= TURDRUMMY_BALANCE.matchTarget || state.aiScore >= TURDRUMMY_BALANCE.matchTarget) {
-        const winner = state.playerScore >= TURDRUMMY_BALANCE.matchTarget ? "Player" : "AI";
-        summary += " Match winner: " + winner + ".";
+        const winner = state.playerScore === state.aiScore
+          ? "Tie"
+          : (state.playerScore > state.aiScore ? "Player" : "AI");
+        summary += winner === "Tie"
+          ? " Match tied at target."
+          : " Match winner: " + winner + ".";
       }
 
       state.turn = "player";
