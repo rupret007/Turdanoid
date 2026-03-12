@@ -1,11 +1,11 @@
 # Turdanoid Games
 
-A collection of five active browser games with a playful turd theme.
+A collection of six active browser games with a playful turd theme.
 
 ## Version
 
-- **Current build:** `v3.0.0`
-- **Build date:** March 10, 2026
+- **Current build:** `v3.1.0`
+- **Build date:** March 12, 2026
 
 ## Changelog (Latest)
 
@@ -13,6 +13,8 @@ A collection of five active browser games with a playful turd theme.
   - TurdAnoid moved to the top card in `hub.html`.
   - Neon Arkanoid removed from hub card list.
   - New **TurdRummy** (Gin Rummy) added as the bottom hub card.
+- New game added:
+  - `crapeights.html` with Crazy Eights / Uno-style flow, 3 bot opponents, action-card effects (`2`, `J`, `Q`, `8`), and first-to-200 match scoring.
 - New game added:
   - `turdrummy.html` with meld/deadwood analyzer, knock/gin scoring, layoff/undercut flow, and mobile-first action dock.
 - New game added:
@@ -63,6 +65,24 @@ Blackjack with a toilet-dealer vibe and persistent bankroll.
 
 **Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).
 
+### Crap Eights
+
+Crazy Eights with Uno-style pacing and themed table presentation.
+
+**Features:**
+- You vs 3 bot opponents
+- Action cards:
+  - `2` = draw two + skip
+  - `J` = skip
+  - `Q` = reverse direction
+  - `8` = wild suit pick
+- Smart move helper and keyboard shortcuts (`P`, `D`, `A`, `M`)
+- Round scoring by opponents' leftover card values
+- Match target race to 200 points
+- Mobile-friendly controls, on-entry rules guide, and local stats persistence
+
+**Controls:** Tap/click cards and actions, or keyboard (`P` play, `D` draw, `A` smart, `M` sound).
+
 ### TurdRummy
 
 Gin Rummy game themed to match the rest of the hub.
@@ -103,6 +123,7 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
    - `TurdAnoid.html` - TurdAnoid
    - `turdtris.html` - Turdtris
    - `turdjack.html` - Crapjack 21
+   - `crapeights.html` - Crap Eights
    - `turdrummy.html` - TurdRummy
    - `turdspades.html` - TurdSpades
 
@@ -126,6 +147,7 @@ After deployment:
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
+- **Crap Eights:** https://rupret007.github.io/Turdanoid/crapeights.html
 - **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
 - **TurdSpades:** https://rupret007.github.io/Turdanoid/turdspades.html
 - **Neon Arkanoid (legacy):** https://rupret007.github.io/Turdanoid/index.html
@@ -137,6 +159,7 @@ The `.nojekyll` file ensures GitHub Pages serves files as-is.
 - **TurdAnoid**: p5.js
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
+- **Crap Eights**: Vanilla JavaScript + DOM/CSS card UI
 - **TurdRummy**: Vanilla JavaScript + DOM/CSS card UI
 - **TurdSpades**: Vanilla JavaScript + DOM/CSS card UI
 - **Neon Arkanoid (legacy)**: Vanilla JavaScript (Canvas API)

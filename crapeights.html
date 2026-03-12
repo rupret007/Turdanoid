@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Crap Eights</title>
+  <style>
+    :root{
+      --bg1:#121a11;--bg2:#203327;--bg3:#2f4d36;--ink:#eefbe8;--muted:#c3dbc8;--accent:#96ffc5;--hot:#ffd497;
+      --danger:#ff9d9d;--panel:rgba(10,22,14,.74);--panel-border:rgba(150,255,197,.36);--cardA:#f9fcff;--cardB:#d8e0e8;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      min-height:100vh;min-height:100dvh;font-family:'Trebuchet MS','Segoe UI',sans-serif;color:var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%,rgba(150,255,197,.2),transparent 34%),
+        radial-gradient(circle at 84% 12%,rgba(255,212,151,.17),transparent 30%),
+        linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+      display:flex;justify-content:center;align-items:center;padding:clamp(8px,2.2vw,14px);overflow-x:hidden;overflow-y:auto;
+    }
+    .shell{
+      width:min(1180px,96vw);background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:12px;
+      box-shadow:0 24px 50px rgba(0,0,0,.48);backdrop-filter:blur(8px);position:relative;
+    }
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .topbar h1{color:var(--accent);font-size:clamp(1.1rem,2.3vw,1.7rem);text-transform:uppercase;letter-spacing:.08em}
+    .topbar p{margin-top:4px;font-size:.84rem;color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .mobile-menu{display:none;width:100%}
+    .mobile-menu details{border:1px solid rgba(150,255,197,.36);border-radius:10px;background:rgba(9,22,15,.84);padding:6px 8px}
+    .mobile-menu summary{color:var(--accent);font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;user-select:none}
+    .mobile-menu-actions{margin-top:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .btn{
+      border:1px solid rgba(150,255,197,.45);color:var(--accent);background:rgba(14,33,23,.76);border-radius:10px;padding:8px 12px;
+      min-height:40px;font-size:12px;cursor:pointer;transition:transform .18s ease,background .2s ease,border-color .2s ease;
+    }
+    .btn:hover:not(:disabled){transform:translateY(-1px);background:rgba(24,50,36,.86);border-color:rgba(150,255,197,.65)}
+    .btn:active:not(:disabled){transform:translateY(0) scale(.985)}
+    .btn.subtle{border-color:rgba(150,255,197,.28);color:#d7f3dd;background:rgba(9,20,15,.62)}
+    .btn.hot{border-color:rgba(255,212,151,.56);color:var(--hot)}
+    .btn.danger{border-color:rgba(255,157,157,.56);color:var(--danger)}
+    .btn:disabled{opacity:.46;cursor:not-allowed;transform:none}
+    .hud{display:grid;grid-template-columns:repeat(7,minmax(80px,1fr));gap:8px;margin-bottom:10px}
+    .hud-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.76);text-align:center;padding:8px}
+    .hud-card .k{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+    .hud-card .v{font-size:1.02rem;font-weight:700;margin-top:4px}
+    .hud-card.hot .v{color:var(--hot)}
+    .layout{display:grid;grid-template-columns:1fr 290px;gap:12px;align-items:start}
+    .table{
+      border:2px solid rgba(150,255,197,.34);border-radius:16px;
+      background:radial-gradient(circle at 50% 0%,rgba(166,255,208,.11),transparent 44%),linear-gradient(160deg,#11402e,#16392f);
+      padding:10px;min-height:560px;display:flex;flex-direction:column;gap:10px;
+    }
+    .status{
+      border:1px solid rgba(150,255,197,.22);border-radius:10px;background:rgba(7,17,12,.64);color:var(--muted);font-size:.86rem;line-height:1.4;
+      min-height:52px;padding:8px;transition:border-color .22s ease,box-shadow .22s ease,background .22s ease;
+    }
+    .status.hype{
+      border-color:rgba(255,223,148,.72);box-shadow:0 0 0 1px rgba(255,223,148,.3),0 0 16px rgba(255,188,108,.24);
+      background:rgba(32,20,10,.76);animation:statusPulse .9s ease-in-out infinite alternate;
+    }
+    @keyframes statusPulse{from{transform:translateY(0)}to{transform:translateY(-1px)}}
+    .opponents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .opp-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.68);padding:7px;text-align:center;transition:border-color .2s ease,box-shadow .2s ease}
+    .opp-card.active{border-color:rgba(255,223,148,.62);box-shadow:0 0 0 1px rgba(255,223,148,.26)}
+    .opp-name{font-size:.79rem;color:var(--ink);font-weight:700}
+    .opp-meta{margin-top:4px;color:var(--muted);font-size:.75rem}
+    .opp-cards{margin-top:6px;display:flex;justify-content:center;gap:4px}
+    .mini-back{
+      width:18px;height:26px;border-radius:5px;border:1px solid rgba(198,236,210,.45);
+      background:linear-gradient(135deg,rgba(188,139,255,.58),rgba(113,212,184,.66)),repeating-linear-gradient(45deg,rgba(255,255,255,.15) 0 3px,rgba(0,0,0,.08) 3px 6px);
+    }
+    .pile-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pile{
+      border:1px solid rgba(150,255,197,.28);border-radius:12px;background:rgba(8,18,13,.7);padding:9px;
+      display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:134px;
+    }
+    .pile h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+    .pile-meta{font-size:.74rem;color:var(--muted)}
+    .pile-card,.draw-back{
+      width:80px;height:112px;border-radius:11px;border:1px solid rgba(224,232,236,.78);
+      display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.36);user-select:none;
+    }
+    .draw-back{
+      background:linear-gradient(135deg,rgba(188,139,255,.7),rgba(113,212,184,.8)),repeating-linear-gradient(45deg,rgba(255,255,255,.2) 0 4px,rgba(0,0,0,.08) 4px 8px);
+      color:#f9fffc;font-weight:700;font-size:1.1rem;
+    }
+    .pile-card{background:linear-gradient(165deg,var(--cardA),var(--cardB));color:#1f262c;font-weight:700;display:flex;flex-direction:column;justify-content:space-between;padding:8px}
+    .pile-card.red,.card-btn.red{color:#c42b2b}
+    .pile-card .center,.card-btn .center{font-size:1.38rem;align-self:center;margin-top:4px}
+    .pile-card .small,.card-btn .small{align-self:flex-end;transform:rotate(180deg);font-size:.9rem;line-height:1}
+    .suit-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .suit-chip{border:1px solid rgba(150,255,197,.24);border-radius:999px;background:rgba(8,18,13,.6);color:var(--muted);text-align:center;padding:5px 8px;font-size:.74rem}
+    .suit-chip.active{border-color:rgba(255,223,148,.64);color:#ffe2aa;background:rgba(37,24,13,.66);font-weight:700}
+    .hand-wrap{border:1px solid rgba(150,255,197,.22);border-radius:12px;background:rgba(8,18,13,.62);padding:8px}
+    .hand-head{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;font-size:.82rem;color:var(--muted)}
+    .hand-rail{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;min-height:126px}
+    .hand-rail::-webkit-scrollbar{height:8px}
+    .hand-rail::-webkit-scrollbar-thumb{background:rgba(150,255,197,.26);border-radius:999px}
+    .card-btn{
+      width:clamp(60px,11vw,76px);height:clamp(88px,16vw,108px);border-radius:11px;border:1px solid #d6dfe8;background:linear-gradient(165deg,var(--cardA),var(--cardB));
+      color:#1f262c;box-shadow:0 7px 14px rgba(0,0,0,.32);display:flex;flex-direction:column;justify-content:space-between;padding:7px;font-size:.92rem;font-weight:700;
+      cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;user-select:none;
+    }
+    .card-btn:hover:not(:disabled){transform:translateY(-2px)}
+    .card-btn.playable{border-color:rgba(146,255,196,.92);box-shadow:0 0 0 1px rgba(146,255,196,.45),0 8px 16px rgba(0,0,0,.35)}
+    .card-btn.selected{transform:translateY(-5px);box-shadow:0 0 0 1px rgba(255,223,148,.78),0 10px 18px rgba(0,0,0,.38)}
+    .card-btn:disabled{opacity:.82;cursor:default}
+    .action-dock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
+    .sidebar{display:flex;flex-direction:column;gap:10px}
+    .panel{border:1px solid rgba(150,255,197,.24);border-radius:12px;background:rgba(8,18,13,.66);padding:9px}
+    .panel h3{color:var(--accent);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px}
+    .panel p,.panel li,.panel div{font-size:.79rem;color:var(--muted);line-height:1.4}
+    .panel ul{margin-left:17px;display:flex;flex-direction:column;gap:5px}
+    .history{max-height:200px;overflow-y:auto;white-space:normal}
+    .overlay{position:fixed;inset:0;background:rgba(5,9,7,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .overlay-card{
+      width:min(560px,94vw);border:1px solid rgba(150,255,197,.32);border-radius:16px;background:rgba(9,20,15,.94);padding:14px;color:var(--muted);
+      box-shadow:0 18px 40px rgba(0,0,0,.5);
+    }
+    .overlay-card h2{color:var(--accent);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase;font-size:1.08rem}
+    .overlay-card p,.overlay-card li{font-size:.84rem;line-height:1.45;margin-bottom:7px}
+    .overlay-card ul{margin-left:18px;margin-bottom:8px}
+    .overlay-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .suit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+    .suit-btn{
+      border:1px solid rgba(150,255,197,.35);background:rgba(13,31,22,.76);color:var(--ink);border-radius:10px;min-height:56px;cursor:pointer;
+      font-size:1rem;font-weight:700;transition:transform .16s ease,border-color .16s ease;
+    }
+    .suit-btn:hover{transform:translateY(-1px);border-color:rgba(255,223,148,.65)}
+    .suit-btn.red{color:#ff9d9d}
+    @media (max-width:980px){.layout{grid-template-columns:1fr}.sidebar{order:2}.table{min-height:0}}
+    @media (max-width:760px){
+      body{padding:8px}.shell{width:min(760px,92vw);border-radius:16px;padding:10px}.actions{display:none}.mobile-menu{display:block}
+      .hud{grid-template-columns:repeat(4,minmax(0,1fr))}.opponents{grid-template-columns:1fr}.pile-row{grid-template-columns:1fr 1fr}
+      .action-dock{position:sticky;bottom:8px;z-index:6;background:rgba(7,15,11,.94);border:1px solid rgba(150,255,197,.24);border-radius:12px;padding:7px}
+      .btn,.suit-btn{min-height:44px}
+    }
+    @media (max-width:560px){
+      .topbar p{font-size:.76rem}.hud{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .pile-card,.draw-back{width:68px;height:96px}.card-btn{width:58px;height:86px;font-size:.82rem}
+      .panel p,.panel li,.panel div{font-size:.75rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="welcomeGuide">
+    <div class="overlay-card">
+      <h2>Crap Eights</h2>
+      <p>Uno-style chaos using a standard deck: match suit/rank, weaponize action cards, and dump your hand first.</p>
+      <ul>
+        <li><strong>2:</strong> Next player draws 2 and loses turn.</li>
+        <li><strong>J:</strong> Skip next player.</li>
+        <li><strong>Q:</strong> Reverse direction.</li>
+        <li><strong>8:</strong> Wild card, choose any suit.</li>
+      </ul>
+      <ul>
+        <li><strong>Play Selected:</strong> P</li>
+        <li><strong>Draw:</strong> D</li>
+        <li><strong>Smart Move:</strong> A</li>
+        <li><strong>Sound Toggle:</strong> M</li>
+      </ul>
+      <p>Win rounds to score points from opponents' leftover cards. First to 200 wins the match.</p>
+      <div class="overlay-actions">
+        <button class="btn hot" id="quickStartBtn">Quick Start</button>
+        <button class="btn subtle" id="closeGuideBtn">Review Then Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="roundOverlay">
+    <div class="overlay-card">
+      <h2 id="roundTitle">Round Over</h2>
+      <p id="roundSummary">Summary</p>
+      <div class="panel" style="margin-top:8px;">
+        <h3>Scoreboard</h3>
+        <div id="roundScoreboard">-</div>
+      </div>
+      <div class="overlay-actions">
+        <button class="btn hot" id="nextRoundBtn">Next Round</button>
+        <button class="btn" id="newMatchOverlayBtn">New Match</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="suitChooser">
+    <div class="overlay-card">
+      <h2>Choose Wild Suit</h2>
+      <p>Your 8 is wild. Pick the suit that helps your hand.</p>
+      <div class="suit-grid">
+        <button class="suit-btn" data-suit="S">Spades ♠</button>
+        <button class="suit-btn red" data-suit="H">Hearts ♥</button>
+        <button class="suit-btn red" data-suit="D">Diamonds ♦</button>
+        <button class="suit-btn" data-suit="C">Clubs ♣</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="topbar">
+      <div>
+        <h1>Crap Eights</h1>
+        <p>Crazy Eights meets Uno pacing, but with toilet-table energy.</p>
+      </div>
+      <div class="actions">
+        <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+        <button class="btn" id="helpBtn">❓ How To Play</button>
+        <button class="btn" id="newMatchBtn">🧼 New Match</button>
+        <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
+      </div>
+      <div class="mobile-menu">
+        <details>
+          <summary>Table Menu</summary>
+          <div class="mobile-menu-actions">
+            <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
+            <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
+            <button class="btn" onclick="startFreshMatch()">🧼 New Match</button>
+            <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="hud-card"><div class="k">Round</div><div class="v" id="roundText">1</div></div>
+      <div class="hud-card"><div class="k">Turn</div><div class="v" id="turnText">You</div></div>
+      <div class="hud-card"><div class="k">Direction</div><div class="v" id="directionText">Clockwise</div></div>
+      <div class="hud-card"><div class="k">Deck</div><div class="v" id="deckText">0</div></div>
+      <div class="hud-card"><div class="k">Active Suit</div><div class="v" id="suitText">-</div></div>
+      <div class="hud-card hot"><div class="k">Your Cards</div><div class="v" id="youCardsText">0</div></div>
+      <div class="hud-card"><div class="k">Leader</div><div class="v" id="leaderText">-</div></div>
+    </div>
+
+    <div class="layout">
+      <section class="table">
+        <div class="status" id="statusText">Deal in progress. Match suit/rank, use action cards, and dump your hand.</div>
+        <div class="opponents">
+          <div class="opp-card" id="oppCard1"><div class="opp-name" id="oppName1">Bot 1</div><div class="opp-meta" id="oppMeta1">Cards: 0</div><div class="opp-cards" id="oppBacks1"></div></div>
+          <div class="opp-card" id="oppCard2"><div class="opp-name" id="oppName2">Bot 2</div><div class="opp-meta" id="oppMeta2">Cards: 0</div><div class="opp-cards" id="oppBacks2"></div></div>
+          <div class="opp-card" id="oppCard3"><div class="opp-name" id="oppName3">Bot 3</div><div class="opp-meta" id="oppMeta3">Cards: 0</div><div class="opp-cards" id="oppBacks3"></div></div>
+        </div>
+        <div class="pile-row">
+          <div class="pile"><h3>Draw Pile</h3><button class="draw-back" id="drawPileBtn" title="Draw">💩</button><div class="pile-meta" id="drawMeta">0 cards</div></div>
+          <div class="pile"><h3>Discard Pile</h3><div class="pile-card" id="discardCard"><div>A</div><div class="center">♣</div><div class="small">A<br>♣</div></div><div class="pile-meta" id="discardMeta">Top card</div></div>
+        </div>
+        <div class="suit-row" id="suitRow">
+          <div class="suit-chip" data-suit-chip="S">Spades ♠</div>
+          <div class="suit-chip" data-suit-chip="H">Hearts ♥</div>
+          <div class="suit-chip" data-suit-chip="D">Diamonds ♦</div>
+          <div class="suit-chip" data-suit-chip="C">Clubs ♣</div>
+        </div>
+        <div class="hand-wrap">
+          <div class="hand-head"><strong>Your Hand</strong><span id="selectionText">No card selected</span></div>
+          <div class="hand-rail" id="playerHand"></div>
+        </div>
+        <div class="action-dock">
+          <button class="btn hot" id="playBtn">Play Selected</button>
+          <button class="btn" id="drawBtn">Draw</button>
+          <button class="btn" id="passBtn">Pass</button>
+          <button class="btn" id="smartBtn">Smart</button>
+        </div>
+      </section>
+      <aside class="sidebar">
+        <div class="panel">
+          <h3>Quick Rules</h3>
+          <ul>
+            <li>Match rank or suit with the top discard card.</li>
+            <li>8 is wild: choose any suit.</li>
+            <li>2 makes next player draw 2 and skip.</li>
+            <li>J skips next player, Q reverses direction.</li>
+            <li>Winner gets points from everyone else's leftover cards.</li>
+          </ul>
+        </div>
+        <div class="panel"><h3>Round Log</h3><div class="history" id="historyText">No plays yet.</div></div>
+        <div class="panel"><h3>Standings</h3><div id="standingsText">-</div><div style="margin-top:8px;opacity:.9;" id="statsText">Match stats loading...</div></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const MATCH_TARGET = 200;
+    const STARTING_HAND = 7;
+    const STORAGE = { stats: 'crapeightsStats', sound: 'crapeightsSoundOn_v1' };
+    const SUITS = ['S', 'H', 'D', 'C'];
+    const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    const ui = {
+      statusText: document.getElementById('statusText'),
+      roundText: document.getElementById('roundText'),
+      turnText: document.getElementById('turnText'),
+      directionText: document.getElementById('directionText'),
+      deckText: document.getElementById('deckText'),
+      suitText: document.getElementById('suitText'),
+      youCardsText: document.getElementById('youCardsText'),
+      leaderText: document.getElementById('leaderText'),
+      drawMeta: document.getElementById('drawMeta'),
+      discardMeta: document.getElementById('discardMeta'),
+      drawPileBtn: document.getElementById('drawPileBtn'),
+      discardCard: document.getElementById('discardCard'),
+      playerHand: document.getElementById('playerHand'),
+      selectionText: document.getElementById('selectionText'),
+      playBtn: document.getElementById('playBtn'),
+      drawBtn: document.getElementById('drawBtn'),
+      passBtn: document.getElementById('passBtn'),
+      smartBtn: document.getElementById('smartBtn'),
+      helpBtn: document.getElementById('helpBtn'),
+      newMatchBtn: document.getElementById('newMatchBtn'),
+      historyText: document.getElementById('historyText'),
+      standingsText: document.getElementById('standingsText'),
+      statsText: document.getElementById('statsText'),
+      welcomeGuide: document.getElementById('welcomeGuide'),
+      quickStartBtn: document.getElementById('quickStartBtn'),
+      closeGuideBtn: document.getElementById('closeGuideBtn'),
+      roundOverlay: document.getElementById('roundOverlay'),
+      roundTitle: document.getElementById('roundTitle'),
+      roundSummary: document.getElementById('roundSummary'),
+      roundScoreboard: document.getElementById('roundScoreboard'),
+      nextRoundBtn: document.getElementById('nextRoundBtn'),
+      newMatchOverlayBtn: document.getElementById('newMatchOverlayBtn'),
+      suitChooser: document.getElementById('suitChooser'),
+      oppCards: [document.getElementById('oppCard1'), document.getElementById('oppCard2'), document.getElementById('oppCard3')],
+      oppNames: [document.getElementById('oppName1'), document.getElementById('oppName2'), document.getElementById('oppName3')],
+      oppMetas: [document.getElementById('oppMeta1'), document.getElementById('oppMeta2'), document.getElementById('oppMeta3')],
+      oppBacks: [document.getElementById('oppBacks1'), document.getElementById('oppBacks2'), document.getElementById('oppBacks3')]
+    };
+
+    let players = [];
+    let deck = [];
+    let discard = [];
+    let roundNumber = 1;
+    let currentPlayer = 0;
+    let direction = 1;
+    let activeSuit = 'C';
+    let pendingDrawCards = 0;
+    let pendingSkips = 0;
+    let roundActive = false;
+    let hasDrawnThisTurn = false;
+    let selectedCardId = null;
+    let pendingWildCard = null;
+    let onboardingOpen = false;
+    let historyLog = [];
+    let statusPulseTimer = null;
+    let aiTurnTimeoutId = null;
+    let soundEnabled = true;
+    let audioCtx = null;
+    let nextCardId = 1;
+    let stats = readObject(STORAGE.stats, { matchesPlayed: 0, matchesWon: 0, roundsPlayed: 0, roundsWon: 0, bestRoundPoints: 0 });
+
+    function readObject(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : fallback;
+      } catch (err) {
+        return fallback;
+      }
+    }
+
+    function saveStats() {
+      try { localStorage.setItem(STORAGE.stats, JSON.stringify(stats)); } catch (err) {}
+    }
+
+    function loadSoundPref() {
+      try { const raw = localStorage.getItem(STORAGE.sound); return raw === null ? true : raw !== '0'; } catch (err) { return true; }
+    }
+
+    function saveSoundPref() {
+      try { localStorage.setItem(STORAGE.sound, soundEnabled ? '1' : '0'); } catch (err) {}
+    }
+
+    function updateSoundButtons() {
+      document.querySelectorAll('[data-sound-toggle]').forEach((btn) => { btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off'; });
+    }
+
+    function ensureAudio() {
+      if (audioCtx) return audioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try { audioCtx = new Ctx(); } catch (err) { audioCtx = null; }
+      return audioCtx;
+    }
+
+    function unlockAudio() {
+      if (!soundEnabled) return;
+      const ctx = ensureAudio();
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    }
+
+    function playSfx(type) {
+      if (!soundEnabled) return;
+      const ctx = ensureAudio();
+      if (!ctx || ctx.state !== 'running') return;
+      const map = {
+        deal: [540, 0.08, 'triangle', 0.045], play: [470, 0.06, 'triangle', 0.035], draw: [290, 0.08, 'square', 0.035],
+        wild: [820, 0.1, 'triangle', 0.05], reverse: [680, 0.08, 'sawtooth', 0.046], skip: [360, 0.08, 'triangle', 0.038],
+        penalty: [170, 0.12, 'sawtooth', 0.048], win: [980, 0.16, 'triangle', 0.058], lose: [140, 0.18, 'sawtooth', 0.055]
+      };
+      const p = map[type] || map.play;
+      try {
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = p[2];
+        osc.frequency.setValueAtTime(p[0], now);
+        gain.gain.setValueAtTime(p[3], now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + p[1]);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + p[1]);
+      } catch (err) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      saveSoundPref();
+      updateSoundButtons();
+      if (soundEnabled) {
+        unlockAudio();
+        setStatus('Sound on. The table now squeaks and stinks.', true);
+        playSfx('deal');
+      } else {
+        setStatus('Sound off. Silent sewer strategy mode.', true);
+      }
+    }
+
+    function suitGlyph(suit) { return suit === 'S' ? '♠' : suit === 'H' ? '♥' : suit === 'D' ? '♦' : '♣'; }
+    function suitName(suit) { return suit === 'S' ? 'Spades' : suit === 'H' ? 'Hearts' : suit === 'D' ? 'Diamonds' : 'Clubs'; }
+    function isRedSuit(suit) { return suit === 'H' || suit === 'D'; }
+    function cardPoints(card) { if (!card) return 0; if (card.rank === '8') return 50; if (card.rank === 'A') return 1; if (['10', 'J', 'Q', 'K'].includes(card.rank)) return 10; return parseInt(card.rank, 10); }
+
+    function randomIntExclusive(max) {
+      if (!Number.isFinite(max) || max <= 0) return 0;
+      if (window.crypto && window.crypto.getRandomValues) {
+        const limit = Math.floor(0x100000000 / max) * max;
+        const pool = new Uint32Array(1);
+        let value = 0;
+        do { window.crypto.getRandomValues(pool); value = pool[0]; } while (value >= limit);
+        return value % max;
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function createPlayers() {
+      return [
+        { name: 'You', human: true, hand: [], score: 0 },
+        { name: 'Bot Pip', human: false, hand: [], score: 0 },
+        { name: 'Bot Flush', human: false, hand: [], score: 0 },
+        { name: 'Bot Plop', human: false, hand: [], score: 0 }
+      ];
+    }
+
+    function buildDeck() {
+      const fresh = [];
+      for (const suit of SUITS) for (const rank of RANKS) fresh.push({ suit, rank, id: nextCardId++ });
+      for (let i = fresh.length - 1; i > 0; i--) { const j = randomIntExclusive(i + 1); [fresh[i], fresh[j]] = [fresh[j], fresh[i]]; }
+      return fresh;
+    }
+
+    function reshuffleFromDiscard() {
+      if (discard.length <= 1) return false;
+      const top = discard.pop();
+      deck = discard.slice();
+      discard = [top];
+      for (let i = deck.length - 1; i > 0; i--) { const j = randomIntExclusive(i + 1); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+      addHistory('Discard pile reshuffled into draw pile.');
+      return deck.length > 0;
+    }
+
+    function drawOneCard(player) {
+      if (deck.length <= 0 && !reshuffleFromDiscard()) return null;
+      const card = deck.pop();
+      if (card) player.hand.push(card);
+      return card;
+    }
+
+    function topCard() { return discard.length ? discard[discard.length - 1] : null; }
+    function isPlayable(card) { const top = topCard(); return !!(card && top && (card.rank === '8' || card.suit === activeSuit || card.rank === top.rank)); }
+    function getPlayableCards(hand) { return hand.filter((card) => isPlayable(card)); }
+    function isHumanTurn() { return roundActive && players[currentPlayer] && players[currentPlayer].human; }
+    function getNextPlayerIndex(fromIndex) { return (fromIndex + direction + players.length) % players.length; }
+
+    function setStatus(text, pulse) {
+      if (!ui.statusText) return;
+      ui.statusText.textContent = text;
+      if (!pulse) return;
+      ui.statusText.classList.add('hype');
+      if (statusPulseTimer) clearTimeout(statusPulseTimer);
+      statusPulseTimer = setTimeout(() => {
+        if (ui.statusText) ui.statusText.classList.remove('hype');
+        statusPulseTimer = null;
+      }, 920);
+    }
+
+    function addHistory(message) {
+      const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      historyLog.unshift(`${stamp} ${message}`);
+      if (historyLog.length > 12) historyLog.pop();
+      if (ui.historyText) ui.historyText.innerHTML = historyLog.length ? historyLog.join('<br>') : 'No plays yet.';
+    }
+
+    function updateSuitChips() {
+      document.querySelectorAll('[data-suit-chip]').forEach((chip) => chip.classList.toggle('active', chip.getAttribute('data-suit-chip') === activeSuit));
+    }
+
+    function renderDiscard() {
+      const top = topCard();
+      if (!top || !ui.discardCard) return;
+      ui.discardCard.className = `pile-card${isRedSuit(top.suit) ? ' red' : ''}`;
+      ui.discardCard.innerHTML = `<div>${top.rank}</div><div class="center">${suitGlyph(top.suit)}</div><div class="small">${top.rank}<br>${suitGlyph(top.suit)}</div>`;
+      if (ui.discardMeta) ui.discardMeta.textContent = top.rank === '8' ? `Wild -> ${suitName(activeSuit)}` : `Top: ${top.rank}${suitGlyph(top.suit)}`;
+    }
+
+    function renderOpponent(index) {
+      const player = players[index + 1];
+      if (!player) return;
+      if (ui.oppNames[index]) ui.oppNames[index].textContent = player.name;
+      if (ui.oppMetas[index]) ui.oppMetas[index].textContent = `Cards: ${player.hand.length}${player.hand.length <= 2 ? ' (Danger)' : ''}`;
+      if (ui.oppCards[index]) ui.oppCards[index].classList.toggle('active', roundActive && currentPlayer === index + 1);
+      if (ui.oppBacks[index]) {
+        const fakeCount = Math.min(8, Math.max(1, player.hand.length));
+        ui.oppBacks[index].innerHTML = '';
+        for (let i = 0; i < fakeCount; i++) {
+          const d = document.createElement('div');
+          d.className = 'mini-back';
+          ui.oppBacks[index].appendChild(d);
+        }
+      }
+    }
+
+    function updateStandings() {
+      if (ui.standingsText) ui.standingsText.innerHTML = players.map((p) => `${p.name}: ${p.score} / ${MATCH_TARGET}`).join('<br>');
+      if (ui.statsText) {
+        const matchRate = stats.matchesPlayed > 0 ? Math.round((stats.matchesWon / stats.matchesPlayed) * 100) : 0;
+        const roundRate = stats.roundsPlayed > 0 ? Math.round((stats.roundsWon / stats.roundsPlayed) * 100) : 0;
+        ui.statsText.textContent = `Lifetime: ${stats.matchesWon}/${stats.matchesPlayed} matches (${matchRate}%), ${stats.roundsWon}/${stats.roundsPlayed} rounds (${roundRate}%), best round ${stats.bestRoundPoints} pts.`;
+      }
+    }
+
+    function updateHud() {
+      const leader = players.reduce((best, p) => (p.score > best.score ? p : best), players[0]);
+      if (ui.roundText) ui.roundText.textContent = String(roundNumber);
+      if (ui.turnText) ui.turnText.textContent = players[currentPlayer] ? players[currentPlayer].name : '-';
+      if (ui.directionText) ui.directionText.textContent = direction === 1 ? 'Clockwise' : 'Counter';
+      if (ui.deckText) ui.deckText.textContent = String(deck.length);
+      if (ui.suitText) ui.suitText.textContent = `${suitName(activeSuit)} ${suitGlyph(activeSuit)}`;
+      if (ui.youCardsText) ui.youCardsText.textContent = String(players[0] ? players[0].hand.length : 0);
+      if (ui.leaderText) ui.leaderText.textContent = `${leader.name} (${leader.score})`;
+      if (ui.drawMeta) ui.drawMeta.textContent = `${deck.length} cards`;
+      if (ui.selectionText) {
+        const hand = players[0] ? players[0].hand : [];
+        const selected = hand.find((c) => c.id === selectedCardId);
+        ui.selectionText.textContent = selected ? `Selected: ${selected.rank}${suitGlyph(selected.suit)}` : 'No card selected';
+      }
+      if (ui.drawPileBtn) ui.drawPileBtn.disabled = !isHumanTurn() || hasDrawnThisTurn || !!pendingWildCard;
+      updateSuitChips();
+      updateStandings();
+    }
+
+    function updateActionButtons() {
+      const hand = players[0] ? players[0].hand : [];
+      const selected = hand.find((c) => c.id === selectedCardId);
+      const selectedPlayable = !!selected && isPlayable(selected);
+      const humanTurn = isHumanTurn();
+      if (ui.playBtn) ui.playBtn.disabled = !humanTurn || !selectedPlayable || !!pendingWildCard;
+      if (ui.drawBtn) ui.drawBtn.disabled = !humanTurn || hasDrawnThisTurn || !!pendingWildCard;
+      if (ui.passBtn) ui.passBtn.disabled = !humanTurn || !hasDrawnThisTurn || !!pendingWildCard;
+      if (ui.smartBtn) ui.smartBtn.disabled = !humanTurn || !!pendingWildCard;
+    }
+
+    function renderPlayerHand() {
+      const hand = players[0] ? players[0].hand : [];
+      if (!ui.playerHand) return;
+      ui.playerHand.innerHTML = '';
+      hand.forEach((card) => {
+        const btn = document.createElement('button');
+        btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${isPlayable(card) ? ' playable' : ''}${card.id === selectedCardId ? ' selected' : ''}`;
+        btn.innerHTML = `<div>${card.rank}</div><div class="center">${suitGlyph(card.suit)}</div><div class="small">${card.rank}<br>${suitGlyph(card.suit)}</div>`;
+        btn.addEventListener('click', () => {
+          if (!isHumanTurn() || pendingWildCard) return;
+          selectedCardId = selectedCardId === card.id ? null : card.id;
+          updateAll();
+        });
+        ui.playerHand.appendChild(btn);
+      });
+      if (hand.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'panel';
+        empty.textContent = 'No cards in hand.';
+        ui.playerHand.appendChild(empty);
+      }
+    }
+
+    function updateAll() {
+      updateHud();
+      renderDiscard();
+      renderPlayerHand();
+      for (let i = 0; i < 3; i++) renderOpponent(i);
+      updateActionButtons();
+    }
+
+    function chooseBestSuit(hand, excludeId) {
+      const counts = { S: 0, H: 0, D: 0, C: 0 };
+      hand.forEach((card) => { if (card.id !== excludeId) counts[card.suit] += 1; });
+      return SUITS.reduce((best, suit) => counts[suit] > counts[best] ? suit : best, 'C');
+    }
+
+    function chooseBestCard(playerIndex, playableCards) {
+      const player = players[playerIndex];
+      const nextIndex = getNextPlayerIndex(playerIndex);
+      const threat = players[nextIndex].hand.length <= 2;
+      const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
+      player.hand.forEach((card) => { suitCounts[card.suit] += 1; });
+      let best = playableCards[0];
+      let bestScore = -999;
+      playableCards.forEach((card) => {
+        let score = 0;
+        if (card.rank === '2') score += threat ? 80 : 30;
+        if (card.rank === 'J') score += threat ? 70 : 24;
+        if (card.rank === 'Q') score += threat ? 58 : 20;
+        if (card.rank === '8') score += player.hand.length > 4 ? 8 : -18;
+        score += suitCounts[card.suit] * 2;
+        if (card.suit === activeSuit) score += 3;
+        score += cardPoints(card) / 20;
+        if (score > bestScore) { bestScore = score; best = card; }
+      });
+      return best;
+    }
+
+    function clearAiTimer() { if (aiTurnTimeoutId) { clearTimeout(aiTurnTimeoutId); aiTurnTimeoutId = null; } }
+    function showWelcomeGuide() { if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'flex'; onboardingOpen = true; clearAiTimer(); }
+    function hideWelcomeGuide() { if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none'; onboardingOpen = false; scheduleTurnIfNeeded(); }
+    function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
+    function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
+
+    function showRoundOverlay(title, summary, matchFinished) {
+      if (ui.roundTitle) ui.roundTitle.textContent = title;
+      if (ui.roundSummary) ui.roundSummary.textContent = summary;
+      if (ui.roundScoreboard) ui.roundScoreboard.innerHTML = players.map((p) => `${p.name}: ${p.score} / ${MATCH_TARGET}`).join('<br>');
+      if (ui.nextRoundBtn) ui.nextRoundBtn.style.display = matchFinished ? 'none' : 'inline-flex';
+      if (ui.roundOverlay) ui.roundOverlay.style.display = 'flex';
+    }
+
+    function hideRoundOverlay() { if (ui.roundOverlay) ui.roundOverlay.style.display = 'none'; }
+
+    function applyPendingEffectsAtTurnStart() {
+      let guard = 0;
+      while (roundActive && guard < 10) {
+        const player = players[currentPlayer];
+        if (pendingDrawCards > 0) {
+          for (let i = 0; i < pendingDrawCards; i++) drawOneCard(player);
+          const msg = `${player.name} draws ${pendingDrawCards} and loses turn.`;
+          setStatus(msg, true);
+          addHistory(msg);
+          playSfx('penalty');
+          pendingDrawCards = 0;
+          currentPlayer = getNextPlayerIndex(currentPlayer);
+          hasDrawnThisTurn = false;
+          selectedCardId = null;
+          guard++;
+          continue;
+        }
+        if (pendingSkips > 0) {
+          const msg = `${player.name} got skipped.`;
+          setStatus(msg, true);
+          addHistory(msg);
+          playSfx('skip');
+          pendingSkips--;
+          currentPlayer = getNextPlayerIndex(currentPlayer);
+          hasDrawnThisTurn = false;
+          selectedCardId = null;
+          guard++;
+          continue;
+        }
+        break;
+      }
+    }
+
+    function scheduleTurnIfNeeded() {
+      clearAiTimer();
+      updateAll();
+      if (!roundActive || onboardingOpen) return;
+      if (!isHumanTurn()) aiTurnTimeoutId = setTimeout(runAiTurn, 760);
+    }
+
+    function advanceTurn() {
+      if (!roundActive) return;
+      currentPlayer = getNextPlayerIndex(currentPlayer);
+      hasDrawnThisTurn = false;
+      selectedCardId = null;
+      applyPendingEffectsAtTurnStart();
+      scheduleTurnIfNeeded();
+    }
+
+    function endRound(winnerIndex) {
+      roundActive = false;
+      clearAiTimer();
+      const winner = players[winnerIndex];
+      let points = 0;
+      players.forEach((player, idx) => { if (idx !== winnerIndex) player.hand.forEach((card) => { points += cardPoints(card); }); });
+      winner.score += points;
+      stats.roundsPlayed += 1;
+      if (winnerIndex === 0) stats.roundsWon += 1;
+      stats.bestRoundPoints = Math.max(stats.bestRoundPoints, points);
+      let title = 'Round Over';
+      let summary = `${winner.name} wins round ${roundNumber} for ${points} points.`;
+      let matchFinished = false;
+      if (winner.score >= MATCH_TARGET) {
+        matchFinished = true;
+        title = `${winner.name} Wins The Match`;
+        summary = `${winner.name} reached ${winner.score}. Match complete in round ${roundNumber}.`;
+        stats.matchesPlayed += 1;
+        if (winnerIndex === 0) stats.matchesWon += 1;
+      }
+      saveStats();
+      setStatus(summary, true);
+      addHistory(summary);
+      playSfx(winnerIndex === 0 ? 'win' : 'lose');
+      updateAll();
+      showRoundOverlay(title, summary, matchFinished);
+    }
+
+    function playCardById(playerIndex, cardId, forcedSuit) {
+      const player = players[playerIndex];
+      if (!player) return false;
+      const idx = player.hand.findIndex((card) => card.id === cardId);
+      if (idx < 0) return false;
+      const card = player.hand[idx];
+      if (!isPlayable(card)) { if (player.human) setStatus('That card does not match suit or rank.', true); return false; }
+      if (card.rank === '8' && !forcedSuit && player.human) { showSuitChooser(card); return false; }
+
+      player.hand.splice(idx, 1);
+      discard.push(card);
+      if (card.rank === '8') { activeSuit = forcedSuit || chooseBestSuit(player.hand, card.id); playSfx('wild'); } else activeSuit = card.suit;
+
+      let detail = `${player.name} played ${card.rank}${suitGlyph(card.suit)}.`;
+      if (card.rank === '2') { pendingDrawCards += 2; detail += ' Draw Two triggered.'; playSfx('penalty'); }
+      else if (card.rank === 'J') { pendingSkips += 1; detail += ' Skip triggered.'; playSfx('skip'); }
+      else if (card.rank === 'Q') { direction *= -1; detail += ' Reverse direction.'; playSfx('reverse'); }
+      else if (card.rank !== '8') playSfx('play');
+      if (card.rank === '8') detail += ` Suit is now ${suitName(activeSuit)}.`;
+      if (player.hand.length === 1) detail += ` ${player.name} has one card left.`;
+      setStatus(detail, true);
+      addHistory(detail);
+      if (player.hand.length === 0) { endRound(playerIndex); return true; }
+      advanceTurn();
+      return true;
+    }
+
+    function drawForHuman() {
+      if (!isHumanTurn() || hasDrawnThisTurn || pendingWildCard) return;
+      unlockAudio();
+      const player = players[currentPlayer];
+      const drawn = drawOneCard(player);
+      hasDrawnThisTurn = true;
+      selectedCardId = null;
+      playSfx('draw');
+      if (!drawn) {
+        setStatus('No cards left to draw. Passing turn.', true);
+        addHistory('Draw pile empty. Turn passed.');
+        setTimeout(() => { if (isHumanTurn()) advanceTurn(); }, 300);
+        updateAll();
+        return;
+      }
+      const label = `${drawn.rank}${suitGlyph(drawn.suit)}`;
+      if (isPlayable(drawn)) {
+        selectedCardId = drawn.id;
+        setStatus(`You drew ${label}. Play it or pass.`, true);
+      } else {
+        setStatus(`You drew ${label}. No play available, turn passes.`, true);
+        addHistory('You drew and passed.');
+        setTimeout(() => { if (isHumanTurn()) advanceTurn(); }, 460);
+      }
+      updateAll();
+    }
+
+    function passHumanTurn() {
+      if (!isHumanTurn() || !hasDrawnThisTurn || pendingWildCard) return;
+      setStatus('You passed after drawing.', true);
+      addHistory('You passed.');
+      advanceTurn();
+    }
+
+    function playSelectedCard() {
+      if (!isHumanTurn() || pendingWildCard) return;
+      if (!selectedCardId) { setStatus('Select a card first.', true); return; }
+      unlockAudio();
+      playCardById(currentPlayer, selectedCardId, null);
+    }
+
+    function smartMove() {
+      if (!isHumanTurn() || pendingWildCard) return;
+      unlockAudio();
+      const player = players[currentPlayer];
+      const playable = getPlayableCards(player.hand);
+      if (playable.length === 0) { drawForHuman(); return; }
+      const best = chooseBestCard(currentPlayer, playable);
+      const forcedSuit = best.rank === '8' ? chooseBestSuit(player.hand, best.id) : null;
+      selectedCardId = best.id;
+      playCardById(currentPlayer, best.id, forcedSuit);
+    }
+
+    function runAiTurn() {
+      if (!roundActive || isHumanTurn() || onboardingOpen) return;
+      const player = players[currentPlayer];
+      const playable = getPlayableCards(player.hand);
+      if (playable.length === 0) {
+        const drawn = drawOneCard(player);
+        playSfx('draw');
+        if (drawn && isPlayable(drawn)) {
+          const forcedSuit = drawn.rank === '8' ? chooseBestSuit(player.hand, drawn.id) : null;
+          playCardById(currentPlayer, drawn.id, forcedSuit);
+          return;
+        }
+        const msg = `${player.name} drew and passed.`;
+        setStatus(msg, true);
+        addHistory(msg);
+        advanceTurn();
+        return;
+      }
+      const best = chooseBestCard(currentPlayer, playable);
+      const forcedSuit = best.rank === '8' ? chooseBestSuit(player.hand, best.id) : null;
+      playCardById(currentPlayer, best.id, forcedSuit);
+    }
+
+    function startRound() {
+      clearAiTimer();
+      hideSuitChooser();
+      hideRoundOverlay();
+      deck = buildDeck();
+      discard = [];
+      activeSuit = 'C';
+      direction = 1;
+      pendingDrawCards = 0;
+      pendingSkips = 0;
+      selectedCardId = null;
+      hasDrawnThisTurn = false;
+      roundActive = true;
+      players.forEach((p) => { p.hand = []; });
+      for (let i = 0; i < STARTING_HAND; i++) players.forEach((player) => drawOneCard(player));
+      let opener = drawOneCard({ hand: [] });
+      while (opener && opener.rank === '8' && deck.length > 0) { deck.unshift(opener); opener = drawOneCard({ hand: [] }); }
+      if (!opener) opener = { rank: 'A', suit: 'C', id: nextCardId++ };
+      discard.push(opener);
+      activeSuit = opener.suit;
+      currentPlayer = (roundNumber - 1) % players.length;
+      applyPendingEffectsAtTurnStart();
+      const intro = `Round ${roundNumber} started. ${players[currentPlayer].name} leads with ${opener.rank}${suitGlyph(opener.suit)} on top.`;
+      setStatus(intro, true);
+      addHistory(intro);
+      playSfx('deal');
+      updateAll();
+      scheduleTurnIfNeeded();
+    }
+
+    function startFreshMatch() {
+      clearAiTimer();
+      hideRoundOverlay();
+      hideSuitChooser();
+      players.forEach((p) => { p.score = 0; p.hand = []; });
+      roundNumber = 1;
+      historyLog = [];
+      if (ui.historyText) ui.historyText.textContent = 'No plays yet.';
+      setStatus('Fresh match loaded. First to 200 wins.', true);
+      startRound();
+    }
+
+    function handleSuitChoice(suit) {
+      if (!pendingWildCard || !isHumanTurn()) return;
+      const cardId = pendingWildCard.id;
+      hideSuitChooser();
+      playCardById(currentPlayer, cardId, suit);
+    }
+
+    function wireEvents() {
+      if (ui.playBtn) ui.playBtn.addEventListener('click', playSelectedCard);
+      if (ui.drawBtn) ui.drawBtn.addEventListener('click', drawForHuman);
+      if (ui.passBtn) ui.passBtn.addEventListener('click', passHumanTurn);
+      if (ui.smartBtn) ui.smartBtn.addEventListener('click', smartMove);
+      if (ui.drawPileBtn) ui.drawPileBtn.addEventListener('click', drawForHuman);
+      if (ui.helpBtn) ui.helpBtn.addEventListener('click', showWelcomeGuide);
+      if (ui.newMatchBtn) ui.newMatchBtn.addEventListener('click', () => { if (confirm('Start a fresh match and reset all current scores?')) startFreshMatch(); });
+      if (ui.quickStartBtn) ui.quickStartBtn.addEventListener('click', () => { hideWelcomeGuide(); unlockAudio(); });
+      if (ui.closeGuideBtn) ui.closeGuideBtn.addEventListener('click', hideWelcomeGuide);
+      if (ui.nextRoundBtn) ui.nextRoundBtn.addEventListener('click', () => { hideRoundOverlay(); roundNumber++; startRound(); });
+      if (ui.newMatchOverlayBtn) ui.newMatchOverlayBtn.addEventListener('click', () => { hideRoundOverlay(); startFreshMatch(); });
+      document.querySelectorAll('[data-suit]').forEach((btn) => btn.addEventListener('click', () => handleSuitChoice(btn.getAttribute('data-suit'))));
+      document.addEventListener('keydown', (e) => {
+        if (onboardingOpen) {
+          if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); hideWelcomeGuide(); }
+          return;
+        }
+        unlockAudio();
+        if (e.code === 'KeyM') { e.preventDefault(); toggleSound(); return; }
+        if (e.code === 'KeyH') { e.preventDefault(); showWelcomeGuide(); return; }
+        if (!isHumanTurn() || pendingWildCard) return;
+        if (e.code === 'KeyD') { e.preventDefault(); drawForHuman(); return; }
+        if (e.code === 'KeyP') { e.preventDefault(); playSelectedCard(); return; }
+        if (e.code === 'KeyA' || e.code === 'Enter') { e.preventDefault(); smartMove(); return; }
+      });
+    }
+
+    function init() {
+      players = createPlayers();
+      soundEnabled = loadSoundPref();
+      updateSoundButtons();
+      wireEvents();
+      startRound();
+      showWelcomeGuide();
+      updateAll();
+    }
+
+    init();
+  </script>
+</body>
+</html>

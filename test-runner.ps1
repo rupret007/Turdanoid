@@ -9,7 +9,7 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','turdrummy.html','turdspades.html','game.js','README.md') | ForEach-Object {
+@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','crapeights.html','turdrummy.html','turdspades.html','game.js','README.md') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 
@@ -31,6 +31,7 @@ $hub = Get-Content hub.html -Raw
 if ($hub -match 'href="turdtris\.html"') { Pass("link to turdtris") } else { Fail("link to turdtris") }
 if ($hub -match 'href="TurdAnoid\.html"') { Pass("link to TurdAnoid") } else { Fail("link to TurdAnoid") }
 if ($hub -match 'href="turdjack\.html"') { Pass("link to turdjack") } else { Fail("link to turdjack") }
+if ($hub -match 'href="crapeights\.html"') { Pass("link to crapeights") } else { Fail("link to crapeights") }
 if ($hub -match 'href="turdrummy\.html"') { Pass("link to turdrummy") } else { Fail("link to turdrummy") }
 if ($hub -match 'href="turdspades\.html"') { Pass("link to turdspades") } else { Fail("link to turdspades") }
 if ($hub -match '(?s)<div class="games">\s*<a href="TurdAnoid\.html"') { Pass("TurdAnoid is first card") } else { Fail("TurdAnoid is first card") }
@@ -156,6 +157,24 @@ if ($jack -match 'data-sound-toggle') { Pass("turdjack sound toggle buttons") } 
 if ($jack -match 'function pulseStatus\(') { Pass("turdjack status pulse helper") } else { Fail("turdjack status pulse helper") }
 if ($jack -match '(?s)function setStatus\(text\)\s*\{\s*ui\.statusText\.textContent = text;\s*pulseStatus\(\);') { Pass("turdjack status pulse integration") } else { Fail("turdjack status pulse integration") }
 if ($jack -match 'if \(e\.code === ''KeyM''\)') { Pass("turdjack keybind sound toggle") } else { Fail("turdjack keybind sound toggle") }
+
+Write-Host "`n=== crapeights.html ===" -ForegroundColor Cyan
+$eight = Get-Content crapeights.html -Raw
+if ($eight -match 'Crap Eights') { Pass("crapeights title") } else { Fail("crapeights title") }
+if ($eight -match 'viewport') { Pass("crapeights viewport meta") } else { Fail("crapeights viewport meta") }
+if ($eight -match 'const MATCH_TARGET = 200;') { Pass("crapeights match target") } else { Fail("crapeights match target") }
+if ($eight -match 'const STARTING_HAND = 7;') { Pass("crapeights opening hand size") } else { Fail("crapeights opening hand size") }
+if ($eight -match 'function chooseBestCard\(') { Pass("crapeights ai card chooser") } else { Fail("crapeights ai card chooser") }
+if ($eight -match 'function runAiTurn\(') { Pass("crapeights ai turn loop") } else { Fail("crapeights ai turn loop") }
+if ($eight -match 'function startRound\(') { Pass("crapeights round start flow") } else { Fail("crapeights round start flow") }
+if ($eight -match 'function endRound\(') { Pass("crapeights round end flow") } else { Fail("crapeights round end flow") }
+if ($eight -match 'function showWelcomeGuide\(') { Pass("crapeights onboarding guide") } else { Fail("crapeights onboarding guide") }
+if ($eight -match 'function toggleSound\(') { Pass("crapeights sound toggle handler") } else { Fail("crapeights sound toggle handler") }
+if ($eight -match 'data-sound-toggle') { Pass("crapeights sound toggle buttons") } else { Fail("crapeights sound toggle buttons") }
+if ($eight -match 'data-suit=') { Pass("crapeights wild suit chooser") } else { Fail("crapeights wild suit chooser") }
+if ($eight -match 'localStorage') { Pass("crapeights localStorage persistence") } else { Fail("crapeights localStorage persistence") }
+if ($eight -match 'id="smartBtn"') { Pass("crapeights smart action button") } else { Fail("crapeights smart action button") }
+if ($eight -match 'id="passBtn"') { Pass("crapeights pass action button") } else { Fail("crapeights pass action button") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw
