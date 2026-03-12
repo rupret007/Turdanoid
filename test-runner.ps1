@@ -164,6 +164,9 @@ if ($eight -match 'Crappy Eights') { Pass("crapeights title") } else { Fail("cra
 if ($eight -match 'viewport') { Pass("crapeights viewport meta") } else { Fail("crapeights viewport meta") }
 if ($eight -match 'const MATCH_TARGET = 200;') { Pass("crapeights match target") } else { Fail("crapeights match target") }
 if ($eight -match 'const STARTING_HAND = 7;') { Pass("crapeights opening hand size") } else { Fail("crapeights opening hand size") }
+if ($eight -match 'const BOT_FIRST_NAMES = \[') { Pass("crapeights bot name pool") } else { Fail("crapeights bot name pool") }
+if ($eight -match 'function pickRandomBotNames\(') { Pass("crapeights bot name randomizer") } else { Fail("crapeights bot name randomizer") }
+if ($eight -match 'const botNames = pickRandomBotNames\(3\);') { Pass("crapeights unique bot name assignment") } else { Fail("crapeights unique bot name assignment") }
 if ($eight -match 'function chooseBestCard\(') { Pass("crapeights ai card chooser") } else { Fail("crapeights ai card chooser") }
 if ($eight -match 'function runAiTurn\(') { Pass("crapeights ai turn loop") } else { Fail("crapeights ai turn loop") }
 if ($eight -match 'function startRound\(') { Pass("crapeights round start flow") } else { Fail("crapeights round start flow") }

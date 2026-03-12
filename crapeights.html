@@ -283,6 +283,11 @@
     const STORAGE = { stats: 'crapeightsStats', sound: 'crapeightsSoundOn_v1' };
     const SUITS = ['S', 'H', 'D', 'C'];
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const BOT_FIRST_NAMES = [
+      'Alex', 'Casey', 'Jordan', 'Taylor', 'Riley', 'Parker', 'Logan', 'Morgan',
+      'Avery', 'Quinn', 'Blake', 'Cameron', 'Drew', 'Hayden', 'Reese', 'Rowan',
+      'Skyler', 'Sawyer', 'Emerson', 'Finley', 'Jules', 'Milo', 'Nico', 'Sid'
+    ];
 
     const ui = {
       statusText: document.getElementById('statusText'),
@@ -442,12 +447,25 @@
       return Math.floor(Math.random() * max);
     }
 
+    function pickRandomBotNames(count) {
+      const pool = BOT_FIRST_NAMES.slice();
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = randomIntExclusive(i + 1);
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      if (pool.length >= count) return pool.slice(0, count);
+      const fallback = [];
+      for (let i = 0; i < count; i++) fallback.push(`Bot ${i + 1}`);
+      return fallback;
+    }
+
     function createPlayers() {
+      const botNames = pickRandomBotNames(3);
       return [
         { name: 'You', human: true, hand: [], score: 0 },
-        { name: 'Bot Pip', human: false, hand: [], score: 0 },
-        { name: 'Bot Flush', human: false, hand: [], score: 0 },
-        { name: 'Bot Plop', human: false, hand: [], score: 0 }
+        { name: botNames[0], human: false, hand: [], score: 0 },
+        { name: botNames[1], human: false, hand: [], score: 0 },
+        { name: botNames[2], human: false, hand: [], score: 0 }
       ];
     }
 
@@ -858,7 +876,7 @@
       clearAiTimer();
       hideRoundOverlay();
       hideSuitChooser();
-      players.forEach((p) => { p.score = 0; p.hand = []; });
+      players = createPlayers();
       roundNumber = 1;
       historyLog = [];
       if (ui.historyText) ui.historyText.textContent = 'No plays yet.';
