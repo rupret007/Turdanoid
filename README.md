@@ -65,7 +65,7 @@ Blackjack with a toilet-dealer vibe and persistent bankroll.
 
 **Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).
 
-### Crap Eights
+### Crappy Eights
 
 Crazy Eights with Uno-style pacing and themed table presentation.
 
@@ -123,7 +123,7 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
    - `TurdAnoid.html` - TurdAnoid
    - `turdtris.html` - Turdtris
    - `turdjack.html` - Crapjack 21
-   - `crapeights.html` - Crap Eights
+   - `crapeights.html` - Crappy Eights
    - `turdrummy.html` - TurdRummy
    - `turdspades.html` - TurdSpades
 
@@ -147,7 +147,7 @@ After deployment:
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
-- **Crap Eights:** https://rupret007.github.io/Turdanoid/crapeights.html
+- **Crappy Eights:** https://rupret007.github.io/Turdanoid/crapeights.html
 - **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
 - **TurdSpades:** https://rupret007.github.io/Turdanoid/turdspades.html
 - **Neon Arkanoid (legacy):** https://rupret007.github.io/Turdanoid/index.html
@@ -159,7 +159,7 @@ The `.nojekyll` file ensures GitHub Pages serves files as-is.
 - **TurdAnoid**: p5.js
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
-- **Crap Eights**: Vanilla JavaScript + DOM/CSS card UI
+- **Crappy Eights**: Vanilla JavaScript + DOM/CSS card UI
 - **TurdRummy**: Vanilla JavaScript + DOM/CSS card UI
 - **TurdSpades**: Vanilla JavaScript + DOM/CSS card UI
 - **Neon Arkanoid (legacy)**: Vanilla JavaScript (Canvas API)

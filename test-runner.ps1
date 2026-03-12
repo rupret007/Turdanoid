@@ -160,7 +160,7 @@ if ($jack -match 'if \(e\.code === ''KeyM''\)') { Pass("turdjack keybind sound t
 
 Write-Host "`n=== crapeights.html ===" -ForegroundColor Cyan
 $eight = Get-Content crapeights.html -Raw
-if ($eight -match 'Crap Eights') { Pass("crapeights title") } else { Fail("crapeights title") }
+if ($eight -match 'Crappy Eights') { Pass("crapeights title") } else { Fail("crapeights title") }
 if ($eight -match 'viewport') { Pass("crapeights viewport meta") } else { Fail("crapeights viewport meta") }
 if ($eight -match 'const MATCH_TARGET = 200;') { Pass("crapeights match target") } else { Fail("crapeights match target") }
 if ($eight -match 'const STARTING_HAND = 7;') { Pass("crapeights opening hand size") } else { Fail("crapeights opening hand size") }
