@@ -120,6 +120,11 @@ if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } el
 if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
 if ($jack -match '(?s)function newShoe\(\)\s*\{\s*if\s*\(roundActive\)\s*\{\s*setStatus\([^)]*\);\s*updateHud\(\);\s*return;') { Pass("new shoe blocked-path hud refresh") } else { Fail("new shoe blocked-path hud refresh") }
 if ($jack -match '(?s)function newShoe\(\)\s*\{.*?createShoe\([^)]*\);\s*setStatus\([^)]*\);\s*logHistory\([^)]*\);\s*updateHud\(\);') { Pass("new shoe success-path hud refresh") } else { Fail("new shoe success-path hud refresh") }
+if ($jack -match '(?s)function playerDouble\(\)\s*\{.*?if \(!firstDecisionOpen \|\| hand\.length !== 2\)\s*\{') { Pass("double restricted to first decision") } else { Fail("double restricted to first decision") }
+if ($jack -match '(?s)function playerDouble\(\)\s*\{.*?if \(bankroll < activeBet\)\s*\{') { Pass("double bankroll guard") } else { Fail("double bankroll guard") }
+if ($jack -match '(?s)function playerSplit\(\)\s*\{.*?if \(splitRound\)\s*\{\s*setStatus\(') { Pass("split one-time guard") } else { Fail("split one-time guard") }
+if ($jack -match '(?s)function playerSplit\(\)\s*\{.*?if \(bankroll < currentBet\)\s*\{') { Pass("split bankroll guard") } else { Fail("split bankroll guard") }
+if ($jack -match '(?s)function playerSurrender\(\)\s*\{.*?if \(splitRound\)\s*\{\s*setStatus\(') { Pass("surrender blocked after split") } else { Fail("surrender blocked after split") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw
@@ -147,6 +152,8 @@ if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{\s*clearAiTurnTimeout\(
 if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("reset match clears ai timeout") } else { Fail("reset match clears ai timeout") }
 if ($rummy -match 'const winner = state\.playerScore === state\.aiScore\s*\?\s*"Tie"\s*:\s*\(state\.playerScore > state\.aiScore \? "Player" : "AI"\);') { Pass("rummy match winner compares both scores") } else { Fail("rummy match winner compares both scores") }
 if ($rummy -match 'Match tied at target\.') { Pass("rummy tie-at-target summary") } else { Fail("rummy tie-at-target summary") }
+if ($rummy -match '(?s)function refillStockIfNeeded\(\)\s*\{\s*if \(state\.stock\.length > 0\) return true;\s*if \(state\.discard\.length <= 1\) return false;') { Pass("stock refill keeps top discard") } else { Fail("stock refill keeps top discard") }
+if ($rummy -match 'resolveStockStall\(\"Stock exhausted\. Round ends in a draw\.\"\);') { Pass("stock exhaustion draw path present") } else { Fail("stock exhaustion draw path present") }
 
 Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
 $spades = Get-Content turdspades.html -Raw
@@ -162,6 +169,8 @@ if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules g
 if ($spades -match 'const tiedAtOrAboveTarget = teamAReached && teamBReached && state\.scores\[0\] === state\.scores\[1\];') { Pass("spades tie-break detection") } else { Fail("spades tie-break detection") }
 if ($spades -match "Scores tied above target\. Play a tiebreaker round\.") { Pass("spades tie-break status text") } else { Fail("spades tie-break status text") }
 if ($spades -match 'state\.bidTurn = \(state\.bidTurn \+ 1\) % 4;') { Pass("spades bid turn advance not hardcoded") } else { Fail("spades bid turn advance not hardcoded") }
+if ($spades -match 'const nextMode = state\.phase === ''roundEnd'';') { Pass("spades next-round gate") } else { Fail("spades next-round gate") }
+if ($spades -match 'el\.nextRoundTop\.addEventListener\(''click'', \(\) => \{ if \(state\.phase === ''roundEnd''\) startRound\(\); \}\);') { Pass("spades tiebreak round action") } else { Fail("spades tiebreak round action") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green
