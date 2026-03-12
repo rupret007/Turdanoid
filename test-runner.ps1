@@ -77,6 +77,11 @@ if ($tris -match 'function setHype\(') { Pass("hype helper") } else { Fail("hype
 if ($tris -match 'function getDangerRatio\(') { Pass("danger ratio helper") } else { Fail("danger ratio helper") }
 if ($tris -match 'name: ''Abyss Funnel''') { Pass("late abyss mutator") } else { Fail("late abyss mutator") }
 if ($tris -match 'DANGER: stack is feral\.') { Pass("danger status messaging") } else { Fail("danger status messaging") }
+if ($tris -match 'const SOUND_STORAGE_KEY = ''turdtrisSoundOn_v1'';') { Pass("turdtris sound storage key") } else { Fail("turdtris sound storage key") }
+if ($tris -match 'function toggleSound\(') { Pass("turdtris sound toggle handler") } else { Fail("turdtris sound toggle handler") }
+if ($tris -match 'data-sound-toggle') { Pass("turdtris sound toggle buttons") } else { Fail("turdtris sound toggle buttons") }
+if ($tris -match 'if \(e\.code === ''KeyM''\)') { Pass("turdtris keybind sound toggle") } else { Fail("turdtris keybind sound toggle") }
+if ($tris -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdtris hype status class") } else { Fail("turdtris hype status class") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -109,6 +114,11 @@ if ($turd -match 'function setHype\(') { Pass("turdanoid hype helper") } else { 
 if ($turd -match 'function triggerShake\(') { Pass("turdanoid shake helper") } else { Fail("turdanoid shake helper") }
 if ($turd -match 'const speedRamp = min\(1\.5, pressureRamp \* levelRamp\);') { Pass("turdanoid late pressure speed ramp") } else { Fail("turdanoid late pressure speed ramp") }
 if ($turd -match 'Hype:') { Pass("turdanoid hype status tag") } else { Fail("turdanoid hype status tag") }
+if ($turd -match 'const SOUND_STORAGE_KEY = ''turdanoidSoundOn_v1'';') { Pass("turdanoid sound storage key") } else { Fail("turdanoid sound storage key") }
+if ($turd -match 'function toggleSound\(') { Pass("turdanoid sound toggle handler") } else { Fail("turdanoid sound toggle handler") }
+if ($turd -match 'data-sound-toggle') { Pass("turdanoid sound toggle buttons") } else { Fail("turdanoid sound toggle buttons") }
+if ($turd -match 'comboCardEl\.classList\.toggle\(''combo-live'', combo >= 4\);') { Pass("turdanoid combo highlight class") } else { Fail("turdanoid combo highlight class") }
+if ($turd -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdanoid hype status class") } else { Fail("turdanoid hype status class") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -129,7 +139,7 @@ if ($jack -match 'quickStartRound') { Pass("quick start handler") } else { Fail(
 if ($jack -match 'id=\"quickGuideBtn\"') { Pass("guide quick start button") } else { Fail("guide quick start button") }
 if ($jack -match 'data-mobile-action=\"smart\"') { Pass("smart mobile action") } else { Fail("smart mobile action") }
 if ($jack -match '(?s)function newShoe\(\)\s*\{\s*if\s*\(roundActive\)\s*\{\s*setStatus\([^)]*\);\s*updateHud\(\);\s*return;') { Pass("new shoe blocked-path hud refresh") } else { Fail("new shoe blocked-path hud refresh") }
-if ($jack -match '(?s)function newShoe\(\)\s*\{.*?createShoe\([^)]*\);\s*setStatus\([^)]*\);\s*logHistory\([^)]*\);\s*updateHud\(\);') { Pass("new shoe success-path hud refresh") } else { Fail("new shoe success-path hud refresh") }
+if ($jack -match '(?s)function newShoe\(\)\s*\{.*?createShoe\([^)]*\);\s*setStatus\([^)]*\);\s*logHistory\([^)]*\);.*?updateHud\(\);') { Pass("new shoe success-path hud refresh") } else { Fail("new shoe success-path hud refresh") }
 if ($jack -match '(?s)function playerDouble\(\)\s*\{.*?if \(!firstDecisionOpen \|\| hand\.length !== 2\)\s*\{') { Pass("double restricted to first decision") } else { Fail("double restricted to first decision") }
 if ($jack -match '(?s)function playerDouble\(\)\s*\{.*?if \(bankroll < activeBet\)\s*\{') { Pass("double bankroll guard") } else { Fail("double bankroll guard") }
 if ($jack -match '(?s)function playerSplit\(\)\s*\{.*?if \(splitRound\)\s*\{\s*setStatus\(') { Pass("split one-time guard") } else { Fail("split one-time guard") }
@@ -140,6 +150,12 @@ if ($jack -match 'let coldStreak = 0;') { Pass("cold streak state") } else { Fai
 if ($jack -match 'function recordMomentum\(') { Pass("momentum helper") } else { Fail("momentum helper") }
 if ($jack -match 'function getTableFlavor\(') { Pass("table flavor helper") } else { Fail("table flavor helper") }
 if ($jack -match 'Table vibe:') { Pass("dynamic table vibe hint") } else { Fail("dynamic table vibe hint") }
+if ($jack -match 'const SOUND_STORAGE_KEY = ''turdjackSoundOn_v1'';') { Pass("turdjack sound storage key") } else { Fail("turdjack sound storage key") }
+if ($jack -match 'function toggleSound\(') { Pass("turdjack sound toggle handler") } else { Fail("turdjack sound toggle handler") }
+if ($jack -match 'data-sound-toggle') { Pass("turdjack sound toggle buttons") } else { Fail("turdjack sound toggle buttons") }
+if ($jack -match 'function pulseStatus\(') { Pass("turdjack status pulse helper") } else { Fail("turdjack status pulse helper") }
+if ($jack -match '(?s)function setStatus\(text\)\s*\{\s*ui\.statusText\.textContent = text;\s*pulseStatus\(\);') { Pass("turdjack status pulse integration") } else { Fail("turdjack status pulse integration") }
+if ($jack -match 'if \(e\.code === ''KeyM''\)') { Pass("turdjack keybind sound toggle") } else { Fail("turdjack keybind sound toggle") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw

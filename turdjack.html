@@ -120,7 +120,7 @@
       min-height: 40px;
       font-size: 12px;
       cursor: pointer;
-      transition: transform 0.18s ease, background 0.2s ease;
+      transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease;
     }
 
     .btn.subtle {
@@ -132,6 +132,11 @@
     .btn:hover:not(:disabled) {
       transform: translateY(-1px);
       background: rgba(20, 44, 35, 0.85);
+      border-color: rgba(142, 255, 194, 0.65);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.985);
     }
 
     .btn:disabled {
@@ -207,6 +212,19 @@
       line-height: 1.4;
       color: var(--muted);
       min-height: 48px;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+    }
+
+    .status.hype {
+      border-color: rgba(255, 223, 148, 0.75);
+      box-shadow: 0 0 0 1px rgba(255, 223, 148, 0.34), 0 0 18px rgba(255, 190, 120, 0.22);
+      background: rgba(29, 20, 10, 0.72);
+      animation: statusPulse 0.9s ease-in-out infinite alternate;
+    }
+
+    @keyframes statusPulse {
+      from { transform: translateY(0); }
+      to { transform: translateY(-1px); }
     }
 
     .history-log {
@@ -640,6 +658,7 @@
         <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
         <button class="btn" id="helpBtn">❓ How To Play</button>
         <button class="btn" id="newShoeBtn">🃏 New Shoe</button>
+        <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
         <button class="btn danger" id="resetStatsBtn">↻ Reset Bank</button>
       </div>
       <div class="mobile-menu">
@@ -649,6 +668,7 @@
             <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
             <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
             <button class="btn" onclick="newShoe()">🃏 New Shoe</button>
+            <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
             <button class="btn danger" onclick="resetBankroll()">↻ Reset Bank</button>
           </div>
         </details>
@@ -810,7 +830,7 @@
         <div class="rules">
           <p id="payoutText"><strong>Payouts:</strong> Blackjack pays 3:2, normal win pays 1:1, push returns bet.</p>
           <p id="tableRulesText"><strong>Table Rules:</strong> Dealer stands on soft 17, one split per round, and surrender is pre-split only.</p>
-          <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet, `B` rebet, `Enter` smart action.</p>
+          <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet, `B` rebet, `M` sound, `Enter` smart action.</p>
           <p><strong>Theme Rule:</strong> If you bust, the toilet flushes your dignity.</p>
         </div>
       </aside>
@@ -922,6 +942,10 @@
     let hotStreak = 0;
     let coldStreak = 0;
     let roundHistory = [];
+    const SOUND_STORAGE_KEY = 'turdjackSoundOn_v1';
+    let soundEnabled = true;
+    let audioCtx = null;
+    let statusPulseTimer = null;
 
     function getActiveHand() {
       return activeHandIndex === 0 ? playerHand : splitHand;
@@ -941,6 +965,109 @@
 
     function handTag(index) {
       return splitRound ? `Hand ${index + 1}` : 'Main hand';
+    }
+
+    function loadSoundPref() {
+      try {
+        const raw = localStorage.getItem(SOUND_STORAGE_KEY);
+        if (raw === null) return true;
+        return raw !== '0';
+      } catch (err) {
+        return true;
+      }
+    }
+
+    function saveSoundPref() {
+      try {
+        localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? '1' : '0');
+      } catch (err) {}
+    }
+
+    function updateSoundButtons() {
+      document.querySelectorAll('[data-sound-toggle]').forEach((btn) => {
+        btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off';
+      });
+    }
+
+    function ensureAudio() {
+      if (audioCtx) return audioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      try {
+        audioCtx = new Ctx();
+      } catch (err) {
+        audioCtx = null;
+      }
+      return audioCtx;
+    }
+
+    function unlockAudio() {
+      if (!soundEnabled) return;
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    }
+
+    function playSfx(type) {
+      if (!soundEnabled) return;
+      const ctx = ensureAudio();
+      if (!ctx || ctx.state !== 'running') return;
+
+      const profileMap = {
+        chip: { f: 420, dur: 0.06, wave: 'triangle', vol: 0.035 },
+        deal: { f: 560, dur: 0.08, wave: 'square', vol: 0.04 },
+        hit: { f: 480, dur: 0.06, wave: 'triangle', vol: 0.04 },
+        stand: { f: 320, dur: 0.06, wave: 'triangle', vol: 0.035 },
+        split: { f: 700, dur: 0.08, wave: 'triangle', vol: 0.045 },
+        double: { f: 780, dur: 0.09, wave: 'sawtooth', vol: 0.045 },
+        surrender: { f: 190, dur: 0.1, wave: 'sawtooth', vol: 0.045 },
+        shuffle: { f: 260, dur: 0.12, wave: 'square', vol: 0.04 },
+        win: { f: 920, dur: 0.14, wave: 'triangle', vol: 0.05 },
+        lose: { f: 150, dur: 0.16, wave: 'sawtooth', vol: 0.05 },
+        push: { f: 360, dur: 0.08, wave: 'triangle', vol: 0.035 },
+        blackjack: { f: 1060, dur: 0.2, wave: 'triangle', vol: 0.06 },
+        bust: { f: 130, dur: 0.14, wave: 'sawtooth', vol: 0.05 }
+      };
+
+      const p = profileMap[type] || profileMap.chip;
+      try {
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = p.wave;
+        osc.frequency.setValueAtTime(p.f, now);
+        gain.gain.setValueAtTime(p.vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + p.dur);
+      } catch (err) {}
+    }
+
+    function pulseStatus() {
+      if (!ui.statusText) return;
+      ui.statusText.classList.add('hype');
+      if (statusPulseTimer) clearTimeout(statusPulseTimer);
+      statusPulseTimer = setTimeout(() => {
+        if (ui.statusText) ui.statusText.classList.remove('hype');
+        statusPulseTimer = null;
+      }, 900);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      saveSoundPref();
+      updateSoundButtons();
+      if (soundEnabled) {
+        unlockAudio();
+        setStatus('Sound on. Toilet dealer is noisy again.');
+        playSfx('deal');
+      } else {
+        setStatus('Sound off. Silent table mode.');
+      }
     }
 
     function recordMomentum(roundWins, roundLosses, roundPushes) {
@@ -1149,6 +1276,7 @@
 
     function quickStartRound() {
       hideWelcomeGuide();
+      unlockAudio();
       if (roundActive) return;
 
       if (bankroll < MIN_BET) {
@@ -1568,6 +1696,7 @@
 
     function setStatus(text) {
       ui.statusText.textContent = text;
+      pulseStatus();
     }
 
     function trackDecision(action) {
@@ -1588,18 +1717,22 @@
       if (roundActive) return;
       const available = Math.max(0, bankroll - currentBet);
       const addition = Math.min(amount, available);
+      if (addition <= 0) return;
       currentBet += addition;
+      playSfx('chip');
       updateHud();
     }
 
     function clearBet() {
       if (roundActive) return;
+      if (currentBet > 0) playSfx('chip');
       currentBet = 0;
       updateHud();
     }
 
     function maxBet() {
       if (roundActive) return;
+      if (currentBet !== bankroll) playSfx('chip');
       currentBet = bankroll;
       updateHud();
     }
@@ -1616,11 +1749,13 @@
       }
       currentBet = lastBet;
       setStatus(`Rebet loaded: $${currentBet}.`);
+      playSfx('chip');
       updateHud();
     }
 
     function startRound() {
       if (roundActive) return;
+      unlockAudio();
       if (currentBet < MIN_BET) {
         setStatus(`Minimum bet is $${MIN_BET}. Don't be cheap with destiny.`);
         return;
@@ -1651,6 +1786,7 @@
       dealerHand.push(drawCard());
       playerHand.push(drawCard());
       dealerHand.push(drawCard());
+      playSfx('deal');
 
       stats.hands = (stats.hands || 0) + 1;
 
@@ -1677,6 +1813,7 @@
             firstDecisionOpen = false;
             setStatus(`Even money locked. You bank $${currentBet * 2} and skip the sweat.`);
             logHistory(`Even money cashed for $${currentBet * 2}.`);
+            playSfx('win');
             renderCards();
             updateHud();
             return;
@@ -1720,6 +1857,7 @@
           recordMomentum(0, 0, 1);
           setStatus(`Double blackjack. Absolute toilet stalemate.${insuranceNote}`);
           logHistory(`Push on double blackjack. Bet $${currentBet}.`);
+          playSfx('push');
         } else if (pBJ) {
           const payout = currentBet + Math.round(currentBet * rules.blackjackPayout);
           bankroll += payout;
@@ -1728,11 +1866,13 @@
           recordMomentum(1, 0, 0);
           setStatus(`Blackjack! Paid $${payout} at ${blackjackPayoutLabel()}.${insuranceNote}`);
           logHistory(`Blackjack paid $${payout} (${blackjackPayoutLabel()}).`);
+          playSfx('blackjack');
         } else {
           stats.losses = (stats.losses || 0) + 1;
           recordMomentum(0, 1, 0);
           setStatus(`Dealer blackjack. You got flushed.${insuranceNote}`);
           logHistory(`Dealer blackjack beat $${currentBet}.`);
+          playSfx('lose');
         }
 
         roundActive = false;
@@ -1753,16 +1893,19 @@
       const hand = getActiveHand();
       firstDecisionOpen = false;
       hand.push(drawCard());
+      playSfx('hit');
       renderCards();
 
       const value = handValue(hand);
       if (value > 21) {
         setStatus(`${handTag(activeHandIndex)} busts at ${value}.`);
+        playSfx('bust');
         if (advanceToNextHand()) return;
         dealerTurnAndResolve();
         return;
       } else if (value === 21) {
         setStatus(`${handTag(activeHandIndex)} locks 21.`);
+        playSfx('win');
         if (advanceToNextHand()) return;
         dealerTurnAndResolve();
         return;
@@ -1774,6 +1917,7 @@
       if (!roundActive) return;
       trackDecision('stand');
       firstDecisionOpen = false;
+      playSfx('stand');
       if (advanceToNextHand()) return;
       dealerTurnAndResolve();
     }
@@ -1800,6 +1944,7 @@
       setActiveBet(activeBet * 2);
       firstDecisionOpen = false;
       hand.push(drawCard());
+      playSfx('double');
       renderCards();
 
       const value = handValue(hand);
@@ -1840,6 +1985,7 @@
       playerHand.push(drawCard());
       splitHand.push(drawCard());
       firstDecisionOpen = true;
+      playSfx('split');
 
       renderCards();
       if (splitRank === 'A' && !rules.allowHitSplitAces) {
@@ -1876,6 +2022,7 @@
       recordMomentum(0, 1, 0);
       setStatus(`Surrender accepted. You recover $${refund} and keep your dignity.`);
       logHistory(`Surrender. Recovered $${refund} from $${currentBet}.`);
+      playSfx('surrender');
       renderCards();
       updateHud();
     }
@@ -1994,6 +2141,9 @@
       const finalNote = notes.join(' ');
       setStatus(finalNote);
       logHistory(finalNote);
+      if (roundWins > roundLosses) playSfx('win');
+      else if (roundLosses > roundWins) playSfx('lose');
+      else playSfx('push');
       renderCards();
       updateHud();
     }
@@ -2007,6 +2157,7 @@
       createShoe(rules.decks || 4);
       setStatus('Fresh shoe shuffled. New poop luck loaded.');
       logHistory(`Manual shuffle: ${rules.decks}-deck shoe reset.`);
+      playSfx('shuffle');
       updateHud();
     }
 
@@ -2044,10 +2195,12 @@
       createShoe(rules.decks || 4);
       renderCards();
       setStatus('Bankroll and stats reset. Start a fresh stink streak.');
+      playSfx('shuffle');
       updateHud();
     }
 
     function runMobileAction(action) {
+      unlockAudio();
       if (action === 'deal') {
         startRound();
         return;
@@ -2131,6 +2284,12 @@
           }
           return;
         }
+        unlockAudio();
+        if (e.code === 'KeyM') {
+          e.preventDefault();
+          toggleSound();
+          return;
+        }
         if (e.code === 'KeyN') {
           e.preventDefault();
           startRound();
@@ -2171,6 +2330,8 @@
     }
 
     function init() {
+      soundEnabled = loadSoundPref();
+      updateSoundButtons();
       createShoe(rules.decks || 4);
       renderCards();
       wireEvents();

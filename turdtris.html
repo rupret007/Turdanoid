@@ -115,12 +115,23 @@ body {
   min-height: 40px;
   font-size: 12px;
   cursor: pointer;
+  transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .btn.subtle {
   border-color: rgba(255, 203, 135, 0.28);
   color: #f4dfbd;
   background: rgba(29, 18, 12, 0.62);
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(52, 30, 18, 0.85);
+  border-color: rgba(255, 203, 135, 0.62);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
 }
 
 .hud {
@@ -241,6 +252,19 @@ body {
   min-height: 64px;
   font-size: 0.83rem;
   line-height: 1.35;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.status.hype {
+  border-color: rgba(255, 214, 156, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 214, 156, 0.35), 0 0 18px rgba(255, 154, 88, 0.24);
+  background: rgba(36, 21, 12, 0.76);
+  animation: statusPulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes statusPulse {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1px); }
 }
 
 .controls {
@@ -472,6 +496,7 @@ body {
       <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
       <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
       <button class="btn" onclick="togglePause()">⏯ Pause / Resume</button>
+      <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
       <button class="btn" onclick="restartGame()">↻ Restart</button>
     </div>
     <div class="mobile-menu">
@@ -481,6 +506,7 @@ body {
           <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
           <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
           <button class="btn" onclick="togglePause()">⏯ Pause</button>
+          <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
           <button class="btn" onclick="restartGame()">↻ Restart</button>
         </div>
       </details>
@@ -544,7 +570,8 @@ body {
           Down: Soft Drop<br>
           Space: Hard Drop<br>
           C: Hold Piece<br>
-          P: Pause
+          P: Pause<br>
+          M: Sound
         </div>
       </div>
     </aside>
@@ -586,6 +613,9 @@ let activeMutator = 'Warmup Flow';
 let sceneShake = 0;
 let hypeText = '';
 let hypeTimer = 0;
+const SOUND_STORAGE_KEY = 'turdtrisSoundOn_v1';
+let soundEnabled = true;
+let audioCtx = null;
 
 const TURDTRIS_BALANCE = {
   linesGoalBands: [
@@ -724,8 +754,100 @@ function hideWelcomeGuide() {
 
 function quickStartRun() {
   hideWelcomeGuide();
+  unlockAudio();
   statusText = 'Quick start live. Stack clean and trust your ghost piece.';
   setHype('Quick start active. Build filthy combos.', 90);
+  playSfx('level');
+  updateScore();
+}
+
+function loadSoundPref() {
+  try {
+    const raw = localStorage.getItem(SOUND_STORAGE_KEY);
+    if (raw === null) return true;
+    return raw !== '0';
+  } catch (err) {
+    return true;
+  }
+}
+
+function saveSoundPref() {
+  try {
+    localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? '1' : '0');
+  } catch (err) {}
+}
+
+function updateSoundButtons() {
+  document.querySelectorAll('[data-sound-toggle]').forEach((btn) => {
+    btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off';
+  });
+}
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  try {
+    audioCtx = new Ctx();
+  } catch (err) {
+    audioCtx = null;
+  }
+  return audioCtx;
+}
+
+function unlockAudio() {
+  if (!soundEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+}
+
+function playSfx(type) {
+  if (!soundEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const profileMap = {
+    rotate: { f: 520, dur: 0.05, wave: 'triangle', vol: 0.03 },
+    hold: { f: 430, dur: 0.08, wave: 'triangle', vol: 0.04 },
+    drop: { f: 280, dur: 0.08, wave: 'square', vol: 0.04 },
+    lock: { f: 210, dur: 0.06, wave: 'sawtooth', vol: 0.03 },
+    clear: { f: 760, dur: 0.11, wave: 'triangle', vol: 0.05 },
+    level: { f: 900, dur: 0.14, wave: 'triangle', vol: 0.05 },
+    pause: { f: 310, dur: 0.08, wave: 'square', vol: 0.035 },
+    victory: { f: 1040, dur: 0.2, wave: 'triangle', vol: 0.06 },
+    gameover: { f: 120, dur: 0.2, wave: 'sawtooth', vol: 0.055 }
+  };
+
+  const p = profileMap[type] || profileMap.lock;
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = p.wave;
+    osc.frequency.setValueAtTime(p.f, now);
+    gain.gain.setValueAtTime(p.vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + p.dur);
+  } catch (err) {}
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  saveSoundPref();
+  updateSoundButtons();
+  if (soundEnabled) {
+    unlockAudio();
+    setHype('Sound online. Sewer orchestra armed.', 84);
+    playSfx('level');
+  } else {
+    setHype('Sound muted. Silent stink mode.', 84);
+  }
   updateScore();
 }
 
@@ -875,6 +997,7 @@ function tryRotate(direction) {
       recentMoveWasRotate = true;
       lastKickUsed = i > 0;
       resetLockDelayOnAction();
+      playSfx('rotate');
       return;
     }
   }
@@ -939,6 +1062,7 @@ function holdCurrentPiece() {
   canHold = false;
   lockAccumulator = 0;
   drawHoldPreview();
+  playSfx('hold');
 }
 
 function movePiece(offset) {
@@ -972,6 +1096,7 @@ function hardDrop() {
     distance++;
   }
   score = Math.min(Number.MAX_SAFE_INTEGER, score + distance * 2);
+  playSfx('drop');
   lockPiece();
 }
 
@@ -1138,6 +1263,7 @@ function lockPiece() {
   let turnScore = 0;
   let clutchBonus = 0;
   if (linesClearedThisTurn > 0) {
+    playSfx('clear');
     const levelBefore = level;
     const lineIndex = Math.min(linesClearedThisTurn, 4);
 
@@ -1189,6 +1315,7 @@ function lockPiece() {
     if (level > levelBefore && level < MAX_LEVEL) {
       setHype(`Level ${level} online: ${activeMutator}.`, 102);
       triggerSceneShake(2.6);
+      playSfx('level');
     }
 
     if (level >= MAX_LEVEL) {
@@ -1220,6 +1347,9 @@ function lockPiece() {
     if (tSpin) {
       turnScore = 100 * level;
       statusText = `T-Spin no line +${turnScore}`;
+      playSfx('clear');
+    } else {
+      playSfx('lock');
     }
   }
 
@@ -1433,6 +1563,7 @@ function updateScore() {
     const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
     const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';
     statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
+    statusEl.classList.toggle('hype', hypeTimer > 0);
   }
 }
 
@@ -1455,12 +1586,14 @@ function showGameOver(won) {
   if (finalScoreEl) finalScoreEl.textContent = String(score);
   if (finalLinesEl) finalLinesEl.textContent = String(linesCleared);
 
+  playSfx(isWin ? 'victory' : 'gameover');
   updateScore();
 }
 
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
+  playSfx('pause');
 
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
@@ -1578,7 +1711,14 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  unlockAudio();
   if (gameOver) return;
+
+  if (e.code === 'KeyM') {
+    e.preventDefault();
+    toggleSound();
+    return;
+  }
 
   if (e.code === 'KeyP') {
     e.preventDefault();
@@ -1644,6 +1784,7 @@ if (mobileControls) {
     const target = e.target.closest('[data-action]');
     if (!target) return;
     e.preventDefault();
+    unlockAudio();
 
     const action = target.getAttribute('data-action');
     clearHoldInterval();
@@ -1685,6 +1826,7 @@ if (canvas) {
   canvas.addEventListener('touchstart', (e) => {
     if (onboardingOpen) return;
     if (gameOver) return;
+    unlockAudio();
     const touch = e.touches[0];
     if (!touch) return;
     touchStartX = touch.clientX;
@@ -1717,6 +1859,8 @@ if (canvas) {
   }, { passive: true });
 }
 
+soundEnabled = loadSoundPref();
+updateSoundButtons();
 restartGame();
 showWelcomeGuide();
 </script>

@@ -110,6 +110,17 @@
       padding: 8px 12px;
       min-height: 40px;
       cursor: pointer;
+      transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(16, 42, 33, 0.88);
+      border-color: rgba(185, 255, 220, 0.6);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.985);
     }
 
     .btn.subtle {
@@ -147,6 +158,13 @@
     }
 
     .card.hot .v { color: var(--hot); }
+    .card.combo-live {
+      box-shadow: 0 0 0 1px rgba(255, 212, 164, 0.55), 0 0 18px rgba(255, 152, 84, 0.2);
+    }
+    .card.combo-live .v {
+      color: #ffd39a;
+      animation: comboGlow 0.8s ease-in-out infinite alternate;
+    }
 
     .main {
       display: grid;
@@ -195,6 +213,24 @@
       min-height: 64px;
       font-size: 0.84rem;
       line-height: 1.4;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+    }
+
+    .status.hype {
+      border-color: rgba(255, 214, 156, 0.72);
+      box-shadow: 0 0 0 1px rgba(255, 214, 156, 0.35), 0 0 18px rgba(255, 154, 88, 0.24);
+      background: rgba(36, 21, 12, 0.76);
+      animation: statusGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes statusGlow {
+      from { transform: translateY(0); }
+      to { transform: translateY(-1px); }
+    }
+
+    @keyframes comboGlow {
+      from { text-shadow: 0 0 0 rgba(255, 206, 138, 0.2); }
+      to { text-shadow: 0 0 14px rgba(255, 186, 108, 0.7); }
     }
 
     .power-list {
@@ -403,6 +439,7 @@
       <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
       <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
       <button class="btn" onclick="togglePauseExternal()">⏯ Pause / Resume</button>
+      <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
       <button class="btn" onclick="restartExternal()">↻ Restart</button>
     </div>
     <div class="mobile-menu">
@@ -412,6 +449,7 @@
           <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
           <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
           <button class="btn" onclick="togglePauseExternal()">⏯ Pause</button>
+          <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
           <button class="btn" onclick="restartExternal()">↻ Restart</button>
         </div>
       </details>
@@ -423,7 +461,7 @@
     <div class="card"><div class="k">High</div><div class="v" id="highScoreText">0</div></div>
     <div class="card hot"><div class="k">Lives</div><div class="v" id="livesText">3</div></div>
     <div class="card"><div class="k">Level</div><div class="v" id="levelText">1</div></div>
-    <div class="card"><div class="k">Combo</div><div class="v" id="comboText">0</div></div>
+    <div class="card" id="comboCard"><div class="k">Combo</div><div class="v" id="comboText">0</div></div>
     <div class="card"><div class="k">Bricks</div><div class="v" id="bricksText">0</div></div>
     <div class="card"><div class="k">Stink</div><div class="v" id="shieldText">0</div></div>
   </div>
@@ -619,6 +657,9 @@ let screenShake = 0;
 let hypeText = '';
 let hypeTimer = 0;
 let lastComboHypeTier = 0;
+const SOUND_STORAGE_KEY = 'turdanoidSoundOn_v1';
+let soundEnabled = true;
+let audioCtx = null;
 
 function stageForLevel(levelNumber) {
   if (levelNumber <= 4) return 0;
@@ -686,10 +727,99 @@ function getLevelDramaLine(levelNumber, profile) {
   return lines[constrain(stage, 0, lines.length - 1)];
 }
 
+function loadSoundPref() {
+  try {
+    const raw = localStorage.getItem(SOUND_STORAGE_KEY);
+    if (raw === null) return true;
+    return raw !== '0';
+  } catch (err) {
+    return true;
+  }
+}
+
+function saveSoundPref() {
+  try {
+    localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? '1' : '0');
+  } catch (err) {}
+}
+
+function updateSoundButtons() {
+  document.querySelectorAll('[data-sound-toggle]').forEach((btn) => {
+    btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off';
+  });
+}
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  try {
+    audioCtx = new Ctx();
+  } catch (err) {
+    audioCtx = null;
+  }
+  return audioCtx;
+}
+
+function unlockAudio() {
+  if (!soundEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+}
+
+function playSfx(type) {
+  if (!soundEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const profileMap = {
+    launch: { f: 520, dur: 0.08, wave: 'triangle', vol: 0.05 },
+    break: { f: 420, dur: 0.06, wave: 'square', vol: 0.04 },
+    boom: { f: 140, dur: 0.12, wave: 'sawtooth', vol: 0.055 },
+    power: { f: 760, dur: 0.11, wave: 'triangle', vol: 0.055 },
+    level: { f: 680, dur: 0.14, wave: 'triangle', vol: 0.055 },
+    hurt: { f: 180, dur: 0.1, wave: 'sawtooth', vol: 0.05 },
+    gameover: { f: 95, dur: 0.2, wave: 'sawtooth', vol: 0.06 },
+    victory: { f: 900, dur: 0.2, wave: 'triangle', vol: 0.065 }
+  };
+
+  const p = profileMap[type] || profileMap.break;
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = p.wave;
+    osc.frequency.setValueAtTime(p.f, now);
+    gain.gain.setValueAtTime(p.vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + p.dur);
+  } catch (err) {}
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  saveSoundPref();
+  updateSoundButtons();
+  if (soundEnabled) {
+    unlockAudio();
+    setHype('Sound on. Sewer symphony armed.', 72);
+  } else {
+    setHype('Sound off. Stealth stench mode.', 72);
+  }
+}
+
 function setup() {
   const c = createCanvas(860, 620);
   c.parent('game-holder');
   textFont('Trebuchet MS');
+  soundEnabled = loadSoundPref();
+  updateSoundButtons();
   resetGame();
   showWelcomeGuide();
 }
@@ -710,6 +840,7 @@ function hideWelcomeGuide() {
 
 function quickStartRun() {
   hideWelcomeGuide();
+  unlockAudio();
   statusText = 'Quick start live. Launch and keep the combo alive.';
   setHype('Quick start engaged. Make it nasty.', 100);
   if ((awaitingLaunch || stuckBall) && !paused && !gameOver && !gameWon) launchBall();
@@ -1575,6 +1706,7 @@ function launchBall() {
   awaitingLaunch = false;
   statusText = 'Poop launched. Let it marinate in mid-air.';
   setHype('Launch stink online.', 80);
+  playSfx('launch');
 }
 
 function draw() {
@@ -1621,6 +1753,7 @@ function draw() {
       awaitingLaunch = false;
       score += 6900;
       statusText = `Level ${MAX_LEVEL} cleared. Toilet chaos conquered.`;
+      playSfx('victory');
       if (score > highScore) {
         highScore = score;
         try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
@@ -1631,6 +1764,7 @@ function draw() {
       statusText = `Level up! Welcome to level ${level}.`;
       setHype(`Level ${level} unlocked. Chaos rising.`, 110);
       triggerShake(2.4 + level * 0.02);
+      playSfx('level');
       createLevel(level);
       powerUps = [];
       toiletPaperShots = [];
@@ -1975,6 +2109,7 @@ function updateBalls() {
       statusText = 'Flushed. Tap to run it back.';
       setHype('That flush was violent.', 120);
       triggerShake(4.5);
+      playSfx('gameover');
       if (score > highScore) {
         highScore = score;
         try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
@@ -1983,6 +2118,7 @@ function updateBalls() {
       statusText = 'Life lost. Relaunch when ready.';
       setHype('Toilet gods demand a comeback.', 96);
       triggerShake(3.2);
+      playSfx('hurt');
       powerUps = [];
       toiletPaperShots = [];
       laserShots = [];
@@ -2071,6 +2207,7 @@ function damageBrick(index, damage, projectileHit) {
   brick.hp -= damage;
   if (brick.hp > 0) {
     spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 5, color(220, 235, 255));
+    if (projectileHit) playSfx('break');
     return;
   }
 
@@ -2093,6 +2230,9 @@ function damageBrick(index, damage, projectileHit) {
   if (removed.type === 'explosive') {
     splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
     triggerShake(3.3);
+    playSfx('boom');
+  } else {
+    playSfx('break');
   }
 
   if (combo >= 8 && removed.type !== 'explosive' && random() < 0.28) {
@@ -2141,6 +2281,7 @@ function splashDamage(cx, cy, radius) {
 }
 
 function activatePowerUp(type) {
+  playSfx('power');
   const powerCfg = TURDANOID_BALANCE.power;
   switch (type) {
     case 'bigPaddle':
@@ -2569,6 +2710,7 @@ function updateHud() {
   const livesEl = document.getElementById('livesText');
   const levelEl = document.getElementById('levelText');
   const comboEl = document.getElementById('comboText');
+  const comboCardEl = document.getElementById('comboCard');
   const bricksEl = document.getElementById('bricksText');
   const shieldEl = document.getElementById('shieldText');
   const statusEl = document.getElementById('statusText');
@@ -2579,11 +2721,15 @@ function updateHud() {
   if (livesEl) livesEl.textContent = String(lives);
   if (levelEl) levelEl.textContent = `${level}/${MAX_LEVEL}`;
   if (comboEl) comboEl.textContent = String(combo);
+  if (comboCardEl) comboCardEl.classList.toggle('combo-live', combo >= 4);
   if (bricksEl) bricksEl.textContent = `${destructibleRemaining()}`;
   if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;
   const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
   const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
-  if (statusEl) statusEl.textContent = `${statusText}${hypeTag} Pattern: ${levelPatternName}.${waldoTag}`;
+  if (statusEl) {
+    statusEl.textContent = `${statusText}${hypeTag} Pattern: ${levelPatternName}.${waldoTag}`;
+    statusEl.classList.toggle('hype', hypeTimer > 0);
+  }
 
   if (powerListEl) {
     const chips = [];
@@ -2603,6 +2749,7 @@ function updateHud() {
 }
 
 function keyPressed() {
+  unlockAudio();
   if (onboardingOpen) {
     if (keyCode === ENTER || keyCode === 27 || key === ' ') hideWelcomeGuide();
     return false;
@@ -2621,6 +2768,12 @@ function keyPressed() {
 
   if (key === 'p' || key === 'P') {
     paused = !paused;
+    playSfx('level');
+    return false;
+  }
+
+  if (key === 'm' || key === 'M') {
+    toggleSound();
     return false;
   }
 
@@ -2636,6 +2789,7 @@ function keyReleased() {
 }
 
 function mousePressed() {
+  unlockAudio();
   if (onboardingOpen) {
     hideWelcomeGuide();
     return;
@@ -2648,6 +2802,7 @@ function mousePressed() {
 }
 
 function touchStarted() {
+  unlockAudio();
   mouseInputActive = false;
   if (onboardingOpen) {
     hideWelcomeGuide();
@@ -2691,6 +2846,7 @@ if (mobileControls) {
 
   mobileControls.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    unlockAudio();
     mouseInputActive = false;
     if (onboardingOpen) {
       hideWelcomeGuide();
