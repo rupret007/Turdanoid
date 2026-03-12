@@ -583,6 +583,9 @@ let paused = false;
 let gameOver = false;
 let statusText = 'Guideline-inspired run: SRS, bag randomizer, and escalating garbage.';
 let activeMutator = 'Warmup Flow';
+let sceneShake = 0;
+let hypeText = '';
+let hypeTimer = 0;
 
 const TURDTRIS_BALANCE = {
   linesGoalBands: [
@@ -722,6 +725,7 @@ function hideWelcomeGuide() {
 function quickStartRun() {
   hideWelcomeGuide();
   statusText = 'Quick start live. Stack clean and trust your ghost piece.';
+  setHype('Quick start active. Build filthy combos.', 90);
   updateScore();
 }
 
@@ -750,6 +754,30 @@ function getLinesGoalForLevel(currentLevel) {
     if (currentLevel <= band.maxLevel) return band.goal;
   }
   return 20;
+}
+
+function setHype(message, durationMs) {
+  if (!message) return;
+  hypeText = message;
+  hypeTimer = Math.max(hypeTimer, durationMs || 90);
+}
+
+function triggerSceneShake(amount) {
+  sceneShake = Math.min(16, Math.max(sceneShake, amount || 0));
+}
+
+function updateSceneFx() {
+  if (hypeTimer > 0) hypeTimer--;
+  else hypeText = '';
+
+  if (sceneShake > 0) {
+    sceneShake *= 0.86;
+    if (sceneShake < 0.2) sceneShake = 0;
+  }
+}
+
+function getDangerRatio() {
+  return Math.max(0, Math.min(1, (getStackHeight() - 10) / 10));
 }
 
 function copyMatrix(matrix) {
@@ -983,6 +1011,16 @@ function buildLevelMutator(newLevel) {
   const baseLines = Math.min(cfg.maxGarbageLines, Math.floor((newLevel - 1) / cfg.baseDivisor));
   const cheeseChance = Math.min(0.35, cfg.cheeseBase + newLevel * cfg.cheeseScale);
 
+  if (newLevel >= 64 && newLevel % 2 === 0) {
+    return {
+      name: 'Abyss Funnel',
+      lines: Math.min(cfg.maxGarbageLines, baseLines + 3),
+      dualHoles: true,
+      horizontalDrift: 2,
+      cheeseChance: Math.min(0.45, cheeseChance + 0.14)
+    };
+  }
+
   if (newLevel >= 58 && newLevel % 5 === 0) {
     return {
       name: 'Madness Surge',
@@ -1059,6 +1097,12 @@ function applyLevelModifier(newLevel) {
 
   activeMutator = mutator.name;
   statusText = `Level ${newLevel} mutator: ${mutator.name} (+${mutator.lines} garbage lines).`;
+  if (mutator.lines >= 5) {
+    setHype(`${mutator.name}! Sewer is collapsing.`, 118);
+    triggerSceneShake(4.4);
+  } else if (newLevel >= 20) {
+    setHype(`${mutator.name} engaged.`, 84);
+  }
 }
 
 function lockPiece() {
@@ -1094,6 +1138,7 @@ function lockPiece() {
   let turnScore = 0;
   let clutchBonus = 0;
   if (linesClearedThisTurn > 0) {
+    const levelBefore = level;
     const lineIndex = Math.min(linesClearedThisTurn, 4);
 
     if (tSpin) {
@@ -1122,6 +1167,8 @@ function lockPiece() {
     if (perfectClear) {
       turnScore += 1200 * level;
       floatTexts.push({ text: 'PERFECT CLEAR', x: canvas.width / 2, y: canvas.height * 0.3, life: 52, color: '#8ee8c7' });
+      setHype('Perfect clear! The bowl sparkles.', 122);
+      triggerSceneShake(3.9);
     }
 
     const stackHeight = getStackHeight();
@@ -1139,9 +1186,16 @@ function lockPiece() {
       applyLevelModifier(level);
     }
 
+    if (level > levelBefore && level < MAX_LEVEL) {
+      setHype(`Level ${level} online: ${activeMutator}.`, 102);
+      triggerSceneShake(2.6);
+    }
+
     if (level >= MAX_LEVEL) {
       level = MAX_LEVEL;
       statusText = `Level ${MAX_LEVEL} reached. Turdtris conquered.`;
+      setHype('Level 69 claimed. Absolute filth mastery.', 130);
+      triggerSceneShake(6);
       showGameOver(true);
       return;
     }
@@ -1150,6 +1204,17 @@ function lockPiece() {
       ? `T-Spin x${linesClearedThisTurn}! +${turnScore}`
       : `Cleared ${linesClearedThisTurn} line(s) +${turnScore}`;
     if (clutchBonus > 0) statusText += ` (Clutch +${clutchBonus})`;
+
+    if (linesClearedThisTurn === 4) {
+      setHype('TURDTRIS! Pipe blast!', 118);
+      triggerSceneShake(5.1);
+    } else if (tSpin && linesClearedThisTurn >= 2) {
+      setHype('Stink-spin combo executed.', 108);
+      triggerSceneShake(4.2);
+    } else if (combo >= 5 && combo % 3 === 0) {
+      setHype(`Combo chain x${combo}!`, 92);
+      triggerSceneShake(2.3);
+    }
   } else {
     combo = 0;
     if (tSpin) {
@@ -1225,6 +1290,21 @@ function drawPlayfield() {
     context.stroke();
   }
 
+  const dangerRatio = getDangerRatio();
+  if (dangerRatio > 0) {
+    const pulse = 0.55 + Math.sin(Date.now() / 130) * 0.35;
+    const alpha = (0.05 + dangerRatio * 0.18) * Math.max(0.2, pulse);
+    context.fillStyle = `rgba(255, 90, 90, ${alpha.toFixed(3)})`;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  context.save();
+  if (sceneShake > 0) {
+    const shakeX = (Math.random() * 2 - 1) * sceneShake;
+    const shakeY = (Math.random() * 2 - 1) * sceneShake;
+    context.translate(shakeX, shakeY);
+  }
+
   for (let row = 2; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const cell = playfield[row][col];
@@ -1267,6 +1347,7 @@ function drawPlayfield() {
   }
 
   drawFloatTexts();
+  context.restore();
 }
 
 function drawPreview(ctx, targetCanvas, piece) {
@@ -1349,7 +1430,9 @@ function updateScore() {
   if (comboEl) comboEl.textContent = String(combo);
   if (b2bEl) b2bEl.textContent = String(b2b);
   if (statusEl) {
-    statusEl.textContent = `${statusText} Theme: ${themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
+    const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
+    const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';
+    statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
   }
 }
 
@@ -1401,6 +1484,9 @@ function restartGame() {
   gameOver = false;
   statusText = 'Fresh stack. Watch the level modifiers.';
   activeMutator = 'Warmup Flow';
+  sceneShake = 0;
+  hypeText = '';
+  hypeTimer = 0;
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -1478,6 +1564,7 @@ function loop(timestamp) {
     }
   }
 
+  updateSceneFx();
   drawPlayfield();
   rAF = requestAnimationFrame(loop);
 }

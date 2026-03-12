@@ -72,6 +72,11 @@ if ($tris -match 'const MAX_LEVEL = 69;') { Pass("max level cap") } else { Fail(
 if ($tris -match 'showGameOver\(true\);') { Pass("level 69 win path") } else { Fail("level 69 win path") }
 if ($tris -match 'const clearHoldInterval = \(\) =>') { Pass("mobile hold interval helper") } else { Fail("mobile hold interval helper") }
 if ($tris -match 'clearHoldInterval\(\);') { Pass("mobile hold interval reset") } else { Fail("mobile hold interval reset") }
+if ($tris -match 'let sceneShake = 0;') { Pass("scene shake state") } else { Fail("scene shake state") }
+if ($tris -match 'function setHype\(') { Pass("hype helper") } else { Fail("hype helper") }
+if ($tris -match 'function getDangerRatio\(') { Pass("danger ratio helper") } else { Fail("danger ratio helper") }
+if ($tris -match 'name: ''Abyss Funnel''') { Pass("late abyss mutator") } else { Fail("late abyss mutator") }
+if ($tris -match 'DANGER: stack is feral\.') { Pass("danger status messaging") } else { Fail("danger status messaging") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -99,6 +104,11 @@ if ($turd -match 'mouseInputActive = false;\s*paddle\.x = constrain\(touches\[0\
 if ($turd -match 'else if \(mouseInputActive\) \{') { Pass("mouse fallback gated by activity") } else { Fail("mouse fallback gated by activity") }
 if ($turd -match 'function mouseMoved\(\)\s*\{\s*mouseInputActive = true;\s*\}') { Pass("mouse moved re-enables mouse input") } else { Fail("mouse moved re-enables mouse input") }
 if ($turd -match 'mobileControls\.addEventListener\(''pointerdown'', \(e\) => \{\s*e\.preventDefault\(\);') { Pass("mobile pointerdown prevents default") } else { Fail("mobile pointerdown prevents default") }
+if ($turd -match 'let screenShake = 0;') { Pass("turdanoid scene shake state") } else { Fail("turdanoid scene shake state") }
+if ($turd -match 'function setHype\(') { Pass("turdanoid hype helper") } else { Fail("turdanoid hype helper") }
+if ($turd -match 'function triggerShake\(') { Pass("turdanoid shake helper") } else { Fail("turdanoid shake helper") }
+if ($turd -match 'const speedRamp = min\(1\.5, pressureRamp \* levelRamp\);') { Pass("turdanoid late pressure speed ramp") } else { Fail("turdanoid late pressure speed ramp") }
+if ($turd -match 'Hype:') { Pass("turdanoid hype status tag") } else { Fail("turdanoid hype status tag") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -125,6 +135,11 @@ if ($jack -match '(?s)function playerDouble\(\)\s*\{.*?if \(bankroll < activeBet
 if ($jack -match '(?s)function playerSplit\(\)\s*\{.*?if \(splitRound\)\s*\{\s*setStatus\(') { Pass("split one-time guard") } else { Fail("split one-time guard") }
 if ($jack -match '(?s)function playerSplit\(\)\s*\{.*?if \(bankroll < currentBet\)\s*\{') { Pass("split bankroll guard") } else { Fail("split bankroll guard") }
 if ($jack -match '(?s)function playerSurrender\(\)\s*\{.*?if \(splitRound\)\s*\{\s*setStatus\(') { Pass("surrender blocked after split") } else { Fail("surrender blocked after split") }
+if ($jack -match 'let hotStreak = 0;') { Pass("hot streak state") } else { Fail("hot streak state") }
+if ($jack -match 'let coldStreak = 0;') { Pass("cold streak state") } else { Fail("cold streak state") }
+if ($jack -match 'function recordMomentum\(') { Pass("momentum helper") } else { Fail("momentum helper") }
+if ($jack -match 'function getTableFlavor\(') { Pass("table flavor helper") } else { Fail("table flavor helper") }
+if ($jack -match 'Table vibe:') { Pass("dynamic table vibe hint") } else { Fail("dynamic table vibe hint") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw

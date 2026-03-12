@@ -615,6 +615,10 @@ let levelChaosProfile = null;
 let levelLayoutSignatures = new Set();
 let levelLayoutSignature = '';
 let waldoCameo = null;
+let screenShake = 0;
+let hypeText = '';
+let hypeTimer = 0;
+let lastComboHypeTier = 0;
 
 function stageForLevel(levelNumber) {
   if (levelNumber <= 4) return 0;
@@ -646,6 +650,42 @@ function chaosForLevel(levelNumber) {
   return map(levelNumber, 56, MAX_LEVEL, 0.83, 0.96);
 }
 
+function setHype(message, durationFrames) {
+  if (!message) return;
+  hypeText = message;
+  hypeTimer = max(hypeTimer, durationFrames || 90);
+}
+
+function triggerShake(amount) {
+  screenShake = min(14, max(screenShake, amount || 0));
+}
+
+function updateSceneFx() {
+  if (hypeTimer > 0) hypeTimer--;
+  else hypeText = '';
+
+  if (screenShake > 0) {
+    screenShake *= 0.86;
+    if (screenShake < 0.25) screenShake = 0;
+  }
+}
+
+function getLevelDramaLine(levelNumber, profile) {
+  if (levelNumber >= 66) return 'Final toilet corridor unlocked.';
+  if (profile && profile.bossLevel) return 'Boss wave: porcelain panic.';
+
+  const lines = [
+    'Warmup lane: polite plumbing.',
+    'The sewer starts muttering.',
+    'Marble chaos enters the bowl.',
+    'Everything wiggles now.',
+    'This pipe has trust issues.',
+    'Endgame stink protocol armed.'
+  ];
+  const stage = profile ? profile.stage : 0;
+  return lines[constrain(stage, 0, lines.length - 1)];
+}
+
 function setup() {
   const c = createCanvas(860, 620);
   c.parent('game-holder');
@@ -671,6 +711,7 @@ function hideWelcomeGuide() {
 function quickStartRun() {
   hideWelcomeGuide();
   statusText = 'Quick start live. Launch and keep the combo alive.';
+  setHype('Quick start engaged. Make it nasty.', 100);
   if ((awaitingLaunch || stuckBall) && !paused && !gameOver && !gameWon) launchBall();
 }
 
@@ -815,6 +856,10 @@ function resetGame() {
   levelLayoutSignatures = new Set();
   levelLayoutSignature = '';
   waldoCameo = null;
+  screenShake = 0;
+  hypeText = '';
+  hypeTimer = 0;
+  lastComboHypeTier = 0;
 
   paddleWidth = originalPaddleWidth;
   paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
@@ -1242,6 +1287,9 @@ function createLevel(levelNumber) {
   const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
   const mutatorTag = levelMutatorText ? ` ${levelMutatorText}` : '';
   statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${stageTag}${bossTag}${remixTag}${mutatorTag}${waldoTag}`;
+  const dramaLine = getLevelDramaLine(levelNumber, levelChaosProfile);
+  if (dramaLine) setHype(dramaLine, 128);
+  if (levelChaosProfile.bossLevel) triggerShake(2.8);
 }
 
 function applyLevelMutator(levelNumber) {
@@ -1526,6 +1574,7 @@ function launchBall() {
   targetBall.vy = vy;
   awaitingLaunch = false;
   statusText = 'Poop launched. Let it marinate in mid-air.';
+  setHype('Launch stink online.', 80);
 }
 
 function draw() {
@@ -1553,9 +1602,17 @@ function draw() {
   updateWaldoCameo();
   updateParticles();
   updateFloatTexts();
+  updateSceneFx();
 
   if (comboTimer > 0) comboTimer--;
-  else combo = 0;
+  else {
+    combo = 0;
+    lastComboHypeTier = 0;
+  }
+
+  if (level >= 45 && frameCount % 240 === 0) {
+    setHype('Pipe pressure rising. Keep moving.', 75);
+  }
 
   if (destructibleRemaining() === 0) {
     if (level >= MAX_LEVEL) {
@@ -1572,6 +1629,8 @@ function draw() {
       level++;
       score += 120 * level;
       statusText = `Level up! Welcome to level ${level}.`;
+      setHype(`Level ${level} unlocked. Chaos rising.`, 110);
+      triggerShake(2.4 + level * 0.02);
       createLevel(level);
       powerUps = [];
       toiletPaperShots = [];
@@ -1580,7 +1639,12 @@ function draw() {
     }
   }
 
+  push();
+  if (screenShake > 0) {
+    translate(random(-screenShake, screenShake), random(-screenShake, screenShake));
+  }
   drawGameScene(true);
+  pop();
   updateHud();
 }
 
@@ -1807,6 +1871,10 @@ function updateShots() {
 function updateBalls() {
   const slow = activePowerUps.slowBall > 0 ? 0.62 : 1;
   const fireActive = activePowerUps.fireTurd > 0;
+  const remaining = destructibleRemaining();
+  const pressureRamp = remaining <= 8 ? map(remaining, 0, 8, 1.12, 1.02, true) : 1;
+  const levelRamp = 1 + constrain((level - 10) * 0.0065, 0, 0.34);
+  const speedRamp = min(1.5, pressureRamp * levelRamp);
 
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
@@ -1817,8 +1885,8 @@ function updateBalls() {
       continue;
     }
 
-    b.x += b.vx * slow;
-    b.y += b.vy * slow;
+    b.x += b.vx * slow * speedRamp;
+    b.y += b.vy * slow * speedRamp;
     b.stink = min(5000, b.stink + 1 + level * 0.18);
 
     emitGas(b);
@@ -1905,12 +1973,16 @@ function updateBalls() {
     if (lives <= 0) {
       gameOver = true;
       statusText = 'Flushed. Tap to run it back.';
+      setHype('That flush was violent.', 120);
+      triggerShake(4.5);
       if (score > highScore) {
         highScore = score;
         try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
       }
     } else {
       statusText = 'Life lost. Relaunch when ready.';
+      setHype('Toilet gods demand a comeback.', 96);
+      triggerShake(3.2);
       powerUps = [];
       toiletPaperShots = [];
       laserShots = [];
@@ -2020,10 +2092,18 @@ function damageBrick(index, damage, projectileHit) {
 
   if (removed.type === 'explosive') {
     splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
+    triggerShake(3.3);
   }
 
   if (combo >= 8 && removed.type !== 'explosive' && random() < 0.28) {
     splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 44);
+  }
+
+  const comboTier = floor(combo / 6);
+  if (comboTier > lastComboHypeTier) {
+    lastComboHypeTier = comboTier;
+    setHype(`Combo stench x${combo}!`, 95);
+    triggerShake(1.8 + comboTier * 0.7);
   }
 
   bricksSinceDrop++;
@@ -2453,7 +2533,12 @@ function drawPauseBanner() {
 }
 
 function drawEndScreen() {
+  push();
+  if (screenShake > 0) {
+    translate(random(-screenShake, screenShake), random(-screenShake, screenShake));
+  }
   drawGameScene(true);
+  pop();
   fill(8, 20, 17, 185);
   rect(0, 0, width, height);
   fill(230, 255, 236);
@@ -2497,7 +2582,8 @@ function updateHud() {
   if (bricksEl) bricksEl.textContent = `${destructibleRemaining()}`;
   if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;
   const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
-  if (statusEl) statusEl.textContent = `${statusText} Pattern: ${levelPatternName}.${waldoTag}`;
+  const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
+  if (statusEl) statusEl.textContent = `${statusText}${hypeTag} Pattern: ${levelPatternName}.${waldoTag}`;
 
   if (powerListEl) {
     const chips = [];
