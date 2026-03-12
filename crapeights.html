@@ -214,7 +214,7 @@
           <div class="mobile-menu-actions">
             <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
             <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
-            <button class="btn" onclick="startFreshMatch()">🧼 New Match</button>
+            <button class="btn" onclick="requestFreshMatch()">🧼 New Match</button>
             <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
           </div>
         </details>
@@ -346,6 +346,7 @@
     let historyLog = [];
     let statusPulseTimer = null;
     let aiTurnTimeoutId = null;
+    let humanAutoPassTimeoutId = null;
     let soundEnabled = true;
     let audioCtx = null;
     let nextCardId = 1;
@@ -647,7 +648,33 @@
     }
 
     function clearAiTimer() { if (aiTurnTimeoutId) { clearTimeout(aiTurnTimeoutId); aiTurnTimeoutId = null; } }
-    function showWelcomeGuide() { if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'flex'; onboardingOpen = true; clearAiTimer(); }
+
+    function clearHumanAutoPassTimer() {
+      if (humanAutoPassTimeoutId) {
+        clearTimeout(humanAutoPassTimeoutId);
+        humanAutoPassTimeoutId = null;
+      }
+    }
+
+    function queueHumanAutoPass(delayMs) {
+      clearHumanAutoPassTimer();
+      humanAutoPassTimeoutId = setTimeout(() => {
+        humanAutoPassTimeoutId = null;
+        if (roundActive && !onboardingOpen && isHumanTurn()) advanceTurn();
+      }, delayMs);
+    }
+
+    function requestFreshMatch() {
+      if (confirm('Start a fresh match and reset all current scores?')) startFreshMatch();
+    }
+
+    function showWelcomeGuide() {
+      if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'flex';
+      onboardingOpen = true;
+      clearAiTimer();
+      clearHumanAutoPassTimer();
+    }
+
     function hideWelcomeGuide() { if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none'; onboardingOpen = false; scheduleTurnIfNeeded(); }
     function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
     function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
@@ -704,6 +731,7 @@
 
     function advanceTurn() {
       if (!roundActive) return;
+      clearHumanAutoPassTimer();
       currentPlayer = getNextPlayerIndex(currentPlayer);
       hasDrawnThisTurn = false;
       selectedCardId = null;
@@ -714,6 +742,7 @@
     function endRound(winnerIndex) {
       roundActive = false;
       clearAiTimer();
+      clearHumanAutoPassTimer();
       const winner = players[winnerIndex];
       let points = 0;
       players.forEach((player, idx) => { if (idx !== winnerIndex) player.hand.forEach((card) => { points += cardPoints(card); }); });
@@ -769,6 +798,7 @@
     function drawForHuman() {
       if (!isHumanTurn() || hasDrawnThisTurn || pendingWildCard) return;
       unlockAudio();
+      clearHumanAutoPassTimer();
       const player = players[currentPlayer];
       const drawn = drawOneCard(player);
       hasDrawnThisTurn = true;
@@ -777,7 +807,7 @@
       if (!drawn) {
         setStatus('No cards left to draw. Passing turn.', true);
         addHistory('Draw pile empty. Turn passed.');
-        setTimeout(() => { if (isHumanTurn()) advanceTurn(); }, 300);
+        queueHumanAutoPass(300);
         updateAll();
         return;
       }
@@ -788,13 +818,14 @@
       } else {
         setStatus(`You drew ${label}. No play available, turn passes.`, true);
         addHistory('You drew and passed.');
-        setTimeout(() => { if (isHumanTurn()) advanceTurn(); }, 460);
+        queueHumanAutoPass(460);
       }
       updateAll();
     }
 
     function passHumanTurn() {
       if (!isHumanTurn() || !hasDrawnThisTurn || pendingWildCard) return;
+      clearHumanAutoPassTimer();
       setStatus('You passed after drawing.', true);
       addHistory('You passed.');
       advanceTurn();
@@ -804,12 +835,14 @@
       if (!isHumanTurn() || pendingWildCard) return;
       if (!selectedCardId) { setStatus('Select a card first.', true); return; }
       unlockAudio();
+      clearHumanAutoPassTimer();
       playCardById(currentPlayer, selectedCardId, null);
     }
 
     function smartMove() {
       if (!isHumanTurn() || pendingWildCard) return;
       unlockAudio();
+      clearHumanAutoPassTimer();
       const player = players[currentPlayer];
       const playable = getPlayableCards(player.hand);
       if (playable.length === 0) { drawForHuman(); return; }
@@ -844,6 +877,7 @@
 
     function startRound() {
       clearAiTimer();
+      clearHumanAutoPassTimer();
       hideSuitChooser();
       hideRoundOverlay();
       deck = buildDeck();
@@ -874,6 +908,7 @@
 
     function startFreshMatch() {
       clearAiTimer();
+      clearHumanAutoPassTimer();
       hideRoundOverlay();
       hideSuitChooser();
       players = createPlayers();
@@ -898,11 +933,11 @@
       if (ui.smartBtn) ui.smartBtn.addEventListener('click', smartMove);
       if (ui.drawPileBtn) ui.drawPileBtn.addEventListener('click', drawForHuman);
       if (ui.helpBtn) ui.helpBtn.addEventListener('click', showWelcomeGuide);
-      if (ui.newMatchBtn) ui.newMatchBtn.addEventListener('click', () => { if (confirm('Start a fresh match and reset all current scores?')) startFreshMatch(); });
+      if (ui.newMatchBtn) ui.newMatchBtn.addEventListener('click', requestFreshMatch);
       if (ui.quickStartBtn) ui.quickStartBtn.addEventListener('click', () => { hideWelcomeGuide(); unlockAudio(); });
       if (ui.closeGuideBtn) ui.closeGuideBtn.addEventListener('click', hideWelcomeGuide);
       if (ui.nextRoundBtn) ui.nextRoundBtn.addEventListener('click', () => { hideRoundOverlay(); roundNumber++; startRound(); });
-      if (ui.newMatchOverlayBtn) ui.newMatchOverlayBtn.addEventListener('click', () => { hideRoundOverlay(); startFreshMatch(); });
+      if (ui.newMatchOverlayBtn) ui.newMatchOverlayBtn.addEventListener('click', requestFreshMatch);
       document.querySelectorAll('[data-suit]').forEach((btn) => btn.addEventListener('click', () => handleSuitChoice(btn.getAttribute('data-suit'))));
       document.addEventListener('keydown', (e) => {
         if (onboardingOpen) {

@@ -178,6 +178,15 @@ if ($eight -match 'data-suit=') { Pass("crapeights wild suit chooser") } else { 
 if ($eight -match 'localStorage') { Pass("crapeights localStorage persistence") } else { Fail("crapeights localStorage persistence") }
 if ($eight -match 'id="smartBtn"') { Pass("crapeights smart action button") } else { Fail("crapeights smart action button") }
 if ($eight -match 'id="passBtn"') { Pass("crapeights pass action button") } else { Fail("crapeights pass action button") }
+if ($eight -match 'onclick="requestFreshMatch\(\)"') { Pass("crapeights mobile new match confirmation path") } else { Fail("crapeights mobile new match confirmation path") }
+if ($eight -match 'let humanAutoPassTimeoutId = null;') { Pass("crapeights human auto-pass timer state") } else { Fail("crapeights human auto-pass timer state") }
+if ($eight -match 'function clearHumanAutoPassTimer\(') { Pass("crapeights human auto-pass clear helper") } else { Fail("crapeights human auto-pass clear helper") }
+if ($eight -match 'function queueHumanAutoPass\(delayMs\)') { Pass("crapeights human auto-pass queue helper") } else { Fail("crapeights human auto-pass queue helper") }
+if ($eight -match '(?s)function requestFreshMatch\(\)\s*\{\s*if \(confirm\(') { Pass("crapeights fresh match confirmation helper") } else { Fail("crapeights fresh match confirmation helper") }
+if ($eight -match '(?s)function showWelcomeGuide\(\)\s*\{.*?clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights guide clears pending timers") } else { Fail("crapeights guide clears pending timers") }
+if ($eight -match '(?s)function startFreshMatch\(\)\s*\{.*?clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights fresh match clears pending timers") } else { Fail("crapeights fresh match clears pending timers") }
+if ($eight -match '(?s)function drawForHuman\(\)\s*\{.*?clearHumanAutoPassTimer\(\);') { Pass("crapeights draw clears prior auto-pass timer") } else { Fail("crapeights draw clears prior auto-pass timer") }
+if ($eight -match 'queueHumanAutoPass\(300\);' -and $eight -match 'queueHumanAutoPass\(460\);') { Pass("crapeights auto-pass uses tracked queue helper") } else { Fail("crapeights auto-pass uses tracked queue helper") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw
@@ -207,6 +216,11 @@ if ($rummy -match 'const winner = state\.playerScore === state\.aiScore\s*\?\s*"
 if ($rummy -match 'Match tied at target\.') { Pass("rummy tie-at-target summary") } else { Fail("rummy tie-at-target summary") }
 if ($rummy -match '(?s)function refillStockIfNeeded\(\)\s*\{\s*if \(state\.stock\.length > 0\) return true;\s*if \(state\.discard\.length <= 1\) return false;') { Pass("stock refill keeps top discard") } else { Fail("stock refill keeps top discard") }
 if ($rummy -match 'resolveStockStall\(\"Stock exhausted\. Round ends in a draw\.\"\);') { Pass("stock exhaustion draw path present") } else { Fail("stock exhaustion draw path present") }
+if ($rummy -match 'matchOver: false,') { Pass("rummy matchOver state") } else { Fail("rummy matchOver state") }
+if ($rummy -match 'el\.newRoundBtn\.disabled = state\.initialized && \(!state\.roundOver \|\| state\.matchOver\);') { Pass("rummy new round disabled during active or finished match") } else { Fail("rummy new round disabled during active or finished match") }
+if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{.*?state\.matchOver = state\.playerScore >= TURDRUMMY_BALANCE\.matchTarget \|\|\s*state\.aiScore >= TURDRUMMY_BALANCE\.matchTarget;') { Pass("rummy finish round tracks match over") } else { Fail("rummy finish round tracks match over") }
+if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(!state\.roundOver\) \{\s*setMessage\("Finish the current round before dealing a new one\."\);') { Pass("rummy new round blocks active hand reset") } else { Fail("rummy new round blocks active hand reset") }
+if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(state\.matchOver\) \{\s*setMessage\("Match is over\. Reset match to start a fresh race\."\);') { Pass("rummy new round blocks post-match redeal") } else { Fail("rummy new round blocks post-match redeal") }
 
 Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
 $spades = Get-Content turdspades.html -Raw

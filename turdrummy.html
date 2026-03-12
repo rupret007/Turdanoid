@@ -532,6 +532,7 @@
       roundSummary: "",
       lastAiAction: "",
       roundOver: false,
+      matchOver: false,
       initialized: false,
       stats: {
         roundsPlayed: 0,
@@ -971,6 +972,7 @@
         selectedAnalysis.deadwoodScore > TURDRUMMY_BALANCE.knockLimit;
       el.ginBtn.disabled = !canDiscard || !selected || sameAsTakenDiscard || !selectedAnalysis ||
         selectedAnalysis.deadwoodScore !== 0;
+      el.newRoundBtn.disabled = state.initialized && (!state.roundOver || state.matchOver);
     }
 
     function renderAll() {
@@ -1009,6 +1011,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.lastAiAction = "";
+      state.matchOver = false;
       state.message = reasonText || "Stock exhausted.";
       state.roundSummary = "No legal draw remained. Round is a draw (0 points).";
       saveStats();
@@ -1033,6 +1036,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.roundOver = false;
+      state.matchOver = false;
       state.roundSummary = "";
       state.lastAiAction = "";
 
@@ -1367,7 +1371,9 @@
         state.stats.aiRoundWins += 1;
       }
 
-      if (state.playerScore >= TURDRUMMY_BALANCE.matchTarget || state.aiScore >= TURDRUMMY_BALANCE.matchTarget) {
+      state.matchOver = state.playerScore >= TURDRUMMY_BALANCE.matchTarget ||
+        state.aiScore >= TURDRUMMY_BALANCE.matchTarget;
+      if (state.matchOver) {
         const winner = state.playerScore === state.aiScore
           ? "Tie"
           : (state.playerScore > state.aiScore ? "Player" : "AI");
@@ -1464,6 +1470,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.roundOver = false;
+      state.matchOver = false;
       state.roundSummary = "";
       state.lastAiAction = "";
       state.message = "Match reset. Start a new round.";
@@ -1521,6 +1528,16 @@
       el.newRoundBtn.addEventListener("click", () => {
         if (!state.initialized) {
           startFirstRoundIfNeeded();
+          return;
+        }
+        if (!state.roundOver) {
+          setMessage("Finish the current round before dealing a new one.");
+          renderAll();
+          return;
+        }
+        if (state.matchOver) {
+          setMessage("Match is over. Reset match to start a fresh race.");
+          renderAll();
           return;
         }
         dealRound();
