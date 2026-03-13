@@ -120,6 +120,10 @@ if ($turd -match 'function toggleSound\(') { Pass("turdanoid sound toggle handle
 if ($turd -match 'data-sound-toggle') { Pass("turdanoid sound toggle buttons") } else { Fail("turdanoid sound toggle buttons") }
 if ($turd -match 'comboCardEl\.classList\.toggle\(''combo-live'', combo >= 4\);') { Pass("turdanoid combo highlight class") } else { Fail("turdanoid combo highlight class") }
 if ($turd -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdanoid hype status class") } else { Fail("turdanoid hype status class") }
+if ($turd -match 'width: min\(760px, 100vw\) !important;') { Pass("turdanoid mobile canvas uses full viewport width") } else { Fail("turdanoid mobile canvas uses full viewport width") }
+if ($turd -match 'grid-auto-flow: column;' -and $turd -match 'overflow-x: auto;' -and $turd -match 'scroll-snap-type: x proximity;') { Pass("turdanoid mobile hud focus strip") } else { Fail("turdanoid mobile hud focus strip") }
+if ($turd -match 'const compactPhone = windowWidth <= 480;') { Pass("turdanoid compact phone resize tuning") } else { Fail("turdanoid compact phone resize tuning") }
+if ($turd -match '(?s)function setup\(\)\s*\{.*?showWelcomeGuide\(\);\s*windowResized\(\);') { Pass("turdanoid setup applies responsive canvas sizing") } else { Fail("turdanoid setup applies responsive canvas sizing") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
@@ -219,6 +223,9 @@ if ($rummy -match 'resolveStockStall\(\"Stock exhausted\. Round ends in a draw\.
 if ($rummy -match 'matchOver: false,') { Pass("rummy matchOver state") } else { Fail("rummy matchOver state") }
 if ($rummy -match 'el\.newRoundBtn\.disabled = state\.initialized && \(!state\.roundOver \|\| state\.matchOver\);') { Pass("rummy new round disabled during active or finished match") } else { Fail("rummy new round disabled during active or finished match") }
 if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{.*?state\.matchOver = state\.playerScore >= TURDRUMMY_BALANCE\.matchTarget \|\|\s*state\.aiScore >= TURDRUMMY_BALANCE\.matchTarget;') { Pass("rummy finish round tracks match over") } else { Fail("rummy finish round tracks match over") }
+if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);.*?state\.initialized = false;') { Pass("rummy reset returns to pre-start state") } else { Fail("rummy reset returns to pre-start state") }
+if ($rummy -match '(?s)function openGuide\(\)\s*\{\s*clearAiTurnTimeout\(\);\s*el\.guideOverlay\.classList\.add\("show"\);') { Pass("rummy guide open pauses ai timer") } else { Fail("rummy guide open pauses ai timer") }
+if ($rummy -match '(?s)function closeGuide\(\)\s*\{\s*el\.guideOverlay\.classList\.remove\("show"\);\s*if \(!state\.roundOver && state\.turn === "ai"\) \{\s*queueAiTurn\(220\);') { Pass("rummy guide close resumes ai turn") } else { Fail("rummy guide close resumes ai turn") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(!state\.roundOver\) \{\s*setMessage\("Finish the current round before dealing a new one\."\);') { Pass("rummy new round blocks active hand reset") } else { Fail("rummy new round blocks active hand reset") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(state\.matchOver\) \{\s*setMessage\("Match is over\. Reset match to start a fresh race\."\);') { Pass("rummy new round blocks post-match redeal") } else { Fail("rummy new round blocks post-match redeal") }
 
@@ -238,6 +245,9 @@ if ($spades -match "Scores tied above target\. Play a tiebreaker round\.") { Pas
 if ($spades -match 'state\.bidTurn = \(state\.bidTurn \+ 1\) % 4;') { Pass("spades bid turn advance not hardcoded") } else { Fail("spades bid turn advance not hardcoded") }
 if ($spades -match 'const nextMode = state\.phase === ''roundEnd'';') { Pass("spades next-round gate") } else { Fail("spades next-round gate") }
 if ($spades -match 'el\.nextRoundTop\.addEventListener\(''click'', \(\) => \{ if \(state\.phase === ''roundEnd''\) startRound\(\); \}\);') { Pass("spades tiebreak round action") } else { Fail("spades tiebreak round action") }
+if ($spades -match 'function openGuide\(\)') { Pass("spades guide open helper") } else { Fail("spades guide open helper") }
+if ($spades -match 'function closeGuide\(\)') { Pass("spades guide close helper") } else { Fail("spades guide close helper") }
+if ($spades -match '(?s)document\.addEventListener\(''keydown'', \(e\) => \{\s*if \(el\.guide\.classList\.contains\(''show''\)\) \{\s*if \(e\.code === ''Enter'' \|\| e\.code === ''Escape'' \|\| e\.code === ''Space''\) \{\s*e\.preventDefault\(\);\s*closeGuide\(\);') { Pass("spades guide blocks gameplay enter key") } else { Fail("spades guide blocks gameplay enter key") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

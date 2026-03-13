@@ -1471,6 +1471,7 @@
       state.drawnCardSource = null;
       state.roundOver = false;
       state.matchOver = false;
+      state.initialized = false;
       state.roundSummary = "";
       state.lastAiAction = "";
       state.message = "Match reset. Start a new round.";
@@ -1487,11 +1488,15 @@
     }
 
     function openGuide() {
+      clearAiTurnTimeout();
       el.guideOverlay.classList.add("show");
     }
 
     function closeGuide() {
       el.guideOverlay.classList.remove("show");
+      if (!state.roundOver && state.turn === "ai") {
+        queueAiTurn(220);
+      }
     }
 
     function startFirstRoundIfNeeded() {

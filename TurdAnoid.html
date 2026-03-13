@@ -359,26 +359,81 @@
     }
 
     @media (max-width: 680px) {
+      body {
+        padding: 0 0 calc(82px + env(safe-area-inset-bottom)) 0;
+        align-items: flex-start;
+      }
       .shell {
-        width: min(760px, 94vw);
-        padding: 8px;
+        width: 100vw;
+        max-width: none;
+        padding: 6px;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+      }
+      .topbar,
+      .hud,
+      .panel {
+        margin-inline: 4px;
       }
       .topbar {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .topbar h1 {
+        font-size: 0.94rem;
+      }
+      .topbar p {
+        display: none;
       }
       .actions {
         display: none;
       }
       .mobile-menu {
         display: block;
+        width: auto;
+        margin-left: auto;
       }
       .hud {
-        grid-template-columns: repeat(3, minmax(70px, 1fr));
-        gap: 6px;
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(72px, 1fr);
+        gap: 5px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        padding: 0 2px 4px;
+      }
+      .hud::-webkit-scrollbar {
+        height: 6px;
+      }
+      .hud::-webkit-scrollbar-thumb {
+        background: rgba(158, 255, 200, 0.28);
+        border-radius: 999px;
+      }
+      .card {
+        min-width: 72px;
+        padding: 6px 5px;
+        scroll-snap-align: start;
+      }
+      .card .k {
+        font-size: 0.56rem;
+      }
+      .card .v {
+        font-size: 0.88rem;
+      }
+      .main {
+        gap: 8px;
+      }
+      .canvas-wrap {
+        margin-inline: -6px;
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
       }
       #game-holder canvas {
-        width: min(620px, 94vw) !important;
+        width: min(760px, 100vw) !important;
       }
       .panel {
         padding: 8px;
@@ -822,6 +877,7 @@ function setup() {
   updateSoundButtons();
   resetGame();
   showWelcomeGuide();
+  windowResized();
 }
 
 function showWelcomeGuide() {
@@ -851,8 +907,9 @@ function windowResized() {
   const prevH = height;
   const aspect = 860 / 620;
   const narrow = windowWidth <= 700;
-  const widthPad = narrow ? 20 : 40;
-  const chromePad = narrow ? 250 : 180;
+  const compactPhone = windowWidth <= 480;
+  const widthPad = compactPhone ? 8 : (narrow ? 16 : 40);
+  const chromePad = compactPhone ? 150 : (narrow ? 198 : 180);
   const maxWidth = min(860, windowWidth - widthPad);
   const maxHeight = min(620, windowHeight - chromePad);
 

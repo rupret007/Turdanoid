@@ -631,6 +631,14 @@
       renderControls();
     }
 
+    function openGuide() {
+      el.guide.classList.add('show');
+    }
+
+    function closeGuide() {
+      el.guide.classList.remove('show');
+    }
+
     function bind() {
       el.youCards.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-id]');
@@ -653,10 +661,17 @@
       el.nextRoundTop.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
       el.nextRoundDock.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
       el.newMatchBtn.addEventListener('click', startMatch);
-      el.helpBtn.addEventListener('click', () => el.guide.classList.add('show'));
-      el.quickStart.addEventListener('click', () => el.guide.classList.remove('show'));
-      el.closeGuide.addEventListener('click', () => el.guide.classList.remove('show'));
+      el.helpBtn.addEventListener('click', openGuide);
+      el.quickStart.addEventListener('click', closeGuide);
+      el.closeGuide.addEventListener('click', closeGuide);
       document.addEventListener('keydown', (e) => {
+        if (el.guide.classList.contains('show')) {
+          if (e.code === 'Enter' || e.code === 'Escape' || e.code === 'Space') {
+            e.preventDefault();
+            closeGuide();
+          }
+          return;
+        }
         if (e.code === 'Enter') {
           e.preventDefault();
           if (state.phase === 'bidding' && state.bidTurn === 0) el.lockBid.click();
@@ -667,7 +682,7 @@
 
     bind();
     startMatch();
-    el.guide.classList.add('show');
+    openGuide();
   </script>
 </body>
 </html>
