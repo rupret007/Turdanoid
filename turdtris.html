@@ -39,6 +39,35 @@ body {
   padding: clamp(8px, 2.4vw, 18px);
   overflow-x: hidden;
   overflow-y: auto;
+  position: relative;
+  isolation: isolate;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 999px;
+  filter: blur(14px);
+  opacity: 0.38;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  width: 240px;
+  height: 240px;
+  left: -54px;
+  top: 14vh;
+  background: radial-gradient(circle at 38% 34%, rgba(255, 203, 135, 0.46), transparent 30%), radial-gradient(circle at 60% 60%, rgba(142, 232, 199, 0.36), transparent 48%);
+}
+
+body::after {
+  width: 280px;
+  height: 280px;
+  right: -56px;
+  bottom: 8vh;
+  background: radial-gradient(circle at 44% 38%, rgba(255, 154, 88, 0.22), transparent 32%), radial-gradient(circle at 58% 62%, rgba(142, 232, 199, 0.26), transparent 48%);
 }
 
 .layout {
@@ -48,6 +77,18 @@ body {
   border-radius: 24px;
   padding: 14px;
   box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.layout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.05)), radial-gradient(circle at 12% 18%, rgba(255, 203, 135, 0.08), transparent 28%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .topbar {
@@ -63,6 +104,7 @@ body {
   letter-spacing: 0.08em;
   color: var(--accent);
   text-transform: uppercase;
+  text-shadow: 0 0 16px rgba(255, 203, 135, 0.2);
 }
 
 .topbar p {
@@ -147,6 +189,7 @@ body {
   background: rgba(40, 24, 14, 0.76);
   padding: 8px;
   text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px rgba(0, 0, 0, 0.1);
 }
 
 .card .k {
@@ -178,6 +221,33 @@ body {
   overflow: hidden;
   border: 2px solid rgba(255, 203, 135, 0.36);
   background: #12100f;
+  isolation: isolate;
+}
+
+.board-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 24%), repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 16px, rgba(0, 0, 0, 0.02) 16px 32px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.board-wrap::after {
+  content: attr(data-motto);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 214, 156, 0.34);
+  background: rgba(43, 28, 13, 0.78);
+  color: #ffe1b0;
+  font-size: 0.67rem;
+  letter-spacing: 0.03em;
+  transform: rotate(-3deg);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
 }
 
 #game {
@@ -197,6 +267,73 @@ body {
   padding: 20px;
 }
 
+.overlay-card {
+  width: min(360px, 100%);
+  border: 1px solid rgba(255, 203, 135, 0.34);
+  border-radius: 18px;
+  background: rgba(28, 18, 12, 0.95);
+  padding: 18px 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.46);
+  position: relative;
+  overflow: hidden;
+  animation: overlayPop 0.34s ease;
+}
+
+.overlay-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 24%, transparent 72%, rgba(255, 255, 255, 0.04)), radial-gradient(circle at 12% 18%, rgba(255, 203, 135, 0.1), transparent 28%);
+  pointer-events: none;
+}
+
+.overlay-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -30px -36px auto;
+  width: 150px;
+  height: 150px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 203, 135, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+.overlay-card[data-tone="victory"] {
+  border-color: rgba(142, 232, 199, 0.46);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(142, 232, 199, 0.18), 0 0 38px rgba(142, 232, 199, 0.16);
+}
+
+.overlay-card[data-tone="victory"]::after {
+  background: radial-gradient(circle, rgba(142, 232, 199, 0.22), transparent 68%);
+}
+
+.overlay-card[data-tone="gameover"] {
+  border-color: rgba(255, 143, 143, 0.38);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 143, 143, 0.12), 0 0 30px rgba(255, 104, 104, 0.12);
+}
+
+.overlay-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 203, 135, 0.34);
+  background: rgba(52, 31, 18, 0.74);
+  color: #ffe4b5;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.overlay-card[data-tone="victory"] .overlay-kicker {
+  border-color: rgba(142, 232, 199, 0.34);
+  background: rgba(24, 54, 44, 0.78);
+  color: #d3fff0;
+}
+
 .overlay-card h2 {
   color: var(--accent);
   margin-bottom: 12px;
@@ -204,6 +341,42 @@ body {
 
 .overlay-card p {
   margin-bottom: 8px;
+}
+
+.overlay-flavor {
+  color: #e8d7b7;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.overlay-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.overlay-stat {
+  border: 1px solid rgba(255, 203, 135, 0.24);
+  border-radius: 12px;
+  background: rgba(19, 12, 8, 0.82);
+  padding: 9px;
+}
+
+.overlay-stat .k {
+  color: rgba(246, 228, 197, 0.72);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+.overlay-stat .v {
+  margin-top: 4px;
+  font-size: 1.18rem;
+}
+
+@keyframes overlayPop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .panel {
@@ -214,6 +387,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .panel h3 {
@@ -380,6 +554,9 @@ body {
     border-radius: 18px;
   }
   .game-grid { grid-template-columns: 1fr; }
+  .board-wrap::after {
+    content: none;
+  }
   .hud { grid-template-columns: repeat(3, minmax(90px, 1fr)); }
   #game {
     width: min(380px, 92vw, 42dvh);
@@ -490,7 +667,7 @@ body {
   <div class="topbar">
     <div>
       <h1>Turdtris Turbo</h1>
-      <p>Hold system, ghost piece, combo chains, better drops, and touch controls.</p>
+      <p>Hold system, ghost piece, chaos modifiers, and the energy of a suspiciously spicy arcade booth.</p>
     </div>
     <div class="top-actions">
       <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
@@ -523,11 +700,12 @@ body {
   </div>
 
   <div class="game-grid">
-    <div class="board-wrap">
+    <div class="board-wrap" data-motto="Stack clean. Panic dirty.">
       <canvas width="320" height="640" id="game"></canvas>
 
       <div class="overlay" id="pauseOverlay">
         <div class="overlay-card">
+          <div class="overlay-kicker">Breather Break</div>
           <h2>Paused</h2>
           <p>Press P or Space to resume.</p>
           <button class="btn" onclick="togglePause()">Resume</button>
@@ -535,10 +713,14 @@ body {
       </div>
 
       <div class="overlay" id="gameOverOverlay">
-        <div class="overlay-card">
+        <div class="overlay-card" id="endOverlayCard" data-tone="gameover">
+          <div class="overlay-kicker" id="endKicker">Pipe Jam</div>
           <h2 id="endTitle">Game Over</h2>
-          <p>Final Score: <span id="finalScore">0</span></p>
-          <p>Lines Cleared: <span id="finalLines">0</span></p>
+          <p class="overlay-flavor" id="endFlavor">The stack fought back.</p>
+          <div class="overlay-stats">
+            <div class="overlay-stat"><div class="k">Final Score</div><div class="v" id="finalScore">0</div></div>
+            <div class="overlay-stat"><div class="k">Lines Cleared</div><div class="v" id="finalLines">0</div></div>
+          </div>
           <button class="btn" onclick="restartGame()">Play Again</button>
         </div>
       </div>
@@ -1577,11 +1759,21 @@ function showGameOver(won) {
   }
 
   const overlayEl = document.getElementById('gameOverOverlay');
+  const overlayCardEl = document.getElementById('endOverlayCard');
+  const endKickerEl = document.getElementById('endKicker');
   const endTitleEl = document.getElementById('endTitle');
+  const endFlavorEl = document.getElementById('endFlavor');
   const finalScoreEl = document.getElementById('finalScore');
   const finalLinesEl = document.getElementById('finalLines');
 
   if (endTitleEl) endTitleEl.textContent = isWin ? `Level ${MAX_LEVEL} Cleared!` : 'Game Over';
+  if (overlayCardEl) overlayCardEl.dataset.tone = isWin ? 'victory' : 'gameover';
+  if (endKickerEl) endKickerEl.textContent = isWin ? 'Pipe Royalty' : 'Sewer Wipeout';
+  if (endFlavorEl) {
+    endFlavorEl.textContent = isWin
+      ? 'You hit level 69, made the stack panic, and left the whole arcade smelling victory.'
+      : 'The stack finally buckled you. Take a breath, then bring the filth back cleaner.';
+  }
   if (overlayEl) overlayEl.style.display = 'grid';
   if (finalScoreEl) finalScoreEl.textContent = String(score);
   if (finalLinesEl) finalLinesEl.textContent = String(linesCleared);

@@ -17,13 +17,30 @@
         radial-gradient(circle at 84% 12%,rgba(255,212,151,.17),transparent 30%),
         linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
       display:flex;justify-content:center;align-items:center;padding:clamp(8px,2.2vw,14px);overflow-x:hidden;overflow-y:auto;
+      position:relative;isolation:isolate;
+    }
+    body::before,body::after{
+      content:"";position:fixed;border-radius:999px;filter:blur(14px);opacity:.42;pointer-events:none;z-index:-1;
+    }
+    body::before{
+      width:250px;height:250px;left:-60px;top:12vh;
+      background:radial-gradient(circle at 38% 34%,rgba(255,225,152,.48),transparent 30%),radial-gradient(circle at 60% 60%,rgba(150,255,197,.42),transparent 48%);
+    }
+    body::after{
+      width:290px;height:290px;right:-58px;bottom:10vh;
+      background:radial-gradient(circle at 42% 34%,rgba(172,124,255,.28),transparent 30%),radial-gradient(circle at 58% 62%,rgba(113,212,184,.34),transparent 50%);
     }
     .shell{
       width:min(1180px,96vw);background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:12px;
-      box-shadow:0 24px 50px rgba(0,0,0,.48);backdrop-filter:blur(8px);position:relative;
+      box-shadow:0 24px 50px rgba(0,0,0,.48);backdrop-filter:blur(8px);position:relative;overflow:hidden;isolation:isolate;
+    }
+    .shell::before{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 22%,transparent 74%,rgba(255,255,255,.04)),radial-gradient(circle at 12% 18%,rgba(150,255,197,.09),transparent 28%);
+      pointer-events:none;z-index:-1;
     }
     .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
-    .topbar h1{color:var(--accent);font-size:clamp(1.1rem,2.3vw,1.7rem);text-transform:uppercase;letter-spacing:.08em}
+    .topbar h1{color:var(--accent);font-size:clamp(1.1rem,2.3vw,1.7rem);text-transform:uppercase;letter-spacing:.08em;text-shadow:0 0 16px rgba(150,255,197,.22)}
     .topbar p{margin-top:4px;font-size:.84rem;color:var(--muted)}
     .actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .mobile-menu{display:none;width:100%}
@@ -41,7 +58,7 @@
     .btn.danger{border-color:rgba(255,157,157,.56);color:var(--danger)}
     .btn:disabled{opacity:.46;cursor:not-allowed;transform:none}
     .hud{display:grid;grid-template-columns:repeat(7,minmax(80px,1fr));gap:8px;margin-bottom:10px}
-    .hud-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.76);text-align:center;padding:8px}
+    .hud-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.76);text-align:center;padding:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 24px rgba(0,0,0,.12)}
     .hud-card .k{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
     .hud-card .v{font-size:1.02rem;font-weight:700;margin-top:4px}
     .hud-card.hot .v{color:var(--hot)}
@@ -49,11 +66,21 @@
     .table{
       border:2px solid rgba(150,255,197,.34);border-radius:16px;
       background:radial-gradient(circle at 50% 0%,rgba(166,255,208,.11),transparent 44%),linear-gradient(160deg,#11402e,#16392f);
-      padding:10px;min-height:560px;display:flex;flex-direction:column;gap:10px;
+      padding:10px;min-height:560px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;isolation:isolate;
+    }
+    .table::before{
+      content:"";position:absolute;inset:0;
+      background:radial-gradient(circle at 50% 18%,rgba(255,255,255,.08),transparent 28%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 16px,rgba(0,0,0,.02) 16px 32px);
+      pointer-events:none;z-index:-1;
+    }
+    .table::after{
+      content:attr(data-motto);position:absolute;top:12px;right:12px;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,223,148,.34);background:rgba(43,28,13,.78);color:#ffe3b1;font-size:.67rem;letter-spacing:.03em;
+      transform:rotate(-3deg);box-shadow:0 10px 24px rgba(0,0,0,.18);pointer-events:none;
     }
     .status{
       border:1px solid rgba(150,255,197,.22);border-radius:10px;background:rgba(7,17,12,.64);color:var(--muted);font-size:.86rem;line-height:1.4;
-      min-height:52px;padding:8px;transition:border-color .22s ease,box-shadow .22s ease,background .22s ease;
+      min-height:52px;padding:8px;padding-right:150px;transition:border-color .22s ease,box-shadow .22s ease,background .22s ease;backdrop-filter:blur(5px);
     }
     .status.hype{
       border-color:rgba(255,223,148,.72);box-shadow:0 0 0 1px rgba(255,223,148,.3),0 0 16px rgba(255,188,108,.24);
@@ -61,34 +88,73 @@
     }
     @keyframes statusPulse{from{transform:translateY(0)}to{transform:translateY(-1px)}}
     .opponents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    .opp-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.68);padding:7px;text-align:center;transition:border-color .2s ease,box-shadow .2s ease}
+    .opp-card{border:1px solid rgba(150,255,197,.24);border-radius:10px;background:rgba(9,20,15,.68);padding:7px;text-align:center;transition:border-color .2s ease,box-shadow .2s ease;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
     .opp-card.active{border-color:rgba(255,223,148,.62);box-shadow:0 0 0 1px rgba(255,223,148,.26)}
+    .opp-card::before{content:"";position:absolute;inset:auto -20px -28px auto;width:76px;height:76px;border-radius:999px;background:radial-gradient(circle,rgba(150,255,197,.14),transparent 68%);pointer-events:none}
     .opp-name{font-size:.79rem;color:var(--ink);font-weight:700}
     .opp-meta{margin-top:4px;color:var(--muted);font-size:.75rem}
     .opp-cards{margin-top:6px;display:flex;justify-content:center;gap:4px}
     .mini-back{
       width:18px;height:26px;border-radius:5px;border:1px solid rgba(198,236,210,.45);
-      background:linear-gradient(135deg,rgba(188,139,255,.58),rgba(113,212,184,.66)),repeating-linear-gradient(45deg,rgba(255,255,255,.15) 0 3px,rgba(0,0,0,.08) 3px 6px);
+      background:
+        radial-gradient(circle at 50% 30%,rgba(255,255,255,.18),transparent 18%),
+        linear-gradient(135deg,rgba(188,139,255,.72),rgba(113,212,184,.84)),
+        repeating-linear-gradient(45deg,rgba(255,255,255,.15) 0 3px,rgba(0,0,0,.08) 3px 6px);
+      position:relative;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.18);
+    }
+    .mini-back::before{
+      content:"";position:absolute;inset:3px;border-radius:3px;border:1px solid rgba(255,255,255,.22);
+      background:repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 2px,transparent 2px 6px);
+    }
+    .mini-back::after{
+      content:"8";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-15deg);
+      font-size:8px;font-weight:800;color:rgba(255,255,255,.74);text-shadow:0 1px 3px rgba(0,0,0,.22);
     }
     .pile-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .pile{
       border:1px solid rgba(150,255,197,.28);border-radius:12px;background:rgba(8,18,13,.7);padding:9px;
-      display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:134px;
+      display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:134px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
     }
     .pile h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
     .pile-meta{font-size:.74rem;color:var(--muted)}
     .pile-card,.draw-back{
       width:80px;height:112px;border-radius:11px;border:1px solid rgba(224,232,236,.78);
-      display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.36);user-select:none;
+      display:grid;place-items:center;box-shadow:0 8px 16px rgba(0,0,0,.36);user-select:none;position:relative;overflow:hidden;
     }
     .draw-back{
-      background:linear-gradient(135deg,rgba(188,139,255,.7),rgba(113,212,184,.8)),repeating-linear-gradient(45deg,rgba(255,255,255,.2) 0 4px,rgba(0,0,0,.08) 4px 8px);
-      color:#f9fffc;font-weight:700;font-size:1.1rem;
+      background:
+        radial-gradient(circle at 50% 24%,rgba(255,255,255,.22),transparent 18%),
+        linear-gradient(135deg,rgba(188,139,255,.78),rgba(113,212,184,.88)),
+        repeating-linear-gradient(45deg,rgba(255,255,255,.2) 0 4px,rgba(0,0,0,.08) 4px 8px);
+      color:#f9fffc;font-weight:700;font-size:1.2rem;letter-spacing:.04em;
+    }
+    .draw-back::before{
+      content:"";position:absolute;inset:9px;border-radius:9px;border:1px solid rgba(255,255,255,.24);
+      background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.12),transparent 46%),repeating-linear-gradient(135deg,rgba(255,255,255,.08) 0 2px,transparent 2px 7px);
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .draw-back::after{
+      content:"WILD STASH";position:absolute;left:50%;bottom:11px;transform:translateX(-50%) rotate(-12deg);
+      padding:4px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(21,27,46,.28);
+      font-size:.52rem;font-weight:800;letter-spacing:.16em;color:rgba(255,255,255,.84);
     }
     .pile-card{background:linear-gradient(165deg,var(--cardA),var(--cardB));color:#1f262c;font-weight:700;display:flex;flex-direction:column;justify-content:space-between;padding:8px}
     .pile-card.red,.card-btn.red{color:#c42b2b}
     .pile-card .center,.card-btn .center{font-size:1.38rem;align-self:center;margin-top:4px}
     .pile-card .small,.card-btn .small{align-self:flex-end;transform:rotate(180deg);font-size:.9rem;line-height:1}
+    .pile-card[data-face]:not([data-face=""]),.card-btn[data-face]:not([data-face=""]){box-shadow:0 0 0 1px rgba(255,223,148,.18),0 8px 18px rgba(0,0,0,.3)}
+    .pile-card[data-face]:not([data-face=""])::after,.card-btn[data-face]:not([data-face=""])::after{
+      content:attr(data-badge);position:absolute;left:50%;bottom:12px;transform:translateX(-50%) rotate(-10deg);
+      padding:4px 6px;border-radius:999px;border:1px solid rgba(47,61,63,.14);background:rgba(245,248,244,.92);color:#395255;
+      font-size:.42rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;box-shadow:0 4px 10px rgba(0,0,0,.12);pointer-events:none;
+    }
+    .pile-card[data-face="wild"]::after,.card-btn[data-face="wild"]::after{
+      border-color:rgba(132,102,255,.28);background:rgba(44,33,76,.9);color:#efe7ff;
+    }
+    .pile-card[data-face="action"] .center,.card-btn[data-face="action"] .center,
+    .pile-card[data-face="wild"] .center,.card-btn[data-face="wild"] .center{
+      font-size:1.56rem;text-shadow:0 8px 18px rgba(0,0,0,.12);
+    }
     .suit-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
     .suit-chip{border:1px solid rgba(150,255,197,.24);border-radius:999px;background:rgba(8,18,13,.6);color:var(--muted);text-align:center;padding:5px 8px;font-size:.74rem}
     .suit-chip.active{border-color:rgba(255,223,148,.64);color:#ffe2aa;background:rgba(37,24,13,.66);font-weight:700}
@@ -108,7 +174,7 @@
     .card-btn:disabled{opacity:.82;cursor:default}
     .action-dock{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:8px}
     .sidebar{display:flex;flex-direction:column;gap:10px}
-    .panel{border:1px solid rgba(150,255,197,.24);border-radius:12px;background:rgba(8,18,13,.66);padding:9px}
+    .panel{border:1px solid rgba(150,255,197,.24);border-radius:12px;background:rgba(8,18,13,.66);padding:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
     .panel h3{color:var(--accent);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px}
     .panel p,.panel li,.panel div{font-size:.79rem;color:var(--muted);line-height:1.4}
     .panel ul{margin-left:17px;display:flex;flex-direction:column;gap:5px}
@@ -116,11 +182,53 @@
     .overlay{position:fixed;inset:0;background:rgba(5,9,7,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
     .overlay-card{
       width:min(560px,94vw);border:1px solid rgba(150,255,197,.32);border-radius:16px;background:rgba(9,20,15,.94);padding:14px;color:var(--muted);
-      box-shadow:0 18px 40px rgba(0,0,0,.5);
+      box-shadow:0 18px 40px rgba(0,0,0,.5);position:relative;overflow:hidden;
+    }
+    .overlay-card::before{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(120deg,rgba(255,255,255,.07),transparent 26%,transparent 72%,rgba(255,255,255,.04)),radial-gradient(circle at 12% 18%,rgba(255,223,148,.1),transparent 30%);
+      pointer-events:none;
+    }
+    .overlay-card::after{
+      content:"";position:absolute;inset:auto -32px -36px auto;width:138px;height:138px;border-radius:999px;
+      background:radial-gradient(circle,rgba(150,255,197,.16),transparent 68%);pointer-events:none;
     }
     .overlay-card h2{color:var(--accent);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase;font-size:1.08rem}
     .overlay-card p,.overlay-card li{font-size:.84rem;line-height:1.45;margin-bottom:7px}
     .overlay-card ul{margin-left:18px;margin-bottom:8px}
+    .overlay-kicker{
+      display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 9px;border-radius:999px;
+      border:1px solid rgba(255,223,148,.34);background:rgba(45,29,14,.52);color:#ffe3af;
+      font-size:.66rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    }
+    .overlay-flavor{font-size:.78rem;color:#d7efe0;opacity:.9}
+    #roundOverlay .overlay-card{animation:overlayFloat .42s ease}
+    #roundOverlay .overlay-card[data-tone="victory"]{
+      border-color:rgba(255,223,148,.48);
+      box-shadow:0 18px 44px rgba(0,0,0,.54),0 0 0 1px rgba(255,223,148,.18),0 0 36px rgba(255,184,99,.16);
+    }
+    #roundOverlay .overlay-card[data-tone="victory"]::after,
+    #roundOverlay .overlay-card[data-tone="match-win"]::after{
+      background:radial-gradient(circle,rgba(255,223,148,.24),transparent 68%);
+    }
+    #roundOverlay .overlay-card[data-tone="match-win"]{
+      border-color:rgba(255,223,148,.64);
+      background:rgba(21,18,10,.95);
+      box-shadow:0 20px 48px rgba(0,0,0,.56),0 0 0 1px rgba(255,223,148,.24),0 0 44px rgba(255,193,94,.22);
+    }
+    #roundOverlay .overlay-card[data-tone="defeat"],
+    #roundOverlay .overlay-card[data-tone="match-loss"]{
+      border-color:rgba(255,157,157,.4);
+      box-shadow:0 18px 44px rgba(0,0,0,.54),0 0 0 1px rgba(255,157,157,.14),0 0 30px rgba(255,102,102,.12);
+    }
+    #roundOverlay .overlay-card[data-tone="defeat"] .overlay-kicker,
+    #roundOverlay .overlay-card[data-tone="match-loss"] .overlay-kicker{
+      border-color:rgba(255,157,157,.34);background:rgba(54,20,20,.54);color:#ffc5c5;
+    }
+    @keyframes overlayFloat{
+      from{opacity:0;transform:translateY(10px) scale(.98)}
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
     .overlay-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
     .suit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
     .suit-btn{
@@ -129,7 +237,7 @@
     }
     .suit-btn:hover{transform:translateY(-1px);border-color:rgba(255,223,148,.65)}
     .suit-btn.red{color:#ff9d9d}
-    @media (max-width:980px){.layout{grid-template-columns:1fr}.sidebar{order:2}.table{min-height:0}}
+    @media (max-width:980px){.layout{grid-template-columns:1fr}.sidebar{order:2}.table{min-height:0}.table::after{content:none}.status{padding-right:8px}}
     @media (max-width:760px){
       body{padding:8px}.shell{width:min(760px,92vw);border-radius:16px;padding:10px}.actions{display:none}.mobile-menu{display:block}
       .hud{grid-template-columns:repeat(4,minmax(0,1fr))}.opponents{grid-template-columns:1fr}.pile-row{grid-template-columns:1fr 1fr}
@@ -139,6 +247,7 @@
     @media (max-width:560px){
       .topbar p{font-size:.76rem}.hud{grid-template-columns:repeat(3,minmax(0,1fr))}
       .pile-card,.draw-back{width:68px;height:96px}.card-btn{width:58px;height:86px;font-size:.82rem}
+      .pile-card[data-face]:not([data-face=""])::after,.card-btn[data-face]:not([data-face=""])::after{bottom:9px;font-size:.34rem;padding:3px 5px}
       .panel p,.panel li,.panel div{font-size:.75rem}
     }
   </style>
@@ -169,9 +278,11 @@
   </div>
 
   <div class="overlay" id="roundOverlay">
-    <div class="overlay-card">
+    <div class="overlay-card" id="roundOverlayCard" data-tone="victory">
+      <div class="overlay-kicker" id="roundKicker">Round Riot</div>
       <h2 id="roundTitle">Round Over</h2>
       <p id="roundSummary">Summary</p>
+      <p class="overlay-flavor" id="roundFlavor">Somebody definitely made a scene.</p>
       <div class="panel" style="margin-top:8px;">
         <h3>Scoreboard</h3>
         <div id="roundScoreboard">-</div>
@@ -200,7 +311,7 @@
     <div class="topbar">
       <div>
         <h1>Crappy Eights</h1>
-        <p>Crazy Eights meets Uno pacing, but with toilet-table energy.</p>
+        <p>Crazy Eights meets Uno pacing, except this table believes hygiene is for quitters.</p>
       </div>
       <div class="actions">
         <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
@@ -232,8 +343,8 @@
     </div>
 
     <div class="layout">
-      <section class="table">
-        <div class="status" id="statusText">Deal in progress. Match suit/rank, use action cards, and dump your hand.</div>
+      <section class="table" data-motto="House Rule: groan loudly every time somebody throws an 8">
+        <div class="status" id="statusText">Deal in progress. Match suit, sling chaos, and pretend this smell is strategic.</div>
         <div class="opponents">
           <div class="opp-card" id="oppCard1"><div class="opp-name" id="oppName1">Bot 1</div><div class="opp-meta" id="oppMeta1">Cards: 0</div><div class="opp-cards" id="oppBacks1"></div></div>
           <div class="opp-card" id="oppCard2"><div class="opp-name" id="oppName2">Bot 2</div><div class="opp-meta" id="oppMeta2">Cards: 0</div><div class="opp-cards" id="oppBacks2"></div></div>
@@ -317,8 +428,11 @@
       quickStartBtn: document.getElementById('quickStartBtn'),
       closeGuideBtn: document.getElementById('closeGuideBtn'),
       roundOverlay: document.getElementById('roundOverlay'),
+      roundOverlayCard: document.getElementById('roundOverlayCard'),
+      roundKicker: document.getElementById('roundKicker'),
       roundTitle: document.getElementById('roundTitle'),
       roundSummary: document.getElementById('roundSummary'),
+      roundFlavor: document.getElementById('roundFlavor'),
       roundScoreboard: document.getElementById('roundScoreboard'),
       nextRoundBtn: document.getElementById('nextRoundBtn'),
       newMatchOverlayBtn: document.getElementById('newMatchOverlayBtn'),
@@ -435,6 +549,14 @@
     function suitName(suit) { return suit === 'S' ? 'Spades' : suit === 'H' ? 'Hearts' : suit === 'D' ? 'Diamonds' : 'Clubs'; }
     function isRedSuit(suit) { return suit === 'H' || suit === 'D'; }
     function cardPoints(card) { if (!card) return 0; if (card.rank === '8') return 50; if (card.rank === 'A') return 1; if (['10', 'J', 'Q', 'K'].includes(card.rank)) return 10; return parseInt(card.rank, 10); }
+    function cardStyleMeta(card) {
+      if (!card) return { face: '', badge: '' };
+      if (card.rank === '8') return { face: 'wild', badge: 'Wild' };
+      if (card.rank === '2') return { face: 'action', badge: 'Draw 2' };
+      if (card.rank === 'J') return { face: 'action', badge: 'Skip' };
+      if (card.rank === 'Q') return { face: 'action', badge: 'Reverse' };
+      return { face: '', badge: '' };
+    }
 
     function randomIntExclusive(max) {
       if (!Number.isFinite(max) || max <= 0) return 0;
@@ -526,7 +648,10 @@
     function renderDiscard() {
       const top = topCard();
       if (!top || !ui.discardCard) return;
+      const styleMeta = cardStyleMeta(top);
       ui.discardCard.className = `pile-card${isRedSuit(top.suit) ? ' red' : ''}`;
+      ui.discardCard.dataset.face = styleMeta.face;
+      ui.discardCard.dataset.badge = styleMeta.badge;
       ui.discardCard.innerHTML = `<div>${top.rank}</div><div class="center">${suitGlyph(top.suit)}</div><div class="small">${top.rank}<br>${suitGlyph(top.suit)}</div>`;
       if (ui.discardMeta) ui.discardMeta.textContent = top.rank === '8' ? `Wild -> ${suitName(activeSuit)}` : `Top: ${top.rank}${suitGlyph(top.suit)}`;
     }
@@ -594,7 +719,10 @@
       ui.playerHand.innerHTML = '';
       hand.forEach((card) => {
         const btn = document.createElement('button');
+        const styleMeta = cardStyleMeta(card);
         btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${isPlayable(card) ? ' playable' : ''}${card.id === selectedCardId ? ' selected' : ''}`;
+        btn.dataset.face = styleMeta.face;
+        btn.dataset.badge = styleMeta.badge;
         btn.innerHTML = `<div>${card.rank}</div><div class="center">${suitGlyph(card.suit)}</div><div class="small">${card.rank}<br>${suitGlyph(card.suit)}</div>`;
         btn.addEventListener('click', () => {
           if (!isHumanTurn() || pendingWildCard) return;
@@ -679,9 +807,12 @@
     function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
     function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
 
-    function showRoundOverlay(title, summary, matchFinished) {
+    function showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker) {
+      if (ui.roundOverlayCard) ui.roundOverlayCard.dataset.tone = tone || 'victory';
+      if (ui.roundKicker) ui.roundKicker.textContent = kicker || 'Round Riot';
       if (ui.roundTitle) ui.roundTitle.textContent = title;
       if (ui.roundSummary) ui.roundSummary.textContent = summary;
+      if (ui.roundFlavor) ui.roundFlavor.textContent = flavor || 'The table smelled consequences coming.';
       if (ui.roundScoreboard) ui.roundScoreboard.innerHTML = players.map((p) => `${p.name}: ${p.score} / ${MATCH_TARGET}`).join('<br>');
       if (ui.nextRoundBtn) ui.nextRoundBtn.style.display = matchFinished ? 'none' : 'inline-flex';
       if (ui.roundOverlay) ui.roundOverlay.style.display = 'flex';
@@ -765,7 +896,20 @@
       addHistory(summary);
       playSfx(winnerIndex === 0 ? 'win' : 'lose');
       updateAll();
-      showRoundOverlay(title, summary, matchFinished);
+      const tone = winnerIndex === 0
+        ? (matchFinished ? 'match-win' : 'victory')
+        : (matchFinished ? 'match-loss' : 'defeat');
+      const kicker = winnerIndex === 0
+        ? (matchFinished ? 'Sewer Crown' : 'Round Riot')
+        : (matchFinished ? 'Bot Parade' : 'Stink Ambush');
+      const flavor = winnerIndex === 0
+        ? (matchFinished
+          ? 'You cleared the table and the bots are filing a hygiene complaint.'
+          : 'The bots are pretending that smell-based intimidation should be illegal.')
+        : (matchFinished
+          ? `${winner.name} just left you with the full sewer lecture.`
+          : `${winner.name} swiped the round and acted like it was all skill.`);
+      showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker);
     }
 
     function playCardById(playerIndex, cardId, forcedSuit) {

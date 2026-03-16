@@ -25,6 +25,19 @@
       padding: 8px;
       display: flex;
       justify-content: center;
+      position: relative;
+      isolation: isolate;
+    }
+    body::before,body::after{
+      content:"";position:fixed;border-radius:999px;filter:blur(14px);opacity:.42;pointer-events:none;z-index:-1;
+    }
+    body::before{
+      width:240px;height:240px;left:-54px;top:14vh;
+      background:radial-gradient(circle at 38% 34%,rgba(255,221,146,.42),transparent 30%),radial-gradient(circle at 60% 60%,rgba(156,255,121,.42),transparent 50%);
+    }
+    body::after{
+      width:280px;height:280px;right:-58px;bottom:8vh;
+      background:radial-gradient(circle at 42% 38%,rgba(156,255,121,.3),transparent 34%),radial-gradient(circle at 60% 62%,rgba(255,220,130,.24),transparent 48%);
     }
     .app {
       width: min(1100px, 100%);
@@ -36,6 +49,13 @@
       overflow: hidden;
       display: grid;
       grid-template-rows: auto auto auto 1fr auto;
+      position: relative;
+      isolation: isolate;
+    }
+    .app::before{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 22%,transparent 74%,rgba(255,255,255,.05)),radial-gradient(circle at 12% 18%,rgba(156,255,121,.09),transparent 28%);
+      pointer-events:none;z-index:-1;
     }
     .topbar {
       display: flex;
@@ -52,6 +72,7 @@
       color: var(--accent);
       text-transform: uppercase;
       letter-spacing: .05em;
+      text-shadow: 0 0 16px rgba(156,255,121,.22);
     }
     .title p { color: var(--muted); font-size: .78rem; margin-top: 2px; }
     .actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -80,6 +101,7 @@
       border-radius: 8px;
       padding: 6px;
       background: rgba(12,32,21,.7);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 20px rgba(0,0,0,.08);
     }
     .k { color: var(--muted); font-size: .62rem; text-transform: uppercase; letter-spacing: .05em; }
     .v { color: var(--ink); font-size: .88rem; font-weight: 700; margin-top: 2px; }
@@ -90,13 +112,45 @@
       font-size: .82rem;
       line-height: 1.45;
       background: rgba(9,25,16,.72);
+      backdrop-filter: blur(5px);
+      position: relative;
+      overflow: hidden;
+      padding-right: 126px;
     }
-    .table { overflow: auto; padding: 8px; display: grid; gap: 8px; }
+    .message::after{
+      content:attr(data-ribbon);position:absolute;top:8px;right:8px;padding:4px 8px;border-radius:999px;
+      border:1px solid rgba(255,215,132,.26);background:rgba(17,31,22,.74);color:#efffe7;font-size:.58rem;font-weight:800;
+      letter-spacing:.16em;text-transform:uppercase;opacity:0;transform:rotate(3deg);transition:opacity .18s ease,border-color .18s ease,background .18s ease;
+      pointer-events:none;
+    }
+    .message[data-ribbon]:not([data-ribbon=""])::after{opacity:1}
+    .message[data-tone="victory"]{
+      background:rgba(42,30,14,.78);border-bottom-color:rgba(255,215,132,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 24px rgba(255,184,99,.1);
+    }
+    .message[data-tone="victory"]::after{
+      border-color:rgba(255,215,132,.34);background:rgba(55,35,14,.82);color:#ffe7bd;
+    }
+    .message[data-tone="defeat"]{
+      background:rgba(40,20,20,.78);border-bottom-color:rgba(255,157,157,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 0 22px rgba(255,110,110,.08);
+    }
+    .message[data-tone="defeat"]::after{
+      border-color:rgba(255,157,157,.34);background:rgba(56,22,22,.82);color:#ffd4d4;
+    }
+    .message[data-tone="draw"]::after{
+      border-color:rgba(205,225,205,.24);background:rgba(18,32,22,.8);color:#e9f6e6;
+    }
+    .table { overflow: auto; padding: 8px; display: grid; gap: 8px; position: relative; background:radial-gradient(circle at 50% 14%,rgba(255,255,255,.06),transparent 24%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 16px,rgba(0,0,0,.015) 16px 32px); }
+    .table::after{
+      content:attr(data-motto);position:absolute;top:12px;right:12px;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,221,146,.34);background:rgba(41,29,12,.78);color:#ffe1a8;font-size:.67rem;letter-spacing:.03em;
+      transform:rotate(3deg);box-shadow:0 10px 24px rgba(0,0,0,.16);pointer-events:none;
+    }
     .zone {
       border: 1px solid rgba(156,255,121,.2);
       border-radius: 9px;
       background: rgba(10,26,17,.72);
       padding: 8px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
     }
     .head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
     .name { color: var(--accent); font-size: .8rem; font-weight: 700; text-transform: uppercase; }
@@ -112,14 +166,28 @@
       height: clamp(34px,6.8vw,48px);
       border-radius: 6px;
       border: 1px solid rgba(0,0,0,.35);
-      background: repeating-linear-gradient(135deg,#2b5a3a 0 6px,#4d8b62 6px 12px);
+      background:
+        radial-gradient(circle at 50% 28%, rgba(255,255,255,.16), transparent 18%),
+        linear-gradient(145deg, rgba(255,215,132,.08), transparent 42%),
+        repeating-linear-gradient(135deg,#2b5a3a 0 6px,#4d8b62 6px 12px);
+      box-shadow: 0 7px 14px rgba(0,0,0,.14);
+      position: relative;
+      overflow: hidden;
+    }
+    .back::before{
+      content:"";position:absolute;inset:4px;border-radius:4px;border:1px solid rgba(255,255,255,.18);
+      background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 6px);
+    }
+    .back::after{
+      content:"♠";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);
+      font-size:.8rem;font-weight:800;color:rgba(241,255,235,.76);text-shadow:0 1px 3px rgba(0,0,0,.2);
     }
     .card {
       width: clamp(40px,7vw,56px);
       height: clamp(58px,10vw,82px);
       border-radius: 8px;
       border: 2px solid transparent;
-      background: #f7fbf8;
+      background: linear-gradient(180deg,#ffffff,#eef5ef 58%,#d8e2da);
       color: #112019;
       display: grid;
       grid-template-rows: auto 1fr auto;
@@ -127,12 +195,22 @@
       font-weight: 700;
       cursor: pointer;
       line-height: 1;
+      box-shadow: 0 8px 16px rgba(0,0,0,.14);
+      position: relative;
+      overflow: hidden;
     }
     .card.red { color: #b42f45; }
     .card.illegal { opacity: .43; cursor: not-allowed; }
     .card.selected { border-color: #ffd784; box-shadow: 0 0 0 2px rgba(255,215,132,.24); }
     .r { font-size: clamp(.68rem,1.7vw,.84rem); }
     .s { align-self: center; justify-self: center; font-size: clamp(.78rem,2.1vw,1rem); }
+    .card[data-face="court"] .s, .card[data-face="ace"] .s { font-size: clamp(.94rem,2.4vw,1.16rem); text-shadow: 0 8px 18px rgba(0,0,0,.12); }
+    .card[data-face]:not([data-face=""])::after{
+      content:attr(data-badge);position:absolute;left:50%;bottom:9px;transform:translateX(-50%) rotate(-10deg);
+      padding:4px 6px;border-radius:999px;border:1px solid rgba(40,58,48,.14);background:rgba(245,248,244,.92);color:#3b5246;
+      font-size:.38rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;box-shadow:0 4px 10px rgba(0,0,0,.12);pointer-events:none;
+    }
+    .card[data-face="ace"]::after{border-color:rgba(255,210,126,.28);background:rgba(57,40,18,.9);color:#ffe9bc}
     .trick { border-color: rgba(255,215,132,.4); background: rgba(48,39,14,.36); }
     .trick-pile { min-height: 96px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
     .entry {
@@ -183,17 +261,27 @@
       border-radius: 11px;
       background: rgba(8,22,15,.97);
       padding: 12px;
+      position: relative;
+    }
+    .guide-card::before{
+      content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.07),transparent 24%,transparent 72%,rgba(255,255,255,.04)),radial-gradient(circle at 12% 18%,rgba(255,215,132,.08),transparent 28%);pointer-events:none;
     }
     .guide-card h2 { color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
     .guide-card p, .guide-card li { color: var(--muted); font-size: .85rem; line-height: 1.45; }
     .guide-card ul { margin: 7px 0 7px 18px; }
     .guide-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
     @media (max-width: 920px) {
+      .message{padding-right:8px}
+      .message::after{content:none}
       .stats { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .table::after { content: none; }
       .mid { grid-template-columns: 1fr; }
       .dock-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       .bid-controls { grid-template-columns: 40px 1fr 40px; }
       .bid-controls .btn.lock { grid-column: 1 / -1; }
+    }
+    @media (max-width: 640px) {
+      .card[data-face]:not([data-face=""])::after { bottom: 8px; font-size: .33rem; padding: 3px 5px; }
     }
   </style>
 </head>
@@ -221,7 +309,7 @@
     <div class="topbar">
       <div class="title">
         <h1>♠ TurdSpades</h1>
-        <p>Partnership spades with bags, trash talk, and questionable hygiene.</p>
+        <p>Partnership spades with bag drama, smug bots, and absolutely no clean table talk.</p>
       </div>
       <div class="actions">
         <a href="hub.html">🏠 Hub</a>
@@ -242,7 +330,7 @@
 
     <div class="message" id="msg">Set your bid to start the hand.</div>
 
-    <div class="table">
+    <div class="table" data-motto="Bag Patrol is watching, unfortunately">
       <div class="zone">
         <div class="head"><div class="name">North (Partner)</div><div class="meta" id="northMeta"></div></div>
         <div class="backs" id="northBack"></div>
@@ -303,7 +391,7 @@
       phase: 'bidding', scores: [0, 0], bags: [0, 0], bids: [null, null, null, null],
       tricks: [0, 0, 0, 0], hands: [[], [], [], []], trick: [],
       spadesBroken: false, selected: null, bidChoice: 4, sortMode: 'suit',
-      msg: 'Set your bid to start.', summary: ''
+      msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral'
     };
 
     const el = {
@@ -338,13 +426,39 @@
       return Math.floor(Math.random() * max);
     }
     const rankLabel = (r) => r === 14 ? 'A' : r === 13 ? 'K' : r === 12 ? 'Q' : r === 11 ? 'J' : String(r);
+    const cardFaceMeta = (rank) => rank === 14
+      ? { face: 'ace', badge: 'Boss' }
+      : rank === 13
+        ? { face: 'court', badge: 'Kingpin' }
+        : rank === 12
+          ? { face: 'court', badge: 'Queenpin' }
+          : rank === 11
+            ? { face: 'court', badge: 'Joker' }
+            : { face: '', badge: '' };
     const cardText = (c) => rankLabel(c.rank) + SUIT_SYMBOL[c.suit];
     const teamOf = (p) => p % 2 === 0 ? 0 : 1;
     const partnerOf = (p) => (p + 2) % 4;
 
+    function messageMood() {
+      if (state.phase === 'matchEnd') {
+        if (state.scores[0] > state.scores[1]) return { tone: 'victory', ribbon: 'Bag Glory' };
+        if (state.scores[1] > state.scores[0]) return { tone: 'defeat', ribbon: 'Bot Parade' };
+        return { tone: 'draw', ribbon: 'Dead Heat' };
+      }
+      if (state.phase === 'roundEnd') {
+        if (state.lastRoundTone === 'victory') return { tone: 'victory', ribbon: 'Trick Haul' };
+        if (state.lastRoundTone === 'defeat') return { tone: 'defeat', ribbon: 'Bag Leak' };
+        return { tone: 'draw', ribbon: 'Split Pot' };
+      }
+      return { tone: 'neutral', ribbon: '' };
+    }
+
     function setMessage(text, summary) {
       state.msg = text;
       if (summary !== undefined) state.summary = summary;
+      const mood = messageMood();
+      el.msg.dataset.tone = mood.tone;
+      el.msg.dataset.ribbon = mood.ribbon;
       el.msg.innerHTML = `<strong>Status:</strong> ${state.msg}${state.summary ? `<br><strong>Round:</strong> ${state.summary}` : ''}`;
     }
 
@@ -370,6 +484,7 @@
       state.spadesBroken = false;
       state.selected = null;
       state.summary = '';
+      state.lastRoundTone = 'neutral';
     }
 
     function startMatch() {
@@ -511,6 +626,7 @@
 
     function scoreRound(lastTrick) {
       const line = [];
+      const deltas = [0, 0];
       for (let t = 0; t < 2; t++) {
         const [a, b] = TEAM[t], bid = (state.bids[a] || 0) + (state.bids[b] || 0), took = state.tricks[a] + state.tricks[b];
         let delta = 0;
@@ -521,8 +637,10 @@
           while (state.bags[t] >= 10) { state.bags[t] -= 10; delta -= 100; }
         } else delta = -bid * 10;
         state.scores[t] += delta;
+        deltas[t] = delta;
         line.push(`${t === 0 ? 'You+North' : 'West+East'} bid ${bid}, took ${took}, ${delta >= 0 ? '+' : ''}${delta}.`);
       }
+      state.lastRoundTone = deltas[0] > deltas[1] ? 'victory' : deltas[1] > deltas[0] ? 'defeat' : 'draw';
       const teamAReached = state.scores[0] >= TARGET;
       const teamBReached = state.scores[1] >= TARGET;
       const tiedAtOrAboveTarget = teamAReached && teamBReached && state.scores[0] === state.scores[1];
@@ -571,7 +689,9 @@
         const legal = !active || legalSet.has(c.id);
         const illegal = legal ? '' : 'illegal';
         const sel = state.selected === c.id ? 'selected' : '';
-        return `<button class="card ${red} ${illegal} ${sel}" data-id="${c.id}" ${legal ? '' : 'disabled'}>
+        const faceMeta = cardFaceMeta(c.rank);
+        const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : '';
+        return `<button class="card ${red} ${illegal} ${sel}" data-id="${c.id}" ${legal ? '' : 'disabled'}${faceAttrs}>
           <div class="r">${rankLabel(c.rank)}</div><div class="s">${SUIT_SYMBOL[c.suit]}</div><div class="r">${rankLabel(c.rank)}</div></button>`;
       }).join('');
     }

@@ -29,6 +29,39 @@
       display: flex;
       justify-content: center;
       padding: 8px;
+      position: relative;
+      isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 999px;
+      filter: blur(14px);
+      opacity: 0.42;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      width: 240px;
+      height: 240px;
+      left: -54px;
+      top: 12vh;
+      background:
+        radial-gradient(circle at 38% 34%, rgba(255, 221, 146, 0.44), transparent 30%),
+        radial-gradient(circle at 60% 60%, rgba(156, 255, 115, 0.42), transparent 50%);
+    }
+
+    body::after {
+      width: 280px;
+      height: 280px;
+      right: -58px;
+      bottom: 8vh;
+      background:
+        radial-gradient(circle at 42% 38%, rgba(156, 255, 115, 0.28), transparent 34%),
+        radial-gradient(circle at 60% 62%, rgba(255, 220, 120, 0.26), transparent 48%);
     }
 
     .app {
@@ -42,6 +75,18 @@
       grid-template-rows: auto auto 1fr auto;
       overflow: hidden;
       position: relative;
+      isolation: isolate;
+    }
+
+    .app::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.05)),
+        radial-gradient(circle at 12% 18%, rgba(156, 255, 115, 0.08), transparent 28%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     .topbar {
@@ -59,6 +104,7 @@
       color: var(--accent);
       font-size: clamp(1.1rem, 2.2vw, 1.5rem);
       text-transform: uppercase;
+      text-shadow: 0 0 16px rgba(156, 255, 115, 0.22);
     }
 
     .title-group p {
@@ -120,6 +166,7 @@
       border-radius: 8px;
       padding: 6px;
       background: rgba(14, 36, 24, 0.7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 20px rgba(0, 0, 0, 0.08);
     }
 
     .stat-label {
@@ -142,6 +189,27 @@
       grid-template-rows: auto auto 1fr;
       gap: 8px;
       overflow: auto;
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.06), transparent 24%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 16px, rgba(0, 0, 0, 0.015) 16px 32px);
+    }
+
+    .table::after {
+      content: attr(data-motto);
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 221, 146, 0.34);
+      background: rgba(41, 29, 12, 0.78);
+      color: #ffe1a8;
+      font-size: 0.67rem;
+      letter-spacing: 0.03em;
+      transform: rotate(-2deg);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+      pointer-events: none;
     }
 
     .zone {
@@ -149,6 +217,7 @@
       border-radius: 10px;
       padding: 8px;
       background: rgba(10, 27, 18, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     .zone-header {
@@ -182,7 +251,7 @@
       height: clamp(56px, 10.5vw, 84px);
       border-radius: 8px;
       border: 1px solid rgba(0, 0, 0, 0.35);
-      background: #f6fbf8;
+      background: linear-gradient(180deg, #ffffff, #edf5ef 58%, #d5e3d9);
       color: #12231a;
       display: grid;
       grid-template-rows: auto 1fr auto;
@@ -190,6 +259,9 @@
       font-weight: 700;
       line-height: 1;
       user-select: none;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14);
+      position: relative;
+      overflow: hidden;
     }
 
     .card.red {
@@ -207,6 +279,37 @@
       font-weight: 800;
     }
 
+    .card[data-face="court"] .card-suit,
+    .card[data-face="ace"] .card-suit {
+      font-size: clamp(0.9rem, 2.4vw, 1.16rem);
+      text-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .card[data-face]:not([data-face=""])::after {
+      content: attr(data-badge);
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%) rotate(-10deg);
+      padding: 4px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(40, 58, 48, 0.14);
+      background: rgba(245, 248, 244, 0.92);
+      color: #3b5246;
+      font-size: 0.38rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    .card[data-face="ace"]::after {
+      border-color: rgba(255, 210, 126, 0.28);
+      background: rgba(57, 40, 18, 0.9);
+      color: #ffe9bc;
+    }
+
     .card-button {
       border: 2px solid transparent;
       cursor: pointer;
@@ -222,8 +325,36 @@
       height: clamp(44px, 8vw, 62px);
       border-radius: 7px;
       border: 1px solid rgba(0, 0, 0, 0.36);
-      background: repeating-linear-gradient(135deg, #2d5938 0 7px, #4c8760 7px 14px);
-      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14);
+      background:
+        radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.16), transparent 20%),
+        linear-gradient(150deg, rgba(156, 255, 115, 0.12), transparent 42%),
+        repeating-linear-gradient(135deg, #2d5938 0 7px, #4c8760 7px 14px);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14), 0 8px 16px rgba(0, 0, 0, 0.16);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .back-card::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 6px),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 46%);
+    }
+
+    .back-card::after {
+      content: "DW";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      font-size: 0.46rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: rgba(240, 255, 228, 0.78);
     }
 
     .piles {
@@ -239,6 +370,7 @@
       padding: 7px;
       min-width: 124px;
       background: rgba(10, 31, 19, 0.74);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     .pile h3 {
@@ -264,10 +396,68 @@
       font-size: 0.82rem;
       line-height: 1.35;
       background: rgba(12, 34, 22, 0.74);
+      backdrop-filter: blur(4px);
+      position: relative;
+      overflow: hidden;
+      padding-right: 124px;
     }
 
     .message strong {
       color: var(--accent);
+    }
+
+    .message::after {
+      content: attr(data-ribbon);
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 210, 126, 0.24);
+      background: rgba(17, 31, 22, 0.72);
+      color: #efffe7;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: rotate(3deg);
+      transition: opacity 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      pointer-events: none;
+    }
+
+    .message[data-ribbon]:not([data-ribbon=""])::after {
+      opacity: 1;
+    }
+
+    .message[data-tone="victory"] {
+      border-color: rgba(255, 210, 126, 0.4);
+      background: rgba(42, 30, 14, 0.78);
+      box-shadow: 0 0 0 1px rgba(255, 210, 126, 0.14), 0 0 24px rgba(255, 184, 99, 0.12);
+    }
+
+    .message[data-tone="victory"]::after {
+      border-color: rgba(255, 210, 126, 0.34);
+      background: rgba(55, 35, 14, 0.82);
+      color: #ffe7bd;
+    }
+
+    .message[data-tone="defeat"] {
+      border-color: rgba(255, 157, 157, 0.34);
+      background: rgba(40, 20, 20, 0.78);
+      box-shadow: 0 0 0 1px rgba(255, 157, 157, 0.12), 0 0 22px rgba(255, 110, 110, 0.1);
+    }
+
+    .message[data-tone="defeat"]::after {
+      border-color: rgba(255, 157, 157, 0.34);
+      background: rgba(56, 22, 22, 0.82);
+      color: #ffd4d4;
+    }
+
+    .message[data-tone="draw"]::after {
+      border-color: rgba(205, 225, 205, 0.24);
+      background: rgba(18, 32, 22, 0.8);
+      color: #e9f6e6;
     }
 
     .melds {
@@ -339,6 +529,16 @@
       background: rgba(8, 22, 14, 0.96);
       padding: 14px;
       box-shadow: 0 14px 36px rgba(0, 0, 0, 0.46);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .overlay-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.07), transparent 28%, transparent 72%, rgba(255, 255, 255, 0.04)), radial-gradient(circle at 12% 18%, rgba(156, 255, 115, 0.08), transparent 28%);
+      pointer-events: none;
     }
 
     .overlay-card h2 {
@@ -369,8 +569,19 @@
     }
 
     @media (max-width: 920px) {
+      .message {
+        padding-right: 7px;
+      }
+
+      .message::after {
+        content: none;
+      }
+
       .status {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .table::after {
+        content: none;
       }
       .action-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -380,6 +591,12 @@
     @media (max-width: 640px) {
       .action-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .card[data-face]:not([data-face=""])::after {
+        bottom: 8px;
+        font-size: 0.33rem;
+        padding: 3px 5px;
       }
     }
 
@@ -400,7 +617,7 @@
     <header class="topbar">
       <div class="title-group">
         <h1>TurdRummy</h1>
-        <p>Gin Rummy with mild toilet chaos.</p>
+        <p>Gin Rummy with smug deadwood math and a table that looks slightly too damp.</p>
       </div>
       <div class="top-links">
         <a href="hub.html" aria-label="Back to game hub">🏠 Hub</a>
@@ -419,7 +636,7 @@
       <div class="stat"><div class="stat-label">Target</div><div class="stat-value" id="targetValue">100</div></div>
     </section>
 
-    <main class="table">
+    <main class="table" data-motto="Deadwood Dept. says this table smells strategic">
       <section class="zone">
         <div class="zone-header">
           <div class="zone-title">Opponent Hand</div>
@@ -644,6 +861,32 @@
       return rankLabel(card.rank) + SUIT_SYMBOLS[card.suit];
     }
 
+    function cardFaceMeta(rank) {
+      if (rank === 1) return { face: "ace", badge: "Boss" };
+      if (rank === 13) return { face: "court", badge: "Kingpin" };
+      if (rank === 12) return { face: "court", badge: "Queenpin" };
+      if (rank === 11) return { face: "court", badge: "Joker" };
+      return { face: "", badge: "" };
+    }
+
+    function messageTone(text, summary) {
+      const note = (String(text || "") + " " + String(summary || "")).toLowerCase();
+      if (!note.trim()) return { tone: "neutral", ribbon: "" };
+      if (note.includes("round is a draw") || note.includes("match tied")) {
+        return { tone: "draw", ribbon: "Stalemate" };
+      }
+      if (note.includes("you called gin") || note.includes("you knocked") || note.includes("undercut! you") || note.includes("match winner: player")) {
+        return { tone: "victory", ribbon: note.includes("gin") ? "Gin Parade" : "Deadwood Win" };
+      }
+      if (note.includes("ai called gin") || note.includes("ai knocked") || note.includes("undercut! ai") || note.includes("match winner: ai")) {
+        return { tone: "defeat", ribbon: note.includes("gin") ? "Bot Gin" : "Mud Loss" };
+      }
+      if (note.includes("stock exhausted")) {
+        return { tone: "draw", ribbon: "Dry Stock" };
+      }
+      return { tone: "neutral", ribbon: "" };
+    }
+
     function cardDeadwoodValue(card) {
       if (card.rank === 1) return 1;
       if (card.rank >= 10) return 10;
@@ -835,9 +1078,11 @@
       const selectedClass = selected ? "selected" : "";
       const buttonClass = interactive ? "card-button " + selectedClass : "";
       const label = cardText(card);
+      const faceMeta = cardFaceMeta(card.rank);
+      const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : "";
       if (interactive) {
         return `
-          <button class="card ${redClass} ${buttonClass}" data-card-id="${card.id}" aria-label="${label}">
+          <button class="card ${redClass} ${buttonClass}" data-card-id="${card.id}" aria-label="${label}"${faceAttrs}>
             <div class="card-face">${rankLabel(card.rank)}</div>
             <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
             <div class="card-face">${rankLabel(card.rank)}</div>
@@ -845,7 +1090,7 @@
         `;
       }
       return `
-        <div class="card ${redClass}">
+        <div class="card ${redClass}"${faceAttrs}>
           <div class="card-face">${rankLabel(card.rank)}</div>
           <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
           <div class="card-face">${rankLabel(card.rank)}</div>
@@ -925,6 +1170,9 @@
       state.message = text;
       if (summary !== undefined) state.roundSummary = summary;
       const roundText = state.roundSummary ? "<br><strong>Round:</strong> " + state.roundSummary : "";
+      const mood = messageTone(state.message, state.roundSummary);
+      el.messageBox.dataset.tone = mood.tone;
+      el.messageBox.dataset.ribbon = mood.ribbon;
       el.messageBox.innerHTML = "<strong>Status:</strong> " + state.message + roundText;
     }
 

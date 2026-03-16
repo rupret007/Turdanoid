@@ -30,6 +30,40 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
+      position: relative;
+      isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      border-radius: 999px;
+      filter: blur(14px);
+      opacity: 0.46;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      width: 240px;
+      height: 240px;
+      left: -38px;
+      top: 8vh;
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255, 239, 161, 0.62), transparent 26%),
+        radial-gradient(circle at 60% 58%, rgba(120, 255, 213, 0.5), transparent 44%);
+    }
+
+    body::after {
+      width: 300px;
+      height: 300px;
+      right: -56px;
+      bottom: 6vh;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255, 189, 118, 0.42), transparent 32%),
+        radial-gradient(circle at 45% 60%, rgba(120, 255, 213, 0.36), transparent 48%);
     }
 
     .shell {
@@ -40,6 +74,20 @@
       padding: 18px;
       box-shadow: 0 22px 50px rgba(0, 0, 0, 0.46);
       backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.09), transparent 26%, transparent 72%, rgba(255, 255, 255, 0.05)),
+        radial-gradient(circle at 14% 18%, rgba(120, 255, 213, 0.12), transparent 24%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     h1 {
@@ -49,6 +97,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       text-align: center;
+      text-shadow: 0 0 18px rgba(120, 255, 213, 0.2);
     }
 
     .subtitle {
@@ -67,10 +116,26 @@
       opacity: 0.9;
     }
 
+    .hero-badge {
+      margin: 0 auto 16px;
+      width: fit-content;
+      max-width: 100%;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 223, 151, 0.34);
+      background: rgba(28, 20, 12, 0.46);
+      color: #ffe4af;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      text-align: center;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+    }
+
     .games {
       display: grid;
       grid-template-columns: repeat(2, minmax(250px, 1fr));
       gap: 14px;
+      align-items: stretch;
     }
 
     .changelog {
@@ -109,18 +174,60 @@
       background: rgba(10, 22, 40, 0.66);
       padding: 16px;
       transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 18px 34px rgba(2, 10, 20, 0.22);
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      inset: auto auto -30px -28px;
+      width: 140px;
+      height: 140px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(120, 255, 213, 0.18), transparent 66%);
+      pointer-events: none;
+      transition: transform 0.25s ease;
+    }
+
+    .game-card::after {
+      content: attr(data-vibe);
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      max-width: 44%;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(8, 16, 30, 0.72);
+      border: 1px solid rgba(255, 223, 151, 0.24);
+      color: #ffe4af;
+      font-size: 0.66rem;
+      line-height: 1.2;
+      text-align: right;
+      letter-spacing: 0.03em;
     }
 
     .game-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-3px) scale(1.01);
       border-color: rgba(120, 255, 213, 0.6);
       background: rgba(16, 33, 58, 0.78);
+    }
+
+    .game-card:hover::before {
+      transform: scale(1.14);
     }
 
     .emoji {
       display: inline-block;
       font-size: 2rem;
       margin-bottom: 8px;
+      transition: transform 0.2s ease;
+      filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.18));
+    }
+
+    .game-card:hover .emoji {
+      transform: rotate(-8deg) translateY(-2px);
     }
 
     .game-card h2 {
@@ -150,6 +257,9 @@
       .game-card {
         padding: 12px;
       }
+      .game-card::after {
+        max-width: 52%;
+      }
       .game-card h2 {
         font-size: 1.08rem;
       }
@@ -175,6 +285,10 @@
         font-size: 0.7rem;
         margin-bottom: 10px;
       }
+      .hero-badge {
+        font-size: 0.68rem;
+        margin-bottom: 12px;
+      }
       .game-card {
         padding: 10px;
       }
@@ -188,47 +302,55 @@
       .game-card p {
         font-size: 0.76rem;
       }
+      .game-card::after {
+        position: static;
+        display: inline-block;
+        max-width: none;
+        margin-bottom: 8px;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
   <div class="shell">
     <h1>💩 Turdanoid Game Hub</h1>
-    <p class="subtitle">Pick your chaos: bricks, stacks, cards, tricks, and questionable hygiene.</p>
-    <p class="build-meta">Build v3.1.0 • March 12, 2026 • Crappy Eights release</p>
+    <p class="subtitle">Pick your chaos: bricks, stacks, cards, tricks, and certified sewer nonsense.</p>
+    <p class="build-meta">Build v3.2.0 • March 13, 2026 • Visual polish and stink attitude pass</p>
+    <p class="hero-badge">Sewer Six Collection • funny, loud, mildly cursed, surprisingly polished</p>
 
     <div class="games">
-      <a href="TurdAnoid.html" class="game-card">
+      <a href="TurdAnoid.html" class="game-card" data-vibe="Gas-powered brick riot">
         <span class="emoji">🧻</span>
         <h2>TurdAnoid</h2>
         <p>Silly arkanoid variant with stinkier ball effects, unique capsules, and varied layouts.</p>
       </a>
 
-      <a href="turdtris.html" class="game-card">
+      <a href="turdtris.html" class="game-card" data-vibe="Stack polite, smell rude">
         <span class="emoji">🧱</span>
         <h2>Turdtris</h2>
         <p>Tetris-inspired stacker with hold, ghost, SRS kicks, and escalating difficulty.</p>
       </a>
 
-      <a href="turdjack.html" class="game-card">
+      <a href="turdjack.html" class="game-card" data-vibe="Casino etiquette optional">
         <span class="emoji">🃏</span>
         <h2>Crapjack 21</h2>
         <p>Themed blackjack table with betting, double down, bankroll tracking, and toilet dealer vibes.</p>
       </a>
 
-      <a href="crapeights.html" class="game-card">
+      <a href="crapeights.html" class="game-card" data-vibe="Wild cards, wilder hygiene">
         <span class="emoji">🎴</span>
         <h2>Crappy Eights</h2>
         <p>Uno-style card chaos: match suit/rank, fire action cards, and race to 200 match points.</p>
       </a>
 
-      <a href="turdrummy.html" class="game-card">
+      <a href="turdrummy.html" class="game-card" data-vibe="Deadwood meets damp vibes">
         <span class="emoji">♣️</span>
         <h2>TurdRummy</h2>
         <p>Gin Rummy showdown with meld/deadwood strategy, knock/gin scoring, and mobile-first controls.</p>
       </a>
 
-      <a href="turdspades.html" class="game-card">
+      <a href="turdspades.html" class="game-card" data-vibe="Bag patrol on duty">
         <span class="emoji">♠️</span>
         <h2>TurdSpades</h2>
         <p>4-player Spades: bid tricks, break spades, manage bags, and beat the bot partnership.</p>

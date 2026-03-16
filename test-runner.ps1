@@ -83,6 +83,8 @@ if ($tris -match 'function toggleSound\(') { Pass("turdtris sound toggle handler
 if ($tris -match 'data-sound-toggle') { Pass("turdtris sound toggle buttons") } else { Fail("turdtris sound toggle buttons") }
 if ($tris -match 'if \(e\.code === ''KeyM''\)') { Pass("turdtris keybind sound toggle") } else { Fail("turdtris keybind sound toggle") }
 if ($tris -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdtris hype status class") } else { Fail("turdtris hype status class") }
+if ($tris -match 'id="endOverlayCard"' -and $tris -match 'id="endFlavor"') { Pass("turdtris end overlay detail card") } else { Fail("turdtris end overlay detail card") }
+if ($tris -match 'overlay-card\[data-tone="victory"\]' -and $tris -match 'function showGameOver\(won\)') { Pass("turdtris overlay tone polish") } else { Fail("turdtris overlay tone polish") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
@@ -159,7 +161,9 @@ if ($jack -match 'const SOUND_STORAGE_KEY = ''turdjackSoundOn_v1'';') { Pass("tu
 if ($jack -match 'function toggleSound\(') { Pass("turdjack sound toggle handler") } else { Fail("turdjack sound toggle handler") }
 if ($jack -match 'data-sound-toggle') { Pass("turdjack sound toggle buttons") } else { Fail("turdjack sound toggle buttons") }
 if ($jack -match 'function pulseStatus\(') { Pass("turdjack status pulse helper") } else { Fail("turdjack status pulse helper") }
-if ($jack -match '(?s)function setStatus\(text\)\s*\{\s*ui\.statusText\.textContent = text;\s*pulseStatus\(\);') { Pass("turdjack status pulse integration") } else { Fail("turdjack status pulse integration") }
+if ($jack -match '(?s)function setStatus\(text\)\s*\{\s*ui\.statusText\.textContent = text;.*?statusBadgeAndTone\(text\);.*?pulseStatus\(\);') { Pass("turdjack status pulse integration") } else { Fail("turdjack status pulse integration") }
+if ($jack -match 'function statusBadgeAndTone\(' -and $jack -match 'TOILET BOSS') { Pass("turdjack card back and status badge polish") } else { Fail("turdjack card back and status badge polish") }
+if ($jack -match 'function cardFaceMeta\(' -and $jack -match 'chip-btn\[data-chip="100"\]') { Pass("turdjack face card and chip polish") } else { Fail("turdjack face card and chip polish") }
 if ($jack -match 'if \(e\.code === ''KeyM''\)') { Pass("turdjack keybind sound toggle") } else { Fail("turdjack keybind sound toggle") }
 
 Write-Host "`n=== crapeights.html ===" -ForegroundColor Cyan
@@ -191,6 +195,9 @@ if ($eight -match '(?s)function showWelcomeGuide\(\)\s*\{.*?clearAiTimer\(\);\s*
 if ($eight -match '(?s)function startFreshMatch\(\)\s*\{.*?clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights fresh match clears pending timers") } else { Fail("crapeights fresh match clears pending timers") }
 if ($eight -match '(?s)function drawForHuman\(\)\s*\{.*?clearHumanAutoPassTimer\(\);') { Pass("crapeights draw clears prior auto-pass timer") } else { Fail("crapeights draw clears prior auto-pass timer") }
 if ($eight -match 'queueHumanAutoPass\(300\);' -and $eight -match 'queueHumanAutoPass\(460\);') { Pass("crapeights auto-pass uses tracked queue helper") } else { Fail("crapeights auto-pass uses tracked queue helper") }
+if ($eight -match 'id="roundOverlayCard"' -and $eight -match 'id="roundFlavor"') { Pass("crapeights round overlay polish hooks") } else { Fail("crapeights round overlay polish hooks") }
+if ($eight -match 'function showRoundOverlay\(title, summary, matchFinished, tone, flavor, kicker\)') { Pass("crapeights round overlay tone handler") } else { Fail("crapeights round overlay tone handler") }
+if ($eight -match 'function cardStyleMeta\(' -and $eight -match 'data-face="wild"') { Pass("crapeights action card face polish") } else { Fail("crapeights action card face polish") }
 
 Write-Host "`n=== turdrummy.html ===" -ForegroundColor Cyan
 $rummy = Get-Content turdrummy.html -Raw
@@ -228,6 +235,8 @@ if ($rummy -match '(?s)function openGuide\(\)\s*\{\s*clearAiTurnTimeout\(\);\s*e
 if ($rummy -match '(?s)function closeGuide\(\)\s*\{\s*el\.guideOverlay\.classList\.remove\("show"\);\s*if \(!state\.roundOver && state\.turn === "ai"\) \{\s*queueAiTurn\(220\);') { Pass("rummy guide close resumes ai turn") } else { Fail("rummy guide close resumes ai turn") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(!state\.roundOver\) \{\s*setMessage\("Finish the current round before dealing a new one\."\);') { Pass("rummy new round blocks active hand reset") } else { Fail("rummy new round blocks active hand reset") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(state\.matchOver\) \{\s*setMessage\("Match is over\. Reset match to start a fresh race\."\);') { Pass("rummy new round blocks post-match redeal") } else { Fail("rummy new round blocks post-match redeal") }
+if ($rummy -match 'function messageTone\(' -and $rummy -match 'data-ribbon') { Pass("rummy result tone messaging polish") } else { Fail("rummy result tone messaging polish") }
+if ($rummy -match 'function cardFaceMeta\(' -and $rummy -match 'data-badge') { Pass("rummy face card polish") } else { Fail("rummy face card polish") }
 
 Write-Host "`n=== turdspades.html ===" -ForegroundColor Cyan
 $spades = Get-Content turdspades.html -Raw
@@ -248,6 +257,8 @@ if ($spades -match 'el\.nextRoundTop\.addEventListener\(''click'', \(\) => \{ if
 if ($spades -match 'function openGuide\(\)') { Pass("spades guide open helper") } else { Fail("spades guide open helper") }
 if ($spades -match 'function closeGuide\(\)') { Pass("spades guide close helper") } else { Fail("spades guide close helper") }
 if ($spades -match '(?s)document\.addEventListener\(''keydown'', \(e\) => \{\s*if \(el\.guide\.classList\.contains\(''show''\)\) \{\s*if \(e\.code === ''Enter'' \|\| e\.code === ''Escape'' \|\| e\.code === ''Space''\) \{\s*e\.preventDefault\(\);\s*closeGuide\(\);') { Pass("spades guide blocks gameplay enter key") } else { Fail("spades guide blocks gameplay enter key") }
+if ($spades -match 'lastRoundTone' -and $spades -match 'function messageMood\(') { Pass("spades message tone polish") } else { Fail("spades message tone polish") }
+if ($spades -match 'cardFaceMeta' -and $spades -match 'data-badge') { Pass("spades face card polish") } else { Fail("spades face card polish") }
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "Passed: $passed" -ForegroundColor Green

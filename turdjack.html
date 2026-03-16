@@ -42,6 +42,39 @@
       padding: clamp(8px, 2.2vw, 14px);
       overflow-x: hidden;
       overflow-y: auto;
+      position: relative;
+      isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 999px;
+      filter: blur(14px);
+      opacity: 0.42;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      width: 240px;
+      height: 240px;
+      left: -56px;
+      top: 14vh;
+      background:
+        radial-gradient(circle at 38% 34%, rgba(255, 226, 155, 0.52), transparent 28%),
+        radial-gradient(circle at 62% 62%, rgba(142, 255, 194, 0.46), transparent 48%);
+    }
+
+    body::after {
+      width: 280px;
+      height: 280px;
+      right: -58px;
+      bottom: 8vh;
+      background:
+        radial-gradient(circle at 44% 38%, rgba(255, 191, 122, 0.34), transparent 30%),
+        radial-gradient(circle at 58% 60%, rgba(142, 255, 194, 0.32), transparent 48%);
     }
 
     .shell {
@@ -52,6 +85,20 @@
       padding: 12px;
       box-shadow: 0 20px 48px rgba(0, 0, 0, 0.48);
       backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 24%, transparent 74%, rgba(255, 255, 255, 0.05)),
+        radial-gradient(circle at 14% 18%, rgba(142, 255, 194, 0.08), transparent 28%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     .topbar {
@@ -67,6 +114,7 @@
       font-size: clamp(1.15rem, 2.3vw, 1.7rem);
       letter-spacing: 0.08em;
       text-transform: uppercase;
+      text-shadow: 0 0 16px rgba(142, 255, 194, 0.22);
     }
 
     .topbar p {
@@ -167,6 +215,8 @@
       background: rgba(10, 24, 19, 0.76);
       text-align: center;
       padding: 8px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(4px);
     }
 
     .card-stat .k {
@@ -196,10 +246,41 @@
       border-radius: 16px;
       padding: 12px;
       background:
-        radial-gradient(circle at 50% 0%, rgba(130, 245, 180, 0.10), transparent 40%),
+        radial-gradient(circle at 50% 0%, rgba(130, 245, 180, 0.14), transparent 40%),
         linear-gradient(160deg, var(--felt), var(--felt-2));
       min-height: 560px;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .table::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 26%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 16px, rgba(0, 0, 0, 0.02) 16px 32px);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .table::after {
+      content: attr(data-motto);
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 225, 156, 0.34);
+      background: rgba(43, 28, 13, 0.78);
+      color: #ffe3b1;
+      font-size: 0.68rem;
+      letter-spacing: 0.03em;
+      transform: rotate(3deg);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+      pointer-events: none;
     }
 
     .status {
@@ -213,6 +294,9 @@
       color: var(--muted);
       min-height: 48px;
       transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+      padding-right: 148px;
+      backdrop-filter: blur(5px);
+      position: relative;
     }
 
     .status.hype {
@@ -220,6 +304,64 @@
       box-shadow: 0 0 0 1px rgba(255, 223, 148, 0.34), 0 0 18px rgba(255, 190, 120, 0.22);
       background: rgba(29, 20, 10, 0.72);
       animation: statusPulse 0.9s ease-in-out infinite alternate;
+    }
+
+    .status::after {
+      content: attr(data-badge);
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      min-width: 94px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 225, 156, 0.26);
+      background: rgba(15, 28, 22, 0.74);
+      color: #edfef3;
+      text-align: center;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      transform: translateY(-2px) rotate(3deg);
+      transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      pointer-events: none;
+    }
+
+    .status[data-badge]:not([data-badge=""])::after {
+      opacity: 1;
+      transform: translateY(0) rotate(3deg);
+    }
+
+    .status[data-tone="win"] {
+      border-color: rgba(147, 255, 193, 0.5);
+      background: rgba(10, 28, 20, 0.78);
+      box-shadow: 0 0 0 1px rgba(147, 255, 193, 0.16), 0 0 24px rgba(82, 204, 142, 0.12);
+    }
+
+    .status[data-tone="win"]::after {
+      border-color: rgba(147, 255, 193, 0.54);
+      background: rgba(13, 40, 28, 0.84);
+      color: #cffff0;
+    }
+
+    .status[data-tone="loss"] {
+      border-color: rgba(255, 157, 116, 0.48);
+      background: rgba(33, 17, 12, 0.8);
+      box-shadow: 0 0 0 1px rgba(255, 157, 116, 0.14), 0 0 24px rgba(255, 123, 92, 0.12);
+    }
+
+    .status[data-tone="loss"]::after {
+      border-color: rgba(255, 157, 116, 0.46);
+      background: rgba(56, 24, 16, 0.84);
+      color: #ffd3c5;
+    }
+
+    .status[data-tone="push"]::after {
+      border-color: rgba(255, 223, 148, 0.42);
+      background: rgba(50, 36, 20, 0.84);
+      color: #ffe8bd;
     }
 
     @keyframes statusPulse {
@@ -239,6 +381,8 @@
       border-radius: 12px;
       padding: 8px;
       transition: border-color 0.18s ease, background 0.18s ease;
+      background: rgba(7, 20, 15, 0.42);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     .hand.active-hand {
@@ -280,8 +424,8 @@
       width: 74px;
       height: 106px;
       border-radius: 10px;
-      background: #f8fafb;
-      border: 1px solid #dde2e4;
+      background: linear-gradient(180deg, #ffffff, #edf3f4 58%, #d8e3e4);
+      border: 1px solid #e2e7e8;
       color: #202428;
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.38);
       padding: 8px 7px;
@@ -289,6 +433,16 @@
       transform: translateY(4px);
       opacity: 0;
       animation: cardIn 0.22s ease forwards;
+      overflow: hidden;
+    }
+
+    .playing-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.82), transparent 42%);
+      opacity: 0.42;
+      pointer-events: none;
     }
 
     @keyframes cardIn {
@@ -333,16 +487,81 @@
       font-weight: 700;
     }
 
+    .playing-card[data-face="court"] .center,
+    .playing-card[data-face="ace"] .center {
+      font-size: 1.72rem;
+      text-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+      opacity: 0.96;
+    }
+
+    .playing-card[data-face]::after {
+      content: attr(data-badge);
+      position: absolute;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%) rotate(-10deg);
+      padding: 4px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(42, 56, 51, 0.16);
+      background: rgba(245, 248, 244, 0.9);
+      color: #355246;
+      font-size: 0.4rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      pointer-events: none;
+    }
+
+    .playing-card[data-face="ace"]::after {
+      border-color: rgba(255, 210, 126, 0.28);
+      background: rgba(57, 40, 18, 0.9);
+      color: #ffe9bc;
+    }
+
     .playing-card.back {
-      border-color: #3f624f;
+      border-color: #4f7a65;
       background:
-        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.15), transparent 38%),
-        repeating-linear-gradient(45deg, #255544 0, #255544 8px, #1f4c3c 8px, #1f4c3c 16px);
+        radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.14), transparent 18%),
+        radial-gradient(circle at 50% 50%, rgba(8, 29, 22, 0.36), transparent 54%),
+        linear-gradient(150deg, rgba(147, 255, 193, 0.12), transparent 44%),
+        repeating-linear-gradient(135deg, #255544 0, #255544 10px, #173c2e 10px, #173c2e 20px);
       color: #d9ffe9;
     }
 
+    .playing-card.back::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(227, 255, 238, 0.16);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 42%),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 7px);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
+    }
+
+    .playing-card.back::after {
+      content: "TOILET BOSS";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-13deg);
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(227, 255, 238, 0.22);
+      background: rgba(11, 27, 21, 0.72);
+      color: rgba(227, 255, 238, 0.84);
+      font-size: 0.42rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
     .playing-card.back .center {
-      font-size: 1.3rem;
+      font-size: 1.55rem;
+      text-shadow: 0 0 14px rgba(228, 255, 238, 0.16);
+      z-index: 1;
     }
 
     .sidebar {
@@ -353,6 +572,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     .sidebar h3 {
@@ -373,11 +593,52 @@
       background: rgba(59, 44, 22, 0.78);
       color: var(--chip);
       border-radius: 999px;
-      padding: 8px 10px;
+      padding: 8px 10px 8px 42px;
       min-height: 38px;
       font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .chip-btn::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      width: 24px;
+      height: 24px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.42), transparent 24%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.14), transparent 58%),
+        var(--chip-fill, linear-gradient(145deg, #6ac5ff, #3a78a2));
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, 0.18),
+        inset 0 0 0 5px rgba(0, 0, 0, 0.12),
+        0 4px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .chip-btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.04));
+      pointer-events: none;
+    }
+
+    .chip-btn[data-chip="10"] { --chip-fill: linear-gradient(145deg, #8fe3ff, #3b88a7); }
+    .chip-btn[data-chip="25"] { --chip-fill: linear-gradient(145deg, #ff9aa1, #b34b60); }
+    .chip-btn[data-chip="50"] { --chip-fill: linear-gradient(145deg, #9effc8, #3e9b67); }
+    .chip-btn[data-chip="100"] { --chip-fill: linear-gradient(145deg, #ffe18f, #b1832f); }
+
+    .chip-btn:hover::before {
+      transform: translateY(-50%) scale(1.04);
     }
 
     .chip-btn:hover {
@@ -545,6 +806,15 @@
         min-height: 500px;
         padding: 10px;
       }
+      .table::after {
+        content: none;
+      }
+      .status {
+        padding-right: 8px;
+      }
+      .status::after {
+        content: none;
+      }
       .card-stat .v {
         font-size: 0.98rem;
       }
@@ -591,6 +861,7 @@
       }
       .cards { min-height: 96px; }
       .playing-card { width: 60px; height: 88px; padding: 5px; }
+      .playing-card[data-face]::after { bottom: 24px; font-size: 0.34rem; padding: 3px 5px; }
       .playing-card .rank { font-size: 0.84rem; }
       .playing-card .suit { font-size: 0.84rem; }
       .playing-card .center { font-size: 1.08rem; }
@@ -604,6 +875,8 @@
       .mobile-pit {
         padding: 7px;
       }
+      .chip-btn { padding-left: 36px; }
+      .chip-btn::before { width: 20px; height: 20px; left: 8px; }
       .mobile-pit-row {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
@@ -652,7 +925,7 @@
     <div class="topbar">
       <div>
           <h1>Crapjack 21</h1>
-        <p>Blackjack, but the table smells questionable and the dealer is a toilet.</p>
+        <p>Blackjack, but the pit boss is a toilet and the felt smells like bad decisions.</p>
       </div>
       <div class="actions">
         <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
@@ -689,8 +962,8 @@
       </div>
 
     <div class="layout">
-      <section class="table">
-        <div class="status" id="statusText">Place a bet and click Deal. Dealer stands on soft 17.</div>
+      <section class="table" data-motto="Pit Boss Memo: no clean wins after midnight">
+        <div class="status" id="statusText">Place a bet, click Deal, and try not to get hustled by the toilet boss.</div>
 
         <div class="hand">
           <div class="hand-title">
@@ -1057,6 +1330,27 @@
       }, 900);
     }
 
+    function statusBadgeAndTone(text) {
+      const note = String(text || '').toLowerCase();
+      if (!note) return { tone: 'neutral', badge: '' };
+      if (note.includes('blackjack') || note.includes('paid') || note.includes('wins') || note.includes('beats dealer') || note.includes('even money')) {
+        return { tone: 'win', badge: 'PAYOUT' };
+      }
+      if (note.includes('push') || note.includes('stalemate')) {
+        return { tone: 'push', badge: 'PUSH' };
+      }
+      if (note.includes('surrender')) {
+        return { tone: 'loss', badge: 'RETREAT' };
+      }
+      if (note.includes('bust') || note.includes('dealer blackjack') || note.includes('flushed') || note.includes('loses to dealer')) {
+        return { tone: 'loss', badge: 'BUSTED' };
+      }
+      if (note.includes('deal') || note.includes('bet') || note.includes('insurance') || note.includes('shuffle') || note.includes('shoe')) {
+        return { tone: 'neutral', badge: 'TABLE TALK' };
+      }
+      return { tone: 'neutral', badge: '' };
+    }
+
     function toggleSound() {
       soundEnabled = !soundEnabled;
       saveSoundPref();
@@ -1403,6 +1697,14 @@
       return '♣';
     }
 
+    function cardFaceMeta(rank) {
+      if (rank === 'A') return { face: 'ace', badge: 'Boss' };
+      if (rank === 'K') return { face: 'court', badge: 'Kingpin' };
+      if (rank === 'Q') return { face: 'court', badge: 'Queenpin' };
+      if (rank === 'J') return { face: 'court', badge: 'Joker' };
+      return { face: '', badge: '' };
+    }
+
     function cardClass(suit) {
       return suit === 'H' || suit === 'D' ? 'playing-card red' : 'playing-card';
     }
@@ -1448,7 +1750,12 @@
       }
 
       const suit = suitGlyph(card.suit);
+      const faceMeta = cardFaceMeta(card.rank);
       div.className = cardClass(card.suit);
+      if (faceMeta.face) {
+        div.dataset.face = faceMeta.face;
+        div.dataset.badge = faceMeta.badge;
+      }
       div.innerHTML =
         `<div class="rank">${card.rank}</div>` +
         `<div class="suit">${suit}</div>` +
@@ -1696,6 +2003,9 @@
 
     function setStatus(text) {
       ui.statusText.textContent = text;
+      const statusMood = statusBadgeAndTone(text);
+      ui.statusText.dataset.tone = statusMood.tone;
+      ui.statusText.dataset.badge = statusMood.badge;
       pulseStatus();
     }
 
