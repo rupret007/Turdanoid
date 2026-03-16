@@ -495,6 +495,18 @@
       startRound();
     }
 
+    function requestFreshMatch() {
+      const freshGuideState = el.guide.classList.contains('show')
+        && state.round === 1
+        && state.phase === 'bidding'
+        && state.scores.every((score) => score === 0)
+        && state.bags.every((bags) => bags === 0)
+        && state.tricks.every((trick) => trick === 0)
+        && state.trick.length === 0;
+      if (!freshGuideState && !confirm('Start a fresh match and wipe the current Spades scores?')) return;
+      startMatch();
+    }
+
     function startRound() {
       state.round += 1;
       if (state.round > 1) state.dealer = (state.dealer + 1) % 4;
@@ -780,7 +792,7 @@
       el.sortRank.addEventListener('click', () => { state.sortMode = 'rank'; render(); });
       el.nextRoundTop.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
       el.nextRoundDock.addEventListener('click', () => { if (state.phase === 'roundEnd') startRound(); });
-      el.newMatchBtn.addEventListener('click', startMatch);
+      el.newMatchBtn.addEventListener('click', requestFreshMatch);
       el.helpBtn.addEventListener('click', openGuide);
       el.quickStart.addEventListener('click', closeGuide);
       el.closeGuide.addEventListener('click', closeGuide);

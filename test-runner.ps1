@@ -223,6 +223,7 @@ if ($rummy -match 'queueAiTurn\(650\);') { Pass("deal round queues ai turn") } e
 if ($rummy -match 'queueAiTurn\(700\);') { Pass("player end turn queues ai turn") } else { Fail("player end turn queues ai turn") }
 if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("finish round clears ai timeout") } else { Fail("finish round clears ai timeout") }
 if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("reset match clears ai timeout") } else { Fail("reset match clears ai timeout") }
+if ($rummy -match '(?s)function requestResetMatch\(\)\s*\{.*?confirm\("Reset the whole match and clear the current round\?"\)') { Pass("rummy reset match confirmation helper") } else { Fail("rummy reset match confirmation helper") }
 if ($rummy -match 'const winner = state\.playerScore === state\.aiScore\s*\?\s*"Tie"\s*:\s*\(state\.playerScore > state\.aiScore \? "Player" : "AI"\);') { Pass("rummy match winner compares both scores") } else { Fail("rummy match winner compares both scores") }
 if ($rummy -match 'Match tied at target\.') { Pass("rummy tie-at-target summary") } else { Fail("rummy tie-at-target summary") }
 if ($rummy -match '(?s)function refillStockIfNeeded\(\)\s*\{\s*if \(state\.stock\.length > 0\) return true;\s*if \(state\.discard\.length <= 1\) return false;') { Pass("stock refill keeps top discard") } else { Fail("stock refill keeps top discard") }
@@ -235,6 +236,7 @@ if ($rummy -match '(?s)function openGuide\(\)\s*\{\s*clearAiTurnTimeout\(\);\s*e
 if ($rummy -match '(?s)function closeGuide\(\)\s*\{\s*el\.guideOverlay\.classList\.remove\("show"\);\s*if \(!state\.roundOver && state\.turn === "ai"\) \{\s*queueAiTurn\(220\);') { Pass("rummy guide close resumes ai turn") } else { Fail("rummy guide close resumes ai turn") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(!state\.roundOver\) \{\s*setMessage\("Finish the current round before dealing a new one\."\);') { Pass("rummy new round blocks active hand reset") } else { Fail("rummy new round blocks active hand reset") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(state\.matchOver\) \{\s*setMessage\("Match is over\. Reset match to start a fresh race\."\);') { Pass("rummy new round blocks post-match redeal") } else { Fail("rummy new round blocks post-match redeal") }
+if ($rummy -match 'el\.resetMatchBtn\.addEventListener\("click", requestResetMatch\);') { Pass("rummy reset button uses confirmation path") } else { Fail("rummy reset button uses confirmation path") }
 if ($rummy -match 'function messageTone\(' -and $rummy -match 'data-ribbon') { Pass("rummy result tone messaging polish") } else { Fail("rummy result tone messaging polish") }
 if ($rummy -match 'function cardFaceMeta\(' -and $rummy -match 'data-badge') { Pass("rummy face card polish") } else { Fail("rummy face card polish") }
 
@@ -246,6 +248,7 @@ if ($spades -match 'const TARGET = 250') { Pass("match target") } else { Fail("m
 if ($spades -match 'runBidFlow') { Pass("bidding flow") } else { Fail("bidding flow") }
 if ($spades -match 'legalCards') { Pass("legal card rules") } else { Fail("legal card rules") }
 if ($spades -match 'scoreRound') { Pass("round scoring") } else { Fail("round scoring") }
+if ($spades -match '(?s)function requestFreshMatch\(\)\s*\{.*?confirm\(''Start a fresh match and wipe the current Spades scores\?''\)') { Pass("spades new match confirmation helper") } else { Fail("spades new match confirmation helper") }
 if ($spades -match 'state\.spadesBroken') { Pass("spades break logic") } else { Fail("spades break logic") }
 if ($spades -match 'Play Selected') { Pass("mobile action") } else { Fail("mobile action") }
 if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules guide overlay") }
@@ -257,6 +260,7 @@ if ($spades -match 'el\.nextRoundTop\.addEventListener\(''click'', \(\) => \{ if
 if ($spades -match 'function openGuide\(\)') { Pass("spades guide open helper") } else { Fail("spades guide open helper") }
 if ($spades -match 'function closeGuide\(\)') { Pass("spades guide close helper") } else { Fail("spades guide close helper") }
 if ($spades -match '(?s)document\.addEventListener\(''keydown'', \(e\) => \{\s*if \(el\.guide\.classList\.contains\(''show''\)\) \{\s*if \(e\.code === ''Enter'' \|\| e\.code === ''Escape'' \|\| e\.code === ''Space''\) \{\s*e\.preventDefault\(\);\s*closeGuide\(\);') { Pass("spades guide blocks gameplay enter key") } else { Fail("spades guide blocks gameplay enter key") }
+if ($spades -match 'el\.newMatchBtn\.addEventListener\(''click'', requestFreshMatch\);') { Pass("spades new match button uses confirmation path") } else { Fail("spades new match button uses confirmation path") }
 if ($spades -match 'lastRoundTone' -and $spades -match 'function messageMood\(') { Pass("spades message tone polish") } else { Fail("spades message tone polish") }
 if ($spades -match 'cardFaceMeta' -and $spades -match 'data-badge') { Pass("spades face card polish") } else { Fail("spades face card polish") }
 

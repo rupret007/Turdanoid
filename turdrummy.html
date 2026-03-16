@@ -1735,6 +1735,16 @@
       renderAll();
     }
 
+    function requestResetMatch() {
+      const hasProgress = state.initialized
+        || state.round > 0
+        || state.playerScore > 0
+        || state.aiScore > 0
+        || state.stats.roundsPlayed > 0;
+      if (hasProgress && !confirm("Reset the whole match and clear the current round?")) return;
+      resetMatch();
+    }
+
     function openGuide() {
       clearAiTurnTimeout();
       el.guideOverlay.classList.add("show");
@@ -1796,7 +1806,7 @@
         dealRound();
       });
 
-      el.resetMatchBtn.addEventListener("click", resetMatch);
+      el.resetMatchBtn.addEventListener("click", requestResetMatch);
       el.quickGuideBtn.addEventListener("click", openGuide);
       el.closeGuideBtn.addEventListener("click", closeGuide);
       el.startRoundBtn.addEventListener("click", () => {
