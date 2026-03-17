@@ -932,7 +932,7 @@
         <button class="btn" id="helpBtn">❓ How To Play</button>
         <button class="btn" id="newShoeBtn">🃏 New Shoe</button>
         <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
-        <button class="btn danger" id="resetStatsBtn">↻ Reset Bank</button>
+        <button class="btn danger" id="resetStatsBtn" data-reset-bank>↻ Reset Bank</button>
       </div>
       <div class="mobile-menu">
         <details>
@@ -942,7 +942,7 @@
             <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
             <button class="btn" onclick="newShoe()">🃏 New Shoe</button>
             <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
-            <button class="btn danger" onclick="resetBankroll()">↻ Reset Bank</button>
+            <button class="btn danger" data-reset-bank onclick="resetBankroll()">↻ Reset Bank</button>
           </div>
         </details>
       </div>
@@ -1968,6 +1968,9 @@
       ui.maxBetBtn.disabled = lockedBet;
       ui.rebetBtn.disabled = lockedBet || lastBet < MIN_BET || lastBet > bankroll;
       ui.newShoeBtn.disabled = roundActive;
+      document.querySelectorAll('[data-reset-bank]').forEach((btn) => {
+        btn.disabled = roundActive;
+      });
 
       if (ui.hintText) {
         ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left (cut at ${cutCardsRemaining}, ${shoeDecks}D). ${getTableFlavor()}`;
@@ -2472,6 +2475,11 @@
     }
 
     function resetBankroll() {
+      if (roundActive) {
+        setStatus('Finish the current hand before resetting bankroll and stats.');
+        updateHud();
+        return;
+      }
       if (!confirm('Reset bankroll and stats back to defaults?')) return;
       bankroll = INITIAL_BANKROLL;
       currentBet = 0;

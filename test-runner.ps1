@@ -53,6 +53,7 @@ if ($game -match 'NEON_BALANCE') { Pass("balance config") } else { Fail("balance
 if ($game -match 'applyLevelMutators') { Pass("level mutator hook") } else { Fail("level mutator hook") }
 if ($game -match 'blocksSinceDrop') { Pass("drop drought logic") } else { Fail("drop drought logic") }
 if ($game -match 'patternCount') { Pass("expanded pattern count") } else { Fail("expanded pattern count") }
+if ($game -match 'variation === this\.config\.maxRemixes - 1') { Pass("remix loop uses configured ceiling") } else { Fail("remix loop uses configured ceiling") }
 if ($game -match '(?s)handleVirtualControl\(event, isPressed\).*?if \(!isPressed\)\s*\{.*?this\.controls\.left = false;\s*this\.controls\.right = false;\s*return;') { Pass("virtual control release reset") } else { Fail("virtual control release reset") }
 if ($game -match "if \(action === 'left'\) \{\s*this\.controls\.left = true;\s*this\.controls\.right = false;") { Pass("virtual control left exclusivity") } else { Fail("virtual control left exclusivity") }
 if ($game -match "if \(action === 'right'\) \{\s*this\.controls\.right = true;\s*this\.controls\.left = false;") { Pass("virtual control right exclusivity") } else { Fail("virtual control right exclusivity") }
@@ -165,6 +166,9 @@ if ($jack -match '(?s)function setStatus\(text\)\s*\{\s*ui\.statusText\.textCont
 if ($jack -match 'function statusBadgeAndTone\(' -and $jack -match 'TOILET BOSS') { Pass("turdjack card back and status badge polish") } else { Fail("turdjack card back and status badge polish") }
 if ($jack -match 'function cardFaceMeta\(' -and $jack -match 'chip-btn\[data-chip="100"\]') { Pass("turdjack face card and chip polish") } else { Fail("turdjack face card and chip polish") }
 if ($jack -match 'if \(e\.code === ''KeyM''\)') { Pass("turdjack keybind sound toggle") } else { Fail("turdjack keybind sound toggle") }
+if ($jack -match 'data-reset-bank') { Pass("turdjack reset bank buttons tagged for shared state") } else { Fail("turdjack reset bank buttons tagged for shared state") }
+if ($jack -match '(?s)function resetBankroll\(\)\s*\{\s*if \(roundActive\) \{\s*setStatus\(''Finish the current hand before resetting bankroll and stats\.''\);') { Pass("turdjack reset bankroll blocks active hand") } else { Fail("turdjack reset bankroll blocks active hand") }
+if ($jack -match "(?s)document\.querySelectorAll\('\[data-reset-bank\]'\)\.forEach\(\(btn\) => \{\s*btn\.disabled = roundActive;") { Pass("turdjack reset bank ui locks during live hand") } else { Fail("turdjack reset bank ui locks during live hand") }
 
 Write-Host "`n=== crapeights.html ===" -ForegroundColor Cyan
 $eight = Get-Content crapeights.html -Raw
@@ -255,6 +259,10 @@ if ($spades -match 'guide') { Pass("rules guide overlay") } else { Fail("rules g
 if ($spades -match 'const tiedAtOrAboveTarget = teamAReached && teamBReached && state\.scores\[0\] === state\.scores\[1\];') { Pass("spades tie-break detection") } else { Fail("spades tie-break detection") }
 if ($spades -match "Scores tied above target\. Play a tiebreaker round\.") { Pass("spades tie-break status text") } else { Fail("spades tie-break status text") }
 if ($spades -match 'state\.bidTurn = \(state\.bidTurn \+ 1\) % 4;') { Pass("spades bid turn advance not hardcoded") } else { Fail("spades bid turn advance not hardcoded") }
+if ($spades -match 'Bid 1-13 tricks before play starts\.') { Pass("spades guide clarifies bid range") } else { Fail("spades guide clarifies bid range") }
+if ($spades -match 'state\.bidChoice = Math\.min\(13, Math\.max\(1, state\.bidChoice \|\| 4\)\);') { Pass("spades start round clamps bid choice") } else { Fail("spades start round clamps bid choice") }
+if ($spades -match 'el\.bidDown\.disabled = !bidMode \|\| state\.bidChoice <= 1;') { Pass("spades bid ui disallows nil") } else { Fail("spades bid ui disallows nil") }
+if ($spades -match 'el\.bidDown\.addEventListener\(''click'', \(\) => \{ state\.bidChoice = Math\.max\(1, state\.bidChoice - 1\); render\(\); \}\);') { Pass("spades bid decrement floors at one") } else { Fail("spades bid decrement floors at one") }
 if ($spades -match 'const nextMode = state\.phase === ''roundEnd'';') { Pass("spades next-round gate") } else { Fail("spades next-round gate") }
 if ($spades -match 'el\.nextRoundTop\.addEventListener\(''click'', \(\) => \{ if \(state\.phase === ''roundEnd''\) startRound\(\); \}\);') { Pass("spades tiebreak round action") } else { Fail("spades tiebreak round action") }
 if ($spades -match 'function openGuide\(\)') { Pass("spades guide open helper") } else { Fail("spades guide open helper") }

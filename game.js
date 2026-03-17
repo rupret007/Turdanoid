@@ -236,7 +236,7 @@ class Game {
         while (variation < this.config.maxRemixes) {
             this.levelProfile = this.buildLevelProfile(this.level, variation);
             this.generateBlocks();
-            if (!this.levelLayoutSignatures.has(this.levelLayoutSignature) || variation === 13) break;
+            if (!this.levelLayoutSignatures.has(this.levelLayoutSignature) || variation === this.config.maxRemixes - 1) break;
             variation++;
         }
         this.levelLayoutSignatures.add(this.levelLayoutSignature);

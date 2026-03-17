@@ -291,7 +291,7 @@
       <h2>TurdSpades</h2>
       <p>Classic 4-player Spades: you + North partner vs West/East bots.</p>
       <ul>
-        <li>Bid tricks before play starts.</li>
+        <li>Bid 1-13 tricks before play starts.</li>
         <li>You must follow lead suit when possible.</li>
         <li>Spades are trump and cannot lead until broken, unless your hand is all spades.</li>
         <li>Make bid: +10 per bid trick, plus +1 per overtrick bag.</li>
@@ -511,6 +511,7 @@
       state.round += 1;
       if (state.round > 1) state.dealer = (state.dealer + 1) % 4;
       resetRoundState();
+      state.bidChoice = Math.min(13, Math.max(1, state.bidChoice || 4));
       const deck = makeDeck();
       for (let i = 0; i < 13; i++) for (let p = 0; p < 4; p++) state.hands[p].push(deck.pop());
       sortHand(state.hands[0]);
@@ -743,7 +744,7 @@
       const nextMode = state.phase === 'roundEnd';
       el.bidBox.style.display = bidMode ? 'grid' : 'none';
       el.bidV.textContent = String(state.bidChoice);
-      el.bidDown.disabled = !bidMode || state.bidChoice <= 0;
+      el.bidDown.disabled = !bidMode || state.bidChoice <= 1;
       el.bidUp.disabled = !bidMode || state.bidChoice >= 13;
       el.lockBid.disabled = !bidMode;
       el.playBtn.disabled = !playMode || !state.selected;
@@ -778,7 +779,7 @@
         state.selected = (state.selected === btn.dataset.id) ? null : btn.dataset.id;
         render();
       });
-      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(0, state.bidChoice - 1); render(); });
+      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); render(); });
       el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); render(); });
       el.lockBid.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
