@@ -208,8 +208,12 @@ if ($eight -match 'id="smartBtn"') { Pass("crapeights smart action button") } el
 if ($eight -match 'id="passBtn"') { Pass("crapeights pass action button") } else { Fail("crapeights pass action button") }
 if ($eight -match 'onclick="requestFreshMatch\(\)"') { Pass("crapeights mobile new match confirmation path") } else { Fail("crapeights mobile new match confirmation path") }
 if ($eight -match 'let humanAutoPassTimeoutId = null;') { Pass("crapeights human auto-pass timer state") } else { Fail("crapeights human auto-pass timer state") }
+if ($eight -match 'let focusSuspendedRound = false;') { Pass("crapeights focus suspension state") } else { Fail("crapeights focus suspension state") }
 if ($eight -match 'function clearHumanAutoPassTimer\(') { Pass("crapeights human auto-pass clear helper") } else { Fail("crapeights human auto-pass clear helper") }
 if ($eight -match 'function queueHumanAutoPass\(delayMs\)') { Pass("crapeights human auto-pass queue helper") } else { Fail("crapeights human auto-pass queue helper") }
+if ($eight -match 'function suspendRoundForBackground\(' -and $eight -match 'clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights focus suspend clears pending timers") } else { Fail("crapeights focus suspend clears pending timers") }
+if ($eight -match 'function resumeRoundFromBackground\(' -and $eight -match 'if \(!onboardingOpen\) scheduleTurnIfNeeded\(\);') { Pass("crapeights focus resume requeues turns safely") } else { Fail("crapeights focus resume requeues turns safely") }
+if ($eight -match 'window\.addEventListener\(''blur'', suspendRoundForBackground\);' -and $eight -match 'document\.addEventListener\(''visibilitychange'', \(\) => \{') { Pass("crapeights focus listeners wired") } else { Fail("crapeights focus listeners wired") }
 if ($eight -match '(?s)function requestFreshMatch\(\)\s*\{\s*if \(confirm\(') { Pass("crapeights fresh match confirmation helper") } else { Fail("crapeights fresh match confirmation helper") }
 if ($eight -match '(?s)function showWelcomeGuide\(\)\s*\{.*?clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights guide clears pending timers") } else { Fail("crapeights guide clears pending timers") }
 if ($eight -match '(?s)function startFreshMatch\(\)\s*\{.*?clearAiTimer\(\);\s*clearHumanAutoPassTimer\(\);') { Pass("crapeights fresh match clears pending timers") } else { Fail("crapeights fresh match clears pending timers") }
@@ -235,8 +239,12 @@ if ($rummy -match 'resolveStockStall') { Pass("stock stall resolution") } else {
 if ($rummy -match 'state\.discard\.length === 0') { Pass("stock draw fallback message path") } else { Fail("stock draw fallback message path") }
 if ($rummy -match 'function search\(index, melds, keptCards, laidOffCards, deadwoodScore\)') { Pass("layoff backtracking") } else { Fail("layoff backtracking") }
 if ($rummy -match 'let aiTurnTimeoutId = null;') { Pass("ai timeout state") } else { Fail("ai timeout state") }
+if ($rummy -match 'let focusPausedAiTurn = false;') { Pass("rummy focus suspension state") } else { Fail("rummy focus suspension state") }
 if ($rummy -match 'function clearAiTurnTimeout\(\)') { Pass("ai timeout clear helper") } else { Fail("ai timeout clear helper") }
 if ($rummy -match 'function queueAiTurn\(delayMs\)') { Pass("ai timeout queue helper") } else { Fail("ai timeout queue helper") }
+if ($rummy -match '(?s)function suspendAiForBackground\(\)\s*\{.*?clearAiTurnTimeout\(\);\s*focusPausedAiTurn = true;') { Pass("rummy focus suspend clears ai timer") } else { Fail("rummy focus suspend clears ai timer") }
+if ($rummy -match '(?s)function resumeAiFromBackground\(\)\s*\{.*?focusPausedAiTurn = false;.*?queueAiTurn\(220\);') { Pass("rummy focus resume requeues ai turn safely") } else { Fail("rummy focus resume requeues ai turn safely") }
+if ($rummy -match 'window\.addEventListener\("blur", suspendAiForBackground\);' -and $rummy -match 'document\.addEventListener\("visibilitychange", \(\) => \{') { Pass("rummy focus listeners wired") } else { Fail("rummy focus listeners wired") }
 if ($rummy -match '(?s)function resolveStockStall\([^)]*\)\s*\{\s*if \(state\.roundOver\) return;\s*clearAiTurnTimeout\(\);') { Pass("stock stall clears ai timeout") } else { Fail("stock stall clears ai timeout") }
 if ($rummy -match '(?s)function dealRound\(\)\s*\{\s*clearAiTurnTimeout\(\);') { Pass("deal round clears ai timeout") } else { Fail("deal round clears ai timeout") }
 if ($rummy -match 'queueAiTurn\(650\);') { Pass("deal round queues ai turn") } else { Fail("deal round queues ai turn") }
@@ -252,7 +260,7 @@ if ($rummy -match 'matchOver: false,') { Pass("rummy matchOver state") } else { 
 if ($rummy -match 'el\.newRoundBtn\.disabled = state\.initialized && \(!state\.roundOver \|\| state\.matchOver\);') { Pass("rummy new round disabled during active or finished match") } else { Fail("rummy new round disabled during active or finished match") }
 if ($rummy -match '(?s)function finishRound\([^)]*\)\s*\{.*?state\.matchOver = state\.playerScore >= TURDRUMMY_BALANCE\.matchTarget \|\|\s*state\.aiScore >= TURDRUMMY_BALANCE\.matchTarget;') { Pass("rummy finish round tracks match over") } else { Fail("rummy finish round tracks match over") }
 if ($rummy -match '(?s)function resetMatch\(\)\s*\{\s*clearAiTurnTimeout\(\);.*?state\.initialized = false;') { Pass("rummy reset returns to pre-start state") } else { Fail("rummy reset returns to pre-start state") }
-if ($rummy -match '(?s)function openGuide\(\)\s*\{\s*clearAiTurnTimeout\(\);\s*el\.guideOverlay\.classList\.add\("show"\);') { Pass("rummy guide open pauses ai timer") } else { Fail("rummy guide open pauses ai timer") }
+if ($rummy -match '(?s)function openGuide\(\)\s*\{\s*clearAiTurnTimeout\(\);\s*focusPausedAiTurn = false;\s*el\.guideOverlay\.classList\.add\("show"\);') { Pass("rummy guide open pauses ai timer") } else { Fail("rummy guide open pauses ai timer") }
 if ($rummy -match '(?s)function closeGuide\(\)\s*\{\s*el\.guideOverlay\.classList\.remove\("show"\);\s*if \(!state\.roundOver && state\.turn === "ai"\) \{\s*queueAiTurn\(220\);') { Pass("rummy guide close resumes ai turn") } else { Fail("rummy guide close resumes ai turn") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(!state\.roundOver\) \{\s*setMessage\("Finish the current round before dealing a new one\."\);') { Pass("rummy new round blocks active hand reset") } else { Fail("rummy new round blocks active hand reset") }
 if ($rummy -match '(?s)el\.newRoundBtn\.addEventListener\("click", \(\) => \{.*?if \(state\.matchOver\) \{\s*setMessage\("Match is over\. Reset match to start a fresh race\."\);') { Pass("rummy new round blocks post-match redeal") } else { Fail("rummy new round blocks post-match redeal") }

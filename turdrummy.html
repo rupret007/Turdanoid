@@ -761,6 +761,7 @@
       }
     };
     let aiTurnTimeoutId = null;
+    let focusPausedAiTurn = false;
 
     const el = {
       roundValue: document.getElementById("roundValue"),
@@ -851,6 +852,22 @@
         aiTurnTimeoutId = null;
         aiTurn();
       }, delayMs);
+    }
+
+    function suspendAiForBackground() {
+      if (focusPausedAiTurn) return;
+      if (el.guideOverlay.classList.contains("show")) return;
+      if (state.roundOver || state.turn !== "ai") return;
+      clearAiTurnTimeout();
+      focusPausedAiTurn = true;
+    }
+
+    function resumeAiFromBackground() {
+      if (!focusPausedAiTurn) return;
+      focusPausedAiTurn = false;
+      if (!el.guideOverlay.classList.contains("show") && !state.roundOver && state.turn === "ai") {
+        queueAiTurn(220);
+      }
     }
 
     function rankLabel(rank) {
@@ -1251,6 +1268,7 @@
     function resolveStockStall(reasonText) {
       if (state.roundOver) return;
       clearAiTurnTimeout();
+      focusPausedAiTurn = false;
       state.roundOver = true;
       state.stats.roundsPlayed += 1;
       state.turn = "player";
@@ -1274,6 +1292,7 @@
 
     function dealRound() {
       clearAiTurnTimeout();
+      focusPausedAiTurn = false;
       state.round += 1;
       state.dealer = state.round === 1 ? "player" : (state.dealer === "player" ? "ai" : "player");
       state.stock = shuffleDeck(createDeck());
@@ -1575,6 +1594,7 @@
 
     function finishRound(knocker, isGin, knockerDeadwood, knockerMelds) {
       clearAiTurnTimeout();
+      focusPausedAiTurn = false;
       state.roundOver = true;
       state.stats.roundsPlayed += 1;
       const defender = knocker === "player" ? "ai" : "player";
@@ -1704,6 +1724,7 @@
 
     function resetMatch() {
       clearAiTurnTimeout();
+      focusPausedAiTurn = false;
       state.playerScore = 0;
       state.aiScore = 0;
       state.round = 0;
@@ -1747,6 +1768,7 @@
 
     function openGuide() {
       clearAiTurnTimeout();
+      focusPausedAiTurn = false;
       el.guideOverlay.classList.add("show");
     }
 
@@ -1821,6 +1843,12 @@
       renderAll();
       openGuide();
     }
+
+    window.addEventListener("blur", suspendAiForBackground);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) suspendAiForBackground();
+      else resumeAiFromBackground();
+    });
 
     init();
   </script>

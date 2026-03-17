@@ -461,6 +461,7 @@
     let statusPulseTimer = null;
     let aiTurnTimeoutId = null;
     let humanAutoPassTimeoutId = null;
+    let focusSuspendedRound = false;
     let soundEnabled = true;
     let audioCtx = null;
     let nextCardId = 1;
@@ -792,6 +793,27 @@
       }, delayMs);
     }
 
+    function suspendRoundForBackground() {
+      if (focusSuspendedRound || onboardingOpen || !roundActive) return;
+      focusSuspendedRound = true;
+      clearAiTimer();
+      clearHumanAutoPassTimer();
+      const player = players[currentPlayer];
+      if (player) {
+        const note = player.human
+          ? 'Round paused while you were away. Your move when you get back.'
+          : `${player.name} waited while the tab was hidden.`;
+        setStatus(note, true);
+      }
+      updateAll();
+    }
+
+    function resumeRoundFromBackground() {
+      if (!focusSuspendedRound) return;
+      focusSuspendedRound = false;
+      if (!onboardingOpen) scheduleTurnIfNeeded();
+    }
+
     function requestFreshMatch() {
       if (confirm('Start a fresh match and reset all current scores?')) startFreshMatch();
     }
@@ -872,6 +894,7 @@
 
     function endRound(winnerIndex) {
       roundActive = false;
+      focusSuspendedRound = false;
       clearAiTimer();
       clearHumanAutoPassTimer();
       const winner = players[winnerIndex];
@@ -1022,6 +1045,7 @@
     function startRound() {
       clearAiTimer();
       clearHumanAutoPassTimer();
+      focusSuspendedRound = false;
       hideSuitChooser();
       hideRoundOverlay();
       deck = buildDeck();
@@ -1053,6 +1077,7 @@
     function startFreshMatch() {
       clearAiTimer();
       clearHumanAutoPassTimer();
+      focusSuspendedRound = false;
       hideRoundOverlay();
       hideSuitChooser();
       players = createPlayers();
@@ -1107,6 +1132,12 @@
       showWelcomeGuide();
       updateAll();
     }
+
+    window.addEventListener('blur', suspendRoundForBackground);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) suspendRoundForBackground();
+      else resumeRoundFromBackground();
+    });
 
     init();
   </script>
