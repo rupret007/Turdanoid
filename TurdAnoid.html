@@ -688,6 +688,7 @@ let gameOver = false;
 let gameWon = false;
 let paused = false;
 let onboardingOpen = false;
+let guidePausedGame = false;
 let awaitingLaunch = true;
 let statusText = 'Arkanoid-style chaos, but sillier.';
 let levelPatternName = 'Classic Wall';
@@ -702,6 +703,7 @@ let levelMutatorText = '';
 let controlLeft = false;
 let controlRight = false;
 let mouseInputActive = true;
+let clearMobileHoldTimerRef = () => {};
 
 let activePowerUps = {
   bigPaddle: 0,
@@ -960,14 +962,16 @@ function showWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'flex';
   onboardingOpen = true;
-  paused = true;
+  guidePausedGame = !paused && !gameOver && !gameWon;
+  if (guidePausedGame) paused = true;
 }
 
 function hideWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'none';
   onboardingOpen = false;
-  if (!gameOver && !gameWon) paused = false;
+  if (guidePausedGame && !gameOver && !gameWon) paused = false;
+  guidePausedGame = false;
 }
 
 function quickStartRun() {
@@ -976,6 +980,16 @@ function quickStartRun() {
   statusText = 'Quick start live. Launch and keep the combo alive.';
   setHype('Quick start engaged. Make it nasty.', 100);
   if ((awaitingLaunch || stuckBall) && !paused && !gameOver && !gameWon) launchBall();
+}
+
+function handleWindowBlur() {
+  controlLeft = false;
+  controlRight = false;
+  clearMobileHoldTimerRef();
+  if (!paused && !gameOver && !gameWon && !onboardingOpen) {
+    paused = true;
+    setHype('Auto-paused. The sewer waited for you.', 84);
+  }
 }
 
 function windowResized() {
@@ -3033,6 +3047,7 @@ if (mobileControls) {
       holdTimer = null;
     }
   };
+  clearMobileHoldTimerRef = clearHoldTimer;
 
   mobileControls.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -3072,6 +3087,11 @@ if (mobileControls) {
   mobileControls.addEventListener('pointercancel', stop);
   mobileControls.addEventListener('pointerleave', stop);
 }
+
+window.addEventListener('blur', handleWindowBlur);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) handleWindowBlur();
+});
 </script>
 </body>
 </html>

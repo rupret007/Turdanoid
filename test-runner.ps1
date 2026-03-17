@@ -76,6 +76,11 @@ if ($tris -match 'TURDTRIS_BALANCE') { Pass("balance config") } else { Fail("bal
 if ($tris -match 'buildLevelMutator') { Pass("mutator builder") } else { Fail("mutator builder") }
 if ($tris -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
 if ($tris -match 'data-action=\"pause\"') { Pass("mobile pause control") } else { Fail("mobile pause control") }
+if ($tris -match 'let guidePausedGame = false;') { Pass("turdtris guide pause tracking") } else { Fail("turdtris guide pause tracking") }
+if ($tris -match 'guidePausedGame = !paused && !gameOver;') { Pass("turdtris guide only owns fresh pause") } else { Fail("turdtris guide only owns fresh pause") }
+if ($tris -match 'if \(guidePausedGame && !gameOver\) paused = false;' -and $tris -match 'overlayEl\.style\.display = paused \? ''grid'' : ''none'';') { Pass("turdtris guide preserves pause overlay state") } else { Fail("turdtris guide preserves pause overlay state") }
+if ($tris -match 'function handleWindowBlur\(' -and $tris -match 'window\.addEventListener\(''blur'', handleWindowBlur\);' -and $tris -match 'document\.addEventListener\(''visibilitychange'', \(\) => \{\s*if \(document\.hidden\) handleWindowBlur\(\);') { Pass("turdtris blur handler wired") } else { Fail("turdtris blur handler wired") }
+if ($tris -match 'softDrop = false;' -and $tris -match 'clearHoldIntervalRef\(\);' -and $tris -match 'if \(!paused && !gameOver && !onboardingOpen\) \{') { Pass("turdtris blur clears held input and pauses safely") } else { Fail("turdtris blur clears held input and pauses safely") }
 if ($tris -match 'const MAX_LEVEL = 69;') { Pass("max level cap") } else { Fail("max level cap") }
 if ($tris -match 'showGameOver\(true\);') { Pass("level 69 win path") } else { Fail("level 69 win path") }
 if ($tris -match 'const clearHoldInterval = \(\) =>') { Pass("mobile hold interval helper") } else { Fail("mobile hold interval helper") }
@@ -105,6 +110,11 @@ if ($turd -match 'levelLayoutSignatures') { Pass("non-repeating level signatures
 if ($turd -match 'setupWaldoCameo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
 if ($turd -match 'TURDANOID_BALANCE') { Pass("balance config") } else { Fail("balance config") }
 if ($turd -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($turd -match 'let guidePausedGame = false;') { Pass("turdanoid guide pause tracking") } else { Fail("turdanoid guide pause tracking") }
+if ($turd -match 'guidePausedGame = !paused && !gameOver && !gameWon;') { Pass("turdanoid guide only owns fresh pause") } else { Fail("turdanoid guide only owns fresh pause") }
+if ($turd -match 'if \(guidePausedGame && !gameOver && !gameWon\) paused = false;') { Pass("turdanoid guide preserves prior pause state") } else { Fail("turdanoid guide preserves prior pause state") }
+if ($turd -match 'function handleWindowBlur\(' -and $turd -match 'window\.addEventListener\(''blur'', handleWindowBlur\);' -and $turd -match 'document\.addEventListener\(''visibilitychange'', \(\) => \{\s*if \(document\.hidden\) handleWindowBlur\(\);') { Pass("turdanoid blur handler wired") } else { Fail("turdanoid blur handler wired") }
+if ($turd -match 'controlLeft = false;' -and $turd -match 'controlRight = false;' -and $turd -match 'clearMobileHoldTimerRef\(\);' -and $turd -match 'if \(!paused && !gameOver && !gameWon && !onboardingOpen\) \{') { Pass("turdanoid blur clears held input and pauses safely") } else { Fail("turdanoid blur clears held input and pauses safely") }
 if ($turd -match 'Vortex Cage') { Pass("expanded pattern set") } else { Fail("expanded pattern set") }
 if ($turd -match 'if \(prevW <= 0 \|\| prevH <= 0\) return;') { Pass("resize guard") } else { Fail("resize guard") }
 if ($turd -match 'if \(powerUps\.length >= maxDrops\) return false;' -and $turd -match 'powerUps\.push\(\{ x: x - 15, y, w: 30, h: 30, vy: 2\.1, angle: 0, \.\.\.p \}\);\s*return true;') { Pass("power-up spawn returns success") } else { Fail("power-up spawn returns success") }

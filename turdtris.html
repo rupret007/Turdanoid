@@ -915,12 +915,15 @@ let lockResets = 0;
 let lastFrameTime = 0;
 let rAF = null;
 let onboardingOpen = false;
+let guidePausedGame = false;
+let clearHoldIntervalRef = () => {};
 
 function showWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'flex';
   onboardingOpen = true;
-  if (!gameOver) {
+  guidePausedGame = !paused && !gameOver;
+  if (guidePausedGame) {
     paused = true;
     const overlayEl = document.getElementById('pauseOverlay');
     if (overlayEl) overlayEl.style.display = 'none';
@@ -931,7 +934,10 @@ function hideWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'none';
   onboardingOpen = false;
-  if (!gameOver) paused = false;
+  if (guidePausedGame && !gameOver) paused = false;
+  const overlayEl = document.getElementById('pauseOverlay');
+  if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
+  guidePausedGame = false;
 }
 
 function quickStartRun() {
@@ -941,6 +947,17 @@ function quickStartRun() {
   setHype('Quick start active. Build filthy combos.', 90);
   playSfx('level');
   updateScore();
+}
+
+function handleWindowBlur() {
+  softDrop = false;
+  clearHoldIntervalRef();
+  if (!paused && !gameOver && !onboardingOpen) {
+    paused = true;
+    const overlayEl = document.getElementById('pauseOverlay');
+    if (overlayEl) overlayEl.style.display = 'grid';
+    setHype('Auto-paused. The stack held its nose.', 84);
+  }
 }
 
 function loadSoundPref() {
@@ -1970,6 +1987,7 @@ if (mobileControls) {
       holdInterval = null;
     }
   };
+  clearHoldIntervalRef = clearHoldInterval;
 
   mobileControls.addEventListener('pointerdown', (e) => {
     if (onboardingOpen) return;
@@ -2009,6 +2027,11 @@ if (mobileControls) {
   mobileControls.addEventListener('pointercancel', endHold);
   mobileControls.addEventListener('pointerleave', endHold);
 }
+
+window.addEventListener('blur', handleWindowBlur);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) handleWindowBlur();
+});
 
 if (canvas) {
   let touchStartX = 0;
