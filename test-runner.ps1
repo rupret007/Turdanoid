@@ -9,7 +9,7 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','crapeights.html','turdrummy.html','turdspades.html','game.js','README.md') | ForEach-Object {
+@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','crapeights.html','turdrummy.html','turdspades.html','game.js','README.md','browser-smoke.js','browser-smoke.ps1','package.json','package-lock.json','.gitignore','favicon.svg') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 

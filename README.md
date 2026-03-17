@@ -131,6 +131,31 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
 
 All games support touch controls and responsive layouts, with primary actions placed for easier thumb reach.
 
+## Testing
+
+Install browser test tooling once:
+
+```powershell
+cmd /c npm install
+```
+
+Run the full test pass:
+
+```powershell
+cmd /c npm test
+```
+
+Notes:
+- The browser smoke pass uses the local `playwright` dev dependency plus a temporary local HTTP server.
+- By default it targets the local Edge channel on Windows. You can override that with `-BrowserChannel`.
+
+Run the suites separately when needed:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File test-runner.ps1
+powershell -ExecutionPolicy Bypass -File browser-smoke.ps1
+```
+
 ## Play Online (GitHub Pages)
 
 **Enable GitHub Pages** (one-time setup):

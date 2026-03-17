@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>TurdSpades</title>
   <style>
     :root {
@@ -179,7 +180,7 @@
       background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 6px);
     }
     .back::after{
-      content:"♠";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);
+      content:"\2660";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);
       font-size:.8rem;font-weight:800;color:rgba(241,255,235,.76);text-shadow:0 1px 3px rgba(0,0,0,.2);
     }
     .card {
@@ -308,14 +309,14 @@
   <div class="app">
     <div class="topbar">
       <div class="title">
-        <h1>♠ TurdSpades</h1>
+        <h1>&#9824; TurdSpades</h1>
         <p>Partnership spades with bag drama, smug bots, and absolutely no clean table talk.</p>
       </div>
       <div class="actions">
-        <a href="hub.html">🏠 Hub</a>
-        <button class="btn" id="helpBtn">❓ Guide</button>
-        <button class="btn" id="nextRoundTop">🃏 Next Round</button>
-        <button class="btn" id="newMatchBtn">↻ New Match</button>
+        <a href="hub.html">&#x1F3E0; Hub</a>
+        <button class="btn" id="helpBtn">&#x2753; Guide</button>
+        <button class="btn" id="nextRoundTop">&#x1F0CF; Next Round</button>
+        <button class="btn" id="newMatchBtn">&#x21BB; New Match</button>
       </div>
     </div>
 
@@ -381,7 +382,7 @@
   <script>
     const TARGET = 250;
     const SUITS = ['C', 'D', 'H', 'S'];
-    const SUIT_SYMBOL = { C: '♣', D: '♦', H: '♥', S: '♠' };
+    const SUIT_SYMBOL = { C: '\u2663', D: '\u2666', H: '\u2665', S: '\u2660' };
     const SUIT_ORDER = { C: 0, D: 1, H: 2, S: 3 };
     const NAMES = ['You', 'West', 'North', 'East'];
     const TEAM = [[0, 2], [1, 3]];

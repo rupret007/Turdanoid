@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -620,10 +621,10 @@
         <p>Gin Rummy with smug deadwood math and a table that looks slightly too damp.</p>
       </div>
       <div class="top-links">
-        <a href="hub.html" aria-label="Back to game hub">🏠 Hub</a>
-        <button class="btn" id="quickGuideBtn">❓ Rules</button>
-        <button class="btn" id="newRoundBtn">🃏 New Round</button>
-        <button class="btn warn" id="resetMatchBtn">↻ Reset Match</button>
+        <a href="hub.html" aria-label="Back to game hub">&#x1F3E0; Hub</a>
+        <button class="btn" id="quickGuideBtn">&#x2753; Rules</button>
+        <button class="btn" id="newRoundBtn">&#x1F0CF; New Round</button>
+        <button class="btn warn" id="resetMatchBtn">&#x21BB; Reset Match</button>
       </div>
     </header>
 
@@ -726,7 +727,7 @@
     const STORAGE_KEY = "turdrummy_stats_v1";
     const SUITS = ["C", "D", "H", "S"];
     const SUIT_ORDER = { C: 0, D: 1, H: 2, S: 3 };
-    const SUIT_SYMBOLS = { C: "♣", D: "♦", H: "♥", S: "♠" };
+    const SUIT_SYMBOLS = { C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" };
     const RED_SUITS = new Set(["D", "H"]);
     const RANK_LABELS = { 1: "A", 11: "J", 12: "Q", 13: "K" };
 

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Crappy Eights</title>
   <style>
     :root{
@@ -299,10 +300,10 @@
       <h2>Choose Wild Suit</h2>
       <p>Your 8 is wild. Pick the suit that helps your hand.</p>
       <div class="suit-grid">
-        <button class="suit-btn" data-suit="S">Spades ♠</button>
-        <button class="suit-btn red" data-suit="H">Hearts ♥</button>
-        <button class="suit-btn red" data-suit="D">Diamonds ♦</button>
-        <button class="suit-btn" data-suit="C">Clubs ♣</button>
+        <button class="suit-btn" data-suit="S">Spades &#9824;</button>
+        <button class="suit-btn red" data-suit="H">Hearts &#9829;</button>
+        <button class="suit-btn red" data-suit="D">Diamonds &#9830;</button>
+        <button class="suit-btn" data-suit="C">Clubs &#9827;</button>
       </div>
     </div>
   </div>
@@ -314,19 +315,19 @@
         <p>Crazy Eights meets Uno pacing, except this table believes hygiene is for quitters.</p>
       </div>
       <div class="actions">
-        <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
-        <button class="btn" id="helpBtn">❓ How To Play</button>
-        <button class="btn" id="newMatchBtn">🧼 New Match</button>
-        <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
+        <button class="btn subtle" onclick="location.href='hub.html'">&#x1F3E0; Hub</button>
+        <button class="btn" id="helpBtn">&#x2753; How To Play</button>
+        <button class="btn" id="newMatchBtn">&#x1F9FC; New Match</button>
+        <button class="btn" data-sound-toggle onclick="toggleSound()">&#x1F50A; Sound On</button>
       </div>
       <div class="mobile-menu">
         <details>
           <summary>Table Menu</summary>
           <div class="mobile-menu-actions">
-            <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
-            <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
-            <button class="btn" onclick="requestFreshMatch()">🧼 New Match</button>
-            <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
+            <button class="btn subtle" onclick="location.href='hub.html'">&#x1F3E0; Hub</button>
+            <button class="btn" onclick="showWelcomeGuide()">&#x2753; Guide</button>
+            <button class="btn" onclick="requestFreshMatch()">&#x1F9FC; New Match</button>
+            <button class="btn" data-sound-toggle onclick="toggleSound()">&#x1F50A; Sound</button>
           </div>
         </details>
       </div>
@@ -351,14 +352,14 @@
           <div class="opp-card" id="oppCard3"><div class="opp-name" id="oppName3">Bot 3</div><div class="opp-meta" id="oppMeta3">Cards: 0</div><div class="opp-cards" id="oppBacks3"></div></div>
         </div>
         <div class="pile-row">
-          <div class="pile"><h3>Draw Pile</h3><button class="draw-back" id="drawPileBtn" title="Draw">💩</button><div class="pile-meta" id="drawMeta">0 cards</div></div>
-          <div class="pile"><h3>Discard Pile</h3><div class="pile-card" id="discardCard"><div>A</div><div class="center">♣</div><div class="small">A<br>♣</div></div><div class="pile-meta" id="discardMeta">Top card</div></div>
+          <div class="pile"><h3>Draw Pile</h3><button class="draw-back" id="drawPileBtn" title="Draw">&#x1F4A9;</button><div class="pile-meta" id="drawMeta">0 cards</div></div>
+          <div class="pile"><h3>Discard Pile</h3><div class="pile-card" id="discardCard"><div>A</div><div class="center">&#9827;</div><div class="small">A<br>&#9827;</div></div><div class="pile-meta" id="discardMeta">Top card</div></div>
         </div>
         <div class="suit-row" id="suitRow">
-          <div class="suit-chip" data-suit-chip="S">Spades ♠</div>
-          <div class="suit-chip" data-suit-chip="H">Hearts ♥</div>
-          <div class="suit-chip" data-suit-chip="D">Diamonds ♦</div>
-          <div class="suit-chip" data-suit-chip="C">Clubs ♣</div>
+          <div class="suit-chip" data-suit-chip="S">Spades &#9824;</div>
+          <div class="suit-chip" data-suit-chip="H">Hearts &#9829;</div>
+          <div class="suit-chip" data-suit-chip="D">Diamonds &#9830;</div>
+          <div class="suit-chip" data-suit-chip="C">Clubs &#9827;</div>
         </div>
         <div class="hand-wrap">
           <div class="hand-head"><strong>Your Hand</strong><span id="selectionText">No card selected</span></div>
@@ -492,7 +493,7 @@
     }
 
     function updateSoundButtons() {
-      document.querySelectorAll('[data-sound-toggle]').forEach((btn) => { btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off'; });
+      document.querySelectorAll('[data-sound-toggle]').forEach((btn) => { btn.textContent = soundEnabled ? '\u{1F50A} Sound On' : '\u{1F508} Sound Off'; });
     }
 
     function ensureAudio() {
@@ -547,7 +548,7 @@
       }
     }
 
-    function suitGlyph(suit) { return suit === 'S' ? '♠' : suit === 'H' ? '♥' : suit === 'D' ? '♦' : '♣'; }
+    function suitGlyph(suit) { return suit === 'S' ? '\u2660' : suit === 'H' ? '\u2665' : suit === 'D' ? '\u2666' : '\u2663'; }
     function suitName(suit) { return suit === 'S' ? 'Spades' : suit === 'H' ? 'Hearts' : suit === 'D' ? 'Diamonds' : 'Clubs'; }
     function isRedSuit(suit) { return suit === 'H' || suit === 'D'; }
     function cardPoints(card) { if (!card) return 0; if (card.rank === '8') return 50; if (card.rank === 'A') return 1; if (['10', 'J', 'Q', 'K'].includes(card.rank)) return 10; return parseInt(card.rank, 10); }
