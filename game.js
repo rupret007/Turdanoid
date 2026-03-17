@@ -148,6 +148,7 @@ class Game {
             keyUp: (event) => this.handleKeyUp(event),
             canvasDown: () => this.handleCanvasInteraction(),
             windowBlur: () => this.handleWindowBlur(),
+            visibilityChange: () => this.handleVisibilityChange(),
             virtualDown: (event) => this.handleVirtualControl(event, true),
             virtualUp: (event) => this.handleVirtualControl(event, false)
         };
@@ -186,6 +187,7 @@ class Game {
         }
 
         window.addEventListener('blur', this.boundHandlers.windowBlur);
+        document.addEventListener('visibilitychange', this.boundHandlers.visibilityChange);
     }
 
     destroy() {
@@ -196,6 +198,7 @@ class Game {
         this.canvas.removeEventListener('touchstart', this.boundHandlers.touchStart);
         this.canvas.removeEventListener('touchmove', this.boundHandlers.touchMove);
         window.removeEventListener('blur', this.boundHandlers.windowBlur);
+        document.removeEventListener('visibilitychange', this.boundHandlers.visibilityChange);
 
         const mobileControls = document.getElementById('mobileControls');
         if (mobileControls) {
@@ -791,7 +794,13 @@ class Game {
         } catch (error) {}
     }
     handleWindowBlur() {
+        this.controls.left = false;
+        this.controls.right = false;
+        this.controls.pointerActive = false;
         if (this.gameRunning && !this.paused) this.togglePause(true);
+    }
+    handleVisibilityChange() {
+        if (document.hidden) this.handleWindowBlur();
     }
 
     handlePointerMove(event) {
@@ -2155,22 +2164,27 @@ let gameInstance = null;
 window.addEventListener('load', () => {
     try {
         gameInstance = new Game();
+        window.gameInstance = gameInstance;
     } catch (error) {
         console.error('Failed to initialize game:', error);
         gameInstance = null;
+        window.gameInstance = null;
     }
 });
 
 function restartGame() {
-    if (gameInstance) gameInstance.restart();
+    const instance = window.gameInstance || gameInstance;
+    if (instance) instance.restart();
     else location.reload();
 }
 
 function togglePause() {
-    if (gameInstance && gameInstance.togglePause) gameInstance.togglePause();
+    const instance = window.gameInstance || gameInstance;
+    if (instance && instance.togglePause) instance.togglePause();
 }
 
 function toggleMute() {
-    if (gameInstance && gameInstance.toggleMute) gameInstance.toggleMute();
+    const instance = window.gameInstance || gameInstance;
+    if (instance && instance.toggleMute) instance.toggleMute();
 }
 

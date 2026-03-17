@@ -63,6 +63,38 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'index-guide-and-blur', 'index.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+        const legacyGuideState = await page.evaluate(() => ({
+          guideOpen: document.getElementById('howToPlay')?.style.display !== 'none',
+          awaitingLaunch: window.gameInstance.awaitingLaunch,
+          paused: window.gameInstance.paused
+        }));
+        if (legacyGuideState.guideOpen) fail('index-guide-and-blur', 'Enter should dismiss the opening guide');
+        if (!legacyGuideState.awaitingLaunch) fail('index-guide-and-blur', 'Enter should not launch the ball behind the guide');
+        if (legacyGuideState.paused) fail('index-guide-and-blur', 'Guide dismissal should not leave a fresh game paused');
+
+        const legacyBlurState = await page.evaluate(() => {
+          window.gameInstance.controls.left = true;
+          window.gameInstance.controls.right = true;
+          window.gameInstance.controls.pointerActive = true;
+          window.dispatchEvent(new Event('blur'));
+          return {
+            paused: window.gameInstance.paused,
+            left: window.gameInstance.controls.left,
+            right: window.gameInstance.controls.right,
+            pointerActive: window.gameInstance.controls.pointerActive
+          };
+        });
+        if (!legacyBlurState.paused) fail('index-guide-and-blur', 'blur should pause the legacy breakout shell');
+        if (legacyBlurState.left || legacyBlurState.right || legacyBlurState.pointerActive) {
+          fail('index-guide-and-blur', 'blur should clear held legacy breakout inputs');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdanoid-mobile', 'TurdAnoid.html', {
       mobile: true,
       actions: async (page) => {
@@ -78,6 +110,21 @@ async function main() {
         await page.getByRole('button', { name: 'Review Then Start' }).click();
         const playfield = page.locator('#game');
         if (!(await playfield.isVisible())) fail('turdtris-mobile', 'playfield not visible after guide close');
+      }
+    });
+
+    await runCheck(browser, 'turdjack-guide-keyboard', 'turdjack.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+        const jackState = await page.evaluate(() => ({
+          guideOpen: document.getElementById('welcomeGuide')?.style.display !== 'none',
+          roundActive,
+          currentBet
+        }));
+        if (jackState.guideOpen) fail('turdjack-guide-keyboard', 'Enter should dismiss the opening guide');
+        if (jackState.roundActive) fail('turdjack-guide-keyboard', 'Enter should not start a Crapjack hand behind the guide');
+        if (jackState.currentBet !== 0) fail('turdjack-guide-keyboard', `Enter should not alter the starting bet, saw ${jackState.currentBet}`);
       }
     });
 
@@ -127,6 +174,21 @@ async function main() {
         await page.waitForTimeout(250);
         const bidBox = page.locator('#bidBox');
         if (!(await bidBox.isVisible())) fail('turdspades-mobile', 'bid controls not visible after guide close');
+      }
+    });
+
+    await runCheck(browser, 'turdspades-guide-keyboard', 'turdspades.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(250);
+        const spadesState = await page.evaluate(() => ({
+          guideOpen: document.getElementById('guide')?.classList.contains('show'),
+          phase: state.phase,
+          bidTurn: state.bidTurn
+        }));
+        if (spadesState.guideOpen) fail('turdspades-guide-keyboard', 'Enter should dismiss the Spades guide');
+        if (spadesState.phase !== 'bidding') fail('turdspades-guide-keyboard', `guide dismissal should keep the game in bidding, saw ${spadesState.phase}`);
+        if (spadesState.bidTurn !== 0) fail('turdspades-guide-keyboard', `guide dismissal should not advance bidding, saw turn ${spadesState.bidTurn}`);
       }
     });
   } finally {
