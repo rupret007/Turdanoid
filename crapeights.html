@@ -462,6 +462,7 @@
     let aiTurnTimeoutId = null;
     let humanAutoPassTimeoutId = null;
     let focusSuspendedRound = false;
+    let resumeHumanAutoPassAfterFocus = false;
     let soundEnabled = true;
     let audioCtx = null;
     let nextCardId = 1;
@@ -796,6 +797,7 @@
     function suspendRoundForBackground() {
       if (focusSuspendedRound || onboardingOpen || !roundActive) return;
       focusSuspendedRound = true;
+      resumeHumanAutoPassAfterFocus = humanAutoPassTimeoutId !== null;
       clearAiTimer();
       clearHumanAutoPassTimer();
       const player = players[currentPlayer];
@@ -811,7 +813,11 @@
     function resumeRoundFromBackground() {
       if (!focusSuspendedRound) return;
       focusSuspendedRound = false;
-      if (!onboardingOpen) scheduleTurnIfNeeded();
+      if (!onboardingOpen) {
+        if (resumeHumanAutoPassAfterFocus && isHumanTurn()) queueHumanAutoPass(220);
+        else scheduleTurnIfNeeded();
+      }
+      resumeHumanAutoPassAfterFocus = false;
     }
 
     function requestFreshMatch() {
@@ -895,6 +901,7 @@
     function endRound(winnerIndex) {
       roundActive = false;
       focusSuspendedRound = false;
+      resumeHumanAutoPassAfterFocus = false;
       clearAiTimer();
       clearHumanAutoPassTimer();
       const winner = players[winnerIndex];
@@ -1046,6 +1053,7 @@
       clearAiTimer();
       clearHumanAutoPassTimer();
       focusSuspendedRound = false;
+      resumeHumanAutoPassAfterFocus = false;
       hideSuitChooser();
       hideRoundOverlay();
       deck = buildDeck();
@@ -1078,6 +1086,7 @@
       clearAiTimer();
       clearHumanAutoPassTimer();
       focusSuspendedRound = false;
+      resumeHumanAutoPassAfterFocus = false;
       hideRoundOverlay();
       hideSuitChooser();
       players = createPlayers();
