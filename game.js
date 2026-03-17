@@ -827,6 +827,10 @@ class Game {
 
     handleCanvasInteraction() {
         this.unlockAudio();
+        if (this.isBlockingGuideOpen()) {
+            this.dismissBlockingGuide();
+            return;
+        }
         if (!this.gameRunning) {
             this.restart();
             return;
@@ -850,6 +854,10 @@ class Game {
         if (!button) return;
 
         event.preventDefault();
+        if (this.isBlockingGuideOpen()) {
+            this.dismissBlockingGuide();
+            return;
+        }
         const action = button.getAttribute('data-action');
 
         if (action === 'left') {
@@ -867,6 +875,13 @@ class Game {
 
     handleKeyDown(event) {
         this.unlockAudio();
+        if (this.isBlockingGuideOpen()) {
+            if (event.code === 'Escape' || event.code === 'Enter' || event.code === 'Space') {
+                this.dismissBlockingGuide();
+                event.preventDefault();
+            }
+            return;
+        }
 
         if (event.code === 'ArrowLeft' || event.code === 'KeyA') {
             this.controls.left = true;
@@ -912,6 +927,22 @@ class Game {
     handleKeyUp(event) {
         if (event.code === 'ArrowLeft' || event.code === 'KeyA') this.controls.left = false;
         if (event.code === 'ArrowRight' || event.code === 'KeyD') this.controls.right = false;
+    }
+
+    isBlockingGuideOpen() {
+        const guide = document.getElementById('howToPlay');
+        if (!guide) return false;
+        const style = window.getComputedStyle ? window.getComputedStyle(guide) : null;
+        return guide.style.display !== 'none' && (!style || style.display !== 'none');
+    }
+
+    dismissBlockingGuide() {
+        if (typeof window.dismissHowToPlay === 'function') {
+            window.dismissHowToPlay();
+            return;
+        }
+        const guide = document.getElementById('howToPlay');
+        if (guide) guide.style.display = 'none';
     }
 
     togglePause(forceState) {

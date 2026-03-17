@@ -622,14 +622,37 @@
 
     <script src="game.js"></script>
     <script>
+        let guidePausedGame = false;
+
         function showHowToPlay() {
             const el = document.getElementById('howToPlay');
             if (el) el.style.display = 'flex';
+            guidePausedGame = false;
+            if (
+                window.gameInstance &&
+                window.gameInstance.gameRunning &&
+                !window.gameInstance.awaitingLaunch &&
+                !window.gameInstance.paused &&
+                window.gameInstance.togglePause
+            ) {
+                window.gameInstance.togglePause(true);
+                guidePausedGame = true;
+            }
         }
 
         function dismissHowToPlay() {
             const el = document.getElementById('howToPlay');
             if (el) el.style.display = 'none';
+            if (
+                guidePausedGame &&
+                window.gameInstance &&
+                window.gameInstance.gameRunning &&
+                window.gameInstance.paused &&
+                window.gameInstance.togglePause
+            ) {
+                window.gameInstance.togglePause(false);
+            }
+            guidePausedGame = false;
         }
 
         function quickStartPlay() {

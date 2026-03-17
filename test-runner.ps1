@@ -25,6 +25,9 @@ if ($idx -match 'restartGame') { Pass("restartGame") } else { Fail("restartGame"
 if ($idx -match 'togglePause') { Pass("togglePause") } else { Fail("togglePause") }
 if ($idx -match 'mobile-menu') { Pass("mobile menu ui") } else { Fail("mobile menu ui") }
 if ($idx -match 'quickStartPlay') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($idx -match 'let guidePausedGame = false;') { Pass("index guide pause state") } else { Fail("index guide pause state") }
+if ($idx -match '(?s)function showHowToPlay\(\)\s*\{.*?window\.gameInstance\.togglePause\(true\);.*?guidePausedGame = true;') { Pass("index guide pauses live run") } else { Fail("index guide pauses live run") }
+if ($idx -match '(?s)function dismissHowToPlay\(\)\s*\{.*?if \(\s*guidePausedGame.*?window\.gameInstance\.togglePause\(false\);') { Pass("index guide resumes guided pause only") } else { Fail("index guide resumes guided pause only") }
 
 Write-Host "`n=== hub.html ===" -ForegroundColor Cyan
 $hub = Get-Content hub.html -Raw
@@ -54,6 +57,9 @@ if ($game -match 'applyLevelMutators') { Pass("level mutator hook") } else { Fai
 if ($game -match 'blocksSinceDrop') { Pass("drop drought logic") } else { Fail("drop drought logic") }
 if ($game -match 'patternCount') { Pass("expanded pattern count") } else { Fail("expanded pattern count") }
 if ($game -match 'variation === this\.config\.maxRemixes - 1') { Pass("remix loop uses configured ceiling") } else { Fail("remix loop uses configured ceiling") }
+if ($game -match 'isBlockingGuideOpen\(\)') { Pass("guide overlay helper") } else { Fail("guide overlay helper") }
+if ($game -match '(?s)handleKeyDown\(event\)\s*\{\s*this\.unlockAudio\(\);\s*if \(this\.isBlockingGuideOpen\(\)\) \{\s*if \(event\.code === ''Escape'' \|\| event\.code === ''Enter'' \|\| event\.code === ''Space''\) \{\s*this\.dismissBlockingGuide\(\);\s*event\.preventDefault\(\);') { Pass("guide overlay blocks gameplay keys") } else { Fail("guide overlay blocks gameplay keys") }
+if ($game -match '(?s)handleCanvasInteraction\(\)\s*\{\s*this\.unlockAudio\(\);\s*if \(this\.isBlockingGuideOpen\(\)\) \{\s*this\.dismissBlockingGuide\(\);') { Pass("guide overlay blocks canvas interaction") } else { Fail("guide overlay blocks canvas interaction") }
 if ($game -match '(?s)handleVirtualControl\(event, isPressed\).*?if \(!isPressed\)\s*\{.*?this\.controls\.left = false;\s*this\.controls\.right = false;\s*return;') { Pass("virtual control release reset") } else { Fail("virtual control release reset") }
 if ($game -match "if \(action === 'left'\) \{\s*this\.controls\.left = true;\s*this\.controls\.right = false;") { Pass("virtual control left exclusivity") } else { Fail("virtual control left exclusivity") }
 if ($game -match "if \(action === 'right'\) \{\s*this\.controls\.right = true;\s*this\.controls\.left = false;") { Pass("virtual control right exclusivity") } else { Fail("virtual control right exclusivity") }
