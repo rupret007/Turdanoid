@@ -92,6 +92,22 @@ async function main() {
         if (legacyBlurState.left || legacyBlurState.right || legacyBlurState.pointerActive) {
           fail('index-guide-and-blur', 'blur should clear held legacy breakout inputs');
         }
+
+        const legacyRestartState = await page.evaluate(() => {
+          restartGame();
+          restartGame();
+          return {
+            awaitingLaunch: window.gameInstance.awaitingLaunch,
+            paused: window.gameInstance.paused,
+            level: window.gameInstance.level,
+            score: window.gameInstance.score
+          };
+        });
+        if (!legacyRestartState.awaitingLaunch) fail('index-guide-and-blur', 'restart churn should leave the legacy game waiting to launch');
+        if (legacyRestartState.paused) fail('index-guide-and-blur', 'restart churn should clear pause state in the legacy game');
+        if (legacyRestartState.level !== 1 || legacyRestartState.score !== 0) {
+          fail('index-guide-and-blur', `restart churn should reset level/score, saw L${legacyRestartState.level} S${legacyRestartState.score}`);
+        }
       }
     });
 
@@ -104,12 +120,62 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdanoid-restart-churn', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.getByRole('button', { name: 'Quick Start' }).click();
+        await page.waitForTimeout(180);
+        const turdanoidRestartState = await page.evaluate(() => {
+          togglePauseExternal();
+          restartExternal();
+          restartExternal();
+          return { paused, level, score, awaitingLaunch, onboardingOpen, gameOver, gameWon };
+        });
+        if (turdanoidRestartState.paused) fail('turdanoid-restart-churn', 'restart churn should clear pause state');
+        if (!turdanoidRestartState.awaitingLaunch) fail('turdanoid-restart-churn', 'restart churn should return TurdAnoid to launch-ready state');
+        if (turdanoidRestartState.level !== 1 || turdanoidRestartState.score !== 0) {
+          fail('turdanoid-restart-churn', `restart churn should reset score/level, saw L${turdanoidRestartState.level} S${turdanoidRestartState.score}`);
+        }
+        if (turdanoidRestartState.onboardingOpen || turdanoidRestartState.gameOver || turdanoidRestartState.gameWon) {
+          fail('turdanoid-restart-churn', 'restart churn should not reopen guide or leave end-state flags set');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdtris-mobile', 'turdtris.html', {
       mobile: true,
       actions: async (page) => {
         await page.getByRole('button', { name: 'Review Then Start' }).click();
         const playfield = page.locator('#game');
         if (!(await playfield.isVisible())) fail('turdtris-mobile', 'playfield not visible after guide close');
+      }
+    });
+
+    await runCheck(browser, 'turdtris-restart-churn', 'turdtris.html', {
+      actions: async (page) => {
+        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.waitForTimeout(180);
+        const turdtrisRestartState = await page.evaluate(() => {
+          togglePause();
+          restartGame();
+          restartGame();
+          return {
+            paused,
+            level,
+            score,
+            linesCleared,
+            onboardingOpen,
+            gameOver,
+            overlayVisible: document.getElementById('pauseOverlay')?.style.display !== 'none'
+          };
+        });
+        if (turdtrisRestartState.paused) fail('turdtris-restart-churn', 'restart churn should clear pause state');
+        if (turdtrisRestartState.overlayVisible) fail('turdtris-restart-churn', 'restart churn should hide the pause overlay');
+        if (turdtrisRestartState.level !== 1 || turdtrisRestartState.score !== 0 || turdtrisRestartState.linesCleared !== 0) {
+          fail('turdtris-restart-churn', `restart churn should reset Tetris state, saw L${turdtrisRestartState.level} S${turdtrisRestartState.score} lines ${turdtrisRestartState.linesCleared}`);
+        }
+        if (turdtrisRestartState.onboardingOpen || turdtrisRestartState.gameOver) {
+          fail('turdtris-restart-churn', 'restart churn should not reopen the guide or leave game-over state set');
+        }
       }
     });
 
@@ -154,6 +220,28 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'crapeights-new-match-recovery', 'crapeights.html', {
+      actions: async (page, getDialogCount) => {
+        await page.getByRole('button', { name: 'Quick Start' }).click();
+        await page.waitForTimeout(200);
+        const before = getDialogCount();
+        await page.locator('#newMatchBtn').click();
+        await page.waitForTimeout(250);
+        const seen = getDialogCount() - before;
+        if (seen !== 1) fail('crapeights-new-match-recovery', `expected 1 new-match dialog, saw ${seen}`);
+        const matchState = await page.evaluate(() => ({
+          roundNumber,
+          roundActive,
+          onboardingOpen,
+          scores: players.map((player) => player.score)
+        }));
+        if (!matchState.roundActive) fail('crapeights-new-match-recovery', 'new match should immediately start a fresh round');
+        if (matchState.onboardingOpen) fail('crapeights-new-match-recovery', 'new match should not reopen the guide');
+        if (matchState.roundNumber !== 1) fail('crapeights-new-match-recovery', `new match should reset to round 1, saw ${matchState.roundNumber}`);
+        if (matchState.scores.some((score) => score !== 0)) fail('crapeights-new-match-recovery', `new match should zero all scores, saw ${matchState.scores.join(',')}`);
+      }
+    });
+
     await runCheck(browser, 'turdrummy-mobile', 'turdrummy.html', {
       mobile: true,
       actions: async (page, getDialogCount) => {
@@ -164,6 +252,47 @@ async function main() {
         await page.waitForTimeout(200);
         const seen = getDialogCount() - before;
         if (seen !== 1) fail('turdrummy-mobile', `expected 1 reset dialog, saw ${seen}`);
+      }
+    });
+
+    await runCheck(browser, 'turdrummy-reset-recovery', 'turdrummy.html', {
+      actions: async (page, getDialogCount) => {
+        await page.evaluate(() => document.getElementById('startRoundBtn')?.click());
+        await page.waitForTimeout(220);
+        const before = getDialogCount();
+        await page.evaluate(() => document.getElementById('resetMatchBtn')?.click());
+        await page.waitForTimeout(220);
+        const seen = getDialogCount() - before;
+        if (seen !== 1) fail('turdrummy-reset-recovery', `expected 1 reset dialog, saw ${seen}`);
+        const resetState = await page.evaluate(() => ({
+          initialized: state.initialized,
+          roundOver: state.roundOver,
+          matchOver: state.matchOver,
+          round: state.round
+        }));
+        if (resetState.initialized || resetState.roundOver || resetState.matchOver || resetState.round !== 0) {
+          fail('turdrummy-reset-recovery', `reset should return TurdRummy to a pre-start state, saw ${JSON.stringify(resetState)}`);
+        }
+
+        await page.evaluate(() => document.getElementById('startRoundBtn')?.click());
+        await page.waitForTimeout(220);
+        const restartedState = await page.evaluate(() => ({
+          initialized: state.initialized,
+          roundOver: state.roundOver,
+          matchOver: state.matchOver,
+          round: state.round,
+          playerHand: state.playerHand.length,
+          aiHand: state.aiHand.length
+        }));
+        if (!restartedState.initialized || restartedState.round !== 1) {
+          fail('turdrummy-reset-recovery', `start round should recover cleanly after reset, saw ${JSON.stringify(restartedState)}`);
+        }
+        if (restartedState.roundOver || restartedState.matchOver) {
+          fail('turdrummy-reset-recovery', 'recovered round should be live, not marked over');
+        }
+        if (restartedState.playerHand !== 10 || restartedState.aiHand !== 10) {
+          fail('turdrummy-reset-recovery', `recovered round should redeal 10 cards each, saw ${restartedState.playerHand}/${restartedState.aiHand}`);
+        }
       }
     });
 
