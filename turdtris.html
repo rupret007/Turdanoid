@@ -919,6 +919,19 @@ let onboardingOpen = false;
 let guidePausedGame = false;
 let clearHoldIntervalRef = () => {};
 
+function stopLoop() {
+  if (rAF) {
+    cancelAnimationFrame(rAF);
+    rAF = null;
+  }
+}
+
+function ensureLoopRunning() {
+  if (rAF || gameOver || paused) return;
+  lastFrameTime = performance.now();
+  rAF = requestAnimationFrame(loop);
+}
+
 function showWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'flex';
@@ -926,6 +939,7 @@ function showWelcomeGuide() {
   guidePausedGame = !paused && !gameOver;
   if (guidePausedGame) {
     paused = true;
+    stopLoop();
     const overlayEl = document.getElementById('pauseOverlay');
     if (overlayEl) overlayEl.style.display = 'none';
   }
@@ -939,6 +953,7 @@ function hideWelcomeGuide() {
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
   guidePausedGame = false;
+  ensureLoopRunning();
 }
 
 function quickStartRun() {
@@ -947,12 +962,14 @@ function quickStartRun() {
   statusText = 'Quick start live. Stack clean and trust your ghost piece.';
   setHype('Quick start active. Build filthy combos.', 90);
   playSfx('level');
+  ensureLoopRunning();
   updateScore();
 }
 
 function handleWindowBlur() {
   softDrop = false;
   clearHoldIntervalRef();
+  stopLoop();
   if (!paused && !gameOver && !onboardingOpen) {
     paused = true;
     const overlayEl = document.getElementById('pauseOverlay');
@@ -1808,10 +1825,8 @@ function togglePause() {
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
 
-  if (!paused && !rAF) {
-    lastFrameTime = performance.now();
-    rAF = requestAnimationFrame(loop);
-  }
+  if (paused) stopLoop();
+  else ensureLoopRunning();
 }
 
 function restartGame() {

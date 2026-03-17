@@ -163,7 +163,7 @@ class Game {
         this.updateMuteButton();
         this.updateUI();
         this.setStatus(`Launch the ball and survive the chaos climb to level ${this.config.maxLevel}.`);
-        this.gameLoop();
+        this.ensureGameLoopRunning();
     }
 
     bindEvents() {
@@ -208,7 +208,7 @@ class Game {
             mobileControls.removeEventListener('pointerleave', this.boundHandlers.virtualUp);
         }
 
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+        this.stopGameLoop();
     }
 
     createBall(x, y, dx, dy, isMain) {
@@ -797,10 +797,14 @@ class Game {
         this.controls.left = false;
         this.controls.right = false;
         this.controls.pointerActive = false;
-        if (this.gameRunning && !this.paused) this.togglePause(true);
+        if (this.gameRunning) this.togglePause(true);
     }
     handleVisibilityChange() {
-        if (document.hidden) this.handleWindowBlur();
+        if (document.hidden) {
+            this.handleWindowBlur();
+            return;
+        }
+        if (this.gameRunning && !this.paused && !this.isBlockingGuideOpen()) this.ensureGameLoopRunning();
     }
 
     handlePointerMove(event) {
@@ -961,7 +965,23 @@ class Game {
         else this.paused = !this.paused;
 
         if (this.ui.pauseOverlay) this.ui.pauseOverlay.style.display = this.paused ? 'block' : 'none';
-        if (this.paused) this.setStatus('Game paused.');
+        if (this.paused) {
+            this.stopGameLoop();
+            this.setStatus('Game paused.');
+        } else {
+            this.ensureGameLoopRunning();
+        }
+    }
+
+    ensureGameLoopRunning() {
+        if (this.animationFrameId || !this.gameRunning) return;
+        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+    }
+
+    stopGameLoop() {
+        if (!this.animationFrameId) return;
+        cancelAnimationFrame(this.animationFrameId);
+        this.animationFrameId = null;
     }
 
     updatePaddleFromControls() {
@@ -1310,6 +1330,7 @@ class Game {
         if (this.ui.endSubtitle) this.ui.endSubtitle.textContent = 'The run got flushed. Reload your luck.';
 
         this.setStatus('Fresh run started.');
+        this.ensureGameLoopRunning();
     }
     damageBlock(index, source, damage) {
         const block = this.blocks[index];
@@ -2150,13 +2171,14 @@ class Game {
     }
 
     gameLoop() {
+        this.animationFrameId = null;
         try {
             this.update();
             this.render();
         } catch (error) {
             console.error('Game loop error:', error);
         }
-        this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
+        if (this.gameRunning && !this.paused) this.ensureGameLoopRunning();
     }
 }
 

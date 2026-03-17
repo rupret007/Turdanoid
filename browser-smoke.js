@@ -83,12 +83,14 @@ async function main() {
           window.dispatchEvent(new Event('blur'));
           return {
             paused: window.gameInstance.paused,
+            loopStopped: window.gameInstance.animationFrameId === null,
             left: window.gameInstance.controls.left,
             right: window.gameInstance.controls.right,
             pointerActive: window.gameInstance.controls.pointerActive
           };
         });
         if (!legacyBlurState.paused) fail('index-guide-and-blur', 'blur should pause the legacy breakout shell');
+        if (!legacyBlurState.loopStopped) fail('index-guide-and-blur', 'blur should stop the legacy breakout render loop');
         if (legacyBlurState.left || legacyBlurState.right || legacyBlurState.pointerActive) {
           fail('index-guide-and-blur', 'blur should clear held legacy breakout inputs');
         }
@@ -99,12 +101,14 @@ async function main() {
           return {
             awaitingLaunch: window.gameInstance.awaitingLaunch,
             paused: window.gameInstance.paused,
+            loopRunning: window.gameInstance.animationFrameId !== null,
             level: window.gameInstance.level,
             score: window.gameInstance.score
           };
         });
         if (!legacyRestartState.awaitingLaunch) fail('index-guide-and-blur', 'restart churn should leave the legacy game waiting to launch');
         if (legacyRestartState.paused) fail('index-guide-and-blur', 'restart churn should clear pause state in the legacy game');
+        if (!legacyRestartState.loopRunning) fail('index-guide-and-blur', 'restart churn should restart the legacy render loop');
         if (legacyRestartState.level !== 1 || legacyRestartState.score !== 0) {
           fail('index-guide-and-blur', `restart churn should reset level/score, saw L${legacyRestartState.level} S${legacyRestartState.score}`);
         }
@@ -154,6 +158,20 @@ async function main() {
       actions: async (page) => {
         await page.getByRole('button', { name: 'Review Then Start' }).click();
         await page.waitForTimeout(180);
+        const turdtrisBlurState = await page.evaluate(() => {
+          window.dispatchEvent(new Event('blur'));
+          return { paused, loopStopped: rAF === null };
+        });
+        if (!turdtrisBlurState.paused) fail('turdtris-restart-churn', 'blur should pause Turdtris');
+        if (!turdtrisBlurState.loopStopped) fail('turdtris-restart-churn', 'blur should stop the Turdtris render loop');
+
+        const turdtrisResumeState = await page.evaluate(() => {
+          togglePause();
+          return { paused, loopRunning: rAF !== null };
+        });
+        if (turdtrisResumeState.paused) fail('turdtris-restart-churn', 'unpause should resume Turdtris after blur');
+        if (!turdtrisResumeState.loopRunning) fail('turdtris-restart-churn', 'unpause should restart the Turdtris render loop');
+
         const turdtrisRestartState = await page.evaluate(() => {
           togglePause();
           restartGame();
@@ -163,6 +181,7 @@ async function main() {
             level,
             score,
             linesCleared,
+            loopRunning: rAF !== null,
             onboardingOpen,
             gameOver,
             overlayVisible: document.getElementById('pauseOverlay')?.style.display !== 'none'
@@ -170,6 +189,7 @@ async function main() {
         });
         if (turdtrisRestartState.paused) fail('turdtris-restart-churn', 'restart churn should clear pause state');
         if (turdtrisRestartState.overlayVisible) fail('turdtris-restart-churn', 'restart churn should hide the pause overlay');
+        if (!turdtrisRestartState.loopRunning) fail('turdtris-restart-churn', 'restart churn should restart the Turdtris render loop');
         if (turdtrisRestartState.level !== 1 || turdtrisRestartState.score !== 0 || turdtrisRestartState.linesCleared !== 0) {
           fail('turdtris-restart-churn', `restart churn should reset Tetris state, saw L${turdtrisRestartState.level} S${turdtrisRestartState.score} lines ${turdtrisRestartState.linesCleared}`);
         }
