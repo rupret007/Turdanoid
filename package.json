@@ -1,32 +1,11 @@
 {
-  "name": "turdanoid-v2",
-  "version": "3.1.0",
-  "description": "A collection of six active browser games with a playful turd theme.",
-  "private": true,
-  "main": "browser-smoke.js",
+  "name": "turdanoid",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "test": "powershell -ExecutionPolicy Bypass -File test-runner.ps1 && powershell -ExecutionPolicy Bypass -File browser-smoke.ps1",
-    "test:static": "powershell -ExecutionPolicy Bypass -File test-runner.ps1",
-    "test:browser": "powershell -ExecutionPolicy Bypass -File browser-smoke.ps1",
-    "test:all": "powershell -ExecutionPolicy Bypass -File test-runner.ps1 && powershell -ExecutionPolicy Bypass -File browser-smoke.ps1"
+    "test": "vitest run"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rupret007/Turdanoid.git"
-  },
-  "keywords": [],
-  "author": "rupret007",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/rupret007/Turdanoid/issues"
-  },
-  "homepage": "https://github.com/rupret007/Turdanoid#readme",
   "devDependencies": {
-    "eslint": "^10.0.3",
-    "jsdom": "^29.0.1",
-    "playwright": "^1.58.2",
-    "prettier": "^3.8.1",
-    "vitest": "^4.1.0"
+    "vitest": "^2.1.9"
   }
 }
