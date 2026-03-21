@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint games/ tests/",
+    "lint:fix": "eslint games/ tests/ --fix",
+    "format": "prettier --write 'games/**/*.js' 'tests/**/*.js'",
+    "format:check": "prettier --check 'games/**/*.js' 'tests/**/*.js'"
   },
   "devDependencies": {
+    "eslint": "^10.1.0",
+    "prettier": "^3.4.2",
     "vitest": "^2.1.9"
   }
 }

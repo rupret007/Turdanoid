@@ -31,9 +31,9 @@ export function createShoe(decks = 1) {
 }
 
 /**
- * Calculates the Blackjack value of a card.
+ * Calculates the value of a card for scoring.
  */
-export function getBlackjackValue(card) {
+export function getCardValue(card) {
   if (!card) return 0;
   if (card.rank === 'A') return 11;
   if (['K', 'Q', 'J'].includes(card.rank)) return 10;
@@ -43,11 +43,11 @@ export function getBlackjackValue(card) {
 /**
  * Calculates the total value of a Blackjack hand, accounting for Aces.
  */
-export function calculateHandValue(hand) {
+export function handValue(hand) {
   let total = 0;
   let aces = 0;
   for (const card of hand) {
-    total += getBlackjackValue(card);
+    total += getCardValue(card);
     if (card.rank === 'A') aces++;
   }
   while (total > 21 && aces > 0) {
@@ -58,41 +58,28 @@ export function calculateHandValue(hand) {
 }
 
 /**
+ * Returns true if the hand contains an Ace being counted as 11.
+ */
+export function isSoftHand(hand) {
+  let total = 0;
+  let aces = 0;
+  for (const c of hand) {
+    total += getCardValue(c);
+    if (c.rank === 'A') aces++;
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return aces > 0;
+}
+
+/**
  * Returns the Hi-Lo value of a card for card counting.
  */
-export function getHiLoValue(card) {
+export function hiLoValue(card) {
   if (!card) return 0;
   if (['2', '3', '4', '5', '6'].includes(card.rank)) return 1;
   if (['10', 'J', 'Q', 'K', 'A'].includes(card.rank)) return -1;
   return 0;
-}
-
-/**
- * Returns basic strategy action for Blackjack.
- * @param {number} playerValue - Total hand value.
- * @param {string} dealerUpCard - Rank of dealer's up card.
- * @param {boolean} isSoft - True if hand contains an Ace being counted as 11.
- */
-export function getBasicStrategyAction(playerValue, dealerUpCard, isSoft = false) {
-  const dealerVal = getBlackjackValue({ rank: dealerUpCard });
-
-  if (isSoft) {
-    if (playerValue >= 19) return 'STAND';
-    if (playerValue === 18) {
-      if (dealerVal >= 9) return 'HIT';
-      return 'STAND';
-    }
-    return 'HIT';
-  }
-
-  if (playerValue >= 17) return 'STAND';
-  if (playerValue >= 13) {
-    if (dealerVal >= 7) return 'HIT';
-    return 'STAND';
-  }
-  if (playerValue === 12) {
-    if (dealerVal >= 4 && dealerVal <= 6) return 'STAND';
-    return 'HIT';
-  }
-  return 'HIT';
 }
