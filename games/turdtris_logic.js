@@ -60,7 +60,20 @@ export function calculateScore(lines, level, isTspin = false, isB2B = false) {
   
   let base = isTspin ? tspinScores[lines] : lineScores[lines];
   if (isB2B && lines > 0) base *= 1.5;
-  return base * level;
+  return Math.floor(base * level);
+}
+
+export function getGravity(level) {
+  // Classic Tetris gravity formula (G = frames/gridcell)
+  // Higher level = lower number (faster)
+  if (level < 1) return 60;
+  if (level < 9) return 60 - (level * 5);
+  if (level === 9) return 6;
+  if (level >= 10 && level <= 12) return 5;
+  if (level >= 13 && level <= 15) return 4;
+  if (level >= 16 && level <= 18) return 3;
+  if (level >= 19 && level <= 28) return 2;
+  return 1; // Level 29+ is kill-screen speed
 }
 
 export function getLevelGoal(level) {
