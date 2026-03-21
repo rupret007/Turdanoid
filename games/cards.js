@@ -66,3 +66,33 @@ export function getHiLoValue(card) {
   if (['10', 'J', 'Q', 'K', 'A'].includes(card.rank)) return -1;
   return 0;
 }
+
+/**
+ * Returns basic strategy action for Blackjack.
+ * @param {number} playerValue - Total hand value.
+ * @param {string} dealerUpCard - Rank of dealer's up card.
+ * @param {boolean} isSoft - True if hand contains an Ace being counted as 11.
+ */
+export function getBasicStrategyAction(playerValue, dealerUpCard, isSoft = false) {
+  const dealerVal = getBlackjackValue({ rank: dealerUpCard });
+
+  if (isSoft) {
+    if (playerValue >= 19) return 'STAND';
+    if (playerValue === 18) {
+      if (dealerVal >= 9) return 'HIT';
+      return 'STAND';
+    }
+    return 'HIT';
+  }
+
+  if (playerValue >= 17) return 'STAND';
+  if (playerValue >= 13) {
+    if (dealerVal >= 7) return 'HIT';
+    return 'STAND';
+  }
+  if (playerValue === 12) {
+    if (dealerVal >= 4 && dealerVal <= 6) return 'STAND';
+    return 'HIT';
+  }
+  return 'HIT';
+}
