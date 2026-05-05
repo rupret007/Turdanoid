@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#102016">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="assets/turdsuite.js" defer></script>
   <title>TurdSpades</title>
   <style>
     :root {
@@ -284,6 +289,27 @@
     @media (max-width: 640px) {
       .card[data-face]:not([data-face=""])::after { bottom: 8px; font-size: .33rem; padding: 3px 5px; }
     }
+  
+    /* === ts mascot + bonus banners === */
+    .ts-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
+    .ts-boss.bounce{animation:tsBounce .55s ease}
+    .ts-boss.shake{animation:tsShake .35s ease}
+    .ts-boss.cheer{animation:tsCheer .7s ease}
+    @keyframes tsBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
+    @keyframes tsShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
+    @keyframes tsCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
+    .ts-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:linear-gradient(180deg,#fffaf0,#fbe7c1);border:1px solid rgba(0,0,0,.15);border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
+    .ts-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#fbe7c1,#fffaf0);border-right:1px solid rgba(0,0,0,.15);border-bottom:1px solid rgba(0,0,0,.15);transform:rotate(-45deg)}
+    .ts-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+    .ts-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap}
+    .ts-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .ts-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
+
+    .ts-bagwarn{position:fixed;left:max(12px,env(safe-area-inset-left) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9990;background:rgba(8,22,18,.85);border:1px solid rgba(156,255,121,.35);border-radius:14px;padding:6px 10px;font:700 11px/1 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#eff9f1;letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,.4);display:none}
+    .ts-bagwarn.show{display:block}
+    .ts-bagwarn.alarm{border-color:rgba(255,80,80,.7);background:rgba(60,18,18,.85);color:#ffe2e2;animation:tsBlink 1s infinite}
+    @keyframes tsBlink{0%,100%{opacity:1}50%{opacity:.55}}
+
   </style>
 </head>
 <body>
@@ -461,6 +487,24 @@
       el.msg.dataset.tone = mood.tone;
       el.msg.dataset.ribbon = mood.ribbon;
       el.msg.innerHTML = `<strong>Status:</strong> ${state.msg}${state.summary ? `<br><strong>Round:</strong> ${state.summary}` : ''}`;
+      try {
+        if (!window.Suite) return;
+        const note = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
+        const last = setMessage._last || ''; if (note === last) return; setMessage._last = note;
+        if (note.includes('spades broken') || note.includes('spades break')) {
+          Suite.hype(Suite.quip('spades_break') || 'SPADES BROKEN'); Suite.beep(420, 0.12, 'square', 0.07, -200);
+        } else if (note.includes('match winner: us') || note.includes('we won the match')) {
+          Suite.hype(Suite.quip('win') || 'MATCH WIN'); Suite.win();
+        } else if (note.includes('match winner: them') || note.includes('they won the match')) {
+          Suite.hype(Suite.quip('lose') || 'OUTPLAYED'); Suite.fart();
+        } else if (note.includes('we won the round') || note.includes('our team made')) {
+          Suite.toast('🚽 ' + (Suite.quip('win_s') || 'NICE'));
+        } else if (note.includes('they made bid') || note.includes('they won the round')) {
+          Suite.toast('💩 ' + (Suite.quip('lose_s') || 'oof'));
+        } else if (note.includes('bag') && note.includes('penalty')) {
+          Suite.hype('BAG PENALTY!'); Suite.fart();
+        }
+      } catch (e) {}
     }
 
     function makeDeck() {
@@ -817,6 +861,119 @@
     bind();
     startMatch();
     openGuide();
-  </script>
+  
+
+// ============================================================
+// === TurdSpades partner mascot + bag warning ================
+// ============================================================
+(function () {
+  'use strict';
+
+  // ---- Mascot DOM ----
+  const _boss = document.createElement('div');
+  _boss.className = 'ts-boss';
+  _boss.textContent = '🚽';
+  _boss.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(_boss);
+  const _bubble = document.createElement('div');
+  _bubble.className = 'ts-bubble';
+  document.body.appendChild(_bubble);
+  let _bubbleT = null;
+  function bossSay(text, dur) {
+    if (!text) return;
+    _bubble.textContent = text;
+    _bubble.classList.remove('show'); void _bubble.offsetWidth;
+    _bubble.classList.add('show');
+    clearTimeout(_bubbleT);
+    _bubbleT = setTimeout(() => _bubble.classList.remove('show'), dur || 2400);
+  }
+  function bossMood(emoji, anim) {
+    _boss.textContent = emoji;
+    if (anim) { _boss.classList.remove('bounce','shake','cheer'); void _boss.offsetWidth; _boss.classList.add(anim); }
+  }
+  function showBanner(text, cold) {
+    let el = document.getElementById('tsBanner');
+    if (!el) { el = document.createElement('div'); el.id = 'tsBanner'; el.className = 'ts-banner'; document.body.appendChild(el); }
+    el.textContent = text;
+    el.classList.toggle('cold', !!cold);
+    el.classList.remove('show'); void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
+  }
+
+  // Bag-count warning
+  const _bag = document.createElement('div');
+  _bag.className = 'ts-bagwarn';
+  _bag.id = 'tsBagWarn';
+  document.body.appendChild(_bag);
+
+  function updateBags() {
+    try {
+      // Pull team bags from state if available
+      if (typeof state === 'undefined') return;
+      const us = state.bagsUs ?? state.bags ?? state.usBags ?? null;
+      const them = state.bagsThem ?? state.themBags ?? null;
+      let html = '';
+      let alarm = false;
+      const tier = (n) => n >= 9 ? '🚨' : n >= 7 ? '⚠️' : null;
+      if (typeof us === 'number') {
+        const t = tier(us); if (t) { html += t + ' US BAGS: ' + us + '<br>'; if (us >= 9) alarm = true; }
+      }
+      if (typeof them === 'number') {
+        const t = tier(them); if (t) { html += t + ' THEY: ' + them; }
+      }
+      if (html) {
+        _bag.innerHTML = html;
+        _bag.classList.add('show');
+        _bag.classList.toggle('alarm', alarm);
+      } else {
+        _bag.classList.remove('show', 'alarm');
+      }
+    } catch (e) {}
+  }
+  setInterval(updateBags, 900);
+
+  const QUIPS = {
+    bid_low:    ["Soft bid. Coward.", "Bid bigger, wuss.", "Playing safe? Boring."],
+    bid_high:   ["BOLD. Reckless. Love it.", "Big bidder energy.", "Go big or sink."],
+    nil:        ["NIL?? Brave. Stupid.", "Zero tricks. Risky.", "May the bowl bless you."],
+    spades_break: ["SPADES BROKEN. Felt good.", "Trump time, baby.", "Now we play dirty."],
+    we_made:    ["NICE PARTNER 👏", "Bid made. Felt right.", "Smell that? Success."],
+    we_set:     ["...we got SET. Yikes.", "We blew it.", "Partner is judging you."],
+    they_made:  ["They made it. Annoying.", "Bots win this round.", "Plumber laughs."],
+    they_set:   ["They got SET! 🎉", "Bot tears!", "Sweet sweet underbid."],
+    bag_pen:    ["BAG PENALTY!! -100", "Sandbagged ourselves. Classic.", "Plumber sighs."],
+    we_match:   ["MATCH WIN. Partner ascends.", "We are sewer royalty.", "👑👑 partner!"],
+    they_match: ["Match lost. Plumber wins.", "Bots crush us.", "GG. Take a shower."]
+  };
+  const pick = k => (QUIPS[k] || [''])[Math.floor(Math.random() * (QUIPS[k] || ['']).length)];
+
+  // Wrap setMessage (existing on turdspades) for mascot reactions
+  if (typeof setMessage === 'function') {
+    const _orig = setMessage;
+    setMessage = function (text, summary) {
+      _orig(text, summary);
+      try {
+        const t = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
+        const last = setMessage._tslast || ''; if (t === last) return; setMessage._tslast = t;
+        if (t.includes('spades broken')) { bossMood('♠️', 'shake'); bossSay(pick('spades_break'), 2400); }
+        else if (t.includes('bag') && (t.includes('penalty') || t.includes('-100'))) { bossMood('💀', 'shake'); bossSay(pick('bag_pen'), 3000); showBanner('🚨 BAG PENALTY -100'); }
+        else if (t.includes('we won the round') || t.includes('our team made') || t.includes('we made bid')) { bossMood('🤝', 'cheer'); bossSay(pick('we_made'), 2400); }
+        else if (t.includes('we got set') || t.includes('we were set'))  { bossMood('😩', 'shake'); bossSay(pick('we_set'), 2400); }
+        else if (t.includes('they made bid') || t.includes('they won the round')) { bossMood('🤖', 'bounce'); bossSay(pick('they_made'), 2400); }
+        else if (t.includes('they got set') || t.includes('they were set')) { bossMood('🎉', 'cheer'); bossSay(pick('they_set'), 2400); }
+        else if (t.includes('match winner: us'))   { bossMood('👑', 'cheer'); bossSay(pick('we_match'), 3000); showBanner('👑 MATCH WIN'); }
+        else if (t.includes('match winner: them')) { bossMood('💀', 'shake'); bossSay(pick('they_match'), 3000); }
+        else if (t.includes('nil')) { bossMood('😨', 'shake'); bossSay(pick('nil'), 2400); }
+      } catch (e) {}
+    };
+  }
+
+  // Greeting
+  setTimeout(() => { bossMood('🤝', 'bounce'); bossSay('I\'m your partner. Don\'t embarrass me.', 2600); }, 700);
+})();
+
+</script>
 </body>
 </html>

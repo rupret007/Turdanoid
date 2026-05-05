@@ -1,0 +1,118 @@
+/* ============================================================
+   TurdAnoid Suite — shared design system
+   Loaded by every game in the hub. All classes are prefixed
+   `.suite-*` so they never collide with a game's existing CSS.
+   ============================================================ */
+
+:root {
+  --suite-accent: #9effc8;
+  --suite-gold: #ffd76a;
+  --suite-hot: #ff9d74;
+  --suite-pink: #ff7ab6;
+  --suite-violet: #b290ff;
+  --suite-aqua: #7ae6ff;
+  --suite-ink: #eafff2;
+  --suite-bg-dark: rgba(8, 22, 18, 0.78);
+  --suite-edge: rgba(158, 255, 200, 0.36);
+  --suite-safe-top: env(safe-area-inset-top);
+  --suite-safe-bot: env(safe-area-inset-bottom);
+  --suite-safe-left: env(safe-area-inset-left);
+  --suite-safe-right: env(safe-area-inset-right);
+}
+
+/* ---------- Back-to-Hub pill ---------- */
+.suite-back-pill {
+  position: fixed;
+  left: max(10px, calc(var(--suite-safe-left) + 8px));
+  bottom: max(10px, calc(var(--suite-safe-bot) + 8px));
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font: 700 12px/1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--suite-ink);
+  background: rgba(8, 22, 18, 0.72);
+  border: 1px solid var(--suite-edge);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.15s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.suite-back-pill:hover { background: rgba(20, 50, 40, 0.85); transform: translateY(-1px); }
+.suite-back-pill:active { transform: scale(0.95); }
+.suite-back-pill .arrow { font-size: 13px; opacity: 0.85; }
+
+/* ---------- Toast (small floating message) ---------- */
+.suite-toast {
+  position: fixed;
+  left: 50%;
+  top: max(70px, calc(var(--suite-safe-top) + 60px));
+  transform: translate(-50%, -16px);
+  z-index: 10001;
+  padding: 10px 16px;
+  font: 800 14px/1.1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid var(--suite-edge);
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 1.4, 0.4, 1);
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suite-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.suite-toast .emoji { margin-right: 4px; }
+
+/* ---------- Hype callout (big center text) ---------- */
+.suite-hype {
+  position: fixed;
+  left: 50%;
+  top: 36%;
+  transform: translate(-50%, -50%) scale(0.5);
+  z-index: 10002;
+  font: 900 clamp(22px, 7vw, 44px) 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow:
+    0 0 24px rgba(255, 215, 106, 0.85),
+    0 4px 14px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.2, 1.6, 0.4, 1);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.suite-hype.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ---------- Common iPhone safety touches ---------- */
+html.suite-locked, html.suite-locked body {
+  /* Use this class on body for full-screen game pages */
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+.suite-no-zoom {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}

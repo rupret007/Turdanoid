@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#18311f">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="assets/turdsuite.js" defer></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -611,6 +616,29 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
+  
+    /* === tr mascot + bonus banners === */
+    .tr-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
+    .tr-boss.bounce{animation:trBounce .55s ease}
+    .tr-boss.shake{animation:trShake .35s ease}
+    .tr-boss.cheer{animation:trCheer .7s ease}
+    @keyframes trBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
+    @keyframes trShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
+    @keyframes trCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
+    .tr-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:linear-gradient(180deg,#fffaf0,#fbe7c1);border:1px solid rgba(0,0,0,.15);border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
+    .tr-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#fbe7c1,#fffaf0);border-right:1px solid rgba(0,0,0,.15);border-bottom:1px solid rgba(0,0,0,.15);transform:rotate(-45deg)}
+    .tr-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+    .tr-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap}
+    .tr-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .tr-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
+
+    .tr-deadwood{position:fixed;left:max(12px,env(safe-area-inset-left) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9990;background:rgba(8,22,18,.85);border:1px solid rgba(156,255,115,.35);border-radius:14px;padding:6px 10px;font:700 12px/1 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#eef9f0;letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:4px;min-width:100px;align-items:flex-start}
+    .tr-deadwood .label{font-size:10px;opacity:.7}
+    .tr-deadwood .bar{width:100%;height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+    .tr-deadwood .fill{height:100%;background:linear-gradient(90deg,#9cff73,#ffd76a);border-radius:3px;transition:width .35s ease,background .35s ease}
+    .tr-deadwood .fill.warn{background:linear-gradient(90deg,#ffd76a,#ff9d74)}
+    .tr-deadwood .fill.danger{background:linear-gradient(90deg,#ff9d74,#ff7ab6)}
+
   </style>
 </head>
 <body>
@@ -1192,6 +1220,18 @@
       el.messageBox.dataset.tone = mood.tone;
       el.messageBox.dataset.ribbon = mood.ribbon;
       el.messageBox.innerHTML = "<strong>Status:</strong> " + state.message + roundText;
+      try {
+        if (!window.Suite) return;
+        const note = (String(text || "") + " " + String(summary || "")).toLowerCase();
+        const last = setMessage._last || ""; if (note === last) return; setMessage._last = note;
+        if (note.includes("you called gin"))           { Suite.hype(Suite.quip('gin') || 'GIN!'); Suite.win(); }
+        else if (note.includes("you knocked"))         { Suite.hype(Suite.quip('knock') || 'KNOCK KNOCK'); Suite.ding(); }
+        else if (note.includes("undercut! you"))       { Suite.hype('UNDERCUT!'); Suite.win(); }
+        else if (note.includes("match winner: player")){ Suite.hype(Suite.quip('win') || 'CHAMPION'); Suite.win(); }
+        else if (note.includes("ai called gin"))       { Suite.toast('💩 BOT GIN'); Suite.fart(); }
+        else if (note.includes("ai knocked"))          { Suite.toast('💩 BOT KNOCK'); }
+        else if (note.includes("match winner: ai"))    { Suite.hype(Suite.quip('lose') || 'OUTPLAYED'); Suite.fart(); }
+      } catch (e) {}
     }
 
     function updateTurnMeta() {
@@ -1852,6 +1892,108 @@
     });
 
     init();
-  </script>
+  
+
+// ============================================================
+// === TurdRummy AI mascot + deadwood meter ===================
+// ============================================================
+(function () {
+  'use strict';
+
+  // ---- Mascot DOM ----
+  const _boss = document.createElement('div');
+  _boss.className = 'tr-boss';
+  _boss.textContent = '🚽';
+  _boss.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(_boss);
+  const _bubble = document.createElement('div');
+  _bubble.className = 'tr-bubble';
+  document.body.appendChild(_bubble);
+  let _bubbleT = null;
+  function bossSay(text, dur) {
+    if (!text) return;
+    _bubble.textContent = text;
+    _bubble.classList.remove('show'); void _bubble.offsetWidth;
+    _bubble.classList.add('show');
+    clearTimeout(_bubbleT);
+    _bubbleT = setTimeout(() => _bubble.classList.remove('show'), dur || 2400);
+  }
+  function bossMood(emoji, anim) {
+    _boss.textContent = emoji;
+    if (anim) { _boss.classList.remove('bounce','shake','cheer'); void _boss.offsetWidth; _boss.classList.add(anim); }
+  }
+  function showBanner(text, cold) {
+    let el = document.getElementById('trBanner');
+    if (!el) { el = document.createElement('div'); el.id = 'trBanner'; el.className = 'tr-banner'; document.body.appendChild(el); }
+    el.textContent = text;
+    el.classList.toggle('cold', !!cold);
+    el.classList.remove('show'); void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
+  }
+
+  // Deadwood meter element
+  const _meter = document.createElement('div');
+  _meter.className = 'tr-deadwood';
+  _meter.innerHTML = '<div class="label">Your deadwood</div><div class="bar"><div class="fill" id="trDeadwoodFill" style="width:100%"></div></div><div id="trDeadwoodValue">—</div>';
+  document.body.appendChild(_meter);
+
+  function updateDeadwood() {
+    try {
+      // Look for state.playerDeadwood or computeDeadwood functions
+      let dw = null;
+      if (typeof state !== 'undefined' && state.playerDeadwood !== undefined) dw = state.playerDeadwood;
+      else if (typeof computeDeadwood === 'function' && typeof state !== 'undefined' && state.playerHand) {
+        try { dw = computeDeadwood(state.playerHand); } catch (e) {}
+      }
+      if (typeof dw !== 'number') return;
+      const fill = document.getElementById('trDeadwoodFill');
+      const val = document.getElementById('trDeadwoodValue');
+      if (!fill || !val) return;
+      // 100 = max, 0 = perfect (gin)
+      const pct = Math.max(0, Math.min(100, dw));
+      fill.style.width = (100 - pct) + '%';  // higher fill = lower deadwood = better
+      fill.classList.toggle('warn', pct >= 30 && pct < 60);
+      fill.classList.toggle('danger', pct >= 60);
+      val.textContent = dw + ' pts';
+    } catch (e) {}
+  }
+  setInterval(updateDeadwood, 700);
+
+  const QUIPS = {
+    you_gin:    ["GIN! you maniac.", "Spotless. Suspicious.", "I demand a recount."],
+    you_knock:  ["Bold. Cocky. Annoying.", "Fine. Take the points.", "Knock knock yourself."],
+    you_under:  ["UNDERCUT? You little—", "Wait what.", "Plumber spilled my coffee."],
+    ai_gin:     ["GIN. Fart noise.", "Lay it down, weeper.", "I am the bowl."],
+    ai_knock:   ["Knock. Heh.", "Tasty deadwood.", "Pay up, friend."],
+    you_match:  ["Sewer king/queen.", "I retire.", "Take my throne."],
+    ai_match:   ["Match mine. Bowl mine.", "Get plumbed.", "GG no re."]
+  };
+  const pick = k => (QUIPS[k] || [''])[Math.floor(Math.random() * (QUIPS[k] || ['']).length)];
+
+  // Wrap setMessage so mascot reacts on game events
+  if (typeof setMessage === 'function') {
+    const _orig = setMessage;
+    setMessage = function (text, summary) {
+      _orig(text, summary);
+      try {
+        const t = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
+        const last = setMessage._last2 || ''; if (t === last) return; setMessage._last2 = t;
+        if (t.includes('you called gin'))             { bossMood('🤯', 'shake'); bossSay(pick('you_gin'), 2800); showBanner('🍸 GIN!'); }
+        else if (t.includes('you knocked'))           { bossMood('😒', 'shake'); bossSay(pick('you_knock'), 2400); }
+        else if (t.includes('undercut! you'))         { bossMood('😱', 'shake'); bossSay(pick('you_under'), 2800); showBanner('🔪 UNDERCUT'); }
+        else if (t.includes('match winner: player'))  { bossMood('💀', 'shake'); bossSay(pick('you_match'), 3000); showBanner('👑 MATCH WIN'); }
+        else if (t.includes('ai called gin'))         { bossMood('😈', 'cheer'); bossSay(pick('ai_gin'), 2400); }
+        else if (t.includes('ai knocked'))            { bossMood('😏', 'bounce'); bossSay(pick('ai_knock'), 2400); }
+        else if (t.includes('match winner: ai'))      { bossMood('🏆', 'cheer'); bossSay(pick('ai_match'), 3000); }
+      } catch (e) {}
+    };
+  }
+
+  setTimeout(() => { bossMood('🤖', 'bounce'); bossSay('Sit. Sort. Suffer.', 2400); }, 700);
+})();
+
+</script>
 </body>
 </html>

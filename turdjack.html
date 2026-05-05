@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f1914">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="assets/turdsuite.js" defer></script>
   <title>Crapjack 21</title>
   <style>
     :root {
@@ -898,6 +903,37 @@
         min-height: 42px;
       }
     }
+  
+    /* === Toilet Boss mascot + enhancements === */
+    .toilet-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
+    .toilet-boss.bounce{animation:bossBounce .55s ease}
+    .toilet-boss.shake{animation:bossShake .35s ease}
+    .toilet-boss.cheer{animation:bossCheer .7s ease}
+    @keyframes bossBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
+    @keyframes bossShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
+    @keyframes bossCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
+    .boss-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:linear-gradient(180deg,#fffaf0,#fbe7c1);border:1px solid rgba(0,0,0,.15);border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
+    .boss-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#fbe7c1,#fffaf0);border-right:1px solid rgba(0,0,0,.15);border-bottom:1px solid rgba(0,0,0,.15);transform:rotate(-45deg)}
+    .boss-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+    /* Bet chip stack visualization */
+    .chip-stack{display:inline-flex;gap:1px;align-items:flex-end;margin-left:6px;vertical-align:middle}
+    .chip-stack .chip-vis{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.4);box-shadow:0 1px 2px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.4)}
+    .chip-stack .c10{background:radial-gradient(circle,#9ad6ff,#3a83cf)}
+    .chip-stack .c25{background:radial-gradient(circle,#9effc8,#3aa97c)}
+    .chip-stack .c100{background:radial-gradient(circle,#1a1a1a,#444);border-color:#222}
+    .chip-stack .c500{background:radial-gradient(circle,#b290ff,#5b3eb8)}
+    .chip-stack .c1000{background:radial-gradient(circle,#ffd76a,#bf8a13)}
+    /* Streak banner */
+    .streak-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap}
+    .streak-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .streak-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
+    /* Hand strength meter */
+    .hand-meter{display:flex;gap:3px;margin-top:6px;align-items:center;font-size:11px;color:rgba(255,255,255,.85)}
+    .hand-meter .pip{width:16px;height:6px;border-radius:3px;background:rgba(255,255,255,.16)}
+    .hand-meter .pip.on{background:linear-gradient(90deg,#9effc8,#ffd76a);box-shadow:0 0 8px rgba(255,215,106,.55)}
+    .hand-meter .pip.danger{background:linear-gradient(90deg,#ff7ab6,#ff4444);box-shadow:0 0 8px rgba(255,68,68,.7)}
+    .hand-meter .label{margin-left:4px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10px;opacity:.7}
+
   </style>
 </head>
 <body>
@@ -2011,6 +2047,14 @@
       ui.statusText.dataset.tone = statusMood.tone;
       ui.statusText.dataset.badge = statusMood.badge;
       pulseStatus();
+      try {
+        const note = String(text || '').toLowerCase();
+        if (!window.Suite) return;
+        if (note.includes('blackjack') && !note.includes('dealer')) { Suite.hype('BLACKJACK!'); Suite.win(); }
+        else if (note.includes('bust')) { Suite.hype(Suite.quip('bust') || 'BUSTED'); Suite.fart(); }
+        else if (statusMood.tone === 'win') { Suite.toast('💰 ' + (Suite.quip('win_s') || 'NICE')); }
+        else if (statusMood.tone === 'loss' && note.includes('dealer')) { Suite.toast('💩 ' + (Suite.quip('lose_s') || 'oof')); }
+      } catch (e) {}
     }
 
     function trackDecision(action) {
@@ -2662,6 +2706,197 @@
     }
 
     init();
+  
+  
+  // ============================================================
+  // === Crapjack 21 Enhancement Layer (added by suite v4.1) ====
+  // ============================================================
+  (function() {
+    'use strict';
+  
+    // ---- Build the Toilet Boss mascot in the DOM ----
+    const boss = document.createElement('div');
+    boss.className = 'toilet-boss';
+    boss.textContent = '🚽';
+    boss.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(boss);
+  
+    const bubble = document.createElement('div');
+    bubble.className = 'boss-bubble';
+    document.body.appendChild(bubble);
+  
+    let bubbleTimer = null;
+    function bossSay(text, duration) {
+      if (!text) return;
+      bubble.textContent = text;
+      bubble.classList.remove('show'); void bubble.offsetWidth;
+      bubble.classList.add('show');
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(() => bubble.classList.remove('show'), duration || 2400);
+    }
+  
+    function bossMood(emoji, animClass) {
+      boss.textContent = emoji;
+      if (animClass) {
+        boss.classList.remove('bounce','shake','cheer'); void boss.offsetWidth;
+        boss.classList.add(animClass);
+      }
+    }
+  
+    // ---- Quip banks ----
+    const QUIPS = {
+      deal:        ["Place yer bet, brave bowel.","Don't choke now.","I smell amateurs.","Sit. Stay. Bet.","Hope you flushed today."],
+      blackjack:   ["Beginner's luck.","Take it. It's cursed.","*flush noise*","Goddammit. Cleaning that off the felt later.","Fine. Pretty."],
+      bust:        ["DOWN SHE GOES!","Plumber needed!","Stretchy stretchy oof.","Knew it.","You overflowed, friend."],
+      dealer_bust: ["...goddammit.","Plumber's union strikes again.","I had it. I HAD it.","Lucky pipes.","Where'd that come from??"],
+      win:         ["Pure luck. Pure.","Even a broken pipe is right twice a day.","Take the chips. They're sticky.","Whatever, peasant.","Hmph."],
+      loss:        ["Sit down. SIT.","Tell your bank I said hi.","Cha-ching for me, baby.","That's MINE.","Plug yourself up before you bet again."],
+      push:        ["Tie. Boring.","Anti-climactic.","Tap fart.","Equal. For now."],
+      hot_3:       ["Easy easy easy.","Cool it, hotshot.","Mood: salty.","Streak's getting silly."],
+      hot_5:       ["This is rude.","Are you cheating??","Toilet boss reaches for plunger…"],
+      hot_7:       ["I QUIT. (kidding. give me my chips.)","Stop it. Stop it. STOP IT.","INFERNO MODE."],
+      cold_3:      ["Awwww 🥲","I'm trying to feel bad. Failing.","More more more."],
+      cold_5:      ["Okay okay okay. Pity tip incoming.","Take this and walk away."],
+    };
+    function pickQuip(key) {
+      const arr = QUIPS[key]; if (!arr) return '';
+      return arr[Math.floor(Math.random()*arr.length)];
+    }
+  
+    // ---- Hot/cold streak bonus payouts ----
+    // The script hoists `recordMomentum` to script scope; we wrap it.
+    if (typeof recordMomentum === 'function') {
+      const _origMomentum = recordMomentum;
+      recordMomentum = function(roundWins, roundLosses, roundPushes) {
+        _origMomentum(roundWins, roundLosses, roundPushes);
+        let bonus = 0, banner = '', cold = false;
+        if (typeof hotStreak === 'number') {
+          if (hotStreak === 3)  { bonus = 50;   banner = '🔥 HEATER +$50';                   bossMood('😅','shake');  bossSay(pickQuip('hot_3'), 2600); }
+          else if (hotStreak === 5)  { bonus = 150;  banner = '🔥🔥 HEATER x5 +$150';        bossMood('😡','shake');  bossSay(pickQuip('hot_5'), 2800); }
+          else if (hotStreak === 7)  { bonus = 400;  banner = '🔥🔥🔥 INFERNO +$400';        bossMood('🤬','shake');  bossSay(pickQuip('hot_7'), 3200); }
+          else if (hotStreak === 10) { bonus = 1000; banner = '🔥🔥🔥 LEGENDARY +$1000';     bossMood('💀','shake');  bossSay('You broke me.', 3600); }
+        }
+        if (typeof coldStreak === 'number') {
+          if (coldStreak === 3) { bossMood('😈','bounce'); bossSay(pickQuip('cold_3'), 2400); }
+          else if (coldStreak === 5) {
+            bonus = 25; banner = '💧 PITY $25'; cold = true;
+            bossMood('😇','bounce'); bossSay(pickQuip('cold_5'), 2800);
+          }
+        }
+        if (bonus > 0 && typeof bankroll === 'number') {
+          bankroll += bonus;
+          try { writeNumber && writeNumber(STORAGE.bankroll, bankroll); } catch (e) {}
+          try { updateHud && updateHud(); } catch (e) {}
+          showStreakBanner(banner, cold);
+          try { if (window.Suite) Suite.win(); } catch (e) {}
+        }
+      };
+    }
+  
+    function showStreakBanner(text, cold) {
+      let el = document.getElementById('crapjackStreakBanner');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'crapjackStreakBanner';
+        el.className = 'streak-banner';
+        document.body.appendChild(el);
+      }
+      el.textContent = text;
+      el.classList.toggle('cold', !!cold);
+      el.classList.remove('show'); void el.offsetWidth;
+      el.classList.add('show');
+      clearTimeout(showStreakBanner._t);
+      showStreakBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
+    }
+  
+    // ---- Mascot reactions tied to setStatus content ----
+    // Wrap setStatus to pick a mood/quip based on status text and tone.
+    if (typeof setStatus === 'function') {
+      const _origSetStatus = setStatus;
+      setStatus = function(text) {
+        _origSetStatus(text);
+        try {
+          const t = String(text || '').toLowerCase();
+          if (!t) return;
+          if (t.includes('blackjack') && !t.includes('dealer')) {
+            bossMood('😤','shake'); bossSay(pickQuip('blackjack'), 2600);
+          } else if (t.includes('bust') && !t.includes('dealer bust')) {
+            bossMood('😏','bounce'); bossSay(pickQuip('bust'), 2400);
+          } else if (t.includes('dealer bust')) {
+            bossMood('😩','shake'); bossSay(pickQuip('dealer_bust'), 2400);
+          } else if (t.includes('beats dealer') || t.includes('paid')) {
+            bossMood('😒','shake'); bossSay(pickQuip('win'), 2400);
+          } else if (t.includes('loses to dealer')) {
+            bossMood('😈','cheer'); bossSay(pickQuip('loss'), 2400);
+          } else if (t.includes('push')) {
+            bossMood('😐','bounce'); bossSay(pickQuip('push'), 2200);
+          } else if (t.includes('deal') || t.includes('place')) {
+            if (Math.random() < 0.65) { bossMood('🚽',null); bossSay(pickQuip('deal'), 2400); }
+          }
+        } catch (e) {}
+      };
+    }
+  
+    // ---- Bet chip-stack visualization on the bet pill ----
+    function chipStackHtml(amount) {
+      if (!amount || amount <= 0) return '';
+      // Greedy break amount into chip denominations, then visualize
+      const denoms = [
+        {v: 1000, c: 'c1000'},
+        {v: 500,  c: 'c500'},
+        {v: 100,  c: 'c100'},
+        {v: 25,   c: 'c25'},
+        {v: 10,   c: 'c10'},
+      ];
+      const stack = [];
+      let rem = amount;
+      for (const d of denoms) {
+        while (rem >= d.v && stack.length < 12) { stack.push(d.c); rem -= d.v; }
+      }
+      if (!stack.length) return '';
+      return ' <span class="chip-stack">' + stack.map(c => '<span class="chip-vis ' + c + '"></span>').join('') + '</span>';
+    }
+    // Wrap updateHud so we re-render the chip stack on every refresh.
+    if (typeof updateHud === 'function') {
+      const _origUpdateHud = updateHud;
+      updateHud = function() {
+        _origUpdateHud();
+        try {
+          const betEl = document.getElementById('betText');
+          if (!betEl) return;
+          const amount = (typeof currentBet === 'number') ? currentBet : 0;
+          // Set base text + chip viz
+          betEl.innerHTML = '$' + amount.toLocaleString() + chipStackHtml(amount);
+        } catch (e) {}
+      };
+    }
+  
+    // ---- Idle quip rotation when nothing's happening ----
+    let lastIdleTime = Date.now();
+    setInterval(() => {
+      if (typeof roundActive === 'boolean' && !roundActive && document.hidden !== true) {
+        // 1 in 4 chance every 9 seconds when round isn't running
+        if (Date.now() - lastIdleTime > 9000 && Math.random() < 0.25) {
+          const idleLines = [
+            "*tap tap*","Bet today, bet forever.","I have all day.","The chips smell weird.","Your bankroll, my dinner.","Can hear your heartbeat.","Last hand was a hint."
+          ];
+          bossSay(idleLines[Math.floor(Math.random()*idleLines.length)], 2200);
+          lastIdleTime = Date.now();
+        }
+      }
+    }, 1500);
+  
+    // First greeting
+    setTimeout(() => {
+      bossMood('🚽','bounce');
+      bossSay('New victim. Welcome.', 2600);
+    }, 700);
+  
+    // Expose for debugging if needed
+    window._crapjackBoss = { bossSay, bossMood, showStreakBanner };
+  
+  })();
+  
   </script>
 </body>
 </html>

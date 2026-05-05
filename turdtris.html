@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#120d0a">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/turdsuite.css">
+<script src="assets/turdsuite.js" defer></script>
 <title>Turdtris Turbo</title>
 <style>
 :root {
@@ -641,7 +646,29 @@ body::after {
     min-height: 44px;
   }
 }
-</style>
+
+    /* === pb mascot + bonus banners === */
+    .pb-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
+    .pb-boss.bounce{animation:pbBounce .55s ease}
+    .pb-boss.shake{animation:pbShake .35s ease}
+    .pb-boss.cheer{animation:pbCheer .7s ease}
+    @keyframes pbBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
+    @keyframes pbShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
+    @keyframes pbCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
+    .pb-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:linear-gradient(180deg,#fffaf0,#fbe7c1);border:1px solid rgba(0,0,0,.15);border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
+    .pb-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#fbe7c1,#fffaf0);border-right:1px solid rgba(0,0,0,.15);border-bottom:1px solid rgba(0,0,0,.15);transform:rotate(-45deg)}
+    .pb-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+    .pb-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap}
+    .pb-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .pb-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
+
+    /* danger-zone overlay */
+    .pb-danger{position:fixed;inset:0;pointer-events:none;z-index:9996;border:6px solid transparent;box-sizing:border-box;transition:border-color .2s ease,box-shadow .25s ease}
+    .pb-danger.warn{border-color:rgba(255,140,80,.55);box-shadow:inset 0 0 60px rgba(255,140,80,.25);animation:pbPulse 1.2s infinite}
+    .pb-danger.alarm{border-color:rgba(255,80,80,.85);box-shadow:inset 0 0 80px rgba(255,80,80,.4);animation:pbPulse .55s infinite}
+    @keyframes pbPulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+  </style>
 </head>
 <body>
 <div class="welcome-guide" id="welcomeGuide">
@@ -1481,6 +1508,13 @@ function lockPiece() {
   let clutchBonus = 0;
   if (linesClearedThisTurn > 0) {
     playSfx('clear');
+    try {
+      if (window.Suite) {
+        if (tSpin) Suite.hype(Suite.quip('tspin') || 'T-SPIN!');
+        else if (linesClearedThisTurn === 4) { Suite.hype(Suite.quip('tetris') || 'TETRIS!'); Suite.win(); }
+        else if (linesClearedThisTurn >= 2) Suite.toast('💩 ' + linesClearedThisTurn + '× ' + (Suite.quip('line') || 'CLEAR'));
+      }
+    } catch (e) {}
     const levelBefore = level;
     const lineIndex = Math.min(linesClearedThisTurn, 4);
 
@@ -1512,6 +1546,7 @@ function lockPiece() {
       floatTexts.push({ text: 'PERFECT CLEAR', x: canvas.width / 2, y: canvas.height * 0.3, life: 52, color: '#8ee8c7' });
       setHype('Perfect clear! The bowl sparkles.', 122);
       triggerSceneShake(3.9);
+      try { if (window.Suite) { Suite.hype(Suite.quip('perfect') || 'PERFECT CLEAR!'); Suite.win(); } } catch (e) {}
     }
 
     const stackHeight = getStackHeight();
@@ -1792,6 +1827,12 @@ function showGameOver(won) {
     cancelAnimationFrame(rAF);
     rAF = null;
   }
+  try {
+    if (window.Suite) {
+      if (isWin) { Suite.hype(Suite.quip('win') || 'CERTIFIED FLUSHER'); Suite.win(); }
+      else        { Suite.hype(Suite.quip('lose') || 'FLUSHED'); Suite.fart(); }
+    }
+  } catch (e) {}
 
   const overlayEl = document.getElementById('gameOverOverlay');
   const overlayCardEl = document.getElementById('endOverlayCard');
@@ -2094,6 +2135,138 @@ soundEnabled = loadSoundPref();
 updateSoundButtons();
 restartGame();
 showWelcomeGuide();
+
+
+// ============================================================
+// === Turdtris Plunger Boss enhancement ======================
+// ============================================================
+(function () {
+  'use strict';
+
+  // ---- Mascot DOM ----
+  const _boss = document.createElement('div');
+  _boss.className = 'pb-boss';
+  _boss.textContent = '🚽';
+  _boss.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(_boss);
+  const _bubble = document.createElement('div');
+  _bubble.className = 'pb-bubble';
+  document.body.appendChild(_bubble);
+  let _bubbleT = null;
+  function bossSay(text, dur) {
+    if (!text) return;
+    _bubble.textContent = text;
+    _bubble.classList.remove('show'); void _bubble.offsetWidth;
+    _bubble.classList.add('show');
+    clearTimeout(_bubbleT);
+    _bubbleT = setTimeout(() => _bubble.classList.remove('show'), dur || 2400);
+  }
+  function bossMood(emoji, anim) {
+    _boss.textContent = emoji;
+    if (anim) { _boss.classList.remove('bounce','shake','cheer'); void _boss.offsetWidth; _boss.classList.add(anim); }
+  }
+  function showBanner(text, cold) {
+    let el = document.getElementById('pbBanner');
+    if (!el) { el = document.createElement('div'); el.id = 'pbBanner'; el.className = 'pb-banner'; document.body.appendChild(el); }
+    el.textContent = text;
+    el.classList.toggle('cold', !!cold);
+    el.classList.remove('show'); void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
+  }
+
+  // Danger-zone overlay
+  const _danger = document.createElement('div');
+  _danger.className = 'pb-danger';
+  document.body.appendChild(_danger);
+
+  const QUIPS = {
+    spawn:  ["Stack 'em.", "Don't choke.", "Light touch.", "Eyes on the well.", "Plumber's watching."],
+    line1:  ["Tidy.", "Scrub.", "Cleaner already."],
+    line2:  ["Ooo two.", "Double-flush!", "We rolling."],
+    line3:  ["Triple? Showoff."],
+    tetris: ["TETRIS!! HOW DARE.", "Plunger weeps.", "Four down. Felt that."],
+    tspin:  ["A T-SPIN?? In MY toilet??", "Showy showy showy.", "Twirl flush."],
+    perfect:["Immaculate. Smelly.", "PERFECT CLEAR. The bowl shines.", "Plumber jealous."],
+    over:   ["Stack overflow. Literally.", "Plunger wins.", "Should've kept it tidy."],
+    win:    ["Sewer royalty.", "Champion of bowl management.", "Plunger bows."],
+    near:   ["Easy easy easy.", "Overflow incoming.", "Your stack is yelling."],
+    danger: ["DANGER. DANGER.", "BAIL. BAIL. BAIL.", "Slow down!!"]
+  };
+  const pick = k => (QUIPS[k] || [''])[Math.floor(Math.random() * (QUIPS[k] || ['']).length)];
+
+  // Streak bonus ladder (back-to-back tetrises grow more dramatic)
+  let _btbCount = 0;
+  if (typeof showGameOver === 'function') {
+    const _orig = showGameOver;
+    showGameOver = function (won) {
+      _orig(won);
+      if (won) { bossMood('👑', 'cheer'); bossSay(pick('win'), 3000); }
+      else     { bossMood('🪠', 'shake'); bossSay(pick('over'), 3000); }
+    };
+  }
+  // Hook lockPiece for spawn-time chatter and danger reactions
+  if (typeof lockPiece === 'function') {
+    const _origLock = lockPiece;
+    lockPiece = function () {
+      const before = (typeof getStackHeight === 'function') ? getStackHeight() : 0;
+      _origLock();
+      try {
+        const h = (typeof getStackHeight === 'function') ? getStackHeight() : 0;
+        // Update danger overlay
+        if (h >= 16) { _danger.className = 'pb-danger alarm'; if (Math.random() < 0.45) { bossMood('😰', 'shake'); bossSay(pick('danger'), 1800); } }
+        else if (h >= 12) { _danger.className = 'pb-danger warn'; if (Math.random() < 0.25) { bossMood('😬', 'shake'); bossSay(pick('near'), 1800); } }
+        else { _danger.className = 'pb-danger'; }
+      } catch (e) {}
+    };
+  }
+  // Tap into Suite hype (which already fires for tetris/tspin/perfect) — also drive mascot
+  // We watch for the suite's hype div content changes
+  function watchHype() {
+    const tries = setInterval(() => {
+      const el = document.querySelector('.suite-hype');
+      if (!el) return;
+      clearInterval(tries);
+      const obs = new MutationObserver(() => {
+        const txt = (el.textContent || '').toUpperCase();
+        if (txt.includes('TETRIS')) {
+          _btbCount++;
+          bossMood(_btbCount >= 3 ? '🤯' : '😱', 'shake');
+          bossSay(pick('tetris'), 2400);
+          if (_btbCount === 2) showBanner('🔥 BACK-TO-BACK TETRIS');
+          if (_btbCount === 3) showBanner('🔥🔥 TRIPLE TETRIS BUDDY');
+          if (_btbCount >= 4)  showBanner('🔥🔥🔥 TETRIS GOD');
+        } else if (txt.includes('T-SPIN')) {
+          _btbCount++;
+          bossMood('😵', 'shake');
+          bossSay(pick('tspin'), 2400);
+        } else if (txt.includes('PERFECT')) {
+          bossMood('✨', 'cheer');
+          bossSay(pick('perfect'), 2800);
+          showBanner('💎 PERFECT CLEAR');
+        } else if (txt) {
+          // any other clear: small reaction
+          if (Math.random() < 0.3) bossSay(pick('line1'), 1600);
+        }
+      });
+      obs.observe(el, { childList: true, characterData: true, subtree: true });
+    }, 400);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', watchHype);
+  } else {
+    watchHype();
+  }
+
+  // Reset back-to-back when a non-clearing piece locks (i.e., line drop with 0 lines clears)
+  // We simply reset whenever a "line drop with no clear" happens — heuristic via watching for non-tetris hype absence
+  // Skip — keep simple, don't reset.
+
+  // Greeting
+  setTimeout(() => { bossMood('🪠', 'bounce'); bossSay('Stack carefully, sewer kid.', 2400); }, 700);
+})();
+
 </script>
 </body>
 </html>

@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#121a11">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="assets/turdsuite.js" defer></script>
   <title>Crappy Eights</title>
   <style>
     :root{
@@ -251,6 +256,30 @@
       .pile-card[data-face]:not([data-face=""])::after,.card-btn[data-face]:not([data-face=""])::after{bottom:9px;font-size:.34rem;padding:3px 5px}
       .panel p,.panel li,.panel div{font-size:.75rem}
     }
+  
+    /* === ce mascot + bonus banners === */
+    .ce-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
+    .ce-boss.bounce{animation:ceBounce .55s ease}
+    .ce-boss.shake{animation:ceShake .35s ease}
+    .ce-boss.cheer{animation:ceCheer .7s ease}
+    @keyframes ceBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
+    @keyframes ceShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
+    @keyframes ceCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
+    .ce-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:linear-gradient(180deg,#fffaf0,#fbe7c1);border:1px solid rgba(0,0,0,.15);border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.4);opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
+    .ce-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#fbe7c1,#fffaf0);border-right:1px solid rgba(0,0,0,.15);border-bottom:1px solid rgba(0,0,0,.15);transform:rotate(-45deg)}
+    .ce-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+    .ce-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap}
+    .ce-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .ce-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
+
+    /* Bot avatar tiles in the existing opp cards */
+    .ce-avatar{display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;font-size:20px;border-radius:50%;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);margin-right:6px;vertical-align:middle;transition:transform .25s ease,filter .25s ease}
+    .ce-avatar.angry{filter:hue-rotate(-25deg) saturate(1.4);transform:rotate(-12deg) scale(1.15)}
+    .ce-avatar.happy{transform:translateY(-3px) scale(1.12)}
+    .ce-avatar.shock{transform:scale(1.25);filter:brightness(1.3)}
+    .ce-action-cue{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.5);z-index:9996;font:900 clamp(28px,7vw,46px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 28px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.08em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase}
+    .ce-action-cue.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
   </style>
 </head>
 <body>
@@ -926,6 +955,17 @@
       setStatus(summary, true);
       addHistory(summary);
       playSfx(winnerIndex === 0 ? 'win' : 'lose');
+      try {
+        if (window.Suite) {
+          if (winnerIndex === 0) {
+            Suite.hype(matchFinished ? (Suite.quip('win') || 'CHAMPION!') : (Suite.quip('streak') || 'ROUND WIN'));
+            Suite.win();
+          } else {
+            Suite.hype(matchFinished ? (Suite.quip('lose') || 'OUTPLAYED') : (Suite.quip('lose_s') || 'ROUND LOST'));
+            if (matchFinished) Suite.fart();
+          }
+        }
+      } catch (e) {}
       updateAll();
       const tone = winnerIndex === 0
         ? (matchFinished ? 'match-win' : 'victory')
@@ -1150,6 +1190,152 @@
     });
 
     init();
-  </script>
+  
+
+// ============================================================
+// === Crappy Eights bot personality + action callouts =======
+// ============================================================
+(function () {
+  'use strict';
+
+  // ---- Mascot DOM ----
+  const _boss = document.createElement('div');
+  _boss.className = 'ce-boss';
+  _boss.textContent = '🚽';
+  _boss.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(_boss);
+  const _bubble = document.createElement('div');
+  _bubble.className = 'ce-bubble';
+  document.body.appendChild(_bubble);
+  let _bubbleT = null;
+  function bossSay(text, dur) {
+    if (!text) return;
+    _bubble.textContent = text;
+    _bubble.classList.remove('show'); void _bubble.offsetWidth;
+    _bubble.classList.add('show');
+    clearTimeout(_bubbleT);
+    _bubbleT = setTimeout(() => _bubble.classList.remove('show'), dur || 2400);
+  }
+  function bossMood(emoji, anim) {
+    _boss.textContent = emoji;
+    if (anim) { _boss.classList.remove('bounce','shake','cheer'); void _boss.offsetWidth; _boss.classList.add(anim); }
+  }
+  function showBanner(text, cold) {
+    let el = document.getElementById('ceBanner');
+    if (!el) { el = document.createElement('div'); el.id = 'ceBanner'; el.className = 'ce-banner'; document.body.appendChild(el); }
+    el.textContent = text;
+    el.classList.toggle('cold', !!cold);
+    el.classList.remove('show'); void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(showBanner._t);
+    showBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
+  }
+
+  // Bot avatar emojis (stable for the session)
+  const BOT_FACES = ['🐔', '🦝', '🐸', '🦆', '🐢', '🦦', '🐹'];
+  const _botFaces = [];
+  function getBotFaces() {
+    if (_botFaces.length) return _botFaces;
+    const shuffled = BOT_FACES.slice().sort(() => Math.random() - 0.5);
+    for (let i = 0; i < 3; i++) _botFaces.push(shuffled[i]);
+    return _botFaces;
+  }
+  function ensureAvatars() {
+    try {
+      const faces = getBotFaces();
+      for (let i = 0; i < 3; i++) {
+        const nameEl = document.getElementById('oppName' + (i + 1));
+        if (!nameEl || nameEl.dataset.avatared === '1') continue;
+        const av = document.createElement('span');
+        av.className = 'ce-avatar';
+        av.id = 'ceAvatar' + i;
+        av.textContent = faces[i];
+        nameEl.parentNode.insertBefore(av, nameEl);
+        nameEl.dataset.avatared = '1';
+      }
+    } catch (e) {}
+  }
+  function pulseAvatar(idx, mood) {
+    const av = document.getElementById('ceAvatar' + idx);
+    if (!av) return;
+    av.classList.remove('angry','happy','shock'); void av.offsetWidth;
+    if (mood) av.classList.add(mood);
+    clearTimeout(av._t);
+    av._t = setTimeout(() => av.classList.remove(mood), 1100);
+  }
+
+  // Big center action-card cue
+  function actionCue(emoji, text) {
+    let el = document.getElementById('ceActionCue');
+    if (!el) { el = document.createElement('div'); el.id = 'ceActionCue'; el.className = 'ce-action-cue'; document.body.appendChild(el); }
+    el.innerHTML = (emoji ? emoji + ' ' : '') + text;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(actionCue._t);
+    actionCue._t = setTimeout(() => el.classList.remove('show'), 900);
+  }
+
+  const QUIPS = {
+    twoCard: ["draw two, sucker", "extra paper for you", "enjoy the gift"],
+    skip:    ["sit it out", "you snooze", "denied"],
+    reverse: ["psych! my way now", "u-turn buddy", "wrong way"],
+    wild:    ["WILD!", "I pick the smell", "any color goes"],
+    win:     ["GG", "👑 me", "easy money"],
+    lose:    ["awww", "fine. you got us.", "next time"],
+    bot_win: ["the bots win again", "bot supremacy", "humans = mid"]
+  };
+  const pick = k => (QUIPS[k] || [''])[Math.floor(Math.random() * (QUIPS[k] || ['']).length)];
+
+  // Wrap playCardById to detect action-card play and react
+  if (typeof playCardById === 'function') {
+    const _orig = playCardById;
+    playCardById = function (playerIndex, cardId, forcedSuit) {
+      // Fish out card rank from the cardId string (rank-suit-id format like 'A-S-3')
+      let rank = '';
+      try {
+        const card = (typeof players !== 'undefined' && players[playerIndex] && players[playerIndex].hand)
+          ? players[playerIndex].hand.find(c => c.id === cardId) : null;
+        if (card) rank = String(card.rank);
+      } catch (e) {}
+      const ret = _orig(playerIndex, cardId, forcedSuit);
+      try {
+        const isHuman = playerIndex === 0;
+        if (rank === '2') {
+          actionCue('🧻', 'DRAW TWO!');
+          if (!isHuman) bossSay(pick('twoCard'), 2000);
+          for (let i = 1; i < 4; i++) pulseAvatar(i - 1, isHuman ? 'angry' : 'happy');
+        } else if (rank === 'J') {
+          actionCue('⛔', 'SKIP!');
+          if (!isHuman) bossSay(pick('skip'), 2000);
+        } else if (rank === 'Q') {
+          actionCue('🔄', 'REVERSE!');
+          if (!isHuman) bossSay(pick('reverse'), 2000);
+        } else if (rank === '8') {
+          actionCue('🌀', 'WILD!');
+          if (!isHuman) bossSay(pick('wild'), 2000);
+        }
+      } catch (e) {}
+      return ret;
+    };
+  }
+
+  // Wrap endRound for win/lose mascot
+  if (typeof endRound === 'function') {
+    const _orig = endRound;
+    endRound = function (winnerIndex) {
+      _orig(winnerIndex);
+      if (winnerIndex === 0) { bossMood('🏆', 'cheer'); bossSay(pick('win'), 2800); }
+      else                   { bossMood('🤖', 'bounce'); bossSay(pick('bot_win'), 2800); pulseAvatar(winnerIndex - 1, 'happy'); }
+    };
+  }
+
+  // Inject avatars right after the opp cards exist
+  setTimeout(ensureAvatars, 400);
+  setTimeout(ensureAvatars, 1600); // re-attempt in case of slow render
+
+  // Greeting
+  setTimeout(() => { bossMood('🤖', 'bounce'); bossSay('Three bots. Zero mercy.', 2400); }, 700);
+})();
+
+</script>
 </body>
 </html>

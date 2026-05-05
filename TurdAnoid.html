@@ -1,3098 +1,1331 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <title>TurdAnoid Turbo</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
-  <style>
-    :root {
-      --bg-a: #102126;
-      --bg-b: #1d3137;
-      --bg-c: #2b473e;
-      --ink: #e5f7ec;
-      --accent: #9effc8;
-      --hot: #ff9d74;
-      --panel: rgba(8, 22, 18, 0.72);
-      --panel-border: rgba(158, 255, 200, 0.35);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1d24">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>TurdAnoid Turbo — Bricks. Busted.</title>
+<style>
+  :root{
+    --bg-a:#0b1d24; --bg-b:#15303a; --bg-c:#244a3f;
+    --ink:#eafff2; --accent:#9effc8; --hot:#ff9d74; --gold:#ffd76a;
+    --pink:#ff7ab6; --violet:#b290ff; --aqua:#7ae6ff;
+    --panel:rgba(8,22,18,.72); --panel-border:rgba(158,255,200,.32);
+    --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
+  body{
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 15% 8%,rgba(158,255,200,.18),transparent 50%),
+      radial-gradient(900px 500px at 85% 12%,rgba(255,180,130,.14),transparent 55%),
+      radial-gradient(700px 400px at 50% 110%,rgba(178,144,255,.18),transparent 60%),
+      linear-gradient(160deg,var(--bg-a),var(--bg-b) 40%,var(--bg-c));
+    background-attachment:fixed;
+  }
+  #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(8px,var(--safe-top)) 8px max(8px,var(--safe-bot))}
+  #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center}
+  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* HUD */
+  .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.65)}
+  .hud .col{display:flex;flex-direction:column;gap:2px}
+  .hud .lbl{font-size:.78em;opacity:.65;letter-spacing:.18em}
+  .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 18px rgba(158,255,200,.45),0 2px 6px rgba(0,0,0,.7)}
+  .hud .right{text-align:right}
+  .hud .right .val{color:var(--gold);text-shadow:0 0 18px rgba(255,215,106,.45),0 2px 6px rgba(0,0,0,.7)}
+  .hud .center{text-align:center;flex:1}
+  .hud .center .val{color:var(--hot);text-shadow:0 0 18px rgba(255,157,116,.5),0 2px 6px rgba(0,0,0,.7)}
+  .hud .lives{display:inline-flex;gap:3px;font-size:1.05em;letter-spacing:0}
 
-    body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 15% 12%, rgba(158, 255, 200, 0.16), transparent 34%),
-        radial-gradient(circle at 85% 10%, rgba(255, 180, 130, 0.14), transparent 30%),
-        linear-gradient(135deg, var(--bg-a), var(--bg-b), var(--bg-c));
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: clamp(8px, 2.2vw, 16px);
-      overflow-x: hidden;
-      overflow-y: auto;
-      position: relative;
-      isolation: isolate;
-    }
+  /* Combo badge */
+  #combo{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) scale(.4);opacity:0;font-weight:900;font-size:clamp(28px,9vw,60px);color:#fff;letter-spacing:.06em;pointer-events:none;text-shadow:0 0 24px rgba(255,215,106,.9),0 4px 12px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+  #combo.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      border-radius: 999px;
-      filter: blur(14px);
-      opacity: 0.38;
-      pointer-events: none;
-      z-index: -1;
-    }
+  /* Hype line */
+  #hype{position:absolute;top:74px;left:50%;transform:translateX(-50%);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
+  #hype.show{opacity:1}
 
-    body::before {
-      width: 240px;
-      height: 240px;
-      left: -52px;
-      top: 14vh;
-      background: radial-gradient(circle at 38% 34%, rgba(255, 218, 146, 0.4), transparent 30%), radial-gradient(circle at 60% 60%, rgba(158, 255, 200, 0.42), transparent 50%);
-    }
+  /* Power chips */
+  #powers{position:absolute;left:8px;right:8px;bottom:max(120px,calc(var(--safe-bot) + 110px));display:flex;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:none}
+  .chip{font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.55);border:1px solid rgba(158,255,200,.4);color:var(--ink);padding:4px 8px;border-radius:999px;backdrop-filter:blur(4px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
 
-    body::after {
-      width: 280px;
-      height: 280px;
-      right: -54px;
-      bottom: 8vh;
-      background: radial-gradient(circle at 44% 38%, rgba(255, 157, 116, 0.22), transparent 32%), radial-gradient(circle at 58% 62%, rgba(158, 255, 200, 0.28), transparent 48%);
-    }
+  /* Buttons row */
+  .topbtns{position:absolute;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;gap:6px;z-index:5}
+  .iconbtn{width:36px;height:36px;border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
+  .iconbtn:active{transform:scale(.92)}
 
-    .shell {
-      width: min(1140px, 96vw);
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 22px;
-      padding: 12px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-    }
+  /* Overlay screens */
+  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 35%,rgba(8,22,18,.55),rgba(8,22,18,.85));border-radius:18px;z-index:10}
+  .overlay.show{display:flex;animation:fadeIn .35s ease}
+  @keyframes fadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .overlay h1{font-size:clamp(36px,11vw,72px);color:var(--gold);letter-spacing:.04em;text-shadow:0 0 24px rgba(255,215,106,.55),0 6px 20px rgba(0,0,0,.6);margin-bottom:6px;line-height:1}
+  .overlay h1 .sub{display:block;font-size:.4em;color:var(--accent);letter-spacing:.3em;margin-top:8px;text-shadow:0 0 12px rgba(158,255,200,.6)}
+  .overlay p{max-width:480px;font-size:clamp(14px,3.4vw,16px);line-height:1.5;color:var(--ink);opacity:.9;margin:14px 0}
+  .overlay .quip{color:var(--hot);font-style:italic;font-size:clamp(12px,3vw,14px);margin-top:6px;min-height:1.4em}
+  .overlay button{margin-top:22px;padding:14px 32px;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;background:linear-gradient(180deg,#9effc8,#5ce0a3);color:#08221a;border:0;border-radius:14px;cursor:pointer;box-shadow:0 12px 28px rgba(94,224,163,.35),inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .15s}
+  .overlay button:active{transform:scale(.95)}
+  .overlay .stats{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .overlay .stat{background:rgba(0,0,0,.4);border:1px solid var(--panel-border);padding:10px 14px;border-radius:12px;min-width:90px}
+  .overlay .stat .l{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.8}
+  .overlay .stat .v{display:block;font-size:24px;font-weight:800;color:var(--gold);margin-top:2px}
+  .overlay .helprow{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;justify-content:center;font-size:13px}
+  .overlay .helprow span{background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;border:1px solid rgba(158,255,200,.2)}
+  .menu-secondary{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .menu-secondary button{padding:9px 16px;font-size:13px;background:rgba(0,0,0,.45);color:var(--ink);border:1px solid rgba(158,255,200,.35)}
 
-    .shell::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 22%, transparent 74%, rgba(255, 255, 255, 0.05)), radial-gradient(circle at 12% 18%, rgba(158, 255, 200, 0.08), transparent 28%);
-      pointer-events: none;
-      z-index: -1;
-    }
+  /* Mobile launch button */
+  #mobileLaunch{position:absolute;left:50%;bottom:max(20px,calc(var(--safe-bot) + 14px));transform:translateX(-50%);padding:12px 28px;font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,#ffd76a,#f1a83b);color:#3a1d00;border:0;border-radius:999px;box-shadow:0 8px 20px rgba(241,168,59,.45);display:none;z-index:6}
+  #mobileLaunch.show{display:block;animation:pulse 1.4s infinite ease-in-out}
+  @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+  /* Toast for power-up pickups */
+  #toast{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(16px,4.2vw,22px);color:#fff;text-shadow:0 0 18px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .35s}
+  #toast.show{opacity:1;transform:translate(-50%,-65%)}
 
-    .topbar h1 {
-      font-size: clamp(1.1rem, 2.2vw, 1.6rem);
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-shadow: 0 0 16px rgba(158, 255, 200, 0.22);
-    }
-
-    .topbar p {
-      margin-top: 4px;
-      font-size: 0.84rem;
-      opacity: 0.86;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .mobile-menu {
-      display: none;
-      width: 100%;
-    }
-
-    .mobile-menu details {
-      border: 1px solid rgba(158, 255, 200, 0.35);
-      border-radius: 10px;
-      background: rgba(8, 24, 19, 0.84);
-      padding: 6px 8px;
-    }
-
-    .mobile-menu summary {
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .mobile-menu-actions {
-      margin-top: 8px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .btn {
-      border: 1px solid rgba(158, 255, 200, 0.4);
-      background: rgba(10, 30, 24, 0.7);
-      color: var(--accent);
-      border-radius: 10px;
-      font-size: 12px;
-      padding: 8px 12px;
-      min-height: 40px;
-      cursor: pointer;
-      transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease;
-    }
-
-    .btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      background: rgba(16, 42, 33, 0.88);
-      border-color: rgba(185, 255, 220, 0.6);
-    }
-
-    .btn:active:not(:disabled) {
-      transform: translateY(0) scale(0.985);
-    }
-
-    .btn.subtle {
-      border-color: rgba(158, 255, 200, 0.26);
-      color: #dff7eb;
-      background: rgba(8, 22, 18, 0.55);
-    }
-
-    .hud {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(85px, 1fr));
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .card {
-      border: 1px solid rgba(158, 255, 200, 0.25);
-      border-radius: 10px;
-      background: rgba(8, 24, 19, 0.75);
-      text-align: center;
-      padding: 8px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .card .k {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      opacity: 0.8;
-      letter-spacing: 0.08em;
-    }
-
-    .card .v {
-      margin-top: 4px;
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    .card.hot .v { color: var(--hot); }
-    .card.combo-live {
-      box-shadow: 0 0 0 1px rgba(255, 212, 164, 0.55), 0 0 18px rgba(255, 152, 84, 0.2);
-    }
-    .card.combo-live .v {
-      color: #ffd39a;
-      animation: comboGlow 0.8s ease-in-out infinite alternate;
-    }
-
-    .main {
-      display: grid;
-      grid-template-columns: auto 260px;
-      gap: 12px;
-      align-items: start;
-    }
-
-    .canvas-wrap {
-      border: 2px solid rgba(158, 255, 200, 0.35);
-      border-radius: 16px;
-      overflow: hidden;
-      background: #0b1e19;
-      min-height: 620px;
-      position: relative;
-      isolation: isolate;
-    }
-
-    .canvas-wrap::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 24%),
-        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 16px, rgba(0, 0, 0, 0.02) 16px 32px);
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    .canvas-wrap::after {
-      content: attr(data-motto);
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 214, 156, 0.34);
-      background: rgba(43, 28, 13, 0.78);
-      color: #ffe1b0;
-      font-size: 0.67rem;
-      letter-spacing: 0.03em;
-      transform: rotate(3deg);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
-      pointer-events: none;
-    }
-
-    #game-holder canvas {
-      display: block;
-      width: min(860px, 82vw) !important;
-      height: auto !important;
-    }
-
-    .panel {
-      border: 1px solid rgba(158, 255, 200, 0.24);
-      border-radius: 14px;
-      background: rgba(8, 24, 19, 0.72);
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    }
-
-    .panel h3 {
-      color: var(--accent);
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .status {
-      border: 1px solid rgba(158, 255, 200, 0.2);
-      border-radius: 10px;
-      padding: 8px;
-      background: rgba(4, 16, 12, 0.72);
-      min-height: 64px;
-      font-size: 0.84rem;
-      line-height: 1.4;
-      transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
-    }
-
-    .status.hype {
-      border-color: rgba(255, 214, 156, 0.72);
-      box-shadow: 0 0 0 1px rgba(255, 214, 156, 0.35), 0 0 18px rgba(255, 154, 88, 0.24);
-      background: rgba(36, 21, 12, 0.76);
-      animation: statusGlow 1s ease-in-out infinite alternate;
-    }
-
-    @keyframes statusGlow {
-      from { transform: translateY(0); }
-      to { transform: translateY(-1px); }
-    }
-
-    @keyframes comboGlow {
-      from { text-shadow: 0 0 0 rgba(255, 206, 138, 0.2); }
-      to { text-shadow: 0 0 14px rgba(255, 186, 108, 0.7); }
-    }
-
-    .power-list {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      border: 1px solid rgba(158, 255, 200, 0.3);
-      border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 0.72rem;
-      background: rgba(4, 16, 12, 0.72);
-    }
-
-    .mobile-controls {
-      display: none;
-      gap: 8px;
-      margin-top: 10px;
-      touch-action: none;
-    }
-
-    .control-btn {
-      border: 1px solid rgba(158, 255, 200, 0.4);
-      background: rgba(6, 20, 15, 0.82);
-      color: var(--ink);
-      border-radius: 10px;
-      width: 100%;
-      min-width: 84px;
-      min-height: 44px;
-      padding: 9px 10px;
-      font-size: 0.9rem;
-    }
-
-    .welcome-guide {
-      position: fixed;
-      inset: 0;
-      background: rgba(6, 18, 14, 0.86);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 90;
-    }
-
-    .welcome-card {
-      width: min(560px, 100%);
-      border: 1px solid rgba(158, 255, 200, 0.4);
-      border-radius: 16px;
-      background: rgba(8, 24, 19, 0.96);
-      padding: 18px;
-    }
-
-    .welcome-card h2 {
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
-
-    .welcome-card p {
-      font-size: 0.9rem;
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-
-    .welcome-card ul {
-      margin: 6px 0 12px 18px;
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    .welcome-card li {
-      margin-bottom: 5px;
-    }
-
-    .welcome-actions {
-      margin-top: 10px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 980px) {
-      body {
-        padding: clamp(8px, 2.5vw, 12px);
-        padding-bottom: 90px;
-      }
-      .shell {
-        width: min(900px, 94vw);
-        padding: 10px;
-        border-radius: 18px;
-      }
-      .main { grid-template-columns: 1fr; }
-      .hud { grid-template-columns: repeat(4, minmax(80px, 1fr)); }
-      .canvas-wrap {
-        min-height: 0;
-      }
-      .canvas-wrap::after {
-        content: none;
-      }
-      #game-holder canvas {
-        width: min(780px, 92vw) !important;
-      }
-      .card .v {
-        font-size: 0.96rem;
-      }
-      .btn {
-        padding: 8px 11px;
-        font-size: 12px;
-        min-height: 42px;
-      }
-      .mobile-controls {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        position: sticky;
-        bottom: max(8px, env(safe-area-inset-bottom));
-        z-index: 35;
-        border: 1px solid rgba(158, 255, 200, 0.25);
-        border-radius: 12px;
-        background: rgba(8, 20, 16, 0.9);
-        padding: 7px;
-      }
-      .control-btn {
-        min-width: 82px;
-        min-height: 44px;
-        padding: 8px 10px;
-        font-size: 0.88rem;
-      }
-    }
-
-    @media (max-width: 680px) {
-      body {
-        padding: 0 0 calc(82px + env(safe-area-inset-bottom)) 0;
-        align-items: flex-start;
-      }
-      .shell {
-        width: 100vw;
-        max-width: none;
-        padding: 6px;
-        border-radius: 0;
-        border-left: 0;
-        border-right: 0;
-      }
-      .topbar,
-      .hud,
-      .panel {
-        margin-inline: 4px;
-      }
-      .topbar {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .topbar h1 {
-        font-size: 0.94rem;
-      }
-      .topbar p {
-        display: none;
-      }
-      .actions {
-        display: none;
-      }
-      .mobile-menu {
-        display: block;
-        width: auto;
-        margin-left: auto;
-      }
-      .hud {
-        grid-template-columns: none;
-        grid-auto-flow: column;
-        grid-auto-columns: minmax(72px, 1fr);
-        gap: 5px;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        scroll-snap-type: x proximity;
-        padding: 0 2px 4px;
-      }
-      .hud::-webkit-scrollbar {
-        height: 6px;
-      }
-      .hud::-webkit-scrollbar-thumb {
-        background: rgba(158, 255, 200, 0.28);
-        border-radius: 999px;
-      }
-      .card {
-        min-width: 72px;
-        padding: 6px 5px;
-        scroll-snap-align: start;
-      }
-      .card .k {
-        font-size: 0.56rem;
-      }
-      .card .v {
-        font-size: 0.88rem;
-      }
-      .main {
-        gap: 8px;
-      }
-      .canvas-wrap {
-        margin-inline: -6px;
-        border-left: 0;
-        border-right: 0;
-        border-radius: 0;
-      }
-      #game-holder canvas {
-        width: min(760px, 100vw) !important;
-      }
-      .panel {
-        padding: 8px;
-      }
-      .status {
-        font-size: 0.76rem;
-        min-height: 52px;
-      }
-      .mobile-menu-actions {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .welcome-actions .btn {
-        flex: 1 1 140px;
-      }
-      .control-btn {
-        min-width: 78px;
-        min-height: 44px;
-        padding: 7px 9px;
-        font-size: 0.84rem;
-      }
-    }
-
-    @media (hover: none) and (pointer: coarse) {
-      .btn,
-      .control-btn {
-        min-height: 44px;
-      }
-    }
-  </style>
+  @media (orientation:landscape) and (max-height:520px){
+    .hud{font-size:11px}
+  }
+</style>
 </head>
 <body>
-<div class="welcome-guide" id="welcomeGuide">
-  <div class="welcome-card">
-    <h2>TurdAnoid Turbo</h2>
-    <p>Break every destructible brick, keep your lives, and chain silly power-ups for chaos runs.</p>
-    <ul>
-      <li><strong>Move Paddle:</strong> mouse, touch, or <strong>A/D</strong> + arrow keys</li>
-      <li><strong>Launch Ball:</strong> <strong>Space</strong> or tap/click</li>
-      <li><strong>Pause:</strong> <strong>P</strong> or Space while live</li>
-      <li><strong>Restart:</strong> <strong>R</strong></li>
-      <li><strong>Goal:</strong> survive escalating chaos and clear level 69</li>
-    </ul>
-    <p>Tip: combo streaks and stink buildup make scoring and effects way more intense.</p>
-    <div class="welcome-actions">
-      <button class="btn" onclick="quickStartRun()">Quick Start</button>
-      <button class="btn subtle" onclick="hideWelcomeGuide()">Review Then Start</button>
-    </div>
-  </div>
-</div>
+<div id="app">
+  <div id="stage">
+    <canvas id="game"></canvas>
 
-<div class="shell">
-  <div class="topbar">
-      <div>
-        <h1>TurdAnoid Turbo</h1>
-        <p>Sillier poop-breaker with grosser style, louder impacts, and a gas trail that means business.</p>
-    </div>
-    <div class="actions">
-      <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
-      <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
-      <button class="btn" onclick="togglePauseExternal()">⏯ Pause / Resume</button>
-      <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
-      <button class="btn" onclick="restartExternal()">↻ Restart</button>
-    </div>
-    <div class="mobile-menu">
-      <details>
-        <summary>Run Menu</summary>
-        <div class="mobile-menu-actions">
-          <button class="btn subtle" onclick="location.href='hub.html'">🏠 Hub</button>
-          <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
-          <button class="btn" onclick="togglePauseExternal()">⏯ Pause</button>
-          <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
-          <button class="btn" onclick="restartExternal()">↻ Restart</button>
-        </div>
-      </details>
-    </div>
-  </div>
-
-  <div class="hud">
-    <div class="card"><div class="k">Score</div><div class="v" id="scoreText">0</div></div>
-    <div class="card"><div class="k">High</div><div class="v" id="highScoreText">0</div></div>
-    <div class="card hot"><div class="k">Lives</div><div class="v" id="livesText">3</div></div>
-    <div class="card"><div class="k">Level</div><div class="v" id="levelText">1</div></div>
-    <div class="card" id="comboCard"><div class="k">Combo</div><div class="v" id="comboText">0</div></div>
-    <div class="card"><div class="k">Bricks</div><div class="v" id="bricksText">0</div></div>
-    <div class="card"><div class="k">Stink</div><div class="v" id="shieldText">0</div></div>
-  </div>
-
-  <div class="main">
-    <div class="canvas-wrap" data-motto="Sewer League note: dramatic rebounds encouraged">
-      <div id="game-holder"></div>
+    <div class="hud" aria-hidden="true">
+      <div class="col"><span class="lbl">Score</span><span class="val" id="hudScore">0</span></div>
+      <div class="col center"><span class="lbl">Level</span><span class="val" id="hudLevel">1</span></div>
+      <div class="col right"><span class="lbl">Lives</span><span class="val lives" id="hudLives">💩💩💩</span></div>
     </div>
 
-    <aside class="panel">
-      <div>
-        <h3>Status</h3>
-        <div class="status" id="statusText">Aim your rebounds to keep combos alive.</div>
+    <div class="topbtns">
+      <button class="iconbtn" id="btnSound" title="Sound">🔊</button>
+      <button class="iconbtn" id="btnPause" title="Pause">⏸</button>
+    </div>
+
+    <div id="combo"></div>
+    <div id="hype"></div>
+    <div id="powers"></div>
+    <div id="toast"></div>
+    <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
+
+    <!-- Title screen -->
+    <div class="overlay show" id="titleScreen">
+      <h1>TurdAnoid<span class="sub">— Turbo Edition —</span></h1>
+      <p>Smash bricks. Catch unhinged power-ups. Survive the stink. The sewer's most ridiculous brick-breaker, remastered for your phone.</p>
+      <div class="helprow">
+        <span>📱 Drag to move paddle</span>
+        <span>👆 Tap to launch</span>
+        <span>⌨️ ←/→ + Space</span>
       </div>
-
-      <div>
-        <h3>Active Powers</h3>
-        <div class="power-list" id="powerList"><span class="chip">None</span></div>
+      <button id="btnStart">START FLUSHING</button>
+      <div class="menu-secondary">
+        <button id="btnHowTo">How To Play</button>
+        <button id="btnHub" onclick="location.href='hub.html'">🏠 Game Hub</button>
       </div>
+      <p class="quip" id="titleQuip"></p>
+    </div>
 
-      <div>
-        <h3>Controls</h3>
-        <div class="status">
-          Mouse/Touch: Paddle move<br>
-          Space: Launch / Pause<br>
-          P: Pause<br>
-          R: Restart
-        </div>
+    <!-- Pause -->
+    <div class="overlay" id="pauseScreen">
+      <h1>Paused<span class="sub">take a breather</span></h1>
+      <p>The stink waits for no one. Or does it? It does, but only because you paused.</p>
+      <button id="btnResume">RESUME</button>
+      <div class="menu-secondary">
+        <button id="btnQuit">QUIT TO MENU</button>
       </div>
-    </aside>
-  </div>
+    </div>
 
-  <div class="mobile-controls" id="mobileControls">
-    <button class="control-btn" data-action="left">Left</button>
-    <button class="control-btn" data-action="launch">Launch</button>
-    <button class="control-btn" data-action="right">Right</button>
+    <!-- How to play -->
+    <div class="overlay" id="howScreen">
+      <h1>How To Play<span class="sub">it's brick breaker, but worse</span></h1>
+      <p style="text-align:left;max-width:520px">
+        🎯 Bounce the turd off the toilet seat to break every brick.<br><br>
+        🧻 Falling power-ups: 19 of them. Standard arkanoid stuff at first — 📏 enlarge, 🐌 slow, 🧲 catch, 🌀 multiball, 🔫 laser, ❤️ extra life. Then it gets weird: 🌭 hot dog rockets, 🪠 plunger magnet, 🚽 mega-flush, 👻 ghost ball, 🦨 skunk cloud, 💰 gold rush, and more.<br><br>
+        🔥 Stack them. Multiball + 🔥 fire = three flaming turds. 📏 enlarge keeps stacking until your paddle is comically large. 🪠 plunger pulls every falling pickup toward you so you stop missing them.<br><br>
+        💥 Tap to fire any active offensive power. Chain brick hits to build a combo — bigger combo, bigger score multiplier.<br><br>
+        💀 Drop the ball and you lose a life. Run out and you're flushed. Forever. Or until you press restart.
+      </p>
+      <button id="btnHowBack">BACK</button>
+    </div>
+
+    <!-- Game Over / Win -->
+    <div class="overlay" id="endScreen">
+      <h1 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h1>
+      <p class="quip" id="endQuip"></p>
+      <div class="stats">
+        <div class="stat"><span class="l">Score</span><span class="v" id="endScore">0</span></div>
+        <div class="stat"><span class="l">Level</span><span class="v" id="endLevel">1</span></div>
+        <div class="stat"><span class="l">Best</span><span class="v" id="endBest">0</span></div>
+      </div>
+      <button id="btnRestart">PLAY AGAIN</button>
+      <div class="menu-secondary">
+        <button id="btnEndQuit">MAIN MENU</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-let paddle;
-let balls = [];
-let bricks = [];
-let powerUps = [];
-let toiletPaperShots = [];
-let laserShots = [];
-let particles = [];
-let floatTexts = [];
+'use strict';
 
-let paddleWidth = 120;
-let originalPaddleWidth = 120;
-let paddleHeight = 16;
-const TURDANOID_BALANCE = {
-  launch: {
-    baseSpeed: 5.95,
-    perLevel: 0.41,
-    earlyFloorLevel: 5,
-    earlyFloorSpeed: 7.25,
-    maxSpeed: 12.45,
-    minHorizontal: 1.32
-  },
-  drops: {
-    baseChance: 0.088,
-    perLevel: 0.0036,
-    perDroughtBrick: 0.015,
-    droughtCap: 0.24,
-    maxChance: 0.36,
-    forceDropBricks: 16,
-    forceDropLevelScale: 9
-  },
-  power: {
-    maxDropSlotsLow: 1,
-    maxDropSlotsHigh: 2,
-    highDropLevel: 18,
-    bigPaddleMaxStacks: 5,
-    bigPaddleDurationGain: 560,
-    bigPaddleDurationCap: 3000,
-    extraLifeMaxLives: 5,
-    extraLifeEarlyLifeCap: 3,
-    extraLifeCooldownFrames: 3200
-  }
-};
+/* ============================================================
+   TurdAnoid Turbo — single-file Canvas brick-breaker
+   ============================================================ */
 
-let baseBallSpeed = TURDANOID_BALANCE.launch.baseSpeed;
-
-let score = 0;
-let highScore = parseInt(localStorage.getItem('turdanoidHighScore') || '0', 10);
-let lives = 3;
-let level = 1;
-let combo = 0;
-let comboTimer = 0;
-let gameOver = false;
-let gameWon = false;
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d', { alpha:false });
+let DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2.5));
+let W = 0, H = 0;
+let lastTime = 0;
+let running = false;
 let paused = false;
-let onboardingOpen = false;
-let guidePausedGame = false;
-let awaitingLaunch = true;
-let statusText = 'Arkanoid-style chaos, but sillier.';
-let levelPatternName = 'Classic Wall';
-let bigPaddleStacks = 0;
-let stuckBall = null;
-let lastStinkMilestone = 0;
-let extraLifeCooldown = 0;
-let shieldCharges = 0;
-let bricksSinceDrop = 0;
-let levelMutatorText = '';
+let state = 'title'; // title | playing | paused | gameover | win
 
-let controlLeft = false;
-let controlRight = false;
-let mouseInputActive = true;
-let clearMobileHoldTimerRef = () => {};
+/* ---- Persistence ---- */
+const STORAGE_KEY = 'turdanoid_v2_best';
+const SOUND_KEY = 'turdanoid_v2_sound';
+let best = parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);
+let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
 
-let activePowerUps = {
-  bigPaddle: 0,
-  slowBall: 0,
-  toiletPaper: 0,
-  stickyPaddle: 0,
-  laserEyes: 0,
-  stinkBurst: 0,
-  toiletShield: 0,
-  fireTurd: 0,
-  magnetSniff: 0,
-  comboBoost: 0
+/* ---- Game state ---- */
+let score=0, level=1, lives=3, comboHits=0, comboTimer=0;
+let stink = 0;
+let shake = 0;
+let flash = 0;
+let waitingLaunch = true;
+let bricks = [];
+let balls = [];
+let powerups = [];
+let lasers = [];
+let paddleShots = [];
+let particles = [];
+let floats = [];
+let activePowers = {};
+let paddle = null;
+let bgStars = [];
+
+/* ---- Funny copy ---- */
+const HYPE_LINES = [
+  ["RIPPED!", 4],
+  ["FLUSHED!", 8],
+  ["EXPLOSIVE!", 12],
+  ["MEGA-STINK!", 18],
+  ["CHAIN OF DOOKIE!", 26],
+  ["SEWER LEGEND!", 36],
+  ["UNFLUSHABLE!", 50],
+];
+const PICKUP_QUIPS = {
+  enlarge: ["BIG SEAT ENERGY","WIDER, FRIEND","LARGEST POSSIBLE LOAD"],
+  slow:    ["SLO-MO POO","TIME-OUT TURD","DECELERATE THE FECES"],
+  laser:   ["LASER COLON","PEW PEW POO","BEAM ME UP, SCATTY"],
+  paper:   ["TP DEPLOY","2-PLY ARSENAL","CHARMIN UNLEASHED"],
+  catch:   ["STICKY SITUATION","GLUED TO THE THRONE","HOLD IT"],
+  multi:   ["MULTIBALL!","TURD STORM","LITTERED LANDING"],
+  shield:  ["SEAT SHIELD","BUM-PROOF GLASS","ANTI-DROP DEPLOYED"],
+  life:    ["EXTRA TURD!","ONE MORE FLUSH","BONUS DOOKIE"],
+  fire:    ["FIRE BUTT","SPICY DEPLOY","CHILI AFTERMATH"],
+  bomb:    ["BOOM-BOOM","THUNDERPOOP","WALL DEMOLITION"],
+  shrink:  ["TINY SEAT 😬","SQUISHED!","SMOL CHEEKS"],
+  speed:   ["TURBO TURD","FULL CHARGE","ROCKET FUELED CURRY"],
+  plunger: ["PLUNGER PARTY","MAGNET MODE","COME TO PAPA"],
+  flush:   ["MEGA FLUSH!","ROW REMOVED","BOTTOM-OUT"],
+  hotdog:  ["HOT DOG ROCKETS","WIENER WARFARE","KETCHUP DEPLOY"],
+  ghost:   ["GHOST POO","NO-CLIP MODE","BOO-DOOKIE"],
+  skunk:   ["STINK CLOUD","ODOR BOMB","FRAGRANCE OF DOOM"],
+  gold:    ["GOLD RUSH!","DOUBLE DOOKIE","2× POINTS"],
+  reverse: ["BACKWARDS!","UH-OH","CONTROLS SCRAMBLED"],
+};
+const GAME_OVER_QUIPS = [
+  "Looks like you got plunged.",
+  "Even the toilet is laughing.",
+  "Number two? More like number doom.",
+  "Tip: bricks ≠ friends.",
+  "The sewer council is disappointed.",
+  "You: 0. Gravity: 1.",
+  "The bricks won. The bricks always win.",
+  "Hire a plumber. You need it.",
+];
+const WIN_QUIPS = [
+  "Certified flusher. Hall of fame stuff.",
+  "The bowl bows to you.",
+  "Sewer dynasty unlocked.",
+  "Plumbers everywhere weep with joy.",
+];
+const TITLE_QUIPS = [
+  "Now with 100% more juice.",
+  "Inspired by Arkanoid. Ruined by curry.",
+  "The bricks never saw it coming.",
+  "Every great hero starts with a paddle and a poo.",
+  "iPhone-friendly. Stomach-not-friendly.",
+];
+
+/* ---- Audio (Web Audio API, no files) ---- */
+let actx = null;
+function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function beep(freq=440, dur=0.08, type='square', vol=0.06, slide=0){
+  if(!soundOn) return;
+  const a = audio(); if(!a) return;
+  try{
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = freq;
+    if(slide) o.frequency.linearRampToValueAtTime(Math.max(20,freq+slide), a.currentTime+dur);
+    g.gain.value = vol;
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+dur);
+    o.connect(g).connect(a.destination);
+    o.start(); o.stop(a.currentTime+dur);
+  }catch(e){}
+}
+function fart(){
+  if(!soundOn) return;
+  const a = audio(); if(!a) return;
+  try{
+    const o=a.createOscillator(), g=a.createGain(), lfo=a.createOscillator(), lg=a.createGain();
+    o.type='sawtooth'; o.frequency.value=120;
+    lfo.type='sine'; lfo.frequency.value=22; lg.gain.value=40;
+    lfo.connect(lg).connect(o.frequency);
+    g.gain.value=0.05;
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime+0.35);
+    o.connect(g).connect(a.destination);
+    o.start(); lfo.start();
+    o.stop(a.currentTime+0.35); lfo.stop(a.currentTime+0.35);
+  }catch(e){}
+}
+const sfx = {
+  hit:   ()=>beep(700, 0.05, 'square', 0.05, -200),
+  brick: ()=>beep(520+Math.random()*200, 0.06, 'square', 0.06, 80),
+  break: ()=>{ beep(300,0.08,'sawtooth',0.07,-150); beep(180,0.12,'sawtooth',0.05,-90); },
+  power: ()=>{ beep(660,0.08,'triangle',0.07); setTimeout(()=>beep(990,0.1,'triangle',0.07),60); },
+  bad:   ()=>{ beep(180,0.18,'sawtooth',0.07,-100); },
+  life:  ()=>{ beep(523,0.1,'triangle',0.08); setTimeout(()=>beep(659,0.1,'triangle',0.08),100); setTimeout(()=>beep(784,0.16,'triangle',0.09),200); },
+  death: ()=>{ fart(); setTimeout(()=>beep(120,0.4,'sawtooth',0.08,-80),120); },
+  win:   ()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.18,'triangle',0.08),i*120)); },
+  laser: ()=>beep(1200,0.04,'square',0.04,-600),
+  combo: (n)=>beep(440 + n*30, 0.06, 'square', 0.05, 80),
+  launch:()=>beep(440,0.1,'triangle',0.08,200),
+  bounce:()=>beep(380,0.04,'square',0.04,80),
 };
 
-const POWERUP_TYPES = [
-  { type: 'bigPaddle', emoji: '📏', name: 'Enlarge (E)', weight: 3.3 },
-  { type: 'extraLife', emoji: '❤️', name: 'Player (P)', weight: 0.13 },
-  { type: 'slowBall', emoji: '🐌', name: 'Slow (S)', weight: 2.5 },
-  { type: 'toiletPaper', emoji: '🧻', name: 'Toilet Paper Blaster', weight: 2.3 },
-  { type: 'stickyPaddle', emoji: '🧲', name: 'Catch (C)', weight: 2.0 },
-  { type: 'disruption', emoji: '⚽', name: 'Disruption (D)', weight: 1.8 },
-  { type: 'laserEyes', emoji: '🔫', name: 'Laser (L)', weight: 1.8 },
-  { type: 'warpFlush', emoji: '🚽', name: 'Break Flush (B)', weight: 1.1 },
-  { type: 'stinkBurst', emoji: '💨', name: 'Stink Burst', weight: 1.6 },
-  { type: 'toiletShield', emoji: '🛡️', name: 'Toilet Seat Shield', weight: 1.5 },
-  { type: 'fireTurd', emoji: '🔥', name: 'Fire Turd', weight: 1.4 },
-  { type: 'magnetSniff', emoji: '🌀', name: 'Magnet Sniff', weight: 1.35 },
-  { type: 'comboBoost', emoji: '⚡', name: 'Combo Juice', weight: 1.25 },
-  { type: 'rowFlush', emoji: '🌊', name: 'Row Flush', weight: 1.05 }
-];
+/* ---- DOM helpers ---- */
+const $ = id => document.getElementById(id);
+const hudScore=$('hudScore'), hudLevel=$('hudLevel'), hudLives=$('hudLives');
+const elCombo=$('combo'), elHype=$('hype'), elPowers=$('powers'), elToast=$('toast'), btnLaunch=$('mobileLaunch');
+const tTitle=$('titleScreen'), tPause=$('pauseScreen'), tHow=$('howScreen'), tEnd=$('endScreen');
+const btnSound=$('btnSound'), btnPause=$('btnPause');
+btnSound.textContent = soundOn ? '🔊' : '🔇';
 
-const MAX_LEVEL = 69;
-const LEVEL_PATTERNS = [
-  'Classic Wall',
-  'Checker Gaps',
-  'Tunnel',
-  'Wave',
-  'Fortress',
-  'Spikes',
-  'Doom Ring',
-  'Hourglass',
-  'Crossfire',
-  'Zigzag Storm',
-  'Spiral Maze',
-  'Chaos Bloom',
-  'Saw Teeth',
-  'Rift Lanes',
-  'Vortex Cage',
-  'Pinball Lattice',
-  'Waldo Mirage'
-];
-const LEVEL_MODS = ['Prime', 'Warp', 'Overdrive', 'Mutant', 'Apocalypse'];
-const LEVEL_STAGE_NAMES = ['Warmup', 'Arcade', 'Remix', 'Mayhem', 'Chaos', 'Madness'];
-const PATTERN_STAGE_POOLS = [
-  [0, 1],
-  [0, 1, 2, 3, 4],
-  [2, 3, 4, 5, 7, 8],
-  [4, 5, 6, 7, 8, 9, 10],
-  [6, 8, 9, 10, 11, 12, 13, 14, 15],
-  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-];
-const POWERUP_UNLOCK_LEVEL = {
-  bigPaddle: 1,
-  extraLife: 1,
-  slowBall: 1,
-  stickyPaddle: 1,
-  toiletPaper: 2,
-  disruption: 4,
-  laserEyes: 5,
-  warpFlush: 10,
-  stinkBurst: 8,
-  toiletShield: 12,
-  magnetSniff: 14,
-  fireTurd: 16,
-  comboBoost: 18,
-  rowFlush: 22
-};
-let runSeed = Math.floor(Math.random() * 1000000000);
-let levelChaosProfile = null;
-let levelLayoutSignatures = new Set();
-let levelLayoutSignature = '';
-let waldoCameo = null;
-let screenShake = 0;
-let hypeText = '';
-let hypeTimer = 0;
-let lastComboHypeTier = 0;
-const SOUND_STORAGE_KEY = 'turdanoidSoundOn_v1';
-let soundEnabled = true;
-let audioCtx = null;
+/* ---- Resize ---- */
+function resize(){
+  const stage = document.getElementById('stage');
+  const r = stage.getBoundingClientRect();
+  W = Math.max(280, Math.floor(r.width));
+  H = Math.max(380, Math.floor(r.height));
+  DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2.5));
+  cv.width = Math.floor(W*DPR);
+  cv.height = Math.floor(H*DPR);
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(paddle){
+    paddle.y = H - paddle.h - 36;
+    paddle.x = Math.min(Math.max(paddle.x, paddle.w/2), W - paddle.w/2);
+  }
+  buildStars();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', ()=>setTimeout(resize, 80));
 
-function stageForLevel(levelNumber) {
-  if (levelNumber <= 4) return 0;
-  if (levelNumber <= 12) return 1;
-  if (levelNumber <= 24) return 2;
-  if (levelNumber <= 40) return 3;
-  if (levelNumber <= 55) return 4;
-  return 5;
+function buildStars(){
+  bgStars = [];
+  const n = Math.floor((W*H)/14000);
+  for(let i=0;i<n;i++) bgStars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,a:Math.random()*0.4+0.2,t:Math.random()*Math.PI*2});
 }
 
-function stageBounds(stage) {
-  const ranges = [
-    [1, 4],
-    [5, 12],
-    [13, 24],
-    [25, 40],
-    [41, 55],
-    [56, MAX_LEVEL]
+/* ---- Game objects ---- */
+function newPaddle(){
+  const w = Math.max(82, Math.min(160, W*0.22));
+  return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0 };
+}
+function newBall(stuck=true){
+  const r = Math.max(8, Math.min(11, W*0.018));
+  const speed = 5.4 + Math.min(level*0.16, 3.0);
+  const ang = -Math.PI/2 + (Math.random()-0.5)*0.4;
+  return {
+    x: paddle.x, y: paddle.y - r - 1, r,
+    vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed,
+    speed, stuck, fire:0, trail:[]
+  };
+}
+
+/* ---- Level generation ---- */
+const PATTERN_NAMES = ['Classic Wall','Checker','Tunnel','Wave','Pyramid','Diamond','Cross','Spiral','Hourglass','Brick House','Skull','Funhouse','Sewer Maze'];
+function newLevel(){
+  bricks = []; powerups = []; lasers = []; paddleShots = []; particles = [];
+  const cols = Math.max(8, Math.min(13, Math.floor(W/52)));
+  const rows = Math.min(10, 4 + Math.floor(level/2));
+  const top = 70;
+  const padX = Math.max(10, W*0.04);
+  const bw = (W - padX*2)/cols - 6;
+  const bh = Math.max(16, Math.min(26, H*0.028));
+  const pat = PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
+
+  function add(c,r,hp){
+    const x = padX + c*(bw+6) + 3;
+    const y = top + r*(bh+5);
+    const colors = brickColors(r, rows);
+    bricks.push({x,y,w:bw,h:bh,hp,maxHp:hp,c1:colors.c1,c2:colors.c2,glow:colors.glow,wob:Math.random()*Math.PI*2});
+  }
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      let place = true;
+      // HP ramp: levels 1-2 are pure 1-HP (snap-easy starter loop).
+      // Levels 3-5 sprinkle a few 2-HP. Levels 6+ start adding tougher rows.
+      let hp;
+      if(level <= 2)      hp = 1;
+      else if(level <= 5) hp = 1 + (Math.random() < 0.18 ? 1 : 0);
+      else                hp = 1 + Math.floor(r/3) + (level>8 ? Math.floor(Math.random()*1.4) : 0);
+      switch(pat){
+        case 'Checker': place = (c+r)%2===0; break;
+        case 'Tunnel': place = !(c>1 && c<cols-2 && r>0 && r<rows-1); break;
+        case 'Wave': place = (r + Math.round(Math.sin(c*0.7)*1.5)) % 2 === 0; break;
+        case 'Pyramid': place = (c >= r && c < cols - r); break;
+        case 'Diamond': { const cc = cols/2 - 0.5, rc = rows/2 - 0.5; place = Math.abs(c-cc)+Math.abs(r-rc) < rows*0.6; break; }
+        case 'Cross': place = (Math.abs(c-(cols-1)/2) < 2) || (Math.abs(r-(rows-1)/2) < 2); break;
+        case 'Spiral': place = ((c+r) % 3) !== 0; break;
+        case 'Hourglass': place = !((r > rows*0.3 && r < rows*0.7) && (c < cols*0.3 || c > cols*0.7)); break;
+        case 'Brick House': place = (r%2===0) ? (c%2===0) : (c%2===1); break;
+        case 'Skull': place = !((r===0 && (c<2||c>cols-3)) || (r===rows-1 && (c%2===0))); break;
+        case 'Funhouse': place = Math.random() > 0.18; break;
+        case 'Sewer Maze': place = !((r%2===1) && (c%3===0)); break;
+        default: place = true;
+      }
+      // Random toughness bumps — very rare on early levels
+      if(place && level >= 3 && Math.random() < 0.02 + (level-2)*0.005) hp += 1;
+      if(place) add(c,r,hp);
+    }
+  }
+  // Metal bricks only at level 6+ (originally 4) — they were spoiling the early flow
+  if(level >= 6){
+    const metal = Math.min(8, Math.floor((level-5)*0.7));
+    for(let i=0;i<metal;i++){
+      const b = bricks[Math.floor(Math.random()*bricks.length)];
+      if(b){ b.hp = Math.min(5, b.hp + 2); b.metal = true; }
+    }
+  }
+  paddle.w = paddle.baseW;
+  balls = [ newBall(true) ];
+  waitingLaunch = true;
+  btnLaunch.classList.add('show');
+  setHype(`Level ${level} — ${pat}`, 90);
+}
+
+function brickColors(r, rows){
+  const t = r/Math.max(1,rows-1);
+  const palettes = [
+    ['#7af1c4','#3aa97c','rgba(122,241,196,.45)'],
+    ['#7ae6ff','#2c8aaa','rgba(122,230,255,.45)'],
+    ['#ffd76a','#bf8a13','rgba(255,215,106,.45)'],
+    ['#ff9d74','#a64b21','rgba(255,157,116,.45)'],
+    ['#ff7ab6','#a3306e','rgba(255,122,182,.45)'],
+    ['#b290ff','#5b3eb8','rgba(178,144,255,.45)'],
   ];
-  return ranges[constrain(stage, 0, ranges.length - 1)];
+  const i = Math.min(palettes.length-1, Math.floor(t*palettes.length));
+  return { c1:palettes[i][0], c2:palettes[i][1], glow:palettes[i][2] };
 }
 
-function chaosForLevel(levelNumber) {
-  if (levelNumber <= 4) return map(levelNumber, 1, 4, 0.06, 0.12);
-  if (levelNumber <= 12) return map(levelNumber, 5, 12, 0.13, 0.24);
-  if (levelNumber <= 24) return map(levelNumber, 13, 24, 0.25, 0.45);
-  if (levelNumber <= 40) return map(levelNumber, 25, 40, 0.46, 0.66);
-  if (levelNumber <= 55) return map(levelNumber, 41, 55, 0.67, 0.82);
-  return map(levelNumber, 56, MAX_LEVEL, 0.83, 0.96);
-}
+/* ---- Input ---- */
+const keys = { left:false, right:false };
+let pointerActive=false, pointerX=0;
 
-function setHype(message, durationFrames) {
-  if (!message) return;
-  hypeText = message;
-  hypeTimer = max(hypeTimer, durationFrames || 90);
-}
-
-function triggerShake(amount) {
-  screenShake = min(14, max(screenShake, amount || 0));
-}
-
-function updateSceneFx() {
-  if (hypeTimer > 0) hypeTimer--;
-  else hypeText = '';
-
-  if (screenShake > 0) {
-    screenShake *= 0.86;
-    if (screenShake < 0.25) screenShake = 0;
+function pointerDown(x,y){
+  pointerActive = true; pointerX = x;
+  if(state==='playing'){
+    if(waitingLaunch){ launch(); }
+    fireAll();
   }
 }
-
-function getLevelDramaLine(levelNumber, profile) {
-  if (levelNumber >= 66) return 'Final toilet corridor unlocked.';
-  if (profile && profile.bossLevel) return 'Boss wave: porcelain panic.';
-
-  const lines = [
-    'Warmup lane: polite plumbing.',
-    'The sewer starts muttering.',
-    'Marble chaos enters the bowl.',
-    'Everything wiggles now.',
-    'This pipe has trust issues.',
-    'Endgame stink protocol armed.'
-  ];
-  const stage = profile ? profile.stage : 0;
-  return lines[constrain(stage, 0, lines.length - 1)];
-}
-
-function loadSoundPref() {
-  try {
-    const raw = localStorage.getItem(SOUND_STORAGE_KEY);
-    if (raw === null) return true;
-    return raw !== '0';
-  } catch (err) {
-    return true;
+function pointerMove(x,y){
+  pointerX = x;
+  if(state==='playing' && paddle){
+    // Reverse controls power-up: mirror across center.
+    const target = activePowers.reverse ? (W - x) : x;
+    paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, target));
   }
 }
+function pointerUp(){ pointerActive=false; }
 
-function saveSoundPref() {
-  try {
-    localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? '1' : '0');
-  } catch (err) {}
+cv.addEventListener('mousedown', e=>{ const r = cv.getBoundingClientRect(); pointerDown(e.clientX-r.left, e.clientY-r.top); });
+cv.addEventListener('mousemove', e=>{ const r = cv.getBoundingClientRect(); pointerMove(e.clientX-r.left, e.clientY-r.top); });
+window.addEventListener('mouseup', pointerUp);
+
+cv.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerDown(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerMove(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); }, {passive:false});
+cv.addEventListener('touchcancel', pointerUp);
+
+window.addEventListener('keydown', e=>{
+  if(e.key==='ArrowLeft' || e.key==='a' || e.key==='A') keys.left=true;
+  else if(e.key==='ArrowRight' || e.key==='d' || e.key==='D') keys.right=true;
+  else if(e.key===' '){
+    e.preventDefault();
+    if(state==='title') startGame();
+    else if(state==='playing'){ if(waitingLaunch) launch(); else fireAll(); }
+    else if(state==='gameover'||state==='win') restartGame();
+  }
+  else if(e.key==='p' || e.key==='P' || e.key==='Escape'){ if(state==='playing') doPause(); else if(state==='paused') doResume(); }
+  else if(e.key==='r' || e.key==='R') restartGame();
+});
+window.addEventListener('keyup', e=>{
+  if(e.key==='ArrowLeft' || e.key==='a' || e.key==='A') keys.left=false;
+  else if(e.key==='ArrowRight' || e.key==='d' || e.key==='D') keys.right=false;
+});
+
+btnLaunch.addEventListener('click', e=>{ e.stopPropagation(); if(waitingLaunch) launch(); });
+btnSound.addEventListener('click', ()=>{ soundOn=!soundOn; localStorage.setItem(SOUND_KEY, soundOn?'1':'0'); btnSound.textContent = soundOn?'🔊':'🔇'; if(soundOn) sfx.power(); });
+btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
+
+/* ---- UI helpers ---- */
+function setHype(msg, frames=80){
+  elHype.textContent = msg;
+  elHype.classList.add('show');
+  clearTimeout(setHype._t);
+  setHype._t = setTimeout(()=>elHype.classList.remove('show'), frames*16);
+}
+function showCombo(n){
+  let line = null;
+  for(const [t,thr] of HYPE_LINES) if(n>=thr) line = t;
+  elCombo.textContent = `${n}× ${line||''}`.trim();
+  elCombo.classList.remove('show'); void elCombo.offsetWidth; elCombo.classList.add('show');
+  clearTimeout(showCombo._t);
+  showCombo._t = setTimeout(()=>elCombo.classList.remove('show'), 700);
+}
+function showToast(msg){
+  elToast.textContent = msg;
+  elToast.classList.remove('show'); void elToast.offsetWidth; elToast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>elToast.classList.remove('show'), 900);
+}
+function updateHud(){
+  hudScore.textContent = score.toLocaleString();
+  hudLevel.textContent = level;
+  hudLives.textContent = lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—';
+}
+function updatePowers(){
+  const items = [];
+  if(activePowers.big)     items.push(`📏 Big`);
+  if(activePowers.slow)    items.push(`🐌 Slow`);
+  if(activePowers.laser)   items.push(`🔫 Laser`);
+  if(activePowers.paper)   items.push(`🧻 TP`);
+  if(activePowers.sticky)  items.push(`🧲 Catch`);
+  if(activePowers.fire)    items.push(`🔥 Fire`);
+  if(activePowers.shield)  items.push(`🛡️ Shield`);
+  if(activePowers.hotdog)  items.push(`🌭 Dogs`);
+  if(activePowers.plunger) items.push(`🪠 Magnet`);
+  if(activePowers.ghost)   items.push(`👻 Ghost`);
+  if(activePowers.gold)    items.push(`💰 2×`);
+  if(activePowers.shrink)  items.push(`😬 Shrunk`);
+  if(activePowers.fast)    items.push(`💨 Speed`);
+  if(activePowers.reverse) items.push(`🔄 Reversed`);
+  elPowers.innerHTML = items.length ? items.map(t=>`<span class="chip">${t}</span>`).join('') : '';
 }
 
-function updateSoundButtons() {
-  document.querySelectorAll('[data-sound-toggle]').forEach((btn) => {
-    btn.textContent = soundEnabled ? '🔊 Sound On' : '🔈 Sound Off';
+/* ---- Flow ---- */
+function startGame(){
+  resize();
+  paddle = newPaddle();
+  score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0;
+  activePowers = {};
+  newLevel();
+  state='playing'; running=true; paused=false;
+  hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow);
+  updateHud(); updatePowers();
+  audio();
+  sfx.launch();
+}
+function showOverlay(el){ el.classList.add('show'); }
+function hideOverlay(el){ el.classList.remove('show'); }
+function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); }
+function doResume(){ if(state!=='paused') return; state='playing'; paused=false; hideOverlay(tPause); }
+function quitToMenu(){
+  state='title'; paused=false; running=false;
+  hideOverlay(tPause); hideOverlay(tEnd);
+  showOverlay(tTitle); pickTitleQuip();
+}
+function restartGame(){ hideOverlay(tEnd); startGame(); }
+function gameOver(won){
+  state = won?'win':'gameover';
+  running=false;
+  best = Math.max(best, score);
+  localStorage.setItem(STORAGE_KEY, best);
+  $('endTitle').firstChild.textContent = won?'You Win!':'Flushed.';
+  $('endSub').textContent = won?'sewer royalty':'better luck next plunge';
+  $('endQuip').textContent = (won?WIN_QUIPS:GAME_OVER_QUIPS)[Math.floor(Math.random()*(won?WIN_QUIPS:GAME_OVER_QUIPS).length)];
+  $('endScore').textContent = score.toLocaleString();
+  $('endLevel').textContent = level;
+  $('endBest').textContent = best.toLocaleString();
+  showOverlay(tEnd);
+  won ? sfx.win() : sfx.death();
+}
+function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
+
+$('btnStart').addEventListener('click', startGame);
+$('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow); });
+$('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle); });
+$('btnResume').addEventListener('click', doResume);
+$('btnQuit').addEventListener('click', quitToMenu);
+$('btnRestart').addEventListener('click', restartGame);
+$('btnEndQuit').addEventListener('click', quitToMenu);
+
+/* ---- Launch ---- */
+function launch(){
+  for(const b of balls){ if(b.stuck){ b.stuck=false; const a = -Math.PI/2 + (Math.random()-0.5)*0.3; b.vx = Math.cos(a)*b.speed; b.vy = Math.sin(a)*b.speed; } }
+  waitingLaunch=false;
+  btnLaunch.classList.remove('show');
+  sfx.launch();
+}
+
+/* ---- Power-ups ---- */
+// Each power-up has an `unlock` level. Standard Arkanoid kit appears from L1.
+// Goofier and more powerful options unlock later so players keep discovering things.
+const POWERS = [
+  // ---- Standard Arkanoid kit (level 1+) ----
+  {t:'enlarge', e:'📏',  col:'#9effc8', unlock:1, weight:3},
+  {t:'slow',    e:'🐌',  col:'#7ae6ff', unlock:1, weight:2},
+  {t:'catch',   e:'🧲',  col:'#ffd76a', unlock:1, weight:2},
+  {t:'multi',   e:'🌀',  col:'#b290ff', unlock:1, weight:2},
+  {t:'life',    e:'❤️', col:'#ff7ab6', unlock:1, weight:0.6},
+  {t:'laser',   e:'🔫',  col:'#ff7ab6', unlock:1, weight:2.5},
+  // ---- Themed combat (level 2+) ----
+  {t:'paper',   e:'🧻',  col:'#ffffff', unlock:2, weight:2},
+  {t:'shield',  e:'🛡️', col:'#7ae6ff', unlock:2, weight:1.4},
+  {t:'fire',    e:'🔥',  col:'#ff9d74', unlock:2, weight:1.6},
+  // ---- Creative funny set (level 3-5) ----
+  {t:'bomb',    e:'💣',  col:'#ffd76a', unlock:3, weight:1.4},
+  {t:'plunger', e:'🪠',  col:'#b290ff', unlock:3, weight:1.6},
+  {t:'flush',   e:'🚽',  col:'#7ae6ff', unlock:4, weight:1.2},
+  {t:'hotdog',  e:'🌭',  col:'#ff9d74', unlock:4, weight:1.5},
+  {t:'ghost',   e:'👻',  col:'#cdd5ff', unlock:5, weight:1.3},
+  {t:'skunk',   e:'🦨',  col:'#7af1c4', unlock:5, weight:1.4},
+  {t:'gold',    e:'💰',  col:'#ffd76a', unlock:6, weight:1.0},
+  // ---- Bad ones (level 6+) ----
+  {t:'shrink',  e:'😬',  col:'#ff7ab6', unlock:6, bad:true, weight:1},
+  {t:'speed',   e:'💨',  col:'#ff9d74', unlock:6, bad:true, weight:1},
+  {t:'reverse', e:'🔄',  col:'#b290ff', unlock:8, bad:true, weight:0.8},
+];
+function maybeDrop(x,y){
+  const remaining = bricks.length;
+  // High drop rate early to hook the player, settling to a steady flow mid-game.
+  // L1 = 32%, L2 = 28%, L3 = 24%, L5 = 18%, L8 = 14%, L12+ = 12% floor.
+  let chance;
+  if(level <= 2)      chance = 0.32 - (level-1)*0.04;
+  else if(level <= 8) chance = 0.26 - (level-2)*0.02;
+  else                chance = Math.max(0.12, 0.16 - (level-8)*0.005);
+  if(remaining < 24) chance += 0.06; // last-stand boost
+  if(Math.random() < chance){
+    // Filter pool by what's unlocked at this level
+    const pool = POWERS.filter(p => level >= (p.unlock||1));
+    const goodPool = pool.filter(p=>!p.bad);
+    const badPool  = pool.filter(p=>p.bad);
+    // Bad pickups don't appear at all until level 6, then 12% of the time.
+    const pickBad = level >= 6 && badPool.length && Math.random() < 0.12;
+    const arr = pickBad ? badPool : goodPool;
+    if(!arr.length) return;
+    // weighted pick
+    let total = 0; for(const p of arr) total += (p.weight||1);
+    let roll = Math.random()*total, p = arr[0];
+    for(const item of arr){ roll -= (item.weight||1); if(roll <= 0){ p = item; break; } }
+    powerups.push({x,y,vy:1.6+level*0.05, t:p.t, e:p.e, col:p.col, bad:!!p.bad, wob:Math.random()*Math.PI*2});
+  }
+}
+function applyPower(p){
+  const f = 60*8;
+  switch(p.t){
+    case 'enlarge':
+      // Stacks. Each pickup widens by ~18%, capped at 1.8× base. Refreshes timer.
+      activePowers.big = Math.min((activePowers.big||0)+f, f*2.5);
+      paddle.w = Math.min(paddle.baseW*1.8, paddle.w*1.18);
+      break;
+    case 'slow':
+      activePowers.slow = f;
+      balls.forEach(b=>{ const k=0.7; b.vx*=k; b.vy*=k; b.speed=Math.max(3.5, b.speed*k); });
+      break;
+    case 'laser':   activePowers.laser  = f; break;
+    case 'paper':   activePowers.paper  = f; break;
+    case 'catch':   activePowers.sticky = f; break;
+    case 'multi':   spawnMulti(); break;
+    case 'shield':  activePowers.shield = f*1.5; break;
+    case 'life':
+      if(lives<7){ lives++; floatText('+1 LIFE', paddle.x, paddle.y-30, '#ff7ab6'); }
+      else       { score+=2500; floatText('+2500', paddle.x, paddle.y-30, '#ffd76a'); }
+      sfx.life();
+      break;
+    case 'fire':
+      // Synergy: ALL current balls catch fire (multiball + fire = 3 fire-balls).
+      activePowers.fire = f;
+      balls.forEach(b=>b.fire=f);
+      break;
+    case 'bomb':    detonate(); break;
+    // ---- Creative ----
+    case 'plunger':
+      // Magnet: pulls every falling power-up toward the paddle for a while.
+      // Synergizes with EVERYTHING because you stop missing pickups.
+      activePowers.plunger = f*1.2;
+      break;
+    case 'flush':
+      // Mega Flush — destroys the bottom row (or two) of bricks instantly.
+      megaFlush();
+      break;
+    case 'hotdog':
+      // Hot dog rockets: paddle fires arc-flying explosive sausages.
+      activePowers.hotdog = f;
+      break;
+    case 'ghost':
+      // Ball passes through bricks for a few seconds, damaging each on contact.
+      activePowers.ghost = 60*5;
+      balls.forEach(b => b.ghost = 60*5);
+      break;
+    case 'skunk':
+      // Drops a stink cloud at the paddle that drifts up and chews through bricks.
+      spawnStinkCloud();
+      break;
+    case 'gold':
+      // Gold Rush — all bricks turn gold for 6 seconds; each break worth 2× points.
+      activePowers.gold = 60*6;
+      bricks.forEach(b => { b._origC1 = b.c1; b._origC2 = b.c2; b.c1 = '#ffd76a'; b.c2 = '#bf8a13'; });
+      break;
+    case 'shrink':  activePowers.shrink  = f; paddle.w = Math.max(56, paddle.w*0.65); break;
+    case 'speed':   activePowers.fast    = f; balls.forEach(b=>{ const k=1.35; b.vx*=k; b.vy*=k; b.speed*=k; }); break;
+    case 'reverse': activePowers.reverse = 60*5; break;
+  }
+  const bank = PICKUP_QUIPS[p.t] || [p.t.toUpperCase()];
+  const quip = bank[Math.floor(Math.random()*bank.length)];
+  if(quip) showToast(quip);
+  p.bad ? sfx.bad() : sfx.power();
+  flash = Math.min(flash+0.4, 1);
+  updatePowers();
+}
+
+function megaFlush(){
+  // Destroy the bottom-most row of bricks (and any within 8px of that y).
+  if(!bricks.length) return;
+  let maxY = 0; for(const b of bricks) if(b.y > maxY) maxY = b.y;
+  const killed = [];
+  for(let i=bricks.length-1;i>=0;i--){
+    if(bricks[i].y >= maxY - 8){
+      killed.push(bricks[i]);
+      spawnBrickBits(bricks[i]);
+      score += 15*level;
+      bricks.splice(i,1);
+    }
+  }
+  shake = Math.max(shake, 10);
+  flash = 1;
+  // Cosmetic: a wave of water particles sweeping left to right
+  for(let i=0;i<40;i++){
+    particles.push({
+      x: -10 + (i*W/40), y: maxY,
+      vx: 1+Math.random()*2, vy: -1+Math.random()*2,
+      g: 0.05, life: 50+Math.random()*20, r: 2+Math.random()*2, col: '#7ae6ff'
+    });
+  }
+  sfx.break();
+}
+
+function spawnStinkCloud(){
+  // A persistent cloud that sits in the play area and damages bricks it touches.
+  particles.push({
+    stink: true, x: paddle.x, y: paddle.y - 40,
+    vx: (Math.random()-0.5)*0.6, vy: -0.4, r: 0, vr: 1.2,
+    life: 240, max: 240, dmgCd: 0
   });
-}
-
-function ensureAudio() {
-  if (audioCtx) return audioCtx;
-  const Ctx = window.AudioContext || window.webkitAudioContext;
-  if (!Ctx) return null;
-  try {
-    audioCtx = new Ctx();
-  } catch (err) {
-    audioCtx = null;
+  // Quick puff burst
+  for(let i=0;i<14;i++){
+    const a = Math.random()*Math.PI*2;
+    particles.push({
+      x: paddle.x, y: paddle.y - 30,
+      vx: Math.cos(a)*1.6, vy: Math.sin(a)*1.6 - 0.5,
+      g: 0.02, life: 40+Math.random()*20, r: 3+Math.random()*3, col: '#7af1c4'
+    });
   }
-  return audioCtx;
+  fart();
 }
-
-function unlockAudio() {
-  if (!soundEnabled) return;
-  const ctx = ensureAudio();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') {
-    ctx.resume().catch(() => {});
+function spawnMulti(){
+  const src = balls[0]; if(!src) return;
+  for(let i=0;i<2;i++){
+    const ang = Math.atan2(src.vy, src.vx) + (i?-0.4:0.4);
+    const sp = Math.hypot(src.vx,src.vy);
+    balls.push({x:src.x,y:src.y,r:src.r,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,speed:src.speed,stuck:false,fire:src.fire,trail:[]});
   }
 }
-
-function playSfx(type) {
-  if (!soundEnabled) return;
-  const ctx = ensureAudio();
-  if (!ctx || ctx.state !== 'running') return;
-
-  const profileMap = {
-    launch: { f: 520, dur: 0.08, wave: 'triangle', vol: 0.05 },
-    break: { f: 420, dur: 0.06, wave: 'square', vol: 0.04 },
-    boom: { f: 140, dur: 0.12, wave: 'sawtooth', vol: 0.055 },
-    power: { f: 760, dur: 0.11, wave: 'triangle', vol: 0.055 },
-    level: { f: 680, dur: 0.14, wave: 'triangle', vol: 0.055 },
-    hurt: { f: 180, dur: 0.1, wave: 'sawtooth', vol: 0.05 },
-    gameover: { f: 95, dur: 0.2, wave: 'sawtooth', vol: 0.06 },
-    victory: { f: 900, dur: 0.2, wave: 'triangle', vol: 0.065 }
-  };
-
-  const p = profileMap[type] || profileMap.break;
-  try {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = p.wave;
-    osc.frequency.setValueAtTime(p.f, now);
-    gain.gain.setValueAtTime(p.vol, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + p.dur);
-  } catch (err) {}
-}
-
-function toggleSound() {
-  soundEnabled = !soundEnabled;
-  saveSoundPref();
-  updateSoundButtons();
-  if (soundEnabled) {
-    unlockAudio();
-    setHype('Sound on. Sewer symphony armed.', 72);
-  } else {
-    setHype('Sound off. Stealth stench mode.', 72);
-  }
-}
-
-function setup() {
-  const c = createCanvas(860, 620);
-  c.parent('game-holder');
-  textFont('Trebuchet MS');
-  soundEnabled = loadSoundPref();
-  updateSoundButtons();
-  resetGame();
-  showWelcomeGuide();
-  windowResized();
-}
-
-function showWelcomeGuide() {
-  const guide = document.getElementById('welcomeGuide');
-  if (guide) guide.style.display = 'flex';
-  onboardingOpen = true;
-  guidePausedGame = !paused && !gameOver && !gameWon;
-  if (guidePausedGame) paused = true;
-}
-
-function hideWelcomeGuide() {
-  const guide = document.getElementById('welcomeGuide');
-  if (guide) guide.style.display = 'none';
-  onboardingOpen = false;
-  if (guidePausedGame && !gameOver && !gameWon) paused = false;
-  guidePausedGame = false;
-}
-
-function quickStartRun() {
-  hideWelcomeGuide();
-  unlockAudio();
-  statusText = 'Quick start live. Launch and keep the combo alive.';
-  setHype('Quick start engaged. Make it nasty.', 100);
-  if ((awaitingLaunch || stuckBall) && !paused && !gameOver && !gameWon) launchBall();
-}
-
-function handleWindowBlur() {
-  controlLeft = false;
-  controlRight = false;
-  clearMobileHoldTimerRef();
-  if (!paused && !gameOver && !gameWon && !onboardingOpen) {
-    paused = true;
-    setHype('Auto-paused. The sewer waited for you.', 84);
-  }
-}
-
-function windowResized() {
-  const prevW = width;
-  const prevH = height;
-  const aspect = 860 / 620;
-  const narrow = windowWidth <= 700;
-  const compactPhone = windowWidth <= 480;
-  const widthPad = compactPhone ? 8 : (narrow ? 16 : 40);
-  const chromePad = compactPhone ? 150 : (narrow ? 198 : 180);
-  const maxWidth = min(860, windowWidth - widthPad);
-  const maxHeight = min(620, windowHeight - chromePad);
-
-  let nextW = max(300, maxWidth);
-  let nextH = nextW / aspect;
-  if (nextH > maxHeight) {
-    nextH = max(240, maxHeight);
-    nextW = nextH * aspect;
-  }
-
-  resizeCanvas(floor(nextW), floor(nextH));
-
-  if (prevW <= 0 || prevH <= 0) return;
-
-  const sx = width / prevW;
-  const sy = height / prevH;
-  const speedScale = sqrt(max(0.01, sx * sy));
-
-  paddle.x = constrain(paddle.x * sx, 0, width - paddleWidth);
-  paddle.y = height - 36;
-
-  for (const brick of bricks) {
-    brick.x *= sx;
-    brick.y *= sy;
-    brick.w *= sx;
-    brick.h *= sy;
-    if (typeof brick.driftBaseX === 'number') brick.driftBaseX *= sx;
-    if (typeof brick.driftAmount === 'number') brick.driftAmount *= sx;
-  }
-
-  for (const b of balls) {
-    if (awaitingLaunch || b.stuck || b === stuckBall) {
-      b.x = paddle.x + paddleWidth / 2;
-      b.y = paddle.y - b.r - 2;
-      b.vx = 0;
-      b.vy = 0;
-    } else {
-      b.x *= sx;
-      b.y *= sy;
-      b.vx *= speedScale;
-      b.vy *= speedScale;
+function detonate(){
+  shake = Math.max(shake, 14);
+  flash = 1;
+  particles.push({x:W/2,y:H/2,r:0,vr:30,life:30,col:'#ffd76a',shock:true});
+  for(const b of bricks){
+    const dx = (b.x+b.w/2) - W/2, dy = (b.y+b.h/2) - H/2;
+    if(Math.hypot(dx,dy) < Math.min(W,H)*0.45){
+      b.hp -= 2;
+      spawnBrickBits(b);
     }
   }
-
-  for (const pu of powerUps) {
-    pu.x *= sx;
-    pu.y *= sy;
-    pu.w *= sx;
-    pu.h *= sy;
-    pu.vy *= sy;
-  }
-
-  for (const shot of toiletPaperShots) {
-    shot.x *= sx;
-    shot.y *= sy;
-    shot.w *= sx;
-    shot.h *= sy;
-    shot.vy *= sy;
-  }
-
-  for (const shot of laserShots) {
-    shot.x *= sx;
-    shot.y *= sy;
-    shot.w *= sx;
-    shot.h *= sy;
-    shot.vy *= sy;
-  }
-
-  for (const p of particles) {
-    p.x *= sx;
-    p.y *= sy;
-    p.vx *= speedScale;
-    p.vy *= speedScale;
-    p.size *= min(sx, sy);
-  }
-
-  for (const t of floatTexts) {
-    t.x *= sx;
-    t.y *= sy;
-    t.vy *= sy;
-  }
-
-  if (waldoCameo && waldoCameo.active) {
-    waldoCameo.x *= sx;
-    waldoCameo.y *= sy;
-    waldoCameo.size *= min(sx, sy);
-    waldoCameo.vx *= sx;
-  }
-
-  applyPaddleWidth();
+  bricks = bricks.filter(b => b.hp > 0);
+  sfx.break();
 }
 
-function createBall(x, y, vx, vy, isMain) {
-  return {
-    x,
-    y,
-    r: 10,
-    vx,
-    vy,
-    isMain,
-    stuck: false,
-    trail: [],
-    stink: 0
-  };
+/* ---- Particles & Floats ---- */
+function spawnBrickBits(b){
+  const n = 10;
+  for(let i=0;i<n;i++){
+    const a = Math.random()*Math.PI*2;
+    const s = 2 + Math.random()*4;
+    particles.push({
+      x:b.x+b.w/2 + (Math.random()-0.5)*b.w,
+      y:b.y+b.h/2 + (Math.random()-0.5)*b.h,
+      vx:Math.cos(a)*s, vy:Math.sin(a)*s - 1,
+      g:0.18, life:30+Math.random()*20, r:2+Math.random()*3, col:Math.random()<0.5?b.c1:b.c2
+    });
+  }
+}
+function spawnHitSpark(x,y,col){
+  for(let i=0;i<6;i++){
+    const a = Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,g:0.05,life:14,r:1.5+Math.random()*2,col});
+  }
+}
+function floatText(text,x,y,col){
+  floats.push({text,x,y,vy:-1.2,life:50,col:col||'#fff',scale:1});
 }
 
-function resetBallState() {
-  balls = [createBall(paddle.x + paddleWidth / 2, paddle.y - 12, 0, 0, true)];
-  awaitingLaunch = true;
-  stuckBall = null;
+/* ---- Combat: laser & TP ---- */
+function fireLaser(){
+  if(!activePowers.laser) return;
+  if(fireLaser._cd && performance.now()-fireLaser._cd<170) return;
+  fireLaser._cd = performance.now();
+  lasers.push({x:paddle.x-22, y:paddle.y-4, vy:-12, life:60});
+  lasers.push({x:paddle.x+22, y:paddle.y-4, vy:-12, life:60});
+  sfx.laser();
 }
-
-function resetGame() {
-  score = 0;
-  lives = 3;
-  level = 1;
-  combo = 0;
-  comboTimer = 0;
-  gameOver = false;
-  gameWon = false;
-  paused = false;
-  statusText = `Fresh run. Survive the chaos climb to level ${MAX_LEVEL}.`;
-  bigPaddleStacks = 0;
-  stuckBall = null;
-  lastStinkMilestone = 0;
-  extraLifeCooldown = 0;
-  shieldCharges = 0;
-  bricksSinceDrop = 0;
-  levelMutatorText = '';
-  runSeed = Math.floor(Math.random() * 1000000000);
-  levelChaosProfile = null;
-  levelLayoutSignatures = new Set();
-  levelLayoutSignature = '';
-  waldoCameo = null;
-  screenShake = 0;
-  hypeText = '';
-  hypeTimer = 0;
-  lastComboHypeTier = 0;
-
-  paddleWidth = originalPaddleWidth;
-  paddle = { x: width / 2 - paddleWidth / 2, y: height - 36, speed: 9 };
-
-  powerUps = [];
-  toiletPaperShots = [];
-  laserShots = [];
-  particles = [];
-  floatTexts = [];
-  activePowerUps = {
-    bigPaddle: 0,
-    slowBall: 0,
-    toiletPaper: 0,
-    stickyPaddle: 0,
-    laserEyes: 0,
-    stinkBurst: 0,
-    toiletShield: 0,
-    fireTurd: 0,
-    magnetSniff: 0,
-    comboBoost: 0
-  };
-
-  createLevel(level);
-  resetBallState();
-  updateHud();
+function firePaper(){
+  if(!activePowers.paper) return;
+  if(firePaper._cd && performance.now()-firePaper._cd<240) return;
+  firePaper._cd = performance.now();
+  paddleShots.push({x:paddle.x, y:paddle.y-6, vx:-3, vy:-9, r:6, life:60, rot:0});
+  paddleShots.push({x:paddle.x, y:paddle.y-6, vx:3,  vy:-9, r:6, life:60, rot:0});
+  sfx.laser();
 }
-
-function levelRand(levelNumber, salt, variation) {
-  const remix = (variation || 0) * 173.317;
-  const x = Math.sin((levelNumber * 9283.771) + (salt * 631.97) + runSeed * 0.000001 + remix) * 43758.5453123;
-  return x - Math.floor(x);
+function fireHotdog(){
+  if(!activePowers.hotdog) return;
+  if(fireHotdog._cd && performance.now()-fireHotdog._cd<420) return;
+  fireHotdog._cd = performance.now();
+  // One arcing dog from each side of the paddle
+  paddleShots.push({hotdog:true, x:paddle.x-paddle.w/2+8, y:paddle.y-6, vx:-1.6, vy:-10, life:70, rot:0});
+  paddleShots.push({hotdog:true, x:paddle.x+paddle.w/2-8, y:paddle.y-6, vx: 1.6, vy:-10, life:70, rot:0});
+  sfx.bounce();
 }
+// Convenience: any "fire" tap triggers all active offensive powers at once.
+function fireAll(){ fireLaser(); firePaper(); fireHotdog(); }
 
-function buildLevelProfile(levelNumber, variation) {
-  const remix = variation || 0;
-  const stage = stageForLevel(levelNumber);
-  const [stageStart, stageEnd] = stageBounds(stage);
-  const stageSpan = max(1, stageEnd - stageStart);
-  const stageProgress = constrain((levelNumber - stageStart) / stageSpan, 0, 1);
-  const tier = min(5, floor((levelNumber - 1) / 12));
-  const bossLevel = (levelNumber % 10 === 0) || levelNumber === MAX_LEVEL;
-  const patternPool = PATTERN_STAGE_POOLS[stage] || PATTERN_STAGE_POOLS[PATTERN_STAGE_POOLS.length - 1];
-  const pattern = patternPool[floor(levelRand(levelNumber, 7, remix) * patternPool.length)];
-  const variant = floor(levelRand(levelNumber, 11, remix) * LEVEL_MODS.length);
-  const chaosJitter = (levelRand(levelNumber, 5, remix) - 0.5) * 0.04;
-  const chaos = constrain(chaosForLevel(levelNumber) + chaosJitter + (bossLevel ? 0.05 : 0), 0.05, 0.995);
+/* ---- Update ---- */
+function step(dt){
+  for(const s of bgStars){ s.t += 0.02; }
 
-  const baseRows = [4, 5, 6, 7, 8, 9][stage];
-  const baseCols = [10, 11, 12, 13, 14, 15][stage];
-  const rows = min(13, baseRows + floor((levelNumber - 1) / 4));
-  const cols = min(17, baseCols + floor((levelNumber - 1) / 11));
-
-  const carveChance = constrain((levelRand(levelNumber, 13, remix) - 0.5) * (0.08 + stage * 0.03) + chaos * (0.04 + stage * 0.018), 0, 0.28);
-  const fillChance = constrain((levelRand(levelNumber, 17, remix) - 0.5) * (0.04 + stage * 0.018) + chaos * 0.03 + (bossLevel ? 0.02 : 0), 0, 0.2);
-  const hazardBoost = chaos * 0.24 + floor((levelNumber - 1) / 10) * 0.016 + stage * 0.03 + (bossLevel ? 0.06 : 0);
-  const driftBoost = 0.012 + chaos * 0.03 + (bossLevel ? 0.01 : 0);
-  const densityBase = 0.9 - stage * 0.05 - stageProgress * 0.03;
-  const density = constrain(densityBase - chaos * 0.16 + (levelRand(levelNumber, 19, remix) - 0.5) * (0.08 + stage * 0.02) + (bossLevel ? 0.03 : 0), 0.5, 0.96);
-
-  return {
-    level: levelNumber,
-    chaos,
-    chaosPercent: Math.round(chaos * 100),
-    pattern,
-    variant,
-    stage,
-    stageName: LEVEL_STAGE_NAMES[stage] || LEVEL_STAGE_NAMES[LEVEL_STAGE_NAMES.length - 1],
-    tier,
-    bossLevel,
-    variation: remix,
-    rows,
-    cols,
-    carveChance,
-    fillChance,
-    hazardBoost,
-    driftBoost,
-    density,
-    name: `${LEVEL_PATTERNS[pattern]} ${LEVEL_MODS[variant]}`
-  };
-}
-
-function getPatternName(profile) {
-  if (!profile) return 'Classic Wall';
-  return profile.name;
-}
-
-function shouldPlaceBrick(profile, row, col, rows, cols) {
-  const centerCol = (cols - 1) / 2;
-  const centerRow = (rows - 1) / 2;
-  const nx = (col + 0.5) / cols;
-  const ny = (row + 0.5) / rows;
-  const cx = nx - 0.5;
-  const cy = ny - 0.5;
-  const distFromCenter = Math.hypot(cx, cy);
-  const angle = Math.atan2(cy, cx);
-  const wave = Math.sin((nx * Math.PI * (2 + profile.variant)) + profile.level * 0.21);
-  const ridge = Math.cos((ny * Math.PI * (3 + (profile.variant % 3))) - profile.level * 0.17);
-  const remix = profile.variation || 0;
-
-  let base = true;
-  switch (profile.pattern % LEVEL_PATTERNS.length) {
-    case 0:
-      base = true;
-      break;
-    case 1:
-      base = ((row + col + profile.variant) % 2 === 0) || row < 2;
-      break;
-    case 2: {
-      const tunnel = Math.max(1, Math.floor((rows - row) / 4) + (profile.variant % 2));
-      base = Math.abs(col - centerCol) > tunnel;
-      break;
-    }
-    case 3: {
-      const expected = Math.floor((wave + 1) * (rows - 1) * 0.5);
-      base = Math.abs(row - expected) <= (profile.variant === 2 ? 2 : 1) || row < 2;
-      break;
-    }
-    case 4:
-      base = row === 0 || row === rows - 1 || col === 0 || col === cols - 1 || (col + row) % 3 !== 1;
-      break;
-    case 5:
-      base = col >= Math.floor(row / 2) - profile.variant && col <= cols - 1 - Math.floor(row / 2) + profile.variant;
-      break;
-    case 6: {
-      const inner = 0.18 + profile.variant * 0.03;
-      const outer = 0.44 + profile.variant * 0.02;
-      base = distFromCenter >= inner && distFromCenter <= outer;
-      break;
-    }
-    case 7: {
-      const widthFactor = Math.max(1, Math.floor((rows / 2 - Math.abs(row - centerRow)) / 1.25) + (profile.variant % 2));
-      base = Math.abs(col - centerCol) <= widthFactor;
-      break;
-    }
-    case 8:
-      base = row === Math.floor(centerRow) || col === Math.floor(centerCol) || Math.abs(row - centerRow) === Math.abs(col - centerCol);
-      break;
-    case 9: {
-      const expected = (row * 2 + profile.variant) % cols;
-      base = Math.abs(col - expected) <= 1 || Math.abs(col - ((cols - 1) - expected)) <= 1;
-      break;
-    }
-    case 10: {
-      const spiral = (Math.sin(angle * 3 + distFromCenter * 18 + profile.level * 0.35) + 1) * 0.5;
-      base = spiral > (0.45 - profile.chaos * 0.1);
-      break;
-    }
-    case 11:
-      base = levelRand(profile.level, 5000 + row * 97 + col * 57, remix) < profile.density + 0.06;
-      break;
-    case 12:
-      base = ((row * 2 + col + profile.variant) % 3 !== 1) || (Math.abs(col - centerCol) <= 1 + (profile.variant % 2));
-      break;
-    case 13:
-      base = Math.abs(col - centerCol) >= 2 + (profile.variant % 3);
-      if (row === rows - 1 && col % 2 === 1) base = false;
-      break;
-    case 14: {
-      const laneArc = abs(distFromCenter - (0.22 + 0.12 * sin(angle * (3 + (profile.variant % 2)) + profile.level * 0.18)));
-      const cross = abs(sin(angle * 6 + profile.variant)) > 0.54;
-      base = laneArc < 0.09 || cross || row < 2;
-      break;
-    }
-    case 15: {
-      const laneA = ((row + profile.variant) % 4 === 0);
-      const laneB = ((col * 2 + row + profile.variant) % 5 === 0);
-      const pockets = abs(col - centerCol) <= 1 && row % 2 === 0;
-      base = laneA || laneB || pockets || row < 2;
-      break;
-    }
-    case 16: {
-      const mirage = sin((nx + ny) * PI * (3 + profile.variant * 0.45) + profile.level * 0.31);
-      const mirrorCross = abs(col - centerCol) <= 1 || abs(row - centerRow) <= 1;
-      base = mirage > -0.08 || mirrorCross;
-      if ((row + col + profile.variant) % 5 === 0) base = !base;
-      break;
-    }
-    default:
-      base = levelRand(profile.level, 5050 + row * 79 + col * 43, remix) < profile.density;
-      break;
-  }
-
-  if (profile.stage === 0) {
-    if (profile.pattern === 0) base = row < rows - 1;
-    if (profile.pattern === 1) base = row < rows - 1 && (((row + col) % 2 === 0) || row < 2);
-    if (profile.level <= 2 && row > floor(rows * 0.65)) base = false;
-  }
-
-  if (row < 2 && levelRand(profile.level, 9000 + row * 37 + col * 17, remix) < (profile.stage === 0 ? 0.94 : 0.88)) {
-    base = true;
-  }
-
-  const carveChance = profile.stage === 0 ? min(0.03, profile.carveChance) : profile.carveChance;
-  const fillChance = profile.stage === 0 ? min(0.015, profile.fillChance) : profile.fillChance;
-  const noise = levelRand(profile.level, 10000 + row * 131 + col * 71, remix);
-  if (base && noise < carveChance) base = false;
-  else if (!base && noise < fillChance) base = true;
-
-  if (!base && ridge > 0.86 && levelRand(profile.level, 12000 + row * 41 + col * 29, remix) < 0.22) {
-    base = true;
-  }
-
-  if (profile.level >= 45 && row % 3 === 0 && levelRand(profile.level, 12500 + row * 11 + col * 19, remix) < profile.chaos * 0.22) {
-    base = !base;
-  }
-
-  if (profile.bossLevel) {
-    const moatWidth = 1 + (profile.variant % 2);
-    const inCore = Math.abs(col - centerCol) <= moatWidth && row > 1 && row < rows - 1;
-    if (inCore && levelRand(profile.level, 13100 + row * 13 + col * 17, remix) < 0.72) base = false;
-    if (!base && row === rows - 1 && levelRand(profile.level, 13300 + col * 7, remix) < 0.55) base = true;
-  }
-
-  return base;
-}
-
-function configureBrickType(brick, type, levelNumber, profile) {
-  const silverHp = 2 + floor((levelNumber - 1) / 8);
-  brick.type = type;
-  brick.destructible = type !== 'gold';
-  brick.driftBaseX = brick.x;
-  if (!Number.isFinite(brick.driftPhase)) brick.driftPhase = random(TWO_PI);
-
-  if (type === 'gold') {
-    brick.hp = 9999;
-    brick.maxHp = 9999;
-    brick.driftAmount = 0;
-    brick.driftSpeed = 0;
-    return;
-  }
-  if (type === 'silver') {
-    brick.hp = silverHp;
-    brick.maxHp = silverHp;
-    brick.driftAmount = 0;
-    brick.driftSpeed = 0;
-    return;
-  }
-  if (type === 'shifty') {
-    const hp = 1 + floor(levelNumber / 5);
-    brick.hp = hp;
-    brick.maxHp = hp;
-    brick.driftAmount = random(8, 16 + profile.chaos * 10);
-    brick.driftSpeed = profile.driftBoost + random(0.008, 0.02 + profile.chaos * 0.015);
-    return;
-  }
-  if (type === 'explosive') {
-    brick.hp = 1;
-    brick.maxHp = 1;
-    brick.driftAmount = 0;
-    brick.driftSpeed = 0;
-    return;
-  }
-
-  brick.hp = 1;
-  brick.maxHp = 1;
-  brick.driftAmount = 0;
-  brick.driftSpeed = 0;
-}
-
-function enforceLevelFlavor(levelNumber, profile) {
-  if (levelNumber <= 4) {
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (b.type === 'gold' || b.type === 'shifty' || b.type === 'explosive') {
-        configureBrickType(b, random() < 0.12 ? 'silver' : 'normal', levelNumber, profile);
+  const speed = 7.0 + Math.min(level*0.2, 4);
+  const left  = activePowers.reverse ? keys.right : keys.left;
+  const right = activePowers.reverse ? keys.left  : keys.right;
+  if(left)  paddle.x -= speed;
+  if(right) paddle.x += speed;
+  paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, paddle.x));
+  // Auto-fire while held: easier on phones than tap-spamming.
+  if(pointerActive) fireAll();
+  for(const k of Object.keys(activePowers)){
+    activePowers[k]--;
+    if(activePowers[k]<=0){
+      delete activePowers[k];
+      if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
+      if(k==='shrink') paddle.w = paddle.baseW;
+      if(k==='ghost') balls.forEach(b=>b.ghost=0);
+      if(k==='gold'){
+        // Restore brick colors when gold rush ends
+        for(const b of bricks){ if(b._origC1){ b.c1 = b._origC1; b.c2 = b._origC2; b._origC1 = b._origC2 = null; } }
       }
-    }
-    return;
-  }
-
-  const stage = profile.stage;
-  const desiredSpecialRatio = stage >= 3 ? (0.16 + stage * 0.05) : (0.06 + stage * 0.025);
-  const targetSpecials = floor(bricks.length * desiredSpecialRatio);
-  let currentSpecials = 0;
-  for (let i = 0; i < bricks.length; i++) {
-    const t = bricks[i].type;
-    if (t === 'shifty' || t === 'explosive' || t === 'gold') currentSpecials++;
-  }
-
-  if (currentSpecials < targetSpecials) {
-    const candidates = bricks.filter((b) => b.destructible && b.type === 'normal');
-    for (let i = candidates.length - 1; i > 0; i--) {
-      const j = floor(random(i + 1));
-      const tmp = candidates[i];
-      candidates[i] = candidates[j];
-      candidates[j] = tmp;
-    }
-
-    let need = targetSpecials - currentSpecials;
-    for (let i = 0; i < candidates.length && need > 0; i++) {
-      const b = candidates[i];
-      let type = random() < 0.55 ? 'explosive' : 'shifty';
-      if (stage >= 4 && random() < 0.08) type = 'gold';
-      configureBrickType(b, type, levelNumber, profile);
-      need--;
+      updatePowers();
     }
   }
 
-  if (stage >= 5) {
-    let shiftyCount = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (b.type !== 'shifty') continue;
-      shiftyCount++;
-      b.driftAmount += random(6, 18);
-      b.driftSpeed += random(0.006, 0.024);
+  if(comboTimer>0){ comboTimer--; if(comboTimer===0) comboHits=0; }
+
+  if(shake>0) shake = Math.max(0, shake - 0.6);
+  if(flash>0) flash = Math.max(0, flash - 0.05);
+  stink = Math.min(1, stink + 0.0006);
+
+  for(let bi=balls.length-1; bi>=0; bi--){
+    const b = balls[bi];
+    if(b.stuck){ b.x = paddle.x; b.y = paddle.y - b.r - 1; b.trail = []; continue; }
+    b.trail.push({x:b.x,y:b.y});
+    if(b.trail.length>10) b.trail.shift();
+    b.x += b.vx; b.y += b.vy;
+    if(b.fire>0) b.fire--;
+
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+
+    if(b.vy>0 && b.y+b.r >= paddle.y && b.y - b.r <= paddle.y + paddle.h && Math.abs(b.x - paddle.x) < paddle.w/2 + b.r){
+      const rel = (b.x - paddle.x)/(paddle.w/2);
+      const ang = -Math.PI/2 + Math.max(-1, Math.min(1, rel)) * 1.05;
+      const sp = Math.hypot(b.vx,b.vy);
+      b.vx = Math.cos(ang)*sp; b.vy = Math.sin(ang)*sp;
+      b.y = paddle.y - b.r - 1;
+      if(activePowers.sticky){ b.stuck = true; waitingLaunch = true; btnLaunch.classList.add('show'); }
+      sfx.hit(); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
+      shake = Math.max(shake, 4);
     }
 
-    if (shiftyCount < floor(bricks.length * 0.2)) {
-      const extra = bricks.filter((b) => b.destructible && b.type === 'normal');
-      const promote = min(extra.length, floor(bricks.length * 0.2) - shiftyCount);
-      for (let i = 0; i < promote; i++) {
-        configureBrickType(extra[i], 'shifty', levelNumber, profile);
-      }
-    }
-  }
-}
-
-function createLevel(levelNumber) {
-  bricksSinceDrop = 0;
-  let remix = 0;
-  while (remix < 14) {
-    bricks = [];
-    levelChaosProfile = buildLevelProfile(levelNumber, remix);
-
-    const rows = levelChaosProfile.rows;
-    const cols = levelChaosProfile.cols;
-    const gap = max(4, 6 - floor(levelNumber / 18));
-    const margin = 24;
-    const totalWidth = width - margin * 2;
-    const brickW = (totalWidth - gap * (cols - 1)) / cols;
-    const brickH = max(16, floor(22 - levelNumber / 22));
-    let occupancyPattern = '';
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const placeBrick = shouldPlaceBrick(levelChaosProfile, r, c, rows, cols);
-        occupancyPattern += placeBrick ? '1' : '0';
-        if (!placeBrick) continue;
-
-        const x = margin + c * (brickW + gap);
-        const y = 58 + r * (brickH + gap);
-        const roll = random();
-
-        let type = 'normal';
-        const stage = levelChaosProfile.stage;
-        if (levelNumber <= 4) {
-          type = roll < 0.14 ? 'silver' : 'normal';
-        } else if (levelNumber <= 8) {
-          if (roll < 0.08 + levelChaosProfile.chaos * 0.06) type = 'explosive';
-          else if (roll < 0.3 + levelChaosProfile.chaos * 0.1) type = 'silver';
+    let hits = 0;
+    if(b.ghost && b.ghost>0) b.ghost--;
+    for(let i=bricks.length-1;i>=0;i--){
+      const br = bricks[i];
+      if(b.x + b.r > br.x && b.x - b.r < br.x + br.w && b.y + b.r > br.y && b.y - b.r < br.y + br.h){
+        const dx = b.x - (br.x + br.w/2), dy = b.y - (br.y + br.h/2);
+        const px = br.w/2 + b.r - Math.abs(dx);
+        const py = br.h/2 + b.r - Math.abs(dy);
+        if(b.ghost>0){
+          // Ghost: don't bounce. 1 damage per frame of overlap — 1-HP dies instantly,
+          // tougher bricks take a few frames to dissolve.
+          br.hp -= 1;
+        } else if(b.fire>0){
+          br.hp -= 2;
         } else {
-          const bossPush = levelChaosProfile.bossLevel ? 0.08 : 0;
-          const eliteChance = levelNumber >= 16
-            ? constrain(0.02 + stage * 0.025 + levelChaosProfile.hazardBoost * 0.12 + (levelNumber >= 60 ? 0.04 : 0) + bossPush, 0.02, 0.3)
-            : 0;
-          const shiftyChance = levelNumber >= 9
-            ? constrain(0.04 + stage * 0.03 + levelChaosProfile.hazardBoost * 0.14 + bossPush * 0.7, 0.04, 0.42)
-            : 0;
-          const explosiveChance = levelNumber >= 5
-            ? constrain(0.08 + stage * 0.022 + levelChaosProfile.hazardBoost * 0.12 + bossPush * 0.45, 0.08, 0.38)
-            : 0;
-          const silverChance = constrain(0.2 + stage * 0.03 + levelChaosProfile.hazardBoost * 0.1 + bossPush, 0.2, 0.6);
+          if(px < py){ b.vx = dx>0 ? Math.abs(b.vx) : -Math.abs(b.vx); }
+          else        { b.vy = dy>0 ? Math.abs(b.vy) : -Math.abs(b.vy); }
+          br.hp -= 1;
+        }
+        comboHits++; comboTimer = 90;
+        const mult = (1 + Math.floor(comboHits/4)*0.5) * (activePowers.gold ? 2 : 1);
+        const earned = Math.round((10 + level*2)*mult);
+        score += earned;
+        if(comboHits>=4) showCombo(comboHits);
+        floatText('+'+earned, br.x+br.w/2, br.y, '#ffd76a');
+        sfx.brick();
+        sfx.combo(comboHits);
+        spawnHitSpark(b.x,b.y,br.c1);
+        if(br.hp<=0){
+          bricks.splice(i,1);
+          spawnBrickBits(br);
+          sfx.break();
+          shake = Math.max(shake, 5);
+          maybeDrop(br.x+br.w/2, br.y+br.h/2);
+          score += 5*level;
+        } else {
+          shake = Math.max(shake, 2);
+        }
+        hits++;
+        if(hits>2) break;
+      }
+    }
 
-          let threshold = eliteChance;
-          if (roll < threshold) type = 'gold';
-          else {
-            threshold += shiftyChance;
-            if (roll < threshold) type = 'shifty';
-            else {
-              threshold += explosiveChance;
-              if (roll < threshold) type = 'explosive';
-              else if (roll < threshold + silverChance) type = 'silver';
+    if(b.y - b.r > H){
+      if(activePowers.shield && balls.length===1){
+        activePowers.shield = Math.max(0, (activePowers.shield||0) - 60*2);
+        if(activePowers.shield <= 0){ delete activePowers.shield; }
+        b.y = H - b.r - 4; b.vy = -Math.abs(b.vy);
+        floatText('SAVED!', b.x, b.y-20, '#7ae6ff');
+        sfx.power();
+      } else {
+        balls.splice(bi,1);
+      }
+    }
+  }
+
+  if(balls.length === 0){
+    lives--;
+    sfx.death();
+    floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
+    shake = Math.max(shake, 12);
+    if(lives <= 0){ gameOver(false); return; }
+    paddle.w = paddle.baseW;
+    activePowers = {}; updatePowers();
+    balls = [ newBall(true) ];
+    waitingLaunch = true;
+    btnLaunch.classList.add('show');
+  }
+
+  for(let i=powerups.length-1;i>=0;i--){
+    const p = powerups[i];
+    p.y += p.vy; p.wob += 0.18;
+    // Plunger magnet: gently steer power-ups toward the paddle.
+    if(activePowers.plunger){
+      const dx = paddle.x - p.x;
+      p.x += Math.sign(dx) * Math.min(Math.abs(dx), 3);
+    }
+    if(p.y > H + 20){ powerups.splice(i,1); continue; }
+    if(p.y + 12 >= paddle.y && p.y < paddle.y + paddle.h && Math.abs(p.x - paddle.x) < paddle.w/2 + 12){
+      applyPower(p);
+      powerups.splice(i,1);
+    }
+  }
+
+  for(let i=lasers.length-1;i>=0;i--){
+    const l = lasers[i]; l.y += l.vy; l.life--;
+    if(l.life<=0 || l.y < -10){ lasers.splice(i,1); continue; }
+    let removed = false;
+    for(let j=bricks.length-1;j>=0;j--){
+      const br = bricks[j];
+      if(l.x > br.x && l.x < br.x+br.w && l.y < br.y+br.h && l.y+18 > br.y){
+        br.hp--;
+        spawnHitSpark(l.x, br.y+br.h, br.c1);
+        score += 5*level;
+        if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); }
+        lasers.splice(i,1); removed = true; break;
+      }
+    }
+    if(removed) continue;
+  }
+  for(let i=paddleShots.length-1;i>=0;i--){
+    const s = paddleShots[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.18; s.rot+=0.3; s.life--;
+    if(s.life<=0 || s.y > H){ paddleShots.splice(i,1); continue; }
+    let hit=false;
+    for(let j=bricks.length-1;j>=0;j--){
+      const br = bricks[j];
+      if(s.x > br.x-2 && s.x < br.x+br.w+2 && s.y > br.y-2 && s.y < br.y+br.h+2){
+        if(s.hotdog){
+          // Hot dog explodes — area damage on a small radius.
+          for(let k=bricks.length-1;k>=0;k--){
+            const b2 = bricks[k];
+            const cx = b2.x + b2.w/2, cy = b2.y + b2.h/2;
+            if(Math.hypot(cx - s.x, cy - s.y) < 50){
+              b2.hp -= (b2 === br) ? 2 : 1;
+              if(b2.hp<=0){ bricks.splice(k,1); spawnBrickBits(b2); sfx.break(); maybeDrop(cx, cy); score += (activePowers.gold?2:1)*5*level; }
             }
           }
+          // ketchup-and-mustard puff
+          for(let k=0;k<14;k++){
+            const a = Math.random()*Math.PI*2;
+            particles.push({x:s.x,y:s.y,vx:Math.cos(a)*3,vy:Math.sin(a)*3,g:0.05,life:25,r:2+Math.random()*2,col:Math.random()<0.5?'#ff5b3a':'#ffd76a'});
+          }
+          shake = Math.max(shake, 6);
+          sfx.break();
+        } else {
+          br.hp -= 1; spawnHitSpark(s.x,s.y,'#fff');
+          if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); score += (activePowers.gold?2:1)*5*level; }
         }
-
-        if (r < 2 && type === 'normal' && random() < (levelNumber <= 8 ? 0.36 : 0.5)) type = 'silver';
-
-        const brick = {
-          x,
-          y,
-          w: brickW,
-          h: brickH,
-          driftPhase: random(TWO_PI),
-          driftBaseX: x,
-          driftAmount: 0,
-          driftSpeed: 0
-        };
-        configureBrickType(brick, type, levelNumber, levelChaosProfile);
-        bricks.push(brick);
-      }
-      occupancyPattern += '|';
-    }
-
-    if (bricks.length === 0) {
-      const fallback = {
-        x: width / 2 - 62,
-        y: 92,
-        w: 124,
-        h: 24,
-        driftPhase: 0,
-        driftBaseX: width / 2 - 62,
-        driftAmount: 0,
-        driftSpeed: 0
-      };
-      configureBrickType(fallback, 'silver', levelNumber, levelChaosProfile);
-      bricks.push(fallback);
-    }
-
-    enforceLevelFlavor(levelNumber, levelChaosProfile);
-
-    levelLayoutSignature = `${rows}x${cols}:${occupancyPattern}`;
-    if (!levelLayoutSignatures.has(levelLayoutSignature) || remix === 13) break;
-    remix++;
-  }
-
-  levelLayoutSignatures.add(levelLayoutSignature);
-  levelPatternName = getPatternName(levelChaosProfile);
-  levelMutatorText = applyLevelMutator(levelNumber);
-  setupWaldoCameo(levelNumber);
-  const bossTag = levelChaosProfile.bossLevel ? ' Boss Wave.' : '';
-  const remixTag = levelChaosProfile.variation > 0 ? ` Remix ${levelChaosProfile.variation + 1}.` : '';
-  const stageTag = ` Stage ${levelChaosProfile.stageName}.`;
-  const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
-  const mutatorTag = levelMutatorText ? ` ${levelMutatorText}` : '';
-  statusText = `Level ${levelNumber}: ${levelPatternName}. Chaos ${levelChaosProfile.chaosPercent}%.${stageTag}${bossTag}${remixTag}${mutatorTag}${waldoTag}`;
-  const dramaLine = getLevelDramaLine(levelNumber, levelChaosProfile);
-  if (dramaLine) setHype(dramaLine, 128);
-  if (levelChaosProfile.bossLevel) triggerShake(2.8);
-}
-
-function applyLevelMutator(levelNumber) {
-  const notes = [];
-  const profile = levelChaosProfile || buildLevelProfile(levelNumber, 0);
-  const stage = profile.stage;
-
-  if (levelNumber >= 12 && levelNumber % 4 === 0) {
-    let converted = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible || b.type !== 'normal') continue;
-      if (random() < 0.14) {
-        configureBrickType(b, random() < 0.55 ? 'explosive' : 'shifty', levelNumber, profile);
-        converted++;
+        hit=true;
+        break;
       }
     }
-    if (converted > 0) notes.push(`Mutator: ${converted} bricks went feral.`);
+    if(hit) paddleShots.splice(i,1);
   }
 
-  if (levelNumber >= 24 && levelNumber % 6 === 0) {
-    let reinforced = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible || b.type === 'gold') continue;
-      if (random() < 0.18) {
-        b.hp += 1;
-        b.maxHp += 1;
-        reinforced++;
-      }
-    }
-    if (reinforced > 0) notes.push(`Mutator: ${reinforced} bricks reinforced.`);
-  }
-
-  if (levelNumber >= 32 && levelNumber % 5 === 0) {
-    let lanes = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible) continue;
-      const nx = (b.x + b.w * 0.5) / max(1, width);
-      const edge = abs(nx - 0.5);
-      if (edge > 0.32 && random() < 0.34) {
-        configureBrickType(b, random() < 0.12 ? 'gold' : 'silver', levelNumber, profile);
-        if (b.type === 'silver') {
-          b.hp += 1;
-          b.maxHp += 1;
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    if(p.shock){ p.r += p.vr; p.life--; if(p.life<=0) particles.splice(i,1); continue; }
+    if(p.stink){
+      p.x += p.vx; p.y += p.vy;
+      p.r = Math.min(80, p.r + p.vr);
+      p.life--;
+      if(p.dmgCd>0) p.dmgCd--;
+      if(p.dmgCd<=0){
+        // Damage every brick within radius once per ~120ms
+        for(let j=bricks.length-1;j>=0;j--){
+          const br = bricks[j];
+          const cx = br.x+br.w/2, cy = br.y+br.h/2;
+          if(Math.hypot(cx - p.x, cy - p.y) < p.r){
+            br.hp -= 1;
+            if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.brick(); maybeDrop(cx,cy); score += (activePowers.gold?2:1)*4*level; }
+          }
         }
-        lanes++;
-      } else if (edge < 0.15 && random() < 0.26) {
-        configureBrickType(b, 'shifty', levelNumber, profile);
-        b.driftAmount += random(6, 16);
-        b.driftSpeed += random(0.004, 0.015);
-        lanes++;
+        p.dmgCd = 8;
       }
+      if(p.life<=0) particles.splice(i,1);
+      continue;
     }
-    if (lanes > 0) notes.push(`Mutator: gauntlet lanes engaged (${lanes}).`);
+    p.x += p.vx; p.y += p.vy; if(p.g) p.vy += p.g; p.life--;
+    if(p.life<=0) particles.splice(i,1);
+  }
+  for(let i=floats.length-1;i>=0;i--){
+    const f = floats[i]; f.y += f.vy; f.vy *= 0.96; f.life--;
+    if(f.life<=0) floats.splice(i,1);
   }
 
-  if (levelNumber >= 44 && levelNumber % 7 === 0) {
-    const seamPhase = levelRand(levelNumber, 17100, profile.variation) * TWO_PI;
-    let seamHits = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible) continue;
-      const nx = (b.x + b.w * 0.5) / max(1, width);
-      const ny = (b.y + b.h * 0.5) / max(1, height);
-      const wave = (sin(nx * PI * (4 + stage) + seamPhase) + 1) * 0.35;
-      if (abs(ny - wave) < 0.065 && random() < 0.45) {
-        configureBrickType(b, random() < 0.5 ? 'explosive' : 'shifty', levelNumber, profile);
-        seamHits++;
-      }
-    }
-    if (seamHits > 0) notes.push(`Mutator: marble seams warped ${seamHits} bricks.`);
+  if(bricks.length === 0){
+    score += 200 + level*50;
+    setHype(`LEVEL ${level} CLEAR!`, 90);
+    floatText('+'+(200+level*50), W/2, H/2, '#9effc8');
+    sfx.win();
+    level++;
+    if(level > 30){ gameOver(true); return; }
+    setTimeout(()=>{ stink=Math.max(0,stink-0.3); newLevel(); updateHud(); }, 600);
   }
 
-  if (levelNumber >= 56) {
-    let madness = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible) continue;
-      if (random() < 0.16 + profile.chaos * 0.22) {
-        const nextType = random() < 0.58 ? 'shifty' : 'explosive';
-        configureBrickType(b, nextType, levelNumber, profile);
-        if (nextType === 'shifty') {
-          b.driftAmount += random(10, 24);
-          b.driftSpeed += random(0.008, 0.024);
-        }
-        madness++;
-      }
-    }
-    if (madness > 0) notes.push(`Mutator: Marble madness twisted ${madness} bricks.`);
-  }
-
-  if (levelNumber >= 48 && levelNumber % 8 === 0) {
-    let wells = 0;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible) continue;
-      const nx = (b.x + b.w * 0.5) / max(1, width) - 0.5;
-      const ny = (b.y + b.h * 0.5) / max(1, height) - 0.32;
-      const radius = sqrt(nx * nx + ny * ny);
-      if (radius < 0.2 && random() < 0.34) {
-        configureBrickType(b, random() < 0.5 ? 'silver' : 'gold', levelNumber, profile);
-        if (b.type === 'silver') {
-          b.hp += 1;
-          b.maxHp += 1;
-        }
-        wells++;
-      } else if (radius > 0.34 && random() < 0.18) {
-        configureBrickType(b, 'shifty', levelNumber, profile);
-        b.driftAmount += random(8, 20);
-        b.driftSpeed += random(0.006, 0.018);
-        wells++;
-      }
-    }
-    if (wells > 0) notes.push(`Mutator: vortex wells remapped ${wells} lanes.`);
-  }
-
-  if (levelNumber >= 60 && levelNumber % 9 === 0) {
-    let portals = 0;
-    const pivot = levelRand(levelNumber, 18510, profile.variation || 0) * width;
-    for (let i = 0; i < bricks.length; i++) {
-      const b = bricks[i];
-      if (!b.destructible) continue;
-      const centerX = b.x + b.w * 0.5;
-      const phase = abs(centerX - pivot) / max(1, width);
-      if (phase < 0.16 && random() < 0.58) {
-        configureBrickType(b, random() < 0.55 ? 'explosive' : 'shifty', levelNumber, profile);
-        if (b.type === 'shifty') {
-          b.driftAmount += random(10, 26);
-          b.driftSpeed += random(0.008, 0.024);
-        }
-        portals++;
-      }
-    }
-    if (portals > 0) notes.push(`Mutator: portal strip flipped ${portals} bricks.`);
-  }
-
-  if (destructibleRemaining() <= 0 && bricks.length > 0) {
-    const rescue = bricks[floor(random(bricks.length))];
-    configureBrickType(rescue, 'silver', levelNumber, profile);
-    notes.push('Mutator fail-safe: one lane reopened.');
-  }
-
-  return notes.join(' ');
-}
-
-function setupWaldoCameo(levelNumber) {
-  const chance = constrain(0.14 + levelNumber * 0.004, 0.14, 0.48);
-  if (random() > chance) {
-    waldoCameo = null;
-    return;
-  }
-
-  const size = 20 + min(10, floor(levelNumber / 5));
-  const minY = 52;
-  const maxY = min(height * 0.42, 210 + levelNumber * 1.3);
-  const speed = 0.45 + random(0.2, 0.9) + levelNumber * 0.01;
-  waldoCameo = {
-    active: true,
-    found: false,
-    x: random(size, width - size),
-    y: random(minY, maxY),
-    size,
-    vx: random() < 0.5 ? -speed : speed,
-    life: 620 + levelNumber * 12,
-    blink: random(TWO_PI)
-  };
-}
-
-function updateWaldoCameo() {
-  if (!waldoCameo || !waldoCameo.active) return;
-
-  waldoCameo.blink += 0.13;
-  waldoCameo.life--;
-  waldoCameo.x += waldoCameo.vx;
-
-  const half = waldoCameo.size * 0.5;
-  if (waldoCameo.x <= half || waldoCameo.x >= width - half) {
-    waldoCameo.vx *= -1;
-    waldoCameo.x = constrain(waldoCameo.x, half, width - half);
-  }
-
-  if (waldoCameo.life <= 0) {
-    waldoCameo.active = false;
-    return;
-  }
-
-  const hitW = waldoCameo.size * 0.52;
-  const hitH = waldoCameo.size * 0.78;
-  for (const b of balls) {
-    if (
-      b.x + b.r >= waldoCameo.x - hitW &&
-      b.x - b.r <= waldoCameo.x + hitW &&
-      b.y + b.r >= waldoCameo.y - hitH &&
-      b.y - b.r <= waldoCameo.y + hitH
-    ) {
-      waldoCameo.active = false;
-      waldoCameo.found = true;
-      const bonus = 169 + level * 9;
-      score = min(Number.MAX_SAFE_INTEGER, score + bonus);
-      addFloatText(`WALDO +${bonus}`, waldoCameo.x, waldoCameo.y - 12, color(255, 236, 150));
-      statusText = `You found Waldo. +${bonus} bonus chaos points.`;
-      break;
-    }
-  }
-}
-
-function drawWaldoCameo() {
-  if (!waldoCameo || !waldoCameo.active) return;
-
-  const s = waldoCameo.size;
-  const x = waldoCameo.x;
-  const y = waldoCameo.y;
-  const stripeAlpha = 170 + sin(waldoCameo.blink) * 45;
-
-  push();
-  translate(x, y);
-
-  noStroke();
-  fill(0, 0, 0, 65);
-  ellipse(0, s * 0.54, s * 0.8, s * 0.24);
-
-  fill(255, 216, 177);
-  circle(0, -s * 0.38, s * 0.38);
-
-  fill(245, 245, 245);
-  rect(-s * 0.26, -s * 0.18, s * 0.52, s * 0.46, 2);
-  fill(220, 45, 55, stripeAlpha);
-  for (let i = 0; i < 4; i++) {
-    rect(-s * 0.26, -s * 0.17 + i * (s * 0.11), s * 0.52, s * 0.055, 1);
-  }
-
-  fill(73, 116, 211);
-  rect(-s * 0.22, s * 0.26, s * 0.44, s * 0.22, 2);
-
-  fill(221, 45, 55);
-  rect(-s * 0.22, -s * 0.58, s * 0.44, s * 0.12, 2);
-  fill(245, 245, 245);
-  rect(-s * 0.22, -s * 0.52, s * 0.44, s * 0.055, 1);
-  fill(221, 45, 55);
-  rect(-s * 0.22, -s * 0.475, s * 0.44, s * 0.055, 1);
-
-  stroke(45, 57, 79);
-  strokeWeight(1.3);
-  noFill();
-  circle(-s * 0.07, -s * 0.395, s * 0.075);
-  circle(s * 0.07, -s * 0.395, s * 0.075);
-
-  noStroke();
-  fill(255, 255, 255, 245);
-  textAlign(CENTER, CENTER);
-  textSize(11);
-  text('?', 0, -s * 0.82);
-  pop();
-}
-
-function launchBall() {
-  let targetBall = null;
-
-  if (stuckBall) {
-    targetBall = stuckBall;
-    targetBall.stuck = false;
-    stuckBall = null;
-  } else if (awaitingLaunch && balls.length > 0) {
-    targetBall = balls[0];
-  }
-
-  if (!targetBall) return;
-
-  const launchCfg = TURDANOID_BALANCE.launch;
-  const earlyLevelFloor = level <= launchCfg.earlyFloorLevel ? launchCfg.earlyFloorSpeed : baseBallSpeed;
-  const speed = min(
-    launchCfg.maxSpeed,
-    max(earlyLevelFloor, launchCfg.baseSpeed + (level - 1) * launchCfg.perLevel)
-  );
-  let vx = random([-1, 1]) * random(speed * 0.35, speed * 0.72);
-  if (abs(vx) < launchCfg.minHorizontal) vx = vx >= 0 ? launchCfg.minHorizontal : -launchCfg.minHorizontal;
-  const vy = -sqrt(max(1, speed * speed - vx * vx));
-
-  targetBall.vx = vx;
-  targetBall.vy = vy;
-  awaitingLaunch = false;
-  statusText = 'Poop launched. Let it marinate in mid-air.';
-  setHype('Launch stink online.', 80);
-  playSfx('launch');
-}
-
-function draw() {
-  drawBackground();
-
-  if (gameOver || gameWon) {
-    drawEndScreen();
-    updateHud();
-    return;
-  }
-
-  if (paused) {
-    drawGameScene(false);
-    drawPauseBanner();
-    updateHud();
-    return;
-  }
-
-  updatePaddle();
-  updateMovingBricks();
-  updatePowerTimers();
-  updatePowerUps();
-  updateShots();
-  updateBalls();
-  updateWaldoCameo();
-  updateParticles();
-  updateFloatTexts();
-  updateSceneFx();
-
-  if (comboTimer > 0) comboTimer--;
-  else {
-    combo = 0;
-    lastComboHypeTier = 0;
-  }
-
-  if (level >= 45 && frameCount % 240 === 0) {
-    setHype('Pipe pressure rising. Keep moving.', 75);
-  }
-
-  if (destructibleRemaining() === 0) {
-    if (level >= MAX_LEVEL) {
-      gameWon = true;
-      paused = false;
-      awaitingLaunch = false;
-      score += 6900;
-      statusText = `Level ${MAX_LEVEL} cleared. Toilet chaos conquered.`;
-      playSfx('victory');
-      if (score > highScore) {
-        highScore = score;
-        try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
-      }
-    } else {
-      level++;
-      score += 120 * level;
-      statusText = `Level up! Welcome to level ${level}.`;
-      setHype(`Level ${level} unlocked. Chaos rising.`, 110);
-      triggerShake(2.4 + level * 0.02);
-      playSfx('level');
-      createLevel(level);
-      powerUps = [];
-      toiletPaperShots = [];
-      laserShots = [];
-      resetBallState();
-    }
-  }
-
-  push();
-  if (screenShake > 0) {
-    translate(random(-screenShake, screenShake), random(-screenShake, screenShake));
-  }
-  drawGameScene(true);
-  pop();
   updateHud();
 }
 
-function drawBackground() {
-  const g = drawingContext.createLinearGradient(0, 0, width, height);
-  g.addColorStop(0, '#102822');
-  g.addColorStop(0.55, '#1a3e35');
-  g.addColorStop(1, '#35584d');
-  drawingContext.fillStyle = g;
-  rect(0, 0, width, height);
+/* ---- Render ---- */
+function render(){
+  ctx.save();
+  let sx=0, sy=0;
+  if(shake>0){ sx = (Math.random()-0.5)*shake; sy = (Math.random()-0.5)*shake; }
+  ctx.translate(sx, sy);
 
-  stroke(255, 255, 255, 18);
-  strokeWeight(1);
-  for (let x = 0; x <= width; x += 40) line(x, 0, x, height);
-  for (let y = 0; y <= height; y += 40) line(0, y, width, y);
-}
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, '#06141a');
+  g.addColorStop(0.5, '#0e2730');
+  g.addColorStop(1, `rgb(${20+stink*40},${50+stink*30},${64+stink*30})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
 
-function updatePaddle() {
-  if (controlLeft) paddle.x -= paddle.speed;
-  if (controlRight) paddle.x += paddle.speed;
-
-  const directionalControlActive = controlLeft || controlRight;
-  if (!directionalControlActive) {
-    if (touches.length > 0) {
-      mouseInputActive = false;
-      paddle.x = constrain(touches[0].x - paddleWidth / 2, 0, width - paddleWidth);
-    } else if (mouseInputActive) {
-      paddle.x = constrain(mouseX - paddleWidth / 2, 0, width - paddleWidth);
-    }
+  if(stink>0){
+    const sg = ctx.createRadialGradient(W/2, H*0.7, 0, W/2, H*0.7, Math.max(W,H)*0.8);
+    sg.addColorStop(0, `rgba(120,180,80,${0.18*stink})`);
+    sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sg; ctx.fillRect(0,0,W,H);
   }
 
-  if (awaitingLaunch && balls.length && !stuckBall) {
-    balls[0].x = paddle.x + paddleWidth / 2;
-    balls[0].y = paddle.y - balls[0].r - 2;
+  for(const s of bgStars){
+    ctx.globalAlpha = s.a * (0.6 + Math.sin(s.t)*0.4);
+    ctx.fillStyle = '#9effc8';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
   }
+  ctx.globalAlpha = 1;
 
-  if (stuckBall) {
-    stuckBall.x = paddle.x + paddleWidth / 2;
-    stuckBall.y = paddle.y - stuckBall.r - 2;
-    stuckBall.vx = 0;
-    stuckBall.vy = 0;
+  ctx.strokeStyle = 'rgba(158,255,200,0.18)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(2,2,W-4,H-4);
+
+  for(const b of bricks){ drawBrick(b); }
+  for(const p of powerups){ drawPowerup(p); }
+  for(const l of lasers){
+    ctx.fillStyle = '#ff7ab6';
+    ctx.shadowColor = '#ff7ab6'; ctx.shadowBlur = 10;
+    ctx.fillRect(l.x-2, l.y, 4, 18);
+    ctx.shadowBlur = 0;
   }
-}
-
-function updateMovingBricks() {
-  for (const brick of bricks) {
-    if (brick.type !== 'shifty') continue;
-    brick.driftPhase += brick.driftSpeed;
-    brick.x = brick.driftBaseX + sin(brick.driftPhase) * brick.driftAmount;
-  }
-}
-
-function applyPaddleWidth() {
-  if (activePowerUps.bigPaddle > 0 && bigPaddleStacks > 0) {
-    paddleWidth = originalPaddleWidth * (1 + 0.28 * bigPaddleStacks);
-  } else {
-    bigPaddleStacks = 0;
-    paddleWidth = originalPaddleWidth;
-  }
-  paddleWidth = min(originalPaddleWidth * 2.1, paddleWidth);
-  paddle.x = constrain(paddle.x, 0, width - paddleWidth);
-}
-
-function updatePowerTimers() {
-  for (const key in activePowerUps) {
-    if (activePowerUps[key] > 0) activePowerUps[key]--;
-  }
-  if (extraLifeCooldown > 0) extraLifeCooldown--;
-  if (activePowerUps.toiletShield <= 0) shieldCharges = 0;
-
-  applyPaddleWidth();
-
-  if (activePowerUps.toiletPaper > 0 && frameCount % 20 === 0 && toiletPaperShots.length < 20) {
-    toiletPaperShots.push({ x: paddle.x + paddleWidth / 2 - 10, y: paddle.y, w: 20, h: 20, vy: -8, type: 'tp' });
-  }
-
-  if (activePowerUps.laserEyes > 0 && frameCount % 11 === 0 && laserShots.length < 36) {
-    laserShots.push({ x: paddle.x + 5, y: paddle.y, w: 4, h: 14, vy: -12, type: 'laser' });
-    laserShots.push({ x: paddle.x + paddleWidth - 9, y: paddle.y, w: 4, h: 14, vy: -12, type: 'laser' });
-  }
-}
-
-function weightedPowerUp() {
-  const stage = stageForLevel(level);
-  const pool = POWERUP_TYPES
-    .filter((p) => {
-      const unlock = POWERUP_UNLOCK_LEVEL[p.type] || 1;
-      if (level < unlock) return false;
-      if (p.type !== 'extraLife') return true;
-      if (extraLifeCooldown > 0) return false;
-      if (lives >= TURDANOID_BALANCE.power.extraLifeMaxLives) return false;
-      if (level < 6 && lives >= TURDANOID_BALANCE.power.extraLifeEarlyLifeCap) return false;
-      return true;
-    })
-    .map((p) => {
-      let weight = p.weight;
-      switch (p.type) {
-        case 'bigPaddle':
-        case 'slowBall':
-          weight *= stage <= 1 ? 1.25 : 0.95;
-          break;
-        case 'stickyPaddle':
-          weight *= stage <= 2 ? 1.16 : 1;
-          break;
-        case 'extraLife':
-          if (lives <= 1) weight *= 2.2;
-          else if (lives >= 4) weight *= 0.12;
-          if (stage >= 3) weight *= 0.84;
-          break;
-        case 'disruption':
-        case 'laserEyes':
-          weight *= 0.85 + stage * 0.1;
-          break;
-        case 'toiletShield':
-          if (lives <= 2) weight *= 1.55;
-          break;
-        case 'magnetSniff':
-          weight *= 0.8 + stage * 0.14;
-          break;
-        case 'fireTurd':
-        case 'comboBoost':
-        case 'rowFlush':
-          weight *= 0.7 + stage * 0.16;
-          break;
-        default:
-          break;
-      }
-      if (combo >= 8 && p.type === 'comboBoost') weight *= 1.7;
-      return { ...p, tunedWeight: max(0.05, weight) };
-    });
-
-  let total = 0;
-  for (const p of pool) total += p.tunedWeight;
-
-  let roll = random(total);
-  for (const p of pool) {
-    roll -= p.tunedWeight;
-    if (roll <= 0) return p;
-  }
-  return pool[0] || POWERUP_TYPES[0];
-}
-
-function createPowerUp(x, y) {
-  const maxDrops = level >= TURDANOID_BALANCE.power.highDropLevel
-    ? TURDANOID_BALANCE.power.maxDropSlotsHigh
-    : TURDANOID_BALANCE.power.maxDropSlotsLow;
-  if (powerUps.length >= maxDrops) return false;
-  if (balls.length > 1) return false;
-  const p = weightedPowerUp();
-  powerUps.push({ x: x - 15, y, w: 30, h: 30, vy: 2.1, angle: 0, ...p });
-  return true;
-}
-
-function updatePowerUps() {
-  for (let i = powerUps.length - 1; i >= 0; i--) {
-    const pu = powerUps[i];
-    pu.y += pu.vy;
-    pu.angle += 0.08;
-    if (activePowerUps.magnetSniff > 0) {
-      const targetX = paddle.x + paddleWidth / 2 - pu.w / 2;
-      pu.x += (targetX - pu.x) * 0.08;
-      pu.x = constrain(pu.x, 0, width - pu.w);
-    }
-
-    if (pu.y > height + pu.h) {
-      powerUps.splice(i, 1);
-      continue;
-    }
-
-    if (
-      pu.y + pu.h >= paddle.y &&
-      pu.y <= paddle.y + paddleHeight &&
-      pu.x + pu.w >= paddle.x &&
-      pu.x <= paddle.x + paddleWidth
-    ) {
-      activatePowerUp(pu.type);
-      powerUps.splice(i, 1);
-    }
-  }
-}
-
-function updateShots() {
-  for (let i = toiletPaperShots.length - 1; i >= 0; i--) {
-    const shot = toiletPaperShots[i];
-    shot.y += shot.vy;
-
-    if (shot.y < -shot.h) {
-      toiletPaperShots.splice(i, 1);
-      continue;
-    }
-
-    let hit = false;
-    for (let j = bricks.length - 1; j >= 0; j--) {
-      if (rectHit(shot, bricks[j])) {
-        damageBrick(j, 1, true);
-        hit = true;
-        break;
-      }
-    }
-    if (hit) toiletPaperShots.splice(i, 1);
-  }
-
-  for (let i = laserShots.length - 1; i >= 0; i--) {
-    const shot = laserShots[i];
-    shot.y += shot.vy;
-
-    if (shot.y < -shot.h) {
-      laserShots.splice(i, 1);
-      continue;
-    }
-
-    let hit = false;
-    for (let j = bricks.length - 1; j >= 0; j--) {
-      if (rectHit(shot, bricks[j])) {
-        damageBrick(j, 1, true);
-        hit = true;
-        break;
-      }
-    }
-    if (hit) laserShots.splice(i, 1);
-  }
-}
-
-function updateBalls() {
-  const slow = activePowerUps.slowBall > 0 ? 0.62 : 1;
-  const fireActive = activePowerUps.fireTurd > 0;
-  const remaining = destructibleRemaining();
-  const pressureRamp = remaining <= 8 ? map(remaining, 0, 8, 1.12, 1.02, true) : 1;
-  const levelRamp = 1 + constrain((level - 10) * 0.0065, 0, 0.34);
-  const speedRamp = min(1.5, pressureRamp * levelRamp);
-
-  for (let i = balls.length - 1; i >= 0; i--) {
-    const b = balls[i];
-
-    if (b.stuck) {
-      b.x = paddle.x + paddleWidth / 2;
-      b.y = paddle.y - b.r - 2;
-      continue;
-    }
-
-    b.x += b.vx * slow * speedRamp;
-    b.y += b.vy * slow * speedRamp;
-    b.stink = min(5000, b.stink + 1 + level * 0.18);
-
-    emitGas(b);
-
-    if (activePowerUps.stinkBurst > 0 && frameCount % 16 === 0) {
-      emitStinkBurst(b);
-    }
-
-    b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > 14) b.trail.shift();
-
-    if (b.x <= b.r) { b.x = b.r; b.vx = abs(b.vx); }
-    if (b.x >= width - b.r) { b.x = width - b.r; b.vx = -abs(b.vx); }
-    if (b.y <= b.r) { b.y = b.r; b.vy = abs(b.vy); }
-
-    if (
-      b.y + b.r >= paddle.y &&
-      b.y - b.r <= paddle.y + paddleHeight &&
-      b.x + b.r >= paddle.x &&
-      b.x - b.r <= paddle.x + paddleWidth &&
-      b.vy > 0
-    ) {
-      if (activePowerUps.stickyPaddle > 0 && !stuckBall) {
-        b.stuck = true;
-        stuckBall = b;
-        awaitingLaunch = true;
-        statusText = 'Caught! Launch again for a nasty angle.';
-        continue;
-      }
-
-      const hitPos = constrain((b.x - paddle.x) / max(1, paddleWidth), 0, 1);
-      const angle = (hitPos - 0.5) * 1.0;
-      const speed = max(baseBallSpeed, sqrt(b.vx * b.vx + b.vy * b.vy));
-      b.vx = sin(angle) * speed;
-      b.vy = -abs(cos(angle) * speed);
-      if (abs(b.vx) < 1) b.vx = b.vx >= 0 ? 1 : -1;
-      b.y = paddle.y - b.r;
-      combo = 0;
-      comboTimer = 0;
-    }
-
-    for (let j = bricks.length - 1; j >= 0; j--) {
-      const brick = bricks[j];
-      if (!ballHitsBrick(b, brick)) continue;
-
-      damageBrick(j, fireActive ? 2 : 1, false);
-
-      if (fireActive) {
-        spawnBurst(b.x, b.y, 3, color(255, 180, 90));
-      } else if (brick.type !== 'gold') {
-        b.vy *= -1;
-      } else {
-        b.vx *= -1;
-      }
-      break;
-    }
-
-    if (activePowerUps.toiletShield > 0 && shieldCharges > 0 && b.vy > 0 && b.y + b.r >= height - 8) {
-      b.y = height - 8 - b.r;
-      b.vy = -abs(b.vy);
-      shieldCharges--;
-      spawnBurst(b.x, height - 8, 6, color(160, 255, 220));
-      if (shieldCharges <= 0) {
-        activePowerUps.toiletShield = 0;
-        statusText = 'Toilet shield cracked.';
-      }
-      continue;
-    }
-
-    if (b.y - b.r > height + 4) {
-      balls.splice(i, 1);
-      if (b === stuckBall) stuckBall = null;
-    }
-  }
-
-  checkStinkMilestones();
-
-  if (balls.length === 0) {
-    lives--;
-    combo = 0;
-    comboTimer = 0;
-    bigPaddleStacks = 0;
-
-    if (lives <= 0) {
-      gameOver = true;
-      statusText = 'Flushed. Tap to run it back.';
-      setHype('That flush was violent.', 120);
-      triggerShake(4.5);
-      playSfx('gameover');
-      if (score > highScore) {
-        highScore = score;
-        try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
-      }
+  for(const s of paddleShots){
+    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.rot);
+    if(s.hotdog){
+      // Hot dog: tan oval bun with brown sausage middle
+      ctx.shadowColor = '#ff9d74'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#e9b977';
+      ctx.beginPath(); ctx.ellipse(0,0,11,5,0,0,6.283); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#a64b21';
+      ctx.beginPath(); ctx.ellipse(0,0,9,3,0,0,6.283); ctx.fill();
+      // tiny mustard zigzag
+      ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-7,-1); ctx.lineTo(-3,1); ctx.lineTo(1,-1); ctx.lineTo(5,1); ctx.stroke();
     } else {
-      statusText = 'Life lost. Relaunch when ready.';
-      setHype('Toilet gods demand a comeback.', 96);
-      triggerShake(3.2);
-      playSfx('hurt');
-      powerUps = [];
-      toiletPaperShots = [];
-      laserShots = [];
-      activePowerUps = {
-        bigPaddle: 0,
-        slowBall: 0,
-        toiletPaper: 0,
-        stickyPaddle: 0,
-        laserEyes: 0,
-        stinkBurst: 0,
-        toiletShield: 0,
-        fireTurd: 0,
-        magnetSniff: 0,
-        comboBoost: 0
-      };
-      shieldCharges = 0;
-      resetBallState();
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.283); ctx.fill();
+      ctx.strokeStyle='#aaa'; ctx.lineWidth=1; ctx.stroke();
     }
+    ctx.restore();
   }
-}
-
-function emitGas(ball) {
-  const stinkRatio = constrain(ball.stink / 5000, 0, 1);
-  const chance = lerp(0.05, 0.92, stinkRatio);
-  const puffs = random() < 0.35 + stinkRatio * 0.45 ? 2 : 1;
-
-  for (let i = 0; i < puffs; i++) {
-    if (random() > chance) continue;
-
-    particles.push({
-      x: ball.x + random(-10, 10),
-      y: ball.y + random(-9, 9),
-      vx: random(-1.3, 1.3),
-      vy: random(-2.2, -0.25),
-      life: random(28, 58),
-      maxLife: 58,
-      size: random(4, 10 + stinkRatio * 7),
-      kind: 'gas',
-      c: color(random(95, 145), random(200, 255), random(80, 140), 190)
-    });
-  }
-}
-
-function emitStinkBurst(ball) {
-  for (let i = bricks.length - 1; i >= 0; i--) {
-    const brick = bricks[i];
-    if (!brick.destructible) continue;
-
-    const bx = brick.x + brick.w / 2;
-    const by = brick.y + brick.h / 2;
-    if (dist(ball.x, ball.y, bx, by) <= 74) {
-      damageBrick(i, 1, true);
-    }
-  }
-
-  particles.push({
-    x: ball.x,
-    y: ball.y,
-    vx: random(-0.5, 0.5),
-    vy: -0.6,
-    life: 40,
-    maxLife: 40,
-    size: random(20, 30),
-    kind: 'burst',
-    c: color(125, 255, 150, 130)
-  });
-}
-
-function destructibleRemaining() {
-  let count = 0;
-  for (const brick of bricks) {
-    if (brick.destructible) count++;
-  }
-  return count;
-}
-
-function damageBrick(index, damage, projectileHit) {
-  const brick = bricks[index];
-  if (!brick) return;
-
-  if (!brick.destructible) {
-    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 4, color(255, 245, 150));
-    return;
-  }
-
-  brick.hp -= damage;
-  if (brick.hp > 0) {
-    spawnBurst(brick.x + brick.w / 2, brick.y + brick.h / 2, 5, color(220, 235, 255));
-    if (projectileHit) playSfx('break');
-    return;
-  }
-
-  const removed = bricks.splice(index, 1)[0];
-  combo++;
-  comboTimer = 210;
-
-  let gainBase = 12;
-  if (removed.type === 'silver') gainBase = 20;
-  if (removed.type === 'explosive') gainBase = 18;
-  if (removed.type === 'shifty') gainBase = 22;
-
-  const comboMult = 1 + min(2.8, combo * 0.1);
-  const comboPower = activePowerUps.comboBoost > 0 ? 1.35 : 1;
-  const gain = floor((projectileHit ? gainBase * 0.85 : gainBase) * comboMult * comboPower);
-  score = min(Number.MAX_SAFE_INTEGER, score + gain);
-
-  addFloatText(`+${gain}`, removed.x + removed.w / 2, removed.y + removed.h / 2, color(255, 236, 184));
-
-  if (removed.type === 'explosive') {
-    splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 80);
-    triggerShake(3.3);
-    playSfx('boom');
-  } else {
-    playSfx('break');
-  }
-
-  if (combo >= 8 && removed.type !== 'explosive' && random() < 0.28) {
-    splashDamage(removed.x + removed.w / 2, removed.y + removed.h / 2, 44);
-  }
-
-  const comboTier = floor(combo / 6);
-  if (comboTier > lastComboHypeTier) {
-    lastComboHypeTier = comboTier;
-    setHype(`Combo stench x${combo}!`, 95);
-    triggerShake(1.8 + comboTier * 0.7);
-  }
-
-  bricksSinceDrop++;
-  const dropCfg = TURDANOID_BALANCE.drops;
-  const droughtBoost = min(dropCfg.droughtCap, bricksSinceDrop * dropCfg.perDroughtBrick);
-  const levelBoost = level * dropCfg.perLevel;
-  const dropChance = min(dropCfg.maxChance, dropCfg.baseChance + levelBoost + droughtBoost);
-  const droughtThreshold = max(8, dropCfg.forceDropBricks - floor(level / dropCfg.forceDropLevelScale));
-  const forceDrop = bricksSinceDrop >= droughtThreshold;
-  const dropEligible = removed.type !== 'silver' && removed.type !== 'gold' && balls.length <= 1;
-  if (dropEligible && (forceDrop || random() < dropChance)) {
-    const spawned = createPowerUp(removed.x + removed.w / 2, removed.y + removed.h / 2);
-    if (forceDrop && spawned) statusText = 'Drought breaker capsule dropped.';
-    if (spawned) bricksSinceDrop = 0;
-  }
-
-  spawnBurst(removed.x + removed.w / 2, removed.y + removed.h / 2, 10, color(255, 180, 120));
-
-  if (score > highScore) {
-    highScore = score;
-    try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
-  }
-}
-
-function splashDamage(cx, cy, radius) {
-  for (let i = bricks.length - 1; i >= 0; i--) {
-    const b = bricks[i];
-    if (!b.destructible) continue;
-    const bx = b.x + b.w / 2;
-    const by = b.y + b.h / 2;
-    if (dist(cx, cy, bx, by) <= radius) {
-      damageBrick(i, 1, true);
-    }
-  }
-}
-
-function activatePowerUp(type) {
-  playSfx('power');
-  const powerCfg = TURDANOID_BALANCE.power;
-  switch (type) {
-    case 'bigPaddle':
-      bigPaddleStacks = min(powerCfg.bigPaddleMaxStacks, bigPaddleStacks + 1);
-      activePowerUps.bigPaddle = min(powerCfg.bigPaddleDurationCap, activePowerUps.bigPaddle + powerCfg.bigPaddleDurationGain);
-      statusText = `Paddle grew to ${bigPaddleStacks}x stink mode.`;
-      break;
-    case 'extraLife':
-      lives = min(powerCfg.extraLifeMaxLives, lives + 1);
-      extraLifeCooldown = max(extraLifeCooldown, powerCfg.extraLifeCooldownFrames);
-      statusText = 'Rare heart! One extra life.';
-      addFloatText('+1 Life', paddle.x + paddleWidth / 2, paddle.y - 12, color(255, 170, 170));
-      break;
-    case 'slowBall':
-      activePowerUps.slowBall = max(activePowerUps.slowBall, 500);
-      statusText = 'Slow capsule active.';
-      break;
-    case 'toiletPaper':
-      activePowerUps.toiletPaper = max(activePowerUps.toiletPaper, 520);
-      statusText = 'Toilet paper barrage online.';
-      break;
-    case 'stickyPaddle':
-      activePowerUps.stickyPaddle = max(activePowerUps.stickyPaddle, 560);
-      statusText = 'Catch mode: paddle grabs the turd.';
-      break;
-    case 'disruption':
-      spawnDisruptionBalls();
-      statusText = 'Disruption! Triple turd chaos.';
-      break;
-    case 'laserEyes':
-      activePowerUps.laserEyes = max(activePowerUps.laserEyes, 460);
-      statusText = 'Laser mode activated.';
-      break;
-    case 'warpFlush':
-      runWarpFlush();
-      statusText = 'Break Flush! Massive skip clear.';
-      break;
-    case 'stinkBurst':
-      activePowerUps.stinkBurst = max(activePowerUps.stinkBurst, 430);
-      statusText = 'Stink burst cloud damages nearby bricks.';
-      break;
-    case 'toiletShield':
-      activePowerUps.toiletShield = max(activePowerUps.toiletShield, 620);
-      shieldCharges = max(shieldCharges, 2 + floor(level / 10));
-      statusText = `Toilet shield deployed. Charges: ${shieldCharges}.`;
-      break;
-    case 'fireTurd':
-      activePowerUps.fireTurd = max(activePowerUps.fireTurd, 460);
-      statusText = 'Fire turd active: melts through bricks.';
-      break;
-    case 'magnetSniff':
-      activePowerUps.magnetSniff = max(activePowerUps.magnetSniff, 560);
-      statusText = 'Magnet sniff: power-ups drift toward your paddle.';
-      break;
-    case 'comboBoost':
-      activePowerUps.comboBoost = max(activePowerUps.comboBoost, 520);
-      statusText = 'Combo juice: boosted score on every break.';
-      break;
-    case 'rowFlush':
-      runRowFlush();
-      statusText = 'Row flush fired. Densest lane washed out.';
-      break;
-    default:
-      break;
-  }
-
-  applyPaddleWidth();
-}
-
-function spawnDisruptionBalls() {
-  if (balls.length === 0) return;
-  const source = balls[0];
-  const maxBalls = 5;
-  const slots = max(0, maxBalls - balls.length);
-  const count = min(2, slots);
-
-  for (let i = 0; i < count; i++) {
-    const vx = source.vx + random(-2, 2);
-    const vy = -abs(source.vy + random(-1.2, 0.6));
-    balls.push(createBall(source.x, source.y, vx, vy, false));
-  }
-}
-
-function runWarpFlush() {
-  const remaining = destructibleRemaining();
-  if (remaining <= 0) return;
-
-  let toClear = max(2, floor(remaining * 0.38));
-  const targets = [];
-
-  for (let i = 0; i < bricks.length; i++) {
-    if (bricks[i].destructible) targets.push(bricks[i]);
-  }
-
-  while (toClear > 0 && targets.length > 0) {
-    const pick = floor(random(targets.length));
-    const targetBrick = targets.splice(pick, 1)[0];
-    const idx = bricks.indexOf(targetBrick);
-    if (idx < 0 || !bricks[idx]) continue;
-    damageBrick(idx, 999, true);
-    toClear--;
-  }
-
-  score += 80;
-  addFloatText('FLUSH WARP!', width / 2, height * 0.45, color(170, 255, 220));
-}
-
-function runRowFlush() {
-  const buckets = new Map();
-  for (let i = 0; i < bricks.length; i++) {
-    const b = bricks[i];
-    if (!b.destructible) continue;
-    const key = floor((b.y + b.h * 0.5) / 28);
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(b);
-  }
-
-  if (buckets.size === 0) return;
-  let bestKey = null;
-  let bestCount = -1;
-  for (const [key, indexes] of buckets.entries()) {
-    if (indexes.length > bestCount) {
-      bestCount = indexes.length;
-      bestKey = key;
-    }
-  }
-
-  const targetBricks = (buckets.get(bestKey) || []).slice();
-  for (const target of targetBricks) {
-    const idx = bricks.indexOf(target);
-    if (idx < 0 || !bricks[idx]) continue;
-    damageBrick(idx, 999, true);
-  }
-
-  score += 90 + bestCount * 12;
-  addFloatText('ROW FLUSH!', width / 2, height * 0.42, color(140, 235, 255));
-}
-
-function spawnBurst(x, y, count, c) {
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x,
-      y,
-      vx: random(-3, 3),
-      vy: random(-3, 3),
-      life: random(18, 38),
-      maxLife: 38,
-      size: random(2, 5),
-      kind: 'spark',
-      c
-    });
-  }
-
-  if (particles.length > 420) {
-    particles.splice(0, particles.length - 420);
-  }
-}
-
-function addFloatText(text, x, y, c) {
-  floatTexts.push({ text, x, y, vy: -0.6, life: 56, maxLife: 56, c });
-  if (floatTexts.length > 20) floatTexts.splice(0, floatTexts.length - 20);
-}
-
-function checkStinkMilestones() {
-  const stink = getStinkLevel();
-  const step = floor(stink / 25);
-  if (step > lastStinkMilestone) {
-    lastStinkMilestone = step;
-    if (step >= 1) {
-      addFloatText('PFFFFT!', width / 2 + random(-60, 60), height * 0.6 + random(-30, 30), color(160, 255, 170));
-      statusText = `Stink level ${stink}%. It's getting nasty.`;
-    }
-  }
-}
-
-function updateParticles() {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    if (p.kind === 'spark') p.vy += 0.03;
-    p.life--;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-}
-
-function updateFloatTexts() {
-  for (let i = floatTexts.length - 1; i >= 0; i--) {
-    const t = floatTexts[i];
-    t.y += t.vy;
-    t.life--;
-    if (t.life <= 0) floatTexts.splice(i, 1);
-  }
-}
-
-function ballHitsBrick(ball, brick) {
-  return (
-    ball.x + ball.r > brick.x &&
-    ball.x - ball.r < brick.x + brick.w &&
-    ball.y + ball.r > brick.y &&
-    ball.y - ball.r < brick.y + brick.h
-  );
-}
-
-function rectHit(rectObj, brick) {
-  return (
-    rectObj.x + rectObj.w > brick.x &&
-    rectObj.x < brick.x + brick.w &&
-    rectObj.y + rectObj.h > brick.y &&
-    rectObj.y < brick.y + brick.h
-  );
-}
-
-function drawGameScene(withGameElements) {
-  if (!withGameElements) {
-    drawBricks();
-    drawWaldoCameo();
-    drawPaddle();
-    drawBalls();
-    drawBottomShield();
-    drawShots();
-    drawPowerUps();
-    drawParticlesVisual();
-    drawFloatTextsVisual();
-    return;
-  }
-
-  drawBricks();
-  drawWaldoCameo();
   drawPaddle();
-  drawBalls();
-  drawBottomShield();
-  drawShots();
-  drawPowerUps();
-  drawParticlesVisual();
-  drawFloatTextsVisual();
+  for(const b of balls) drawBall(b);
 
-  if (awaitingLaunch) {
-    fill(232, 255, 240);
-    textSize(18);
-    textAlign(CENTER, CENTER);
-    text('Press Space / Tap to launch', width / 2, height - 72);
-  }
-}
-
-function drawBricks() {
-  for (const b of bricks) {
-    let base = color(255, 175, 120);
-    if (b.type === 'silver') base = color(175, 210, 255);
-    if (b.type === 'gold') base = color(255, 226, 120);
-    if (b.type === 'explosive') base = color(255, 125, 115);
-    if (b.type === 'shifty') base = color(145, 255, 205);
-
-    const t = b.maxHp > 0 && b.maxHp < 9000 ? b.hp / b.maxHp : 1;
-    const grad = drawingContext.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
-    grad.addColorStop(0, `rgba(${red(base)},${green(base)},${blue(base)},0.95)`);
-    grad.addColorStop(1, `rgba(${max(0, red(base) - 70)},${max(0, green(base) - 70)},${max(0, blue(base) - 70)},0.95)`);
-    drawingContext.fillStyle = grad;
-    rect(b.x, b.y, b.w, b.h, 6);
-
-    if (b.type === 'gold') {
-      stroke(255, 245, 180, 160);
-      strokeWeight(2);
-      line(b.x + 4, b.y + 4, b.x + b.w - 4, b.y + b.h - 4);
-      line(b.x + b.w - 4, b.y + 4, b.x + 4, b.y + b.h - 4);
-      noStroke();
+  for(const p of particles){
+    if(p.shock){
+      ctx.strokeStyle = `rgba(255,215,106,${Math.max(0,p.life/30)})`;
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.stroke();
+      continue;
     }
-
-    if (t < 1) {
-      fill(20, 30, 28, 200);
-      rect(b.x + 3, b.y + b.h - 5, b.w - 6, 3, 2);
-      fill(255, 100, 120);
-      rect(b.x + 3, b.y + b.h - 5, (b.w - 6) * t, 3, 2);
-    }
-  }
-}
-
-function drawPaddle() {
-  fill(95, 250, 190);
-  rect(paddle.x, paddle.y, paddleWidth, paddleHeight, 8);
-
-  if (activePowerUps.stickyPaddle > 0) {
-    fill(185, 255, 230, 140);
-    rect(paddle.x + 8, paddle.y + 2, paddleWidth - 16, 4, 3);
-  }
-}
-
-function drawBalls() {
-  const fireActive = activePowerUps.fireTurd > 0;
-  for (const b of balls) {
-    const stinkRatio = constrain(b.stink / 5000, 0, 1);
-
-    for (let i = 0; i < b.trail.length; i++) {
-      const point = b.trail[i];
-      const ratio = b.trail.length <= 1 ? 1 : i / (b.trail.length - 1);
-      const a = lerp(20, 100, ratio);
-      fill(255, 210, 150, a);
-      circle(point.x, point.y, b.r * 1.3 * (i / max(1, b.trail.length)));
-    }
-
-    noFill();
-    stroke(120, 255, 160, 40 + stinkRatio * 120);
-    strokeWeight(1.5 + stinkRatio * 2.5);
-    circle(b.x, b.y, b.r * (2.4 + stinkRatio * 2.2));
-    noStroke();
-
-    textSize(24 + stinkRatio * 2);
-    textAlign(CENTER, CENTER);
-    text('💩', b.x, b.y + 1);
-
-    if (fireActive) {
-      noFill();
-      stroke(255, 130, 70, 170);
-      strokeWeight(2);
-      circle(b.x, b.y, b.r * 2.9);
-      noStroke();
-    }
-  }
-}
-
-function drawBottomShield() {
-  if (activePowerUps.toiletShield <= 0 || shieldCharges <= 0) return;
-  const alpha = 80 + sin(frameCount * 0.12) * 28;
-  noStroke();
-  fill(130, 255, 220, alpha);
-  rect(0, height - 12, width, 6, 3);
-  fill(210, 255, 242, 220);
-  textAlign(CENTER, CENTER);
-  textSize(12);
-  text(`Shield ${shieldCharges}`, width / 2, height - 17);
-}
-
-function drawShots() {
-  textAlign(CENTER, CENTER);
-  textSize(18);
-  for (const tp of toiletPaperShots) {
-    text('🧻', tp.x + tp.w / 2, tp.y + tp.h / 2);
-  }
-
-  for (const l of laserShots) {
-    fill(255, 120, 255);
-    rect(l.x, l.y, l.w, l.h, 2);
-  }
-}
-
-function drawPowerUps() {
-  textAlign(CENTER, CENTER);
-  textSize(24);
-  for (const pu of powerUps) {
-    push();
-    translate(pu.x + pu.w / 2, pu.y + pu.h / 2);
-    rotate(pu.angle);
-    text(pu.emoji, 0, 0);
-    pop();
-  }
-}
-
-function drawParticlesVisual() {
-  noStroke();
-  for (const p of particles) {
-    const alpha = map(p.life, 0, p.maxLife, 0, 220);
-    fill(red(p.c), green(p.c), blue(p.c), alpha);
-    if (p.kind === 'burst') {
-      circle(p.x, p.y, p.size + (p.maxLife - p.life) * 0.7);
-    } else {
-      circle(p.x, p.y, p.size);
-    }
-  }
-}
-
-function drawFloatTextsVisual() {
-  textAlign(CENTER, CENTER);
-  for (const t of floatTexts) {
-    const alpha = map(t.life, 0, t.maxLife, 0, 255);
-    fill(red(t.c), green(t.c), blue(t.c), alpha);
-    textSize(14);
-    text(t.text, t.x, t.y);
-  }
-}
-
-function drawPauseBanner() {
-  fill(10, 20, 18, 170);
-  rect(0, 0, width, height);
-  fill(220, 255, 235);
-  textAlign(CENTER, CENTER);
-  textSize(34);
-  text('PAUSED', width / 2, height / 2 - 14);
-  textSize(16);
-  text('Press P or Space to resume', width / 2, height / 2 + 20);
-}
-
-function drawEndScreen() {
-  push();
-  if (screenShake > 0) {
-    translate(random(-screenShake, screenShake), random(-screenShake, screenShake));
-  }
-  drawGameScene(true);
-  pop();
-  const stinkNow = getStinkLevel();
-  const cardW = min(width * 0.78, 420);
-  const cardH = min(height * 0.42, 238);
-  const cardX = width / 2 - cardW / 2;
-  const cardY = height / 2 - cardH / 2;
-  const accent = gameWon ? color(165, 255, 214) : color(255, 170, 136);
-  const pillFill = gameWon ? color(18, 64, 49, 220) : color(64, 29, 20, 220);
-  const titleText = gameWon ? 'Level 69 Cleared!' : 'Flushed!';
-  const kicker = gameWon ? 'Sewer Legend' : 'Toilet Revenge';
-  const flavor = gameWon
-    ? 'You cleared the chaos ladder and left the pipes in full panic mode.'
-    : 'The bowl fought dirty this time. Tap or click and go make it nastier.';
-
-  noStroke();
-  fill(8, 20, 17, 190);
-  rect(0, 0, width, height);
-
-  push();
-  translate(width / 2, height / 2);
-  for (let i = 0; i < 7; i++) {
-    const a = frameCount * 0.02 + i * 0.9;
-    const orbitX = cos(a) * (cardW * 0.42);
-    const orbitY = sin(a * 1.3) * (cardH * 0.34);
-    fill(red(accent), green(accent), blue(accent), 38);
-    ellipse(orbitX, orbitY, 18 + i * 2, 18 + i * 2);
-    textSize(18 + (i % 3));
-    text(['💩', '💨', '✨'][i % 3], orbitX, orbitY);
-  }
-  pop();
-
-  drawingContext.shadowBlur = 26;
-  drawingContext.shadowColor = gameWon ? 'rgba(165,255,214,0.24)' : 'rgba(255,170,136,0.22)';
-  fill(10, 24, 20, 235);
-  stroke(red(accent), green(accent), blue(accent), 110);
-  strokeWeight(2);
-  rect(cardX, cardY, cardW, cardH, 24);
-  drawingContext.shadowBlur = 0;
-
-  noStroke();
-  fill(255, 255, 255, 16);
-  rect(cardX + 8, cardY + 8, cardW - 16, 34, 16);
-  fill(pillFill);
-  rect(width / 2 - 74, cardY + 18, 148, 26, 13);
-  fill(gameWon ? 214 : 255, gameWon ? 255 : 220, gameWon ? 237 : 205);
-  textAlign(CENTER, CENTER);
-  textSize(12);
-  text(kicker.toUpperCase(), width / 2, cardY + 31);
-
-  fill(230, 255, 236);
-  textSize(34);
-  text(titleText, width / 2, cardY + 84);
-  textSize(15);
-  fill(216, 233, 224);
-  textAlign(CENTER, TOP);
-  textLeading(18);
-  text(flavor, cardX + 24, cardY + 104, cardW - 48, 36);
-
-  fill(255, 255, 255, 14);
-  rect(cardX + 22, cardY + 144, cardW - 44, 56, 16);
-  fill(233, 255, 241);
-  textAlign(CENTER, CENTER);
-  textSize(19);
-  text(`Score ${score}`, width / 2, cardY + 164);
-  textSize(13);
-  fill(203, 226, 214);
-  text(`Best ${highScore} • Stink ${stinkNow}% • Level ${level}`, width / 2, cardY + 187);
-  text(gameWon ? 'Tap or click to crown another run.' : 'Tap or click to dive back in.', width / 2, cardY + 212);
-}
-
-function getStinkLevel() {
-  if (balls.length === 0) return 0;
-  let total = 0;
-  for (const b of balls) total += b.stink;
-  return floor(map(total / balls.length, 0, 5000, 0, 100, true));
-}
-
-function updateHud() {
-  if (score > highScore) {
-    highScore = score;
-    try { localStorage.setItem('turdanoidHighScore', String(highScore)); } catch (e) {}
-  }
-
-  const scoreEl = document.getElementById('scoreText');
-  const highEl = document.getElementById('highScoreText');
-  const livesEl = document.getElementById('livesText');
-  const levelEl = document.getElementById('levelText');
-  const comboEl = document.getElementById('comboText');
-  const comboCardEl = document.getElementById('comboCard');
-  const bricksEl = document.getElementById('bricksText');
-  const shieldEl = document.getElementById('shieldText');
-  const statusEl = document.getElementById('statusText');
-  const powerListEl = document.getElementById('powerList');
-
-  if (scoreEl) scoreEl.textContent = String(score);
-  if (highEl) highEl.textContent = String(highScore);
-  if (livesEl) livesEl.textContent = String(lives);
-  if (levelEl) levelEl.textContent = `${level}/${MAX_LEVEL}`;
-  if (comboEl) comboEl.textContent = String(combo);
-  if (comboCardEl) comboCardEl.classList.toggle('combo-live', combo >= 4);
-  if (bricksEl) bricksEl.textContent = `${destructibleRemaining()}`;
-  if (shieldEl) shieldEl.textContent = `${getStinkLevel()}%`;
-  const waldoTag = waldoCameo && waldoCameo.active ? ' Waldo?' : '';
-  const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
-  if (statusEl) {
-    statusEl.textContent = `${statusText}${hypeTag} Pattern: ${levelPatternName}.${waldoTag}`;
-    statusEl.classList.toggle('hype', hypeTimer > 0);
-  }
-
-  if (powerListEl) {
-    const chips = [];
-    for (const p of POWERUP_TYPES) {
-      if (activePowerUps[p.type] > 0) {
-        chips.push(`<span class="chip">${p.emoji} ${Math.ceil(activePowerUps[p.type] / 60)}s</span>`);
+    if(p.stink){
+      const a = Math.max(0, p.life/p.max);
+      const grd = ctx.createRadialGradient(p.x,p.y,p.r*0.1,p.x,p.y,p.r);
+      grd.addColorStop(0, `rgba(170,240,170,${0.55*a})`);
+      grd.addColorStop(0.6, `rgba(120,200,120,${0.35*a})`);
+      grd.addColorStop(1, 'rgba(80,150,80,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+      // little wobble bubbles
+      for(let k=0;k<3;k++){
+        const ang = p.life*0.05 + k*2;
+        ctx.globalAlpha = 0.5*a;
+        ctx.fillStyle = '#aef0a8';
+        ctx.beginPath(); ctx.arc(p.x+Math.cos(ang)*p.r*0.5, p.y+Math.sin(ang)*p.r*0.5, 4+k, 0, 6.283); ctx.fill();
       }
+      ctx.globalAlpha = 1;
+      continue;
     }
-    if (bigPaddleStacks > 0 && activePowerUps.bigPaddle > 0) {
-      chips.push(`<span class="chip">📏 x${bigPaddleStacks}</span>`);
-    }
-    if (shieldCharges > 0 && activePowerUps.toiletShield > 0) {
-      chips.push(`<span class="chip">🛡️ x${shieldCharges}</span>`);
-    }
-    powerListEl.innerHTML = chips.length ? chips.join('') : '<span class="chip">None</span>';
+    ctx.globalAlpha = Math.max(0, p.life/40);
+    ctx.fillStyle = p.col;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for(const f of floats){
+    ctx.globalAlpha = Math.max(0, f.life/50);
+    ctx.fillStyle = f.col;
+    ctx.font = 'bold 14px Trebuchet MS, system-ui, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  if(waitingLaunch && state==='playing'){
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.font = 'bold 14px Trebuchet MS, system-ui, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('TAP / SPACE to launch', W/2, paddle.y - 30);
+    ctx.beginPath(); ctx.moveTo(W/2,paddle.y-22); ctx.lineTo(W/2-6,paddle.y-14); ctx.lineTo(W/2+6,paddle.y-14); ctx.closePath();
+    ctx.fillStyle='#9effc8'; ctx.fill();
+  }
+
+  if(flash>0){
+    ctx.fillStyle = `rgba(255,255,255,${flash*0.35})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  ctx.restore();
+}
+
+function drawBrick(b){
+  b.wob += 0.04;
+  const px = b.x, py = b.y, pw = b.w, ph = b.h;
+  const dmg = 1 - b.hp/b.maxHp;
+  ctx.shadowColor = b.glow; ctx.shadowBlur = 10;
+  const g = ctx.createLinearGradient(px,py,px,py+ph);
+  g.addColorStop(0, b.c1); g.addColorStop(1, b.c2);
+  ctx.fillStyle = g;
+  roundRect(ctx, px, py, pw, ph, 4); ctx.fill();
+  ctx.shadowBlur = 0;
+  if(b.metal){
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.fillRect(px+3, py+ph-5, pw-6, 2);
+    ctx.fillRect(px+3, py+3, pw-6, 2);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.12)';
+  ctx.fillRect(px+2, py+2, pw-4, Math.max(2, ph*0.2));
+  if(dmg > 0.4){
+    ctx.strokeStyle = 'rgba(0,0,0,.3)';
+    ctx.lineWidth = 1; ctx.beginPath();
+    const m = px + pw*0.3 + Math.sin(b.wob)*1.2;
+    ctx.moveTo(m, py+2); ctx.lineTo(m+2, py+ph-3); ctx.stroke();
   }
 }
 
-function keyPressed() {
-  unlockAudio();
-  if (onboardingOpen) {
-    if (keyCode === ENTER || keyCode === 27 || key === ' ') hideWelcomeGuide();
-    return false;
+function drawPaddle(){
+  const x = paddle.x - paddle.w/2, y = paddle.y, w = paddle.w, h = paddle.h;
+  if(activePowers.shield){
+    ctx.fillStyle = 'rgba(122,230,255,.18)';
+    ctx.fillRect(0, paddle.y + paddle.h + 4, W, 6);
+    ctx.fillStyle = 'rgba(122,230,255,.45)';
+    ctx.fillRect(0, paddle.y + paddle.h + 4, W, 2);
   }
-
-  if (keyCode === LEFT_ARROW || key === 'a' || key === 'A') controlLeft = true;
-  if (keyCode === RIGHT_ARROW || key === 'd' || key === 'D') controlRight = true;
-
-  if (key === ' ' || keyCode === 32) {
-    if (gameOver || gameWon) resetGame();
-    else if (paused) paused = false;
-    else if (awaitingLaunch || stuckBall) launchBall();
-    else paused = true;
-    return false;
+  ctx.shadowColor = activePowers.fire?'#ff9d74':'#9effc8'; ctx.shadowBlur = 16;
+  const g = ctx.createLinearGradient(x,y,x,y+h);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#dcefe6'); g.addColorStop(1,'#9bc3b1');
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, w, h, 9); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  roundRect(ctx, x+4, y+2, w-8, 4, 2); ctx.fill();
+  ctx.fillStyle = '#7a7a7a';
+  ctx.fillRect(x+w/2-7, y-3, 14, 4);
+  if(activePowers.laser){
+    ctx.fillStyle = '#ff7ab6';
+    ctx.fillRect(x+10, y-6, 4, 6);
+    ctx.fillRect(x+w-14, y-6, 4, 6);
   }
-
-  if (key === 'p' || key === 'P') {
-    paused = !paused;
-    playSfx('level');
-    return false;
+  if(activePowers.hotdog){
+    // Tan launchers on the outer edges
+    ctx.fillStyle = '#a64b21';
+    ctx.fillRect(x+2, y-7, 5, 7);
+    ctx.fillRect(x+w-7, y-7, 5, 7);
   }
-
-  if (key === 'm' || key === 'M') {
-    toggleSound();
-    return false;
-  }
-
-  if (key === 'r' || key === 'R') {
-    resetGame();
-    return false;
+  if(activePowers.plunger){
+    // A faint magnet aura swept above the paddle
+    ctx.globalAlpha = 0.18 + 0.07*Math.sin(performance.now()*0.01);
+    const grd = ctx.createRadialGradient(paddle.x, paddle.y, 4, paddle.x, paddle.y, w*0.9);
+    grd.addColorStop(0, '#b290ff');
+    grd.addColorStop(1, 'rgba(178,144,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, paddle.y - 80, W, 80);
+    ctx.globalAlpha = 1;
   }
 }
 
-function keyReleased() {
-  if (keyCode === LEFT_ARROW || key === 'a' || key === 'A') controlLeft = false;
-  if (keyCode === RIGHT_ARROW || key === 'd' || key === 'D') controlRight = false;
-}
-
-function mousePressed() {
-  unlockAudio();
-  if (onboardingOpen) {
-    hideWelcomeGuide();
-    return;
+function drawBall(b){
+  const ghostly = b.ghost > 0;
+  for(let i=0;i<b.trail.length;i++){
+    const t = b.trail[i]; const a = i/b.trail.length;
+    ctx.globalAlpha = a*0.4 * (ghostly ? 0.6 : 1);
+    ctx.fillStyle = ghostly ? '#cdd5ff' : (b.fire>0 ? '#ff9d74' : '#9bc3b1');
+    ctx.beginPath(); ctx.arc(t.x,t.y,b.r*a,0,6.283); ctx.fill();
   }
-  if (gameOver || gameWon) {
-    resetGame();
-    return;
-  }
-  if ((awaitingLaunch || stuckBall) && !paused) launchBall();
+  ctx.globalAlpha = ghostly ? 0.55 : 1;
+
+  const x=b.x, y=b.y, r=b.r;
+  ctx.shadowColor = b.fire>0 ? '#ffb070' : '#7a4d2a';
+  ctx.shadowBlur = b.fire>0 ? 20 : 10;
+  const grd = ctx.createRadialGradient(x-r*0.3,y-r*0.3,r*0.2,x,y,r*1.1);
+  if(b.fire>0){ grd.addColorStop(0,'#fff1c2'); grd.addColorStop(0.4,'#ffb070'); grd.addColorStop(1,'#a64b21'); }
+  else        { grd.addColorStop(0,'#a87246'); grd.addColorStop(0.5,'#7a4d2a'); grd.addColorStop(1,'#4f3018'); }
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(x,y,r,0,6.283); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.fillStyle = b.fire>0 ? '#ffd49b' : '#a87246';
+  ctx.arc(x,y-r*0.55,r*0.55,0,6.283); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.1,r*0.18,0,6.283); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.3,y-r*0.1,r*0.18,0,6.283); ctx.fill();
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.1,r*0.08,0,6.283); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+r*0.3,y-r*0.1,r*0.08,0,6.283); ctx.fill();
+  ctx.globalAlpha = 1;
 }
 
-function touchStarted() {
-  unlockAudio();
-  mouseInputActive = false;
-  if (onboardingOpen) {
-    hideWelcomeGuide();
-    return false;
-  }
-  if (gameOver || gameWon) {
-    resetGame();
-    return false;
-  }
-  if ((awaitingLaunch || stuckBall) && !paused) launchBall();
-  return false;
+function drawPowerup(p){
+  const y = p.y + Math.sin(p.wob)*2;
+  ctx.shadowColor = p.col; ctx.shadowBlur = 16;
+  ctx.fillStyle = p.bad ? 'rgba(70,20,30,.85)' : 'rgba(0,30,20,.7)';
+  roundRect(ctx, p.x-16, y-12, 32, 24, 8); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = p.col; ctx.lineWidth = 1.5;
+  roundRect(ctx, p.x-16, y-12, 32, 24, 8); ctx.stroke();
+  ctx.font = '18px system-ui';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(p.e, p.x, y+1);
+  ctx.textBaseline='alphabetic';
 }
 
-function mouseMoved() {
-  mouseInputActive = true;
+function roundRect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+  c.closePath();
 }
 
-function mouseDragged() {
-  mouseInputActive = true;
+/* ---- Loop ---- */
+function loop(now){
+  const dt = Math.min(33, now - lastTime);
+  lastTime = now;
+  if(state === 'playing' && !paused){ step(dt); }
+  render();
+  requestAnimationFrame(loop);
 }
 
-function togglePauseExternal() {
-  if (onboardingOpen) return;
-  if (gameOver || gameWon) return;
-  paused = !paused;
-}
+/* ---- Boot ---- */
+resize();
+paddle = newPaddle();
+buildStars();
+pickTitleQuip();
+lastTime = performance.now();
+requestAnimationFrame(loop);
 
-function restartExternal() {
-  resetGame();
-}
+let lastTouch = 0;
+document.addEventListener('touchend', e=>{
+  const now = Date.now();
+  if(now - lastTouch <= 350) e.preventDefault();
+  lastTouch = now;
+}, {passive:false});
 
-const mobileControls = document.getElementById('mobileControls');
-if (mobileControls) {
-  let holdTimer = null;
-  const clearHoldTimer = () => {
-    if (holdTimer) {
-      clearInterval(holdTimer);
-      holdTimer = null;
-    }
-  };
-  clearMobileHoldTimerRef = clearHoldTimer;
+document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
 
-  mobileControls.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    unlockAudio();
-    mouseInputActive = false;
-    if (onboardingOpen) {
-      hideWelcomeGuide();
-      return;
-    }
-    const target = e.target.closest('[data-action]');
-    if (!target) return;
-    const action = target.getAttribute('data-action');
-    clearHoldTimer();
-    controlLeft = false;
-    controlRight = false;
-
-    const run = () => {
-      if (action === 'left') controlLeft = true;
-      if (action === 'right') controlRight = true;
-      if (action === 'launch') {
-        if (awaitingLaunch || stuckBall) launchBall();
-        else paused = !paused;
-      }
-    };
-
-    run();
-    if (action === 'left' || action === 'right') holdTimer = setInterval(run, 80);
-  });
-
-  const stop = () => {
-    controlLeft = false;
-    controlRight = false;
-    clearHoldTimer();
-  };
-
-  mobileControls.addEventListener('pointerup', stop);
-  mobileControls.addEventListener('pointercancel', stop);
-  mobileControls.addEventListener('pointerleave', stop);
-}
-
-window.addEventListener('blur', handleWindowBlur);
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) handleWindowBlur();
-});
 </script>
 </body>
 </html>
