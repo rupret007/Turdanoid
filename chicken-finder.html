@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chicken Sandwich Finder 🍗</title>
+    <meta name="theme-color" content="#FF6B35">
+    <meta name="description" content="Find the best chicken sandwiches near you">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiNGRjZCMzUiLz4KPGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iNzIiIGZpbGw9IndoaXRlIi8+CjxjaXJjbGUgY3g9Ijk2IiBjeT0iOTYiIHI9IjUyIiBmaWxsPSIjRkY2QjM1Ii8+Cjx0ZXh0IHg9Ijk2IiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI0ZGRkZGRiI+8J+UjzwvdGV4dD4KPC9zdmc+">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #FF6B35, #F7931E);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6B35, #F7931E);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .search-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #FF6B35;
+        }
+
+        .search-btn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            min-width: 80px;
+        }
+
+        .search-btn:hover {
+            background: #e55a2b;
+        }
+
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .location-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .location-btn:hover {
+            background: #218838;
+        }
+
+        .location-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .filter-btn {
+            background: white;
+            border: 2px solid #e9ecef;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: #FF6B35;
+            color: white;
+            border-color: #FF6B35;
+        }
+
+        .results-section {
+            padding: 20px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-count {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .sort-select {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+        }
+
+        .restaurant-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .restaurant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .restaurant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .restaurant-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .restaurant-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stars {
+            color: #FFD700;
+        }
+
+        .restaurant-address {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .restaurant-distance {
+            color: #FF6B35;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .restaurant-phone {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .restaurant-phone:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6B35;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-results h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .install-prompt {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #bbdefb;
+        }
+
+        .install-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .install-btn:hover {
+            background: #1565c0;
+        }
+
+        @media (max-width: 480px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .search-btn {
+                width: 100%;
+            }
+            
+            .filters {
+                justify-content: center;
+            }
+            
+            .restaurant-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .restaurant-hours {
+            font-size: 0.8rem;
+            color: #28a745;
+            margin-top: 5px;
+        }
+
+        .restaurant-hours.closed {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🍗 Chicken Sandwich Finder</h1>
+            <p>Discover the best chicken sandwiches near you</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search for restaurants or chicken sandwiches...">
+                <button class="search-btn" id="searchBtn">Search</button>
+            </div>
+            <button class="location-btn" id="locationBtn">📍 Use My Location</button>
+            
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="fast-food">Fast Food</button>
+                <button class="filter-btn" data-filter="restaurant">Restaurants</button>
+                <button class="filter-btn" data-filter="cafe">Cafes</button>
+                <button class="filter-btn" data-filter="food-truck">Food Trucks</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <div class="results-count" id="resultsCount">Find restaurants near you</div>
+                <select class="sort-select" id="sortSelect">
+                    <option value="distance">Sort by Distance</option>
+                    <option value="rating">Sort by Rating</option>
+                    <option value="name">Sort by Name</option>
+                </select>
+            </div>
+            
+            <div id="resultsContainer">
+                <div class="loading" id="loadingState" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Finding chicken sandwiches near you...</p>
+                </div>
+                
+                <div class="no-results" id="noResults" style="display: none;">
+                    <h3>No chicken sandwiches found</h3>
+                    <p>Try adjusting your search or location</p>
+                </div>
+                
+                <div id="restaurantsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ChickenSandwichFinder {
+            constructor() {
+                this.userLocation = null;
+                this.restaurants = [];
+                this.filteredRestaurants = [];
+                this.currentFilter = 'all';
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadSampleData();
+                this.checkLocationPermission();
+            }
+
+            initializeElements() {
+                this.searchInput = document.getElementById('searchInput');
+                this.searchBtn = document.getElementById('searchBtn');
+                this.locationBtn = document.getElementById('locationBtn');
+                this.resultsCount = document.getElementById('resultsCount');
+                this.resultsContainer = document.getElementById('restaurantsList');
+                this.loadingState = document.getElementById('loadingState');
+                this.noResults = document.getElementById('noResults');
+                this.sortSelect = document.getElementById('sortSelect');
+            }
+
+            bindEvents() {
+                this.searchBtn.addEventListener('click', () => this.searchRestaurants());
+                this.searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchRestaurants();
+                });
+                this.locationBtn.addEventListener('click', () => this.getUserLocation());
+                this.sortSelect.addEventListener('change', () => this.sortRestaurants());
+                
+                // Filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.setFilter(e.target.dataset.filter));
+                });
+            }
+
+            loadSampleData() {
+                // Sample restaurant data - in a real app, this would come from an API
+                this.restaurants = [
+                    {
+                        id: 1,
+                        name: "Chick-fil-A",
+                        address: "123 Main St, Downtown",
+                        phone: "(555) 123-4567",
+                        rating: 4.5,
+                        distance: 0.8,
+                        category: "fast-food",
+                        hours: "6:00 AM - 10:00 PM",
+                        isOpen: true,
+                        specialties: ["Classic Chicken Sandwich", "Spicy Deluxe", "Grilled Chicken Club"]
+                    },
+                    {
+                        id: 2,
+                        name: "Popeyes Louisiana Kitchen",
+                        address: "456 Oak Ave, Midtown",
+                        phone: "(555) 234-5678",
+                        rating: 4.2,
+                        distance: 1.2,
+                        category: "fast-food",
+                        hours: "10:00 AM - 11:00 PM",
+                        isOpen: true,
+                        specialties: ["Spicy Chicken Sandwich", "Classic Chicken Sandwich", "Tender Box"]
+                    },
+                    {
+                        id: 3,
+                        name: "The Chicken Shack",
+                        address: "789 Pine St, Uptown",
+                        phone: "(555) 345-6789",
+                        rating: 4.7,
+                        distance: 2.1,
+                        category: "restaurant",
+                        hours: "11:00 AM - 9:00 PM",
+                        isOpen: false,
+                        specialties: ["Nashville Hot Chicken", "Buffalo Chicken Sandwich", "Grilled Chicken Wrap"]
+                    },
+                    {
+                        id: 4,
+                        name: "KFC",
+                        address: "321 Elm St, Westside",
+                        phone: "(555) 456-7890",
+                        rating: 3.8,
+                        distance: 1.8,
+                        category: "fast-food",
+                        hours: "10:30 AM - 10:00 PM",
+                        isOpen: true,
+                        specialties: ["Original Recipe Sandwich", "Extra Crispy Sandwich", "Zinger Sandwich"]
+                    },
+                    {
+                        id: 5,
+                        name: "Gourmet Chicken Co.",
+                        address: "654 Maple Dr, Eastside",
+                        phone: "(555) 567-8901",
+                        rating: 4.9,
+                        distance: 3.2,
+                        category: "restaurant",
+                        hours: "5:00 PM - 10:00 PM",
+                        isOpen: true,
+                        specialties: ["Truffle Chicken Sandwich", "Avocado Chicken Club", "Sriracha Honey Chicken"]
+                    },
+                    {
+                        id: 6,
+                        name: "Chicken & Waffles Cafe",
+                        address: "987 Cedar Ln, Northside",
+                        phone: "(555) 678-9012",
+                        rating: 4.4,
+                        distance: 2.5,
+                        category: "cafe",
+                        hours: "7:00 AM - 3:00 PM",
+                        isOpen: false,
+                        specialties: ["Chicken & Waffles", "Fried Chicken Sandwich", "Chicken Biscuit"]
+                    },
+                    {
+                        id: 7,
+                        name: "The Cluck Truck",
+                        address: "Food Truck - Various Locations",
+                        phone: "(555) 789-0123",
+                        rating: 4.6,
+                        distance: 0.5,
+                        category: "food-truck",
+                        hours: "11:00 AM - 8:00 PM",
+                        isOpen: true,
+                        specialties: ["Nashville Hot Chicken", "Korean Fried Chicken", "Buffalo Chicken"]
+                    }
+                ];
+                
+                this.filteredRestaurants = [...this.restaurants];
+                this.displayRestaurants();
+            }
+
+            async getUserLocation() {
+                this.locationBtn.disabled = true;
+                this.locationBtn.textContent = "Getting location...";
+                
+                if (!navigator.geolocation) {
+                    this.showError("Geolocation is not supported by this browser.");
+                    return;
+                }
+
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 300000
+                        });
+                    });
+
+                    this.userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    this.searchRestaurants();
+                    this.showSuccess("Location found! Searching for nearby restaurants...");
+                } catch (error) {
+                    console.error('Location error:', error);
+                    this.showError("Unable to get your location. Please try again or search manually.");
+                } finally {
+                    this.locationBtn.disabled = false;
+                    this.locationBtn.textContent = "📍 Use My Location";
+                }
+            }
+
+            searchRestaurants() {
+                const query = this.searchInput.value.trim().toLowerCase();
+                this.showLoading();
+
+                setTimeout(() => {
+                    if (query) {
+                        this.filteredRestaurants = this.restaurants.filter(restaurant => 
+                            restaurant.name.toLowerCase().includes(query) ||
+                            restaurant.specialties.some(specialty => 
+                                specialty.toLowerCase().includes(query)
+                            ) ||
+                            restaurant.address.toLowerCase().includes(query)
+                        );
+                    } else {
+                        this.filteredRestaurants = [...this.restaurants];
+                    }
+
+                    this.applyFilter();
+                    this.displayRestaurants();
+                }, 1000);
+            }
+
+            setFilter(filter) {
+                this.currentFilter = filter;
+                
+                // Update active filter button
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+                
+                this.applyFilter();
+                this.displayRestaurants();
+            }
+
+            applyFilter() {
+                if (this.currentFilter === 'all') {
+                    // No additional filtering needed
+                } else {
+                    this.filteredRestaurants = this.filteredRestaurants.filter(restaurant => 
+                        restaurant.category === this.currentFilter
+                    );
+                }
+            }
+
+            sortRestaurants() {
+                const sortBy = this.sortSelect.value;
+                
+                this.filteredRestaurants.sort((a, b) => {
+                    switch (sortBy) {
+                        case 'distance':
+                            return a.distance - b.distance;
+                        case 'rating':
+                            return b.rating - a.rating;
+                        case 'name':
+                            return a.name.localeCompare(b.name);
+                        default:
+                            return 0;
+                    }
+                });
+                
+                this.displayRestaurants();
+            }
+
+            displayRestaurants() {
+                this.hideLoading();
+                
+                if (this.filteredRestaurants.length === 0) {
+                    this.showNoResults();
+                    return;
+                }
+
+                this.resultsCount.textContent = `${this.filteredRestaurants.length} chicken sandwich spots found`;
+                
+                this.resultsContainer.innerHTML = this.filteredRestaurants.map(restaurant => `
+                    <div class="restaurant-card">
+                        <div class="restaurant-header">
+                            <div>
+                                <div class="restaurant-name">${restaurant.name}</div>
+                                <div class="restaurant-rating">
+                                    <span class="stars">${'★'.repeat(Math.floor(restaurant.rating))}${'☆'.repeat(5 - Math.floor(restaurant.rating))}</span>
+                                    ${restaurant.rating}
+                                </div>
+                            </div>
+                            <div class="restaurant-distance">${restaurant.distance} mi</div>
+                        </div>
+                        <div class="restaurant-address">${restaurant.address}</div>
+                        <div class="restaurant-hours ${restaurant.isOpen ? '' : 'closed'}">
+                            ${restaurant.isOpen ? '🟢 Open' : '🔴 Closed'} - ${restaurant.hours}
+                        </div>
+                        <a href="tel:${restaurant.phone}" class="restaurant-phone">📞 ${restaurant.phone}</a>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                            <strong>Specialties:</strong> ${restaurant.specialties.join(', ')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            showLoading() {
+                this.loadingState.style.display = 'block';
+                this.noResults.style.display = 'none';
+                this.resultsContainer.style.display = 'none';
+            }
+
+            hideLoading() {
+                this.loadingState.style.display = 'none';
+                this.resultsContainer.style.display = 'block';
+            }
+
+            showNoResults() {
+                this.noResults.style.display = 'block';
+                this.resultsContainer.style.display = 'none';
+                this.resultsCount.textContent = 'No results found';
+            }
+
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = message;
+                
+                // Remove any existing error messages
+                document.querySelectorAll('.error').forEach(el => el.remove());
+                
+                document.querySelector('.search-section').appendChild(errorDiv);
+                
+                setTimeout(() => {
+                    errorDiv.remove();
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'error';
+                successDiv.style.background = '#d4edda';
+                successDiv.style.color = '#155724';
+                successDiv.style.borderColor = '#c3e6cb';
+                successDiv.textContent = message;
+                
+                // Remove any existing messages
+                document.querySelectorAll('.error').forEach(el => el.remove());
+                
+                document.querySelector('.search-section').appendChild(successDiv);
+                
+                setTimeout(() => {
+                    successDiv.remove();
+                }, 3000);
+            }
+
+            checkLocationPermission() {
+                // Check if location permission was previously granted
+                if (navigator.permissions) {
+                    navigator.permissions.query({name: 'geolocation'}).then(result => {
+                        if (result.state === 'granted') {
+                            this.getUserLocation();
+                        }
+                    });
+                }
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChickenSandwichFinder();
+        });
+
+        // PWA installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const installPrompt = document.createElement('div');
+            installPrompt.className = 'install-prompt';
+            installPrompt.innerHTML = `
+                <p>Install Chicken Sandwich Finder for quick access!</p>
+                <button class="install-btn" id="installBtn">Install App</button>
+            `;
+            
+            document.querySelector('.app-container').insertBefore(installPrompt, document.querySelector('.search-section'));
+            
+            document.getElementById('installBtn').addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                    installPrompt.remove();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
