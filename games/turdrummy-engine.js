@@ -4,7 +4,7 @@
  * Ported from turdrummy.html to be unit-testable.
  */
 
-export const SUITS = ["C", "D", "H", "S"];
+export const SUITS = ['C', 'D', 'H', 'S'];
 export const SUIT_ORDER = { C: 0, D: 1, H: 2, S: 3 };
 
 export class TurdRummyEngine {
@@ -62,7 +62,7 @@ export class TurdRummyEngine {
       ranks[card.rank] = (ranks[card.rank] || []);
       ranks[card.rank].push(card);
     });
-    
+
     return Object.values(ranks).filter(group => group.length >= 3);
   }
 
@@ -80,16 +80,16 @@ export class TurdRummyEngine {
     for (const suit in suits) {
       const sorted = suits[suit].sort((a, b) => a.rank - b.rank);
       let currentRun = [sorted[0]];
-      
+
       for (let i = 1; i < sorted.length; i++) {
         if (sorted[i].rank === sorted[i-1].rank + 1) {
           currentRun.push(sorted[i]);
         } else {
-          if (currentRun.length >= 3) runs.push(currentRun);
+          if (currentRun.length >= 3) {runs.push(currentRun);}
           currentRun = [sorted[i]];
         }
       }
-      if (currentRun.length >= 3) runs.push(currentRun);
+      if (currentRun.length >= 3) {runs.push(currentRun);}
     }
     return runs;
   }

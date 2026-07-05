@@ -10,7 +10,17 @@ describe('CrapeightsEngine', () => {
 
   describe('Initialization', () => {
     it('should create a 52-card deck for single deck', () => {
-      expect(game.deck.length).toBe(52);
+      // The constructor deals 5 cards to each player and flips one to the
+      // discard pile, so verify the full deck across all piles.
+      const total = game.deck.length + game.playerHand.length + game.cpuHand.length + game.discardPile.length;
+      expect(total).toBe(52);
+      expect(game.playerHand.length).toBe(5);
+      expect(game.cpuHand.length).toBe(5);
+      expect(game.discardPile.length).toBe(1);
+      // No duplicate cards anywhere
+      const all = [...game.deck, ...game.playerHand, ...game.cpuHand, ...game.discardPile];
+      const keys = new Set(all.map((c) => `${c.rank}${c.suit}`));
+      expect(keys.size).toBe(52);
     });
 
     it('should deal 5 cards to each player', () => {
@@ -31,7 +41,7 @@ describe('CrapeightsEngine', () => {
     it('should allow playing card matching suit', () => {
       const topCard = game.getTopCard();
       const matchingCard = game.playerHand.find(c => c.suit === topCard.suit);
-      
+
       if (matchingCard) {
         const result = game.playCard(matchingCard);
         expect(result.valid).toBe(true);
@@ -41,7 +51,7 @@ describe('CrapeightsEngine', () => {
     it('should allow playing card matching rank', () => {
       const topCard = game.getTopCard();
       const matchingRankCard = game.playerHand.find(c => c.rank === topCard.rank && c.suit !== topCard.suit);
-      
+
       if (matchingRankCard) {
         const result = game.playCard(matchingRankCard);
         expect(result.valid).toBe(true);
@@ -50,7 +60,7 @@ describe('CrapeightsEngine', () => {
 
     it('should allow playing 8 anytime', () => {
       const eightCard = game.playerHand.find(c => c.rank === '8');
-      
+
       if (eightCard) {
         const result = game.playCard(eightCard, 'H'); // Declare hearts
         expect(result.valid).toBe(true);
@@ -63,7 +73,7 @@ describe('CrapeightsEngine', () => {
       const nonMatchingCard = game.playerHand.find(
         c => c.suit !== topCard.suit && c.rank !== topCard.rank && c.rank !== '8'
       );
-      
+
       if (nonMatchingCard) {
         const result = game.playCard(nonMatchingCard);
         expect(result.valid).toBe(false);
@@ -82,7 +92,7 @@ describe('CrapeightsEngine', () => {
     it('should add drawn card to hand', () => {
       const initialHandSize = game.playerHand.length;
       const result = game.drawFromDeck();
-      
+
       expect(game.playerHand.length).toBe(initialHandSize + 1);
       expect(result.card).toBeDefined();
     });
@@ -94,9 +104,9 @@ describe('CrapeightsEngine', () => {
       game.playerHand = [{ rank: '8', suit: 'S' }];
       game.discardPile = [{ rank: '7', suit: 'H' }];
       game.currentSuit = 'H';
-      
+
       const result = game.playCard(game.playerHand[0], 'S');
-      
+
       expect(result.valid).toBe(true);
       expect(game.gameOver).toBe(true);
       expect(game.winner).toBe('player');
@@ -107,10 +117,11 @@ describe('CrapeightsEngine', () => {
       game.discardPile = [{ rank: '7', suit: 'H' }];
       game.currentSuit = 'H';
       game.currentPlayer = 'cpu';
-      
-      // Simulate CPU playing their winning card
-      game.discardPile.push(game.cpuHand.pop());
-      
+
+      // CPU plays its last card (an 8, always playable) through the engine
+      const result = game.cpuPlay();
+
+      expect(result.action).toBe('play');
       expect(game.cpuHand.length).toBe(0);
       expect(game.gameOver).toBe(true);
       expect(game.winner).toBe('cpu');
@@ -135,9 +146,9 @@ describe('CrapeightsEngine', () => {
     it('should reshuffle discard when deck is empty', () => {
       game.deck = [];
       game.discardPile = [{ rank: '7', suit: 'H' }, { rank: '8', suit: 'S' }];
-      
+
       game.reshuffleDiscard();
-      
+
       expect(game.deck.length).toBe(1);
       expect(game.discardPile.length).toBe(1);
     });

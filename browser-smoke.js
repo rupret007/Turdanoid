@@ -1,7 +1,9 @@
-const { chromium, devices } = require('playwright');
+import { chromium, devices } from 'playwright';
 
 const baseUrl = process.argv[2] || 'http://127.0.0.1:8123';
-const browserChannel = process.env.PLAYWRIGHT_CHANNEL || 'msedge';
+// Default to the Edge channel (Windows dev workflow). Set PLAYWRIGHT_CHANNEL=""
+// to use Playwright's bundled Chromium (Linux/CI).
+const browserChannel = process.env.PLAYWRIGHT_CHANNEL ?? 'msedge';
 const failures = [];
 
 function fail(name, message) {
@@ -46,10 +48,18 @@ async function runCheck(browser, name, path, options = {}) {
 
 async function launchBrowser() {
   try {
-    return await chromium.launch({ channel: browserChannel, headless: true });
+    return await chromium.launch({ channel: browserChannel || undefined, headless: true });
   } catch (err) {
-    const channelDetail = browserChannel ? `channel "${browserChannel}"` : 'default browser';
-    throw new Error(`Could not launch ${channelDetail}: ${err.message}`);
+    if (!browserChannel) {
+      throw new Error(`Could not launch bundled Chromium: ${err.message}`);
+    }
+    // Fall back to Playwright's bundled Chromium (e.g. on Linux where the
+    // default Edge channel is unavailable).
+    try {
+      return await chromium.launch({ headless: true });
+    } catch (fallbackErr) {
+      throw new Error(`Could not launch channel "${browserChannel}" (${err.message}) or bundled Chromium (${fallbackErr.message})`);
+    }
   }
 }
 
@@ -118,30 +128,58 @@ async function main() {
     await runCheck(browser, 'turdanoid-mobile', 'TurdAnoid.html', {
       mobile: true,
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.locator('#btnStart').click();
+        await page.waitForTimeout(180);
         const canvas = page.locator('canvas');
-        if (!(await canvas.isVisible())) fail('turdanoid-mobile', 'canvas not visible after guide close');
+        if (!(await canvas.isVisible())) fail('turdanoid-mobile', 'canvas not visible after starting the game');
+        const started = await page.evaluate(() => window.__turdanoid.state === 'playing');
+        if (!started) fail('turdanoid-mobile', 'START FLUSHING should put the game into the playing state');
       }
     });
 
     await runCheck(browser, 'turdanoid-restart-churn', 'TurdAnoid.html', {
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Quick Start' }).click();
+        await page.locator('#btnStart').click();
         await page.waitForTimeout(180);
         const turdanoidRestartState = await page.evaluate(() => {
-          togglePauseExternal();
-          restartExternal();
-          restartExternal();
-          return { paused, level, score, awaitingLaunch, onboardingOpen, gameOver, gameWon };
+          const g = window.__turdanoid;
+          g.doPause();
+          // Restart twice to churn state (R key path uses the same function)
+          g.startGame();
+          g.startGame();
+          return {
+            state: g.state,
+            level: g.level,
+            score: g.score,
+            waitingLaunch: g.waitingLaunch,
+            levelTransition: g.levelTransition,
+            bricks: g.bricks.length
+          };
         });
-        if (turdanoidRestartState.paused) fail('turdanoid-restart-churn', 'restart churn should clear pause state');
-        if (!turdanoidRestartState.awaitingLaunch) fail('turdanoid-restart-churn', 'restart churn should return TurdAnoid to launch-ready state');
+        if (turdanoidRestartState.state !== 'playing') fail('turdanoid-restart-churn', `restart churn should leave the game playing, saw ${turdanoidRestartState.state}`);
+        if (!turdanoidRestartState.waitingLaunch) fail('turdanoid-restart-churn', 'restart churn should return TurdAnoid to launch-ready state');
         if (turdanoidRestartState.level !== 1 || turdanoidRestartState.score !== 0) {
           fail('turdanoid-restart-churn', `restart churn should reset score/level, saw L${turdanoidRestartState.level} S${turdanoidRestartState.score}`);
         }
-        if (turdanoidRestartState.onboardingOpen || turdanoidRestartState.gameOver || turdanoidRestartState.gameWon) {
-          fail('turdanoid-restart-churn', 'restart churn should not reopen guide or leave end-state flags set');
-        }
+        if (turdanoidRestartState.levelTransition) fail('turdanoid-restart-churn', 'restart churn should not leave a level transition pending');
+        if (turdanoidRestartState.bricks === 0) fail('turdanoid-restart-churn', 'restart churn should rebuild the brick wall');
+      }
+    });
+
+    await runCheck(browser, 'turdanoid-blur-pause', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.locator('#btnStart').click();
+        await page.waitForTimeout(180);
+        const blurState = await page.evaluate(() => {
+          window.dispatchEvent(new Event('blur'));
+          return { state: window.__turdanoid.state };
+        });
+        if (blurState.state !== 'paused') fail('turdanoid-blur-pause', `blur should pause TurdAnoid, saw ${blurState.state}`);
+        const resumeState = await page.evaluate(() => {
+          window.__turdanoid.doResume();
+          return { state: window.__turdanoid.state };
+        });
+        if (resumeState.state !== 'playing') fail('turdanoid-blur-pause', 'resume should return to playing after blur pause');
       }
     });
 

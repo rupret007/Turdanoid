@@ -34,9 +34,9 @@ export function createShoe(decks = 1) {
  * Calculates the value of a card for scoring.
  */
 export function getCardValue(card) {
-  if (!card) return 0;
-  if (card.rank === 'A') return 11;
-  if (['K', 'Q', 'J'].includes(card.rank)) return 10;
+  if (!card) {return 0;}
+  if (card.rank === 'A') {return 11;}
+  if (['K', 'Q', 'J'].includes(card.rank)) {return 10;}
   return parseInt(card.rank, 10);
 }
 
@@ -48,7 +48,7 @@ export function handValue(hand) {
   let aces = 0;
   for (const card of hand) {
     total += getCardValue(card);
-    if (card.rank === 'A') aces++;
+    if (card.rank === 'A') {aces++;}
   }
   while (total > 21 && aces > 0) {
     total -= 10;
@@ -65,7 +65,7 @@ export function isSoftHand(hand) {
   let aces = 0;
   for (const c of hand) {
     total += getCardValue(c);
-    if (c.rank === 'A') aces++;
+    if (c.rank === 'A') {aces++;}
   }
   while (total > 21 && aces > 0) {
     total -= 10;
@@ -78,8 +78,8 @@ export function isSoftHand(hand) {
  * Returns the Hi-Lo value of a card for card counting.
  */
 export function hiLoValue(card) {
-  if (!card) return 0;
-  if (['2', '3', '4', '5', '6'].includes(card.rank)) return 1;
-  if (['10', 'J', 'Q', 'K', 'A'].includes(card.rank)) return -1;
+  if (!card) {return 0;}
+  if (['2', '3', '4', '5', '6'].includes(card.rank)) {return 1;}
+  if (['10', 'J', 'Q', 'K', 'A'].includes(card.rank)) {return -1;}
   return 0;
 }

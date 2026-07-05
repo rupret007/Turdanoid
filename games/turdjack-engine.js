@@ -21,13 +21,13 @@ export const DEFAULT_RULES = {
  * @param {Object} options - { playerHand, dealerUpCard, canDouble, canSplit, canSurrender, rules }
  * @returns {Object} { action, reason }
  */
-export function getStrategyAction({ 
-  playerHand, 
-  dealerUpCard, 
-  canDouble = false, 
-  canSplit = false, 
-  canSurrender = false, 
-  rules = DEFAULT_RULES 
+export function getStrategyAction({
+  playerHand,
+  dealerUpCard,
+  canDouble = false,
+  canSplit = false,
+  canSurrender = false,
+  rules = DEFAULT_RULES
 }) {
   const up = typeof dealerUpCard === 'object' ? getCardValue(dealerUpCard) : dealerUpCard;
   const total = handValue(playerHand);
@@ -36,16 +36,16 @@ export function getStrategyAction({
 
   if (canSplit) {
     const rank = playerHand[0].rank;
-    if (rank === 'A' || rank === '8') return { action: 'split', reason: 'Always split aces and eights.' };
-    if (['10', 'J', 'Q', 'K'].includes(rank)) return { action: 'stand', reason: 'Keep a made 20.' };
+    if (rank === 'A' || rank === '8') {return { action: 'split', reason: 'Always split aces and eights.' };}
+    if (['10', 'J', 'Q', 'K'].includes(rank)) {return { action: 'stand', reason: 'Keep a made 20.' };}
     if (rank === '9') {
       return ([2, 3, 4, 5, 6, 8, 9].includes(up))
         ? { action: 'split', reason: '9,9 splits into stronger edges here.' }
         : { action: 'stand', reason: '9,9 should stand versus 7, 10, or Ace.' };
     }
-    if (rank === '7') return up <= 7
+    if (rank === '7') {return up <= 7
       ? { action: 'split', reason: '7,7 split window versus weak dealer upcards.' }
-      : { action: 'hit', reason: '7,7 is too weak to split here.' };
+      : { action: 'hit', reason: '7,7 is too weak to split here.' };}
     if (rank === '6') {
       const splitWindow = rules.allowDoubleAfterSplit ? (up >= 2 && up <= 6) : (up >= 3 && up <= 6);
       return splitWindow
@@ -75,12 +75,12 @@ export function getStrategyAction({
   }
 
   if (soft) {
-    if (total >= 19) return { action: 'stand', reason: 'Soft 19+ is strong enough to stand.' };
+    if (total >= 19) {return { action: 'stand', reason: 'Soft 19+ is strong enough to stand.' };}
     if (total === 18) {
       if (canDouble && ((up >= 3 && up <= 6) || (dealerHitsSoft17 && up === 2))) {
         return { action: 'double', reason: 'Soft 18 can press value with a double here.' };
       }
-      if (up >= 9 || up === 11) return { action: 'hit', reason: 'Soft 18 needs improvement versus strong upcards.' };
+      if (up >= 9 || up === 11) {return { action: 'hit', reason: 'Soft 18 needs improvement versus strong upcards.' };}
       return { action: 'stand', reason: 'Soft 18 is stable against this upcard.' };
     }
     if (total === 17) {
@@ -103,7 +103,7 @@ export function getStrategyAction({
     }
   }
 
-  if (total >= 17) return { action: 'stand', reason: 'Hard 17+ stands.' };
+  if (total >= 17) {return { action: 'stand', reason: 'Hard 17+ stands.' };}
   if (total >= 13 && total <= 16) {
     return (up >= 2 && up <= 6)
       ? { action: 'stand', reason: 'Dealer bust range makes standing best.' }
@@ -134,9 +134,9 @@ export function getStrategyAction({
 }
 
 function getCardValue(card) {
-  if (!card) return 0;
-  if (card.rank === 'A') return 11;
-  if (['K', 'Q', 'J'].includes(card.rank)) return 10;
+  if (!card) {return 0;}
+  if (card.rank === 'A') {return 11;}
+  if (['K', 'Q', 'J'].includes(card.rank)) {return 10;}
   return parseInt(card.rank, 10);
 }
 
@@ -144,12 +144,161 @@ export function isBlackjack(hand) {
   return hand.length === 2 && handValue(hand) === 21;
 }
 
+/**
+ * Playable Blackjack round engine: betting, dealing, hit/stand/surrender/split,
+ * dealer play, payout resolution, and running stats.
+ */
+export class TurdjackEngine {
+  constructor(rules = {}, bankroll = INITIAL_BANKROLL) {
+    this.rules = { ...DEFAULT_RULES, ...rules };
+    this.bankroll = bankroll;
+    this.currentBet = 0;
+    this.shoe = createShoe(this.rules.decks);
+    this.playerHand = [];
+    this.dealerHand = [];
+    this.splitHand = [];
+    this.splitRound = false;
+    this.roundActive = false;
+    this.stats = { hands: 0, wins: 0, losses: 0, pushes: 0, blackjacks: 0, surrenders: 0 };
+  }
+
+  getCardValue(card) {
+    return getCardValue(card);
+  }
+
+  getHandValue(hand) {
+    return handValue(hand);
+  }
+
+  isBlackjack(hand) {
+    return isBlackjack(hand);
+  }
+
+  drawCard() {
+    if (this.shoe.length === 0) {
+      this.shoe = createShoe(this.rules.decks);
+    }
+    return this.shoe.pop();
+  }
+
+  placeBet(amount) {
+    if (this.roundActive) {return false;}
+    if (amount < MIN_BET) {return false;}
+    if (amount > this.bankroll) {return false;}
+    this.currentBet = amount;
+    this.bankroll -= amount;
+    return true;
+  }
+
+  startRound() {
+    if (this.currentBet <= 0) {return false;}
+    this.playerHand = [this.drawCard(), this.drawCard()];
+    this.dealerHand = [this.drawCard(), this.drawCard()];
+    this.splitHand = [];
+    this.splitRound = false;
+    this.roundActive = true;
+    this.stats.hands++;
+    return true;
+  }
+
+  hit() {
+    if (!this.roundActive) {return null;}
+    const card = this.drawCard();
+    this.playerHand.push(card);
+    if (this.getHandValue(this.playerHand) > 21) {
+      this.roundActive = false;
+      this.stats.losses++;
+      this.currentBet = 0;
+    }
+    return card;
+  }
+
+  stand() {
+    if (!this.roundActive) {return false;}
+    this.playDealer();
+    this.resolveRound();
+    return true;
+  }
+
+  playDealer() {
+    for (;;) {
+      const total = this.getHandValue(this.dealerHand);
+      if (total > 17) {break;}
+      if (total === 17 && !(this.rules.dealerHitsSoft17 && isSoft17(this.dealerHand))) {break;}
+      this.dealerHand.push(this.drawCard());
+    }
+  }
+
+  surrender() {
+    if (!this.roundActive) {return false;}
+    if (!this.rules.allowSurrender) {return false;}
+    if (this.playerHand.length !== 2 || this.splitRound) {return false;}
+    this.bankroll += this.currentBet / 2;
+    this.currentBet = 0;
+    this.roundActive = false;
+    this.stats.surrenders++;
+    this.stats.losses++;
+    return true;
+  }
+
+  split() {
+    if (!this.roundActive || this.splitRound) {return false;}
+    if (this.playerHand.length !== 2) {return false;}
+    if (this.playerHand[0].rank !== this.playerHand[1].rank) {return false;}
+    if (this.bankroll < this.currentBet) {return false;}
+    this.bankroll -= this.currentBet;
+    this.splitHand = [this.playerHand.pop(), this.drawCard()];
+    this.playerHand.push(this.drawCard());
+    this.splitRound = true;
+    return true;
+  }
+
+  resolveRound() {
+    if (!this.roundActive) {return null;}
+    this.roundActive = false;
+
+    const playerBJ = this.isBlackjack(this.playerHand);
+    const dealerBJ = this.isBlackjack(this.dealerHand);
+    const bet = this.currentBet;
+    this.currentBet = 0;
+
+    if (playerBJ) {this.stats.blackjacks++;}
+
+    if (playerBJ && !dealerBJ) {
+      this.bankroll += bet + bet * this.rules.blackjackPayout;
+      this.stats.wins++;
+      return 'blackjack';
+    }
+    if (playerBJ && dealerBJ) {
+      this.bankroll += bet;
+      this.stats.pushes++;
+      return 'push';
+    }
+
+    const playerTotal = this.getHandValue(this.playerHand);
+    const dealerTotal = this.getHandValue(this.dealerHand);
+
+    if (playerTotal > 21 || dealerBJ || (dealerTotal <= 21 && dealerTotal > playerTotal)) {
+      this.stats.losses++;
+      return 'lose';
+    }
+    if (dealerTotal > 21 || playerTotal > dealerTotal) {
+      this.bankroll += bet * 2;
+      this.stats.wins++;
+      return 'win';
+    }
+    this.bankroll += bet;
+    this.stats.pushes++;
+    return 'push';
+  }
+}
+
 export function isSoft17(hand) {
   let total = 0;
   let aces = 0;
   for (const c of hand) {
     total += getCardValue(c);
-    if (c.rank === 'A') aces++;
+    if (c.rank === 'A') {aces++;}
   }
   let softAces = aces;
   while (total > 21 && softAces > 0) {

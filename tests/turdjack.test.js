@@ -115,7 +115,7 @@ describe('TurdjackEngine', () => {
       const game = new TurdjackEngine();
       game.placeBet(100);
       game.startRound();
-      
+
       expect(game.playerHand.length).toBe(2);
       expect(game.dealerHand.length).toBe(2);
       expect(game.roundActive).toBe(true);
@@ -128,7 +128,7 @@ describe('TurdjackEngine', () => {
       game.startRound();
       const initialHandSize = game.playerHand.length;
       game.hit();
-      
+
       expect(game.playerHand.length).toBe(initialHandSize + 1);
     });
 
@@ -137,21 +137,21 @@ describe('TurdjackEngine', () => {
       game.placeBet(100);
       game.startRound();
       game.stand();
-      
+
       expect(game.roundActive).toBe(false);
     });
 
     it('should resolve blackjack immediately', () => {
       const game = new TurdjackEngine({ blackjackPayout: 1.5 }, 1000);
       game.placeBet(100);
-      
+
       // Force a blackjack by manipulating hands
       game.playerHand = [{ rank: 'A', suit: 'S' }, { rank: 'K', suit: 'H' }];
       game.dealerHand = [{ rank: '5', suit: 'S' }, { rank: '8', suit: 'H' }];
       game.roundActive = true;
-      
+
       game.resolveRound();
-      
+
       expect(game.stats.blackjacks).toBe(1);
     });
   });
@@ -161,7 +161,7 @@ describe('TurdjackEngine', () => {
       const game = new TurdjackEngine({ allowSurrender: true }, 1000);
       game.placeBet(100);
       game.startRound();
-      
+
       const result = game.surrender();
       expect(result).toBe(true);
       expect(game.roundActive).toBe(false);
@@ -174,7 +174,7 @@ describe('TurdjackEngine', () => {
       const game = new TurdjackEngine({ allowSurrender: false }, 1000);
       game.placeBet(100);
       game.startRound();
-      
+
       const result = game.surrender();
       expect(result).toBe(false);
     });
@@ -185,10 +185,10 @@ describe('TurdjackEngine', () => {
       const game = new TurdjackEngine({ allowHitSplitAces: true }, 1000);
       game.placeBet(100);
       game.startRound();
-      
+
       // Force a pair
       game.playerHand = [{ rank: '8', suit: 'S' }, { rank: '8', suit: 'H' }];
-      
+
       const result = game.split();
       expect(result).toBe(true);
       expect(game.splitRound).toBe(true);
@@ -200,9 +200,9 @@ describe('TurdjackEngine', () => {
       const game = new TurdjackEngine();
       game.placeBet(100);
       game.startRound();
-      
+
       game.playerHand = [{ rank: '8', suit: 'S' }, { rank: '9', suit: 'H' }];
-      
+
       const result = game.split();
       expect(result).toBe(false);
     });

@@ -4,7 +4,7 @@
  * Ported from turdtris.html to be unit-testable.
  */
 
-export const PIECE_TYPES = ["I", "J", "L", "O", "S", "Z", "T"];
+export const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'Z', 'T'];
 
 export const PIECE_SHAPES = {
   I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -91,7 +91,7 @@ export class TurdtrisEngine {
         r++; // Check same row index again as everything shifted down
       }
     }
-    
+
     if (linesFound > 0) {
       this.lines += linesFound;
       this.updateScore(linesFound);
@@ -99,33 +99,33 @@ export class TurdtrisEngine {
     } else {
       this.combo = 0;
     }
-    
+
     return linesFound;
   }
 
   updateScore(lines) {
     const baseScores = [0, 100, 300, 500, 800];
     let award = baseScores[lines] * this.level;
-    
+
     // Combo bonus
     if (this.combo > 0) {
       award += 50 * this.combo * this.level;
     }
-    
+
     // Back-to-Back bonus (simplified)
     if (lines === 4) {
-        if (this.lastWasDifficult) {
-            award *= 1.5;
-            this.b2b++;
-        }
-        this.lastWasDifficult = true;
+      if (this.lastWasDifficult) {
+        award *= 1.5;
+        this.b2b++;
+      }
+      this.lastWasDifficult = true;
     } else {
-        this.lastWasDifficult = false;
-        this.b2b = 0;
+      this.lastWasDifficult = false;
+      this.b2b = 0;
     }
 
     this.score += Math.floor(award);
-    
+
     // Level up every 10 lines
     this.level = Math.floor(this.lines / 10) + 1;
   }

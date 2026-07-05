@@ -42,7 +42,7 @@ export function isValidMove(matrix, cellRow, cellCol, playfield) {
   for (let row = 0; row < matrix.length; row++) {
     for (let col = 0; col < matrix[row].length; col++) {
       if (matrix[row][col] && (
-          cellCol + col < 0 ||
+        cellCol + col < 0 ||
           cellCol + col >= playfield[0].length ||
           cellRow + row >= playfield.length ||
           playfield[cellRow + row][cellCol + col])
@@ -57,31 +57,31 @@ export function isValidMove(matrix, cellRow, cellCol, playfield) {
 export function calculateScore(lines, level, isTspin = false, isB2B = false) {
   const lineScores = [0, 100, 300, 500, 800];
   const tspinScores = [0, 400, 800, 1200, 1600];
-  
+
   let base = isTspin ? tspinScores[lines] : lineScores[lines];
-  if (isB2B && lines > 0) base *= 1.5;
+  if (isB2B && lines > 0) {base *= 1.5;}
   return Math.floor(base * level);
 }
 
 export function getGravity(level) {
   // Classic Tetris gravity formula (G = frames/gridcell)
   // Higher level = lower number (faster)
-  if (level < 1) return 60;
-  if (level < 9) return 60 - (level * 5);
-  if (level === 9) return 6;
-  if (level >= 10 && level <= 12) return 5;
-  if (level >= 13 && level <= 15) return 4;
-  if (level >= 16 && level <= 18) return 3;
-  if (level >= 19 && level <= 28) return 2;
+  if (level < 1) {return 60;}
+  if (level < 9) {return 60 - (level * 5);}
+  if (level === 9) {return 6;}
+  if (level >= 10 && level <= 12) {return 5;}
+  if (level >= 13 && level <= 15) {return 4;}
+  if (level >= 16 && level <= 18) {return 3;}
+  if (level >= 19 && level <= 28) {return 2;}
   return 1; // Level 29+ is kill-screen speed
 }
 
 export function getLevelGoal(level) {
-  if (level <= 5) return 8;
-  if (level <= 15) return 10;
-  if (level <= 30) return 12;
-  if (level <= 45) return 14;
-  if (level <= 60) return 16;
-  if (level <= 80) return 18;
+  if (level <= 5) {return 8;}
+  if (level <= 15) {return 10;}
+  if (level <= 30) {return 12;}
+  if (level <= 45) {return 14;}
+  if (level <= 60) {return 16;}
+  if (level <= 80) {return 18;}
   return 20;
 }

@@ -64,10 +64,10 @@ describe('TurdspadesEngine', () => {
       // Add a spade to hand 0
       game.hands[0].push({ rank: 'A', suit: 'S' });
       game.hands[0].push({ rank: '2', suit: 'H' });
-      
+
       // Can play spade when spade is lead
       expect(game.canFollowSuit({ rank: 'A', suit: 'S' }, 'S')).toBe(true);
-      
+
       // Must follow suit if has it
       expect(game.canFollowSuit({ rank: '2', suit: 'H' }, 'S')).toBe(false); // Has H but S led
     });
@@ -82,9 +82,9 @@ describe('TurdspadesEngine', () => {
       const hand = game.hands[0];
       const cardIndex = 0;
       const card = hand[cardIndex];
-      
+
       game.playCard(0, cardIndex);
-      
+
       expect(game.trick.length).toBe(1);
       expect(game.trick[0].card).toBe(card);
     });
