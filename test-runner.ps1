@@ -105,49 +105,33 @@ if ($tris -match 'overlay-card\[data-tone="victory"\]' -and $tris -match 'functi
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
-if ($turd -match 'POWERUP_TYPES') { Pass("POWERUP_TYPES") } else { Fail("POWERUP_TYPES") }
-if ($turd -match 'toiletPaperShots') { Pass("toiletPaperShots") } else { Fail("toiletPaperShots") }
-if ($turd -match 'windowResized') { Pass("windowResized") } else { Fail("windowResized") }
-if ($turd -match 'touchStarted') { Pass("touchStarted") } else { Fail("touchStarted") }
 if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
-if ($turd -match 'MAX_LEVEL') { Pass("max level cap") } else { Fail("max level cap") }
-if ($turd -match 'levelLayoutSignatures') { Pass("non-repeating level signatures") } else { Fail("non-repeating level signatures") }
-if ($turd -match 'setupWaldoCameo') { Pass("waldo cameo logic") } else { Fail("waldo cameo logic") }
-if ($turd -match 'TURDANOID_BALANCE') { Pass("balance config") } else { Fail("balance config") }
-if ($turd -match 'quickStartRun') { Pass("quick start handler") } else { Fail("quick start handler") }
-if ($turd -match 'let guidePausedGame = false;') { Pass("turdanoid guide pause tracking") } else { Fail("turdanoid guide pause tracking") }
-if ($turd -match 'guidePausedGame = !paused && !gameOver && !gameWon;') { Pass("turdanoid guide only owns fresh pause") } else { Fail("turdanoid guide only owns fresh pause") }
-if ($turd -match 'if \(guidePausedGame && !gameOver && !gameWon\) paused = false;') { Pass("turdanoid guide preserves prior pause state") } else { Fail("turdanoid guide preserves prior pause state") }
-if ($turd -match 'function handleWindowBlur\(' -and $turd -match 'window\.addEventListener\(''blur'', handleWindowBlur\);' -and $turd -match 'document\.addEventListener\(''visibilitychange'', \(\) => \{\s*if \(document\.hidden\) handleWindowBlur\(\);') { Pass("turdanoid blur handler wired") } else { Fail("turdanoid blur handler wired") }
-if ($turd -match 'controlLeft = false;' -and $turd -match 'controlRight = false;' -and $turd -match 'clearMobileHoldTimerRef\(\);' -and $turd -match 'if \(!paused && !gameOver && !gameWon && !onboardingOpen\) \{') { Pass("turdanoid blur clears held input and pauses safely") } else { Fail("turdanoid blur clears held input and pauses safely") }
-if ($turd -match 'Vortex Cage') { Pass("expanded pattern set") } else { Fail("expanded pattern set") }
-if ($turd -match 'if \(prevW <= 0 \|\| prevH <= 0\) return;') { Pass("resize guard") } else { Fail("resize guard") }
-if ($turd -match 'if \(powerUps\.length >= maxDrops\) return false;' -and $turd -match 'powerUps\.push\(\{ x: x - 15, y, w: 30, h: 30, vy: 2\.1, angle: 0, \.\.\.p \}\);\s*return true;') { Pass("power-up spawn returns success") } else { Fail("power-up spawn returns success") }
-if ($turd -match 'targets\.push\(bricks\[i\]\)') { Pass("warp flush stable targets") } else { Fail("warp flush stable targets") }
-if ($turd -match 'buckets\.get\(key\)\.push\(b\)') { Pass("row flush stable targets") } else { Fail("row flush stable targets") }
-if ($turd -match 'const directionalControlActive = controlLeft \|\| controlRight;') { Pass("control precedence fix") } else { Fail("control precedence fix") }
-if ($turd -match 'const clearHoldTimer = \(\) =>') { Pass("mobile hold timer helper") } else { Fail("mobile hold timer helper") }
-if ($turd -match 'clearHoldTimer\(\);') { Pass("mobile hold timer reset") } else { Fail("mobile hold timer reset") }
-if ($turd -match '\.mobile-controls\s*\{[^}]*touch-action:\s*none;') { Pass("mobile controls touch-action lock") } else { Fail("mobile controls touch-action lock") }
-if ($turd -match 'let mouseInputActive = true;') { Pass("mouse input activity guard") } else { Fail("mouse input activity guard") }
-if ($turd -match 'mouseInputActive = false;\s*paddle\.x = constrain\(touches\[0\]\.x - paddleWidth / 2') { Pass("touch input disables mouse fallback") } else { Fail("touch input disables mouse fallback") }
-if ($turd -match 'else if \(mouseInputActive\) \{') { Pass("mouse fallback gated by activity") } else { Fail("mouse fallback gated by activity") }
-if ($turd -match 'function mouseMoved\(\)\s*\{\s*mouseInputActive = true;\s*\}') { Pass("mouse moved re-enables mouse input") } else { Fail("mouse moved re-enables mouse input") }
-if ($turd -match 'mobileControls\.addEventListener\(''pointerdown'', \(e\) => \{\s*e\.preventDefault\(\);') { Pass("mobile pointerdown prevents default") } else { Fail("mobile pointerdown prevents default") }
-if ($turd -match 'let screenShake = 0;') { Pass("turdanoid scene shake state") } else { Fail("turdanoid scene shake state") }
-if ($turd -match 'function setHype\(') { Pass("turdanoid hype helper") } else { Fail("turdanoid hype helper") }
-if ($turd -match 'function triggerShake\(') { Pass("turdanoid shake helper") } else { Fail("turdanoid shake helper") }
-if ($turd -match 'const speedRamp = min\(1\.5, pressureRamp \* levelRamp\);') { Pass("turdanoid late pressure speed ramp") } else { Fail("turdanoid late pressure speed ramp") }
-if ($turd -match 'Hype:') { Pass("turdanoid hype status tag") } else { Fail("turdanoid hype status tag") }
-if ($turd -match 'const SOUND_STORAGE_KEY = ''turdanoidSoundOn_v1'';') { Pass("turdanoid sound storage key") } else { Fail("turdanoid sound storage key") }
-if ($turd -match 'function toggleSound\(') { Pass("turdanoid sound toggle handler") } else { Fail("turdanoid sound toggle handler") }
-if ($turd -match 'data-sound-toggle') { Pass("turdanoid sound toggle buttons") } else { Fail("turdanoid sound toggle buttons") }
-if ($turd -match 'comboCardEl\.classList\.toggle\(''combo-live'', combo >= 4\);') { Pass("turdanoid combo highlight class") } else { Fail("turdanoid combo highlight class") }
-if ($turd -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdanoid hype status class") } else { Fail("turdanoid hype status class") }
-if ($turd -match 'width: min\(760px, 100vw\) !important;') { Pass("turdanoid mobile canvas uses full viewport width") } else { Fail("turdanoid mobile canvas uses full viewport width") }
-if ($turd -match 'grid-auto-flow: column;' -and $turd -match 'overflow-x: auto;' -and $turd -match 'scroll-snap-type: x proximity;') { Pass("turdanoid mobile hud focus strip") } else { Fail("turdanoid mobile hud focus strip") }
-if ($turd -match 'const compactPhone = windowWidth <= 480;') { Pass("turdanoid compact phone resize tuning") } else { Fail("turdanoid compact phone resize tuning") }
-if ($turd -match '(?s)function setup\(\)\s*\{.*?showWelcomeGuide\(\);\s*windowResized\(\);') { Pass("turdanoid setup applies responsive canvas sizing") } else { Fail("turdanoid setup applies responsive canvas sizing") }
+if ($turd -match 'TurdAnoid Turbo') { Pass("turbo edition shell") } else { Fail("turbo edition shell") }
+if ($turd -match 'const POWERS = \[') { Pass("power-up catalogue") } else { Fail("power-up catalogue") }
+if ($turd -match 'function maybeDrop\(') { Pass("power-up drop logic") } else { Fail("power-up drop logic") }
+if ($turd -match 'const PATTERN_NAMES = \[') { Pass("level pattern set") } else { Fail("level pattern set") }
+if ($turd -match 'if\(level > 30\)') { Pass("max level cap") } else { Fail("max level cap") }
+if ($turd -match 'let levelTransition = false;') { Pass("level transition guard state") } else { Fail("level transition guard state") }
+if ($turd -match 'if\(bricks\.length === 0 && !levelTransition\)') { Pass("level clear fires once") } else { Fail("level clear fires once") }
+if ($turd -match 'function cancelLevelTransition\(') { Pass("level transition cancel helper") } else { Fail("level transition cancel helper") }
+if ($turd -match 'balls\.length === 0 && !levelTransition && bricks\.length > 0') { Pass("no life lost during level transition") } else { Fail("no life lost during level transition") }
+if ($turd -match 'const BASE_FRAME_MS = 1000/60;') { Pass("delta-time base frame") } else { Fail("delta-time base frame") }
+if ($turd -match 'const ts = dt / BASE_FRAME_MS;') { Pass("delta-time scaling in step") } else { Fail("delta-time scaling in step") }
+if ($turd -match 'window\.addEventListener\(''blur'', \(\)=>\{ if\(state===''playing''\) doPause\(\); \}\);') { Pass("blur auto-pause") } else { Fail("blur auto-pause") }
+if ($turd -match 'document\.addEventListener\(''visibilitychange''') { Pass("visibilitychange auto-pause") } else { Fail("visibilitychange auto-pause") }
+if ($turd -match 'if\(activePowers\.shield\)\{') { Pass("shield saves any ball") } else { Fail("shield saves any ball") }
+if ($turd -match 'function killBrick\(') { Pass("brick death animation") } else { Fail("brick death animation") }
+if ($turd -match 'function drawDyingBrick\(') { Pass("dying brick renderer") } else { Fail("dying brick renderer") }
+if ($turd -match 'function buildBgLayers\(') { Pass("parallax background layers") } else { Fail("parallax background layers") }
+if ($turd -match 'b\.squash') { Pass("ball squash and stretch") } else { Fail("ball squash and stretch") }
+if ($turd -match 'paddle\.recoil') { Pass("paddle recoil") } else { Fail("paddle recoil") }
+if ($turd -match 'requestAnimationFrame\(loop\);') { Pass("rAF game loop") } else { Fail("rAF game loop") }
+if ($turd -match 'devicePixelRatio') { Pass("hi-dpi canvas scaling") } else { Fail("hi-dpi canvas scaling") }
+if ($turd -match 'touchstart' -and $turd -match 'touchmove') { Pass("touch controls") } else { Fail("touch controls") }
+if ($turd -match 'const STORAGE_KEY = ''turdanoid_v2_best'';') { Pass("best score persistence key") } else { Fail("best score persistence key") }
+if ($turd -match 'const SOUND_KEY = ''turdanoid_v2_sound'';') { Pass("sound persistence key") } else { Fail("sound persistence key") }
+if ($turd -match 'id="mobileLaunch"') { Pass("mobile launch button") } else { Fail("mobile launch button") }
+if ($turd -match 'window\.__turdanoid = \{') { Pass("test hook exposed") } else { Fail("test hook exposed") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
