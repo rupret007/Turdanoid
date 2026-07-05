@@ -23,7 +23,7 @@ export class CrapeightsEngine {
     this.drawCount = 0; // Accumulated draw penalty
     this.lastPlayWasEight = false;
     this.currentSuit = null; // When an 8 is played, this tracks the declared suit
-    
+
     this.createDeck();
     this.deal();
   }
@@ -52,7 +52,7 @@ export class CrapeightsEngine {
   }
 
   reshuffleDiscard() {
-    if (this.discardPile.length <= 1) return;
+    if (this.discardPile.length <= 1) {return;}
     const topCard = this.discardPile.pop();
     this.deck = [...this.discardPile];
     this.discardPile = [topCard];
@@ -73,7 +73,7 @@ export class CrapeightsEngine {
     this.discardPile.push(this.drawCard());
     this.currentSuit = this.discardPile[0].suit;
     this.lastPlayWasEight = this.discardPile[0].rank === '8';
-    
+
     // Handle case where first card is an 8
     if (this.lastPlayWasEight) {
       // Player goes first after an initial 8
@@ -83,18 +83,18 @@ export class CrapeightsEngine {
 
   canPlayCard(card) {
     const topCard = this.discardPile[this.discardPile.length - 1];
-    if (!topCard) return false;
-    
+    if (!topCard) {return false;}
+
     // 8s are wild - can always be played
-    if (card.rank === '8') return true;
-    
+    if (card.rank === '8') {return true;}
+
     // Check suit match
     const effectiveSuit = this.currentSuit || topCard.suit;
-    if (card.suit === effectiveSuit) return true;
-    
+    if (card.suit === effectiveSuit) {return true;}
+
     // Check rank match
-    if (card.rank === topCard.rank) return true;
-    
+    if (card.rank === topCard.rank) {return true;}
+
     return false;
   }
 
@@ -105,12 +105,12 @@ export class CrapeightsEngine {
 
     // Remove card from hand
     const index = this.playerHand.findIndex(c => c.rank === card.rank && c.suit === card.suit);
-    if (index === -1) return { valid: false, message: 'Card not in hand' };
+    if (index === -1) {return { valid: false, message: 'Card not in hand' };}
     this.playerHand.splice(index, 1);
 
     // Play to discard pile
     this.discardPile.push(card);
-    
+
     // Handle 8
     if (card.rank === '8') {
       this.lastPlayWasEight = true;
@@ -137,12 +137,12 @@ export class CrapeightsEngine {
   drawFromDeck() {
     const drawn = this.drawCard();
     this.playerHand.push(drawn);
-    
+
     // Check if drawn card can be played
     if (this.canPlayCard(drawn)) {
       return { card: drawn, canPlay: true };
     }
-    
+
     // Switch turns after drawing
     this.switchTurn();
     return { card: drawn, canPlay: false };
@@ -153,11 +153,11 @@ export class CrapeightsEngine {
   }
 
   cpuPlay() {
-    if (this.currentPlayer !== 'cpu') return null;
-    
+    if (this.currentPlayer !== 'cpu') {return null;}
+
     // CPU strategy: play matching card, prefer non-8s, then 8s
     const playable = this.cpuHand.filter(card => this.canPlayCard(card));
-    
+
     if (playable.length === 0) {
       // Draw
       const drawn = this.drawCard();
@@ -181,8 +181,8 @@ export class CrapeightsEngine {
 
     // Play highest non-8 card, or 8 if only 8s available
     playable.sort((a, b) => {
-      if (a.rank === '8' && b.rank !== '8') return 1;
-      if (b.rank === '8' && a.rank !== '8') return -1;
+      if (a.rank === '8' && b.rank !== '8') {return 1;}
+      if (b.rank === '8' && a.rank !== '8') {return -1;}
       return 0;
     });
 

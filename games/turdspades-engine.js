@@ -28,7 +28,7 @@ export class TurdspadesEngine {
     this.winner = null;
     this.dealer = 0; // Player who deals
     this.firstPlayer = 0; // Player who leads the trick
-    
+
     this.createAndDeal();
   }
 
@@ -76,7 +76,7 @@ export class TurdspadesEngine {
   }
 
   canFollowSuit(card, leadSuit) {
-    if (!leadSuit) return true;
+    if (!leadSuit) {return true;}
     return card.suit === leadSuit;
   }
 
@@ -102,8 +102,8 @@ export class TurdspadesEngine {
   spadesBroken() {
     // Check if any spade has been played in tricks 2-13 of this round
     // (First trick doesn't break spades unless someone leads spade)
-    if (this.tricksInRound === 0) return false;
-    
+    if (this.tricksInRound === 0) {return false;}
+
     // Check if spade was played in any previous trick of this round
     // For simplicity, track if any non-lead suit was spade
     return false; // Simplified - would need to track actual play history
@@ -111,12 +111,12 @@ export class TurdspadesEngine {
 
   playCard(player, cardIndex) {
     if (player !== this.currentPlayer) {
-      return { valid: false, message: "Not your turn" };
+      return { valid: false, message: 'Not your turn' };
     }
 
     const hand = this.hands[player];
     if (cardIndex < 0 || cardIndex >= hand.length) {
-      return { valid: false, message: "Invalid card index" };
+      return { valid: false, message: 'Invalid card index' };
     }
 
     const card = hand[cardIndex];
@@ -125,7 +125,7 @@ export class TurdspadesEngine {
     // Must follow suit if possible
     if (leadSuit && this.hasSuit(player, leadSuit)) {
       if (card.suit !== leadSuit) {
-        return { valid: false, message: "Must follow suit" };
+        return { valid: false, message: 'Must follow suit' };
       }
     }
 
@@ -188,10 +188,10 @@ export class TurdspadesEngine {
     // Calculate scores
     // Team 1: Players 0 and 2
     // Team 2: Players 1 and 3
-    
+
     const team1Actual = this.actualTricks[0] + this.actualTricks[2];
     const team2Actual = this.actualTricks[1] + this.actualTricks[3];
-    
+
     const team1Declared = this.declarations[0] + this.declarations[2];
     const team2Declared = this.declarations[1] + this.declarations[3];
 
@@ -232,13 +232,13 @@ export class TurdspadesEngine {
     this.dealer = (this.dealer + 1) % 4;
     this.firstPlayer = (this.dealer + 1) % 4;
     this.currentPlayer = this.firstPlayer;
-    
+
     // Create new deck and deal
     this.createAndDeal();
   }
 
   declareBid(player, tricks) {
-    if (tricks < 0 || tricks > 13) return false;
+    if (tricks < 0 || tricks > 13) {return false;}
     this.declarations[player] = tricks;
     return true;
   }
@@ -248,12 +248,12 @@ export class TurdspadesEngine {
     const hand = this.hands[player];
     let spades = 0;
     let highCards = 0;
-    
+
     for (const card of hand) {
-      if (card.suit === 'S') spades++;
-      if (this.getCardValue(card) >= 10) highCards++;
+      if (card.suit === 'S') {spades++;}
+      if (this.getCardValue(card) >= 10) {highCards++;}
     }
-    
+
     // Simple bid calculation
     const bid = Math.min(13, Math.max(0, Math.floor(spades * 0.5) + Math.floor(highCards * 0.3)));
     this.declarations[player] = bid;
@@ -262,13 +262,13 @@ export class TurdspadesEngine {
 
   // Simple CPU play - plays lowest valid card
   cpuPlayCard(player) {
-    if (this.currentPlayer !== player) return null;
-    
+    if (this.currentPlayer !== player) {return null;}
+
     const hand = this.hands[player];
     const leadSuit = this.trick.length > 0 ? this.trick[0].card.suit : null;
-    
+
     let playable = [];
-    
+
     if (leadSuit && this.hasSuit(player, leadSuit)) {
       // Must follow suit
       playable = hand.filter(card => card.suit === leadSuit);
@@ -278,14 +278,14 @@ export class TurdspadesEngine {
     } else {
       // Leading - play highest non-spade if possible to save spades
       playable = hand.filter(card => card.suit !== 'S');
-      if (playable.length === 0) playable = hand;
+      if (playable.length === 0) {playable = hand;}
     }
 
     // Play lowest card in playable set
     playable.sort((a, b) => this.getCardValue(a) - this.getCardValue(b));
     const toPlay = playable[0];
     const index = hand.indexOf(toPlay);
-    
+
     return this.playCard(player, index);
   }
 

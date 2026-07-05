@@ -30,13 +30,13 @@ describe('TurdAnoid Balance Logic', () => {
       // High level weights: BIG: 40, MULTI: 25, FAST: 15, LIFE: 10, SHIELD: 10. Total 100.
       // EXTRA_LIFE is at 80-90.
       vi.spyOn(Math, 'random').mockReturnValue(0.85);
-      
+
       const res10 = selectPowerUpType(10);
       expect(Object.values(POWER_UP_TYPES)).toContain(res10);
-      
+
       const res1 = selectPowerUpType(1);
       expect(Object.values(POWER_UP_TYPES)).toContain(res1);
-      
+
       vi.restoreAllMocks();
     });
 
@@ -44,11 +44,11 @@ describe('TurdAnoid Balance Logic', () => {
       // LASER_PADDLE is at weight index 80-90 (high level)
       vi.spyOn(Math, 'random').mockReturnValue(0.85);
       expect(selectPowerUpType(10)).toBe(POWER_UP_TYPES.LASER_PADDLE);
-      
+
       // SLOW_BALL is at weight index 90-100 (high level)
       vi.spyOn(Math, 'random').mockReturnValue(0.95);
       expect(selectPowerUpType(10)).toBe(POWER_UP_TYPES.SLOW_BALL);
-      
+
       vi.restoreAllMocks();
     });
   });

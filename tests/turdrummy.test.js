@@ -22,7 +22,7 @@ describe('TurdRummyEngine', () => {
       { suit: 'C', rank: 5 },
       { suit: 'D', rank: 5 },
       { suit: 'H', rank: 5 },
-      { suit: 'S', rank: 9 },
+      { suit: 'S', rank: 9 }
     ];
     const sets = game.findSets(hand);
     expect(sets.length).toBe(1);
@@ -35,7 +35,7 @@ describe('TurdRummyEngine', () => {
       { suit: 'H', rank: 7 },
       { suit: 'H', rank: 8 },
       { suit: 'H', rank: 9 },
-      { suit: 'C', rank: 2 },
+      { suit: 'C', rank: 2 }
     ];
     const runs = game.findRuns(hand);
     expect(runs.length).toBe(1);
@@ -49,7 +49,7 @@ describe('TurdRummyEngine', () => {
       { suit: 'S', rank: 11 }, // Jack = 10
       { suit: 'S', rank: 12 }, // Queen = 10
       { suit: 'S', rank: 13 }, // King = 10
-      { suit: 'S', rank: 5 },  // 5 = 5
+      { suit: 'S', rank: 5 }  // 5 = 5
     ];
     const score = game.calculateDeadwood(hand);
     expect(score).toBe(1 + 10 + 10 + 10 + 5); // 36

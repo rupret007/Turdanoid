@@ -41,22 +41,22 @@ export function shouldDropPowerUp(bricksSinceDrop, currentLevel) {
   const base = TURDANOID_BALANCE.drops.baseChance + (currentLevel * TURDANOID_BALANCE.drops.perLevel);
   const droughtBonus = bricksSinceDrop * TURDANOID_BALANCE.drops.perDroughtBrick;
   const chance = Math.min(base + Math.min(droughtBonus, TURDANOID_BALANCE.drops.droughtCap), TURDANOID_BALANCE.drops.maxChance);
-  
+
   // Force drop logic
   const forceThreshold = TURDANOID_BALANCE.drops.forceDropBricks + (currentLevel * TURDANOID_BALANCE.drops.forceDropLevelScale);
-  if (bricksSinceDrop >= forceThreshold) return true;
-  
+  if (bricksSinceDrop >= forceThreshold) {return true;}
+
   return Math.random() < chance;
 }
 
 export const POWER_UP_TYPES = {
-  BIG_PADDLE: "BIG_PADDLE",
-  MULTI_BALL: "MULTI_BALL",
-  FAST_BALL: "FAST_BALL",
-  EXTRA_LIFE: "EXTRA_LIFE",
-  SHIELD: "SHIELD",
-  LASER_PADDLE: "LASER_PADDLE",
-  SLOW_BALL: "SLOW_BALL"
+  BIG_PADDLE: 'BIG_PADDLE',
+  MULTI_BALL: 'MULTI_BALL',
+  FAST_BALL: 'FAST_BALL',
+  EXTRA_LIFE: 'EXTRA_LIFE',
+  SHIELD: 'SHIELD',
+  LASER_PADDLE: 'LASER_PADDLE',
+  SLOW_BALL: 'SLOW_BALL'
 };
 
 export function selectPowerUpType(level) {
@@ -72,9 +72,9 @@ export function selectPowerUpType(level) {
 
   const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
   let random = Math.random() * totalWeight;
-  
+
   for (const [type, weight] of Object.entries(weights)) {
-    if (random < weight) return type;
+    if (random < weight) {return type;}
     random -= weight;
   }
   return POWER_UP_TYPES.BIG_PADDLE;
