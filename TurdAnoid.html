@@ -199,6 +199,8 @@ let stink = 0;
 let shake = 0;
 let flash = 0;
 let waitingLaunch = true;
+let levelTransition = false;
+let levelTimeoutId = 0;
 let bricks = [];
 let balls = [];
 let powerups = [];
@@ -206,9 +208,11 @@ let lasers = [];
 let paddleShots = [];
 let particles = [];
 let floats = [];
+let dyingBricks = [];
 let activePowers = {};
 let paddle = null;
 let bgStars = [];
+let bgLayers = [];
 
 /* ---- Funny copy ---- */
 const HYPE_LINES = [
@@ -335,6 +339,7 @@ function resize(){
     paddle.x = Math.min(Math.max(paddle.x, paddle.w/2), W - paddle.w/2);
   }
   buildStars();
+  buildBgLayers();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize, 80));
@@ -345,10 +350,43 @@ function buildStars(){
   for(let i=0;i<n;i++) bgStars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,a:Math.random()*0.4+0.2,t:Math.random()*Math.PI*2});
 }
 
+// Parallax sewer layers: far pipes drift slowly, near sludge blobs drift faster.
+// Shapes wrap horizontally so the background scrolls forever.
+function buildBgLayers(){
+  bgLayers = [];
+  const defs = [
+    { speed: 0.06, alpha: 0.10, kind: 'pipe', count: Math.max(3, Math.floor(W/220)) },
+    { speed: 0.14, alpha: 0.14, kind: 'pipe', count: Math.max(3, Math.floor(W/170)) },
+    { speed: 0.28, alpha: 0.16, kind: 'blob', count: Math.max(4, Math.floor(W/130)) },
+  ];
+  for(const d of defs){
+    const shapes = [];
+    for(let i=0;i<d.count;i++){
+      if(d.kind === 'pipe'){
+        shapes.push({
+          x: Math.random()*W,
+          y: H*0.1 + Math.random()*H*0.75,
+          w: 60 + Math.random()*140,
+          h: 10 + Math.random()*16,
+          vertical: Math.random() < 0.35
+        });
+      } else {
+        shapes.push({
+          x: Math.random()*W,
+          y: H*0.3 + Math.random()*H*0.65,
+          r: 14 + Math.random()*30,
+          wob: Math.random()*Math.PI*2
+        });
+      }
+    }
+    bgLayers.push({ ...d, shapes, off: 0 });
+  }
+}
+
 /* ---- Game objects ---- */
 function newPaddle(){
   const w = Math.max(82, Math.min(160, W*0.22));
-  return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0 };
+  return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0, recoil:0 };
 }
 function newBall(stuck=true){
   const r = Math.max(8, Math.min(11, W*0.018));
@@ -364,7 +402,7 @@ function newBall(stuck=true){
 /* ---- Level generation ---- */
 const PATTERN_NAMES = ['Classic Wall','Checker','Tunnel','Wave','Pyramid','Diamond','Cross','Spiral','Hourglass','Brick House','Skull','Funhouse','Sewer Maze'];
 function newLevel(){
-  bricks = []; powerups = []; lasers = []; paddleShots = []; particles = [];
+  bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
   const cols = Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = Math.min(10, 4 + Math.floor(level/2));
   const top = 70;
@@ -484,6 +522,10 @@ window.addEventListener('keyup', e=>{
   else if(e.key==='ArrowRight' || e.key==='d' || e.key==='D') keys.right=false;
 });
 
+// Auto-pause when the tab/window loses focus so the ball can't die unattended.
+window.addEventListener('blur', ()=>{ if(state==='playing') doPause(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='playing') doPause(); });
+
 btnLaunch.addEventListener('click', e=>{ e.stopPropagation(); if(waitingLaunch) launch(); });
 btnSound.addEventListener('click', ()=>{ soundOn=!soundOn; localStorage.setItem(SOUND_KEY, soundOn?'1':'0'); btnSound.textContent = soundOn?'🔊':'🔇'; if(soundOn) sfx.power(); });
 btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
@@ -539,6 +581,7 @@ function startGame(){
   paddle = newPaddle();
   score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0;
   activePowers = {};
+  cancelLevelTransition();
   newLevel();
   state='playing'; running=true; paused=false;
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow);
@@ -550,8 +593,13 @@ function showOverlay(el){ el.classList.add('show'); }
 function hideOverlay(el){ el.classList.remove('show'); }
 function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); }
 function doResume(){ if(state!=='paused') return; state='playing'; paused=false; hideOverlay(tPause); }
+function cancelLevelTransition(){
+  if(levelTimeoutId){ clearTimeout(levelTimeoutId); levelTimeoutId = 0; }
+  levelTransition = false;
+}
 function quitToMenu(){
   state='title'; paused=false; running=false;
+  cancelLevelTransition();
   hideOverlay(tPause); hideOverlay(tEnd);
   showOverlay(tTitle); pickTitleQuip();
 }
@@ -559,6 +607,7 @@ function restartGame(){ hideOverlay(tEnd); startGame(); }
 function gameOver(won){
   state = won?'win':'gameover';
   running=false;
+  cancelLevelTransition();
   best = Math.max(best, score);
   localStorage.setItem(STORAGE_KEY, best);
   $('endTitle').firstChild.textContent = won?'You Win!':'Flushed.';
@@ -717,7 +766,7 @@ function megaFlush(){
   for(let i=bricks.length-1;i>=0;i--){
     if(bricks[i].y >= maxY - 8){
       killed.push(bricks[i]);
-      spawnBrickBits(bricks[i]);
+      killBrick(bricks[i]);
       score += 15*level;
       bricks.splice(i,1);
     }
@@ -769,7 +818,8 @@ function detonate(){
     const dx = (b.x+b.w/2) - W/2, dy = (b.y+b.h/2) - H/2;
     if(Math.hypot(dx,dy) < Math.min(W,H)*0.45){
       b.hp -= 2;
-      spawnBrickBits(b);
+      if(b.hp <= 0) killBrick(b);
+      else spawnBrickBits(b);
     }
   }
   bricks = bricks.filter(b => b.hp > 0);
@@ -777,6 +827,17 @@ function detonate(){
 }
 
 /* ---- Particles & Floats ---- */
+// Brick death: particle burst + a spinning, falling "husk" of the brick that
+// shrinks and fades instead of vanishing instantly.
+function killBrick(b){
+  spawnBrickBits(b);
+  dyingBricks.push({
+    x: b.x, y: b.y, w: b.w, h: b.h, c1: b.c1, c2: b.c2, glow: b.glow,
+    vy: -1.5 - Math.random()*1.5,
+    rot: 0, vrot: (Math.random()-0.5)*0.3,
+    t: 0, max: 22
+  });
+}
 function spawnBrickBits(b){
   const n = 10;
   for(let i=0;i<n;i++){
@@ -830,19 +891,24 @@ function fireHotdog(){
 function fireAll(){ fireLaser(); firePaper(); fireHotdog(); }
 
 /* ---- Update ---- */
+// All per-frame values in this game are tuned for 60 FPS. `ts` rescales them by
+// the real elapsed time so the game plays identically at 60/120/144 Hz.
+const BASE_FRAME_MS = 1000/60;
 function step(dt){
-  for(const s of bgStars){ s.t += 0.02; }
+  const ts = dt / BASE_FRAME_MS;
+  for(const s of bgStars){ s.t += 0.02*ts; }
 
   const speed = 7.0 + Math.min(level*0.2, 4);
   const left  = activePowers.reverse ? keys.right : keys.left;
   const right = activePowers.reverse ? keys.left  : keys.right;
-  if(left)  paddle.x -= speed;
-  if(right) paddle.x += speed;
+  if(left)  paddle.x -= speed*ts;
+  if(right) paddle.x += speed*ts;
   paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, paddle.x));
+  if(paddle.recoil > 0) paddle.recoil = Math.max(0, paddle.recoil - 0.8*ts);
   // Auto-fire while held: easier on phones than tap-spamming.
   if(pointerActive) fireAll();
   for(const k of Object.keys(activePowers)){
-    activePowers[k]--;
+    activePowers[k] -= ts;
     if(activePowers[k]<=0){
       delete activePowers[k];
       if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
@@ -856,23 +922,24 @@ function step(dt){
     }
   }
 
-  if(comboTimer>0){ comboTimer--; if(comboTimer===0) comboHits=0; }
+  if(comboTimer>0){ comboTimer -= ts; if(comboTimer<=0){ comboTimer=0; comboHits=0; } }
 
-  if(shake>0) shake = Math.max(0, shake - 0.6);
-  if(flash>0) flash = Math.max(0, flash - 0.05);
-  stink = Math.min(1, stink + 0.0006);
+  if(shake>0) shake = Math.max(0, shake - 0.6*ts);
+  if(flash>0) flash = Math.max(0, flash - 0.05*ts);
+  stink = Math.min(1, stink + 0.0006*ts);
 
   for(let bi=balls.length-1; bi>=0; bi--){
     const b = balls[bi];
     if(b.stuck){ b.x = paddle.x; b.y = paddle.y - b.r - 1; b.trail = []; continue; }
     b.trail.push({x:b.x,y:b.y});
     if(b.trail.length>10) b.trail.shift();
-    b.x += b.vx; b.y += b.vy;
-    if(b.fire>0) b.fire--;
+    b.x += b.vx*ts; b.y += b.vy*ts;
+    if(b.fire>0) b.fire -= ts;
+    if(b.squash > 0) b.squash = Math.max(0, b.squash - 0.12*ts);
 
-    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
 
     if(b.vy>0 && b.y+b.r >= paddle.y && b.y - b.r <= paddle.y + paddle.h && Math.abs(b.x - paddle.x) < paddle.w/2 + b.r){
       const rel = (b.x - paddle.x)/(paddle.w/2);
@@ -880,42 +947,53 @@ function step(dt){
       const sp = Math.hypot(b.vx,b.vy);
       b.vx = Math.cos(ang)*sp; b.vy = Math.sin(ang)*sp;
       b.y = paddle.y - b.r - 1;
+      b.squash = 1; b.squashAng = Math.PI/2;
+      paddle.recoil = Math.min(6, (paddle.recoil||0) + 4);
       if(activePowers.sticky){ b.stuck = true; waitingLaunch = true; btnLaunch.classList.add('show'); }
       sfx.hit(); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
       shake = Math.max(shake, 4);
     }
 
     let hits = 0;
-    if(b.ghost && b.ghost>0) b.ghost--;
+    if(b.ghost && b.ghost>0) b.ghost -= ts;
     for(let i=bricks.length-1;i>=0;i--){
       const br = bricks[i];
       if(b.x + b.r > br.x && b.x - b.r < br.x + br.w && b.y + b.r > br.y && b.y - b.r < br.y + br.h){
         const dx = b.x - (br.x + br.w/2), dy = b.y - (br.y + br.h/2);
         const px = br.w/2 + b.r - Math.abs(dx);
         const py = br.h/2 + b.r - Math.abs(dy);
+        let scoreEvent = true;
         if(b.ghost>0){
-          // Ghost: don't bounce. 1 damage per frame of overlap — 1-HP dies instantly,
-          // tougher bricks take a few frames to dissolve.
-          br.hp -= 1;
+          // Ghost: don't bounce. Damage-over-time while overlapping, scaled by
+          // real elapsed time so 120 Hz displays don't melt bricks twice as fast.
+          br.hp -= ts;
+          // Score/combo/sfx at most once per 60 FPS-equivalent frame of overlap.
+          b.ghostHitCd = (b.ghostHitCd||0) - ts;
+          if(b.ghostHitCd > 0) scoreEvent = false;
+          else b.ghostHitCd = 1;
         } else if(b.fire>0){
           br.hp -= 2;
         } else {
           if(px < py){ b.vx = dx>0 ? Math.abs(b.vx) : -Math.abs(b.vx); }
           else        { b.vy = dy>0 ? Math.abs(b.vy) : -Math.abs(b.vy); }
           br.hp -= 1;
+          b.squash = Math.min(1, (b.squash||0) + 0.6);
+          b.squashAng = px < py ? 0 : Math.PI/2;
         }
-        comboHits++; comboTimer = 90;
-        const mult = (1 + Math.floor(comboHits/4)*0.5) * (activePowers.gold ? 2 : 1);
-        const earned = Math.round((10 + level*2)*mult);
-        score += earned;
-        if(comboHits>=4) showCombo(comboHits);
-        floatText('+'+earned, br.x+br.w/2, br.y, '#ffd76a');
-        sfx.brick();
-        sfx.combo(comboHits);
-        spawnHitSpark(b.x,b.y,br.c1);
+        if(scoreEvent){
+          comboHits++; comboTimer = 90;
+          const mult = (1 + Math.floor(comboHits/4)*0.5) * (activePowers.gold ? 2 : 1);
+          const earned = Math.round((10 + level*2)*mult);
+          score += earned;
+          if(comboHits>=4) showCombo(comboHits);
+          floatText('+'+earned, br.x+br.w/2, br.y, '#ffd76a');
+          sfx.brick();
+          sfx.combo(comboHits);
+          spawnHitSpark(b.x,b.y,br.c1);
+        }
         if(br.hp<=0){
           bricks.splice(i,1);
-          spawnBrickBits(br);
+          killBrick(br);
           sfx.break();
           shake = Math.max(shake, 5);
           maybeDrop(br.x+br.w/2, br.y+br.h/2);
@@ -929,9 +1007,11 @@ function step(dt){
     }
 
     if(b.y - b.r > H){
-      if(activePowers.shield && balls.length===1){
-        activePowers.shield = Math.max(0, (activePowers.shield||0) - 60*2);
-        if(activePowers.shield <= 0){ delete activePowers.shield; }
+      // Shield is a full-width barrier: it saves ANY ball (multiball included),
+      // burning 2s of shield time per save.
+      if(activePowers.shield){
+        activePowers.shield = Math.max(0, activePowers.shield - 60*2);
+        if(activePowers.shield <= 0){ delete activePowers.shield; updatePowers(); }
         b.y = H - b.r - 4; b.vy = -Math.abs(b.vy);
         floatText('SAVED!', b.x, b.y-20, '#7ae6ff');
         sfx.power();
@@ -941,7 +1021,7 @@ function step(dt){
     }
   }
 
-  if(balls.length === 0){
+  if(balls.length === 0 && !levelTransition){
     lives--;
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
@@ -956,11 +1036,11 @@ function step(dt){
 
   for(let i=powerups.length-1;i>=0;i--){
     const p = powerups[i];
-    p.y += p.vy; p.wob += 0.18;
+    p.y += p.vy*ts; p.wob += 0.18*ts;
     // Plunger magnet: gently steer power-ups toward the paddle.
     if(activePowers.plunger){
       const dx = paddle.x - p.x;
-      p.x += Math.sign(dx) * Math.min(Math.abs(dx), 3);
+      p.x += Math.sign(dx) * Math.min(Math.abs(dx), 3*ts);
     }
     if(p.y > H + 20){ powerups.splice(i,1); continue; }
     if(p.y + 12 >= paddle.y && p.y < paddle.y + paddle.h && Math.abs(p.x - paddle.x) < paddle.w/2 + 12){
@@ -970,7 +1050,7 @@ function step(dt){
   }
 
   for(let i=lasers.length-1;i>=0;i--){
-    const l = lasers[i]; l.y += l.vy; l.life--;
+    const l = lasers[i]; l.y += l.vy*ts; l.life -= ts;
     if(l.life<=0 || l.y < -10){ lasers.splice(i,1); continue; }
     let removed = false;
     for(let j=bricks.length-1;j>=0;j--){
@@ -979,14 +1059,14 @@ function step(dt){
         br.hp--;
         spawnHitSpark(l.x, br.y+br.h, br.c1);
         score += 5*level;
-        if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); }
+        if(br.hp<=0){ bricks.splice(j,1); killBrick(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); }
         lasers.splice(i,1); removed = true; break;
       }
     }
     if(removed) continue;
   }
   for(let i=paddleShots.length-1;i>=0;i--){
-    const s = paddleShots[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.18; s.rot+=0.3; s.life--;
+    const s = paddleShots[i]; s.x += s.vx*ts; s.y += s.vy*ts; s.vy += 0.18*ts; s.rot += 0.3*ts; s.life -= ts;
     if(s.life<=0 || s.y > H){ paddleShots.splice(i,1); continue; }
     let hit=false;
     for(let j=bricks.length-1;j>=0;j--){
@@ -999,7 +1079,7 @@ function step(dt){
             const cx = b2.x + b2.w/2, cy = b2.y + b2.h/2;
             if(Math.hypot(cx - s.x, cy - s.y) < 50){
               b2.hp -= (b2 === br) ? 2 : 1;
-              if(b2.hp<=0){ bricks.splice(k,1); spawnBrickBits(b2); sfx.break(); maybeDrop(cx, cy); score += (activePowers.gold?2:1)*5*level; }
+              if(b2.hp<=0){ bricks.splice(k,1); killBrick(b2); sfx.break(); maybeDrop(cx, cy); score += (activePowers.gold?2:1)*5*level; }
             }
           }
           // ketchup-and-mustard puff
@@ -1011,7 +1091,7 @@ function step(dt){
           sfx.break();
         } else {
           br.hp -= 1; spawnHitSpark(s.x,s.y,'#fff');
-          if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); score += (activePowers.gold?2:1)*5*level; }
+          if(br.hp<=0){ bricks.splice(j,1); killBrick(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); score += (activePowers.gold?2:1)*5*level; }
         }
         hit=true;
         break;
@@ -1022,12 +1102,12 @@ function step(dt){
 
   for(let i=particles.length-1;i>=0;i--){
     const p = particles[i];
-    if(p.shock){ p.r += p.vr; p.life--; if(p.life<=0) particles.splice(i,1); continue; }
+    if(p.shock){ p.r += p.vr*ts; p.life -= ts; if(p.life<=0) particles.splice(i,1); continue; }
     if(p.stink){
-      p.x += p.vx; p.y += p.vy;
-      p.r = Math.min(80, p.r + p.vr);
-      p.life--;
-      if(p.dmgCd>0) p.dmgCd--;
+      p.x += p.vx*ts; p.y += p.vy*ts;
+      p.r = Math.min(80, p.r + p.vr*ts);
+      p.life -= ts;
+      if(p.dmgCd>0) p.dmgCd -= ts;
       if(p.dmgCd<=0){
         // Damage every brick within radius once per ~120ms
         for(let j=bricks.length-1;j>=0;j--){
@@ -1035,7 +1115,7 @@ function step(dt){
           const cx = br.x+br.w/2, cy = br.y+br.h/2;
           if(Math.hypot(cx - p.x, cy - p.y) < p.r){
             br.hp -= 1;
-            if(br.hp<=0){ bricks.splice(j,1); spawnBrickBits(br); sfx.brick(); maybeDrop(cx,cy); score += (activePowers.gold?2:1)*4*level; }
+            if(br.hp<=0){ bricks.splice(j,1); killBrick(br); sfx.brick(); maybeDrop(cx,cy); score += (activePowers.gold?2:1)*4*level; }
           }
         }
         p.dmgCd = 8;
@@ -1043,22 +1123,38 @@ function step(dt){
       if(p.life<=0) particles.splice(i,1);
       continue;
     }
-    p.x += p.vx; p.y += p.vy; if(p.g) p.vy += p.g; p.life--;
+    p.x += p.vx*ts; p.y += p.vy*ts; if(p.g) p.vy += p.g*ts; p.life -= ts;
     if(p.life<=0) particles.splice(i,1);
   }
   for(let i=floats.length-1;i>=0;i--){
-    const f = floats[i]; f.y += f.vy; f.vy *= 0.96; f.life--;
+    const f = floats[i]; f.y += f.vy*ts; f.vy *= Math.pow(0.96, ts); f.life -= ts;
     if(f.life<=0) floats.splice(i,1);
   }
+  for(let i=dyingBricks.length-1;i>=0;i--){
+    const d = dyingBricks[i];
+    d.t += ts;
+    d.y += d.vy*ts; d.vy += 0.3*ts;
+    d.rot += d.vrot*ts;
+    if(d.t >= d.max) dyingBricks.splice(i,1);
+  }
 
-  if(bricks.length === 0){
+  if(bricks.length === 0 && !levelTransition){
+    levelTransition = true;
     score += 200 + level*50;
     setHype(`LEVEL ${level} CLEAR!`, 90);
     floatText('+'+(200+level*50), W/2, H/2, '#9effc8');
+    flash = Math.max(flash, 0.6);
     sfx.win();
     level++;
-    if(level > 30){ gameOver(true); return; }
-    setTimeout(()=>{ stink=Math.max(0,stink-0.3); newLevel(); updateHud(); }, 600);
+    if(level > 30){ levelTransition = false; gameOver(true); return; }
+    levelTimeoutId = setTimeout(()=>{
+      levelTimeoutId = 0;
+      levelTransition = false;
+      if(state !== 'playing' && state !== 'paused') return;
+      stink = Math.max(0, stink-0.3);
+      newLevel();
+      updateHud();
+    }, 600);
   }
 
   updateHud();
@@ -1077,6 +1173,43 @@ function render(){
   g.addColorStop(1, `rgb(${20+stink*40},${50+stink*30},${64+stink*30})`);
   ctx.fillStyle = g;
   ctx.fillRect(0,0,W,H);
+
+  // Parallax sewer layers — driven by wall-clock time so they drift on the
+  // title screen too and stay frame-rate independent.
+  const bgT = performance.now() * 0.06;
+  for(const layer of bgLayers){
+    const off = (bgT * layer.speed) % W;
+    ctx.globalAlpha = layer.alpha;
+    for(const s of layer.shapes){
+      const bx = ((s.x - off) % W + W) % W;
+      // Draw at the wrapped position and once more a screen-width to the left
+      // so shapes slide off one edge while entering the other.
+      for(const x of [bx, bx - W]){
+        if(layer.kind === 'pipe'){
+          ctx.fillStyle = '#1c4438';
+          if(s.vertical){
+            roundRect(ctx, x, s.y, s.h, s.w, s.h/2); ctx.fill();
+            ctx.fillStyle = '#2a5c4c';
+            ctx.fillRect(x-2, s.y+4, s.h+4, 4);
+            ctx.fillRect(x-2, s.y+s.w-8, s.h+4, 4);
+          } else {
+            roundRect(ctx, x, s.y, s.w, s.h, s.h/2); ctx.fill();
+            ctx.fillStyle = '#2a5c4c';
+            ctx.fillRect(x+4, s.y-2, 4, s.h+4);
+            ctx.fillRect(x+s.w-8, s.y-2, 4, s.h+4);
+          }
+        } else {
+          const wobY = Math.sin(bgT*0.02 + s.wob) * 6;
+          const grd = ctx.createRadialGradient(x, s.y+wobY, s.r*0.15, x, s.y+wobY, s.r);
+          grd.addColorStop(0, '#2f6b50');
+          grd.addColorStop(1, 'rgba(20,60,45,0)');
+          ctx.fillStyle = grd;
+          ctx.beginPath(); ctx.arc(x, s.y+wobY, s.r, 0, 6.283); ctx.fill();
+        }
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
 
   if(stink>0){
     const sg = ctx.createRadialGradient(W/2, H*0.7, 0, W/2, H*0.7, Math.max(W,H)*0.8);
@@ -1112,6 +1245,7 @@ function render(){
   ctx.strokeRect(2,2,W-4,H-4);
 
   for(const b of bricks){ drawBrick(b); }
+  for(const d of dyingBricks){ drawDyingBrick(d); }
   for(const p of powerups){ drawPowerup(p); }
   for(const l of lasers){
     ctx.fillStyle = '#ff7ab6';
@@ -1243,11 +1377,34 @@ function drawBrick(b){
       ctx.moveTo(px+pw*0.65, py+3); ctx.lineTo(px+pw*0.6, py+ph*0.55); ctx.lineTo(px+pw*0.7, py+ph-4);
     }
     ctx.stroke();
+    // Damaged bricks shimmer: a pulsing highlight that hints "almost dead".
+    const pulse = 0.5 + 0.5*Math.sin(b.wob*2);
+    ctx.fillStyle = `rgba(255,255,255,${0.10 * dmg * pulse})`;
+    roundRect(ctx, px, py, pw, ph, 5); ctx.fill();
   }
 }
 
+function drawDyingBrick(d){
+  const p = d.t / d.max;              // 0 → 1 over the animation
+  const scale = 1 - p*0.85;           // shrink away
+  const cx = d.x + d.w/2, cy = d.y + d.h/2;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, 1 - p);
+  ctx.translate(cx, cy);
+  ctx.rotate(d.rot);
+  ctx.scale(scale, scale);
+  const g = ctx.createLinearGradient(0, -d.h/2, 0, d.h/2);
+  g.addColorStop(0, d.c1);
+  g.addColorStop(1, d.c2);
+  ctx.fillStyle = g;
+  ctx.shadowColor = d.glow; ctx.shadowBlur = 14;
+  roundRect(ctx, -d.w/2, -d.h/2, d.w, d.h, 5); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
 function drawPaddle(){
-  const x = paddle.x - paddle.w/2, y = paddle.y, w = paddle.w, h = paddle.h;
+  const x = paddle.x - paddle.w/2, y = paddle.y + (paddle.recoil||0), w = paddle.w, h = paddle.h;
   // Shield aura — full bottom band
   if(activePowers.shield){
     const sg = ctx.createLinearGradient(0, paddle.y+paddle.h, 0, H);
@@ -1359,6 +1516,18 @@ function drawBall(b){
   ctx.globalAlpha = ghostly ? 0.55 : 1;
 
   const x = b.x, y = b.y;
+  // Squash & stretch: compress along the impact axis, bulge perpendicular.
+  const sq = Math.min(1, b.squash || 0);
+  ctx.save();
+  if(sq > 0){
+    const k = 0.35 * sq;
+    const a = b.squashAng || 0;
+    ctx.translate(x, y);
+    ctx.rotate(a);
+    ctx.scale(1 - k, 1 + k);
+    ctx.rotate(-a);
+    ctx.translate(-x, -y);
+  }
   // Outer halo
   ctx.shadowColor = b.fire>0 ? '#ffb070' : (ghostly ? '#cdd5ff' : '#7a4d2a');
   ctx.shadowBlur = b.fire>0 ? 26 : 14;
@@ -1400,6 +1569,7 @@ function drawBall(b){
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(x-r*0.32 + eyeOffX, y-r*0.13 + eyeOffY, r*0.04, 0, 6.283); ctx.fill();
   ctx.beginPath(); ctx.arc(x+r*0.28 + eyeOffX, y-r*0.13 + eyeOffY, r*0.04, 0, 6.283); ctx.fill();
+  ctx.restore();
   ctx.globalAlpha = 1;
 }
 
