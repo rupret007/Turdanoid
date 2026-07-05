@@ -19,51 +19,58 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ### Overview
 
-TurdAnoid is an Arkanoid-style brick breaker game with 69 levels, power-ups, and a unique "stink" mechanic.
+TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels, 19 power-ups, and a unique "stink" mechanic. (The legacy 69-level Neon Arkanoid remains available directly at `index.html`.)
 
 ### Controls
 
-- **Mouse/Touch**: Move paddle
-- **Space**: Launch ball / Pause
+- **Mouse/Touch**: Move paddle; tap/click to launch and fire active powers
+- **Space**: Start / Launch / Fire
 - **A/D or Arrow Keys**: Move paddle
 - **R**: Restart
-- **P**: Pause/Resume
+- **P / Esc**: Pause/Resume
 
 ### Scoring
 
 | Action | Points |
 |--------|--------|
-| Normal brick | 12 |
-| Silver brick | 20 |
-| Explosive brick | 18 |
-| Shifty brick | 22 |
-| Combo multiplier | 1.0 + (combo × 0.1), max 2.8× |
+| Brick hit | 10 + level × 2 |
+| Brick destroyed | +5 × level |
+| Combo multiplier | +0.5× per 4 combo hits |
+| 💰 Gold Rush | 2× all brick points |
+| Level clear bonus | 200 + level × 50 |
 
 ### Power-Ups
 
+Unlock progressively by level; bad pickups never appear before level 6.
+
 | Power-Up | Effect |
 |----------|--------|
-| 📏 Big Paddle | Enlarges paddle (stacks up to 5×) |
-| ❤️ Extra Life | Grants additional life |
-| 🐌 Slow Ball | Slows ball speed |
-| 🧻 Toilet Paper | Auto-fires TP shots |
-| 🧲 Sticky Paddle | Catches ball for re-launch |
-| ⚽ Disruption | Spawns extra balls |
-| 🔫 Laser Eyes | Auto-fires laser beams |
-| 🚽 Warp Flush | Clears ~38% of remaining bricks |
-| 💨 Stink Burst | Damages nearby bricks |
-| 🛡️ Toilet Shield | Protects bottom of screen |
-| 🔥 Fire Turd | Ball melts through bricks |
-| 🌀 Magnet Sniff | Power-ups attracted to paddle |
-| ⚡ Combo Juice | Boosts combo scoring |
-| 🌊 Row Flush | Clears densest row |
+| 📏 Enlarge | Widens paddle ~18% per pickup (stacks to 1.8×) |
+| 🐌 Slow | Slows all balls |
+| 🧲 Catch | Ball sticks to paddle for re-launch |
+| 🌀 Multiball | Splits into up to 3 balls |
+| ❤️ Extra Life | +1 life (cap 7; +2500 points beyond) |
+| 🔫 Laser | Paddle fires laser bolts |
+| 🧻 Toilet Paper | Paddle fires TP rolls |
+| 🛡️ Shield | Bottom barrier saves falling balls |
+| 🔥 Fire | All balls burn through bricks (2 damage) |
+| 💣 Bomb | Instant area blast |
+| 🪠 Plunger | Magnet pulls falling power-ups to paddle |
+| 🚽 Mega Flush | Destroys bottom brick row |
+| 🌭 Hot Dogs | Paddle fires explosive arcing sausages |
+| 👻 Ghost | Ball phases through bricks, damaging them |
+| 🦨 Skunk | Drops a stink cloud that chews through bricks |
+| 💰 Gold Rush | 2× points for 6 seconds |
+| 😬 Shrink (bad) | Shrinks paddle |
+| 💨 Speed (bad) | Speeds up all balls |
+| 🔄 Reverse (bad) | Mirrors controls |
 
 ### Level Progression
 
-- **69 total levels**
-- Chaos increases from 6% (L1) to 96% (L69)
-- Special bricks (gold, silver, shifty, explosive) unlock at higher levels
-- Boss levels every 10 levels
+- **30 total levels**, 13 rotating wall patterns
+- Brick HP ramps up from level 3; metal bricks appear at level 6+
+- Ball and paddle speed scale with level (capped)
+- Win by clearing level 30
 
 ---
 

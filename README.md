@@ -4,10 +4,20 @@ A collection of six active browser games with a playful turd theme.
 
 ## Version
 
-- **Current build:** `v3.1.0`
-- **Build date:** March 12, 2026
+- **Current build:** `v4.0.0`
+- **Build date:** May 4, 2026
 
 ## Changelog (Latest)
+
+- TurdAnoid Turbo fixes and polish:
+  - Fixed a level-clear bug that could award the clear bonus dozens of times and skip levels.
+  - Shield now saves every ball during multiball.
+  - Auto-pause when the tab loses focus.
+  - Frame-rate independent physics (plays the same at 60/120/144 Hz).
+  - New brick death animations, parallax sewer background, ball squash-and-stretch, paddle recoil.
+- Testing overhaul: repaired the vitest suite, added real-game regression tests for TurdAnoid, cross-platform browser smoke runner (`npm run test:smoke`), and GitHub Actions CI.
+
+Previous (v3.1):
 
 - Hub refresh:
   - TurdAnoid moved to the top card in `hub.html`.
@@ -25,7 +35,7 @@ A collection of six active browser games with a playful turd theme.
 
 ### TurdAnoid
 
-Silly Arkanoid variant using p5.js with stink-based effects and capsule madness.
+Silly Arkanoid variant (vanilla JavaScript + Canvas) with stink-based effects and capsule madness.
 
 **Features:**
 - Arkanoid-inspired capsules (Enlarge, Slow, Catch, Disruption, Laser, etc.)
@@ -133,23 +143,35 @@ All games support touch controls and responsive layouts, with primary actions pl
 
 ## Testing
 
-Install browser test tooling once:
+Install test tooling once:
 
-```powershell
-cmd /c npm install
+```bash
+npm install
 ```
 
-Run the full test pass:
+Run the unit tests (Vitest, cross-platform):
 
-```powershell
-cmd /c npm test
+```bash
+npm test
+```
+
+Run the browser smoke pass (Playwright, cross-platform — serves the repo on a
+local HTTP server and drives every game headlessly):
+
+```bash
+npx playwright install chromium   # one-time browser download
+npm run test:smoke
 ```
 
 Notes:
-- The browser smoke pass uses the local `playwright` dev dependency plus a temporary local HTTP server.
-- By default it targets the local Edge channel on Windows. You can override that with `-BrowserChannel`.
+- The smoke pass defaults to the local Edge channel (Windows dev workflow).
+  Set `PLAYWRIGHT_CHANNEL=""` to use Playwright's bundled Chromium instead
+  (Linux/macOS/CI).
+- Lint with `npm run lint` (covers `games/` and `tests/`).
+- CI (`.github/workflows/ci.yml`) runs lint, unit tests, and the smoke pass
+  on every push and pull request.
 
-Run the suites separately when needed:
+Windows-only wrappers are still available:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File test-runner.ps1
@@ -181,7 +203,7 @@ The `.nojekyll` file ensures GitHub Pages serves files as-is.
 
 ## Technical Notes
 
-- **TurdAnoid**: p5.js
+- **TurdAnoid**: Vanilla JavaScript (Canvas API), single file, delta-time game loop
 - **Turdtris**: Vanilla JavaScript (Canvas API)
 - **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
 - **Crappy Eights**: Vanilla JavaScript + DOM/CSS card UI

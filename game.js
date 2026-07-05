@@ -2068,7 +2068,14 @@ class Game {
             this.ui.achievementsList.textContent = `${unlocked} unlocked`;
         }
 
-        this.savePersistentData();
+        // updateUI() runs every frame; throttle localStorage writes to ~1/sec.
+        // Important moments (game over, achievements) call savePersistentData()
+        // directly, so nothing meaningful is lost between throttled writes.
+        const now = Date.now();
+        if (!this.lastPersistAt || now - this.lastPersistAt >= 1000) {
+            this.lastPersistAt = now;
+            this.savePersistentData();
+        }
     }
 
     render() {
