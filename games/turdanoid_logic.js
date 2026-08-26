@@ -66,6 +66,20 @@ export function normalizeCareerStats(raw, legacyBest = 0) {
 }
 
 /**
+ * Parse the newer JSON record without allowing corruption to erase a valid
+ * legacy high score.
+ */
+export function parseCareerStats(rawStats, legacyBest = 0) {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(rawStats || '{}');
+  } catch {
+    // Keep the empty record; normalization below still preserves legacyBest.
+  }
+  return normalizeCareerStats(parsed, legacyBest);
+}
+
+/**
  * Fold one completed run into local-only career records.
  */
 export function recordCompletedRun(career, run) {

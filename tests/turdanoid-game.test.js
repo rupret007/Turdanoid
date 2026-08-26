@@ -151,6 +151,22 @@ describe('TurdAnoid game regressions', () => {
       expect(migrated.careerStats.bestScore).toBe(1234);
       expect(dom.window.document.getElementById('careerSummary').textContent).toContain('1,234 points');
     });
+
+    it('keeps a valid legacy best when newer stats are malformed', () => {
+      const { dom, g: migrated } = bootGame({
+        turdanoid_v2_best: '1234',
+        turdanoid_v3_career: '{bad json'
+      });
+      expect(migrated.careerStats.bestScore).toBe(1234);
+      expect(dom.window.document.getElementById('careerSummary').textContent).toContain('1,234 points');
+
+      migrated.startGame();
+      migrated.score = 100;
+      migrated.gameOver(false);
+      expect(migrated.careerStats.bestScore).toBe(1234);
+      expect(JSON.parse(dom.window.localStorage.getItem('turdanoid_v3_career')).bestScore).toBe(1234);
+      expect(dom.window.localStorage.getItem('turdanoid_v2_best')).toBe('1234');
+    });
   });
 
   describe('shield (regression: only saved a solo ball)', () => {

@@ -13,15 +13,17 @@
 - Added a **Clean Flush** skill reward: clearing a level without losing a life adds `100 + level × 50` on top of the existing clear bonus.
 - Added device-local career records for best score, deepest completed-run level, longest combo, and completed games.
   - Existing `turdanoid_v2_best` scores migrate forward.
-  - Malformed saved data fails safely to sanitized zero values.
+  - Malformed new-format data falls back to sanitized values while preserving a valid legacy high score.
   - A run updates career records only when it ends in game over or a win; quitting an unfinished run does not inflate completed-game stats.
   - Records use browser `localStorage` only. Nothing is uploaded or tracked.
 - Added in-run personal-best feedback and an end screen summary for longest chain, Clean Flushes, and new records.
 - Kept the existing one-button/Space replay path and verified that replay resets run state without erasing career records.
 - Added clearer accessible names for the sound, pause, and playfield controls; a polite live status region; visible keyboard focus; and reduced-motion handling for CSS effects and camera shake.
-- Removed the mobile HUD overlap between lives and sound/pause controls, moved level callouts below the brick wall, and hid the launch prompt once a run ends.
+- Isolated title, how-to, pause, and results focus from the covered game; each overlay traps forward/reverse Tab within its controls and restores focus to the correct trigger or playfield when it closes.
+- Removed the mobile HUD overlap between lives and sound/pause controls, positioned level callouts from the current wall geometry with bottom-control collision protection, and hid the launch prompt once a run ends.
 - Updated the game hub, README, and rules so shipped behavior, scoring, privacy, version, and date agree.
 - Added deterministic helper, real-game, and browser regression coverage for the new loop.
+- Stabilized the existing TurdJack mobile smoke guard with a controlled non-blackjack opening hand; a random natural could previously resolve before that test inspected the active-hand lock.
 
 ## Important implementation notes
 
@@ -31,9 +33,9 @@
 
 ## Verification completed
 
-- Full unit/real-game suite: 8 test files and 98 tests passed.
-- Full Playwright browser smoke suite passed, including the new mobile HUD separation, Clean Flush scoring, local record persistence, focus flow, end screen, and replay reset checks.
-- Desktop `1440 × 900` and iPhone 12 title, play, and end states were visually reviewed after animations settled.
+- Full unit/real-game suite: 8 test files and 100 tests passed.
+- Full Playwright browser smoke suite passed, including malformed-new/valid-legacy migration, mobile HUD separation, Clean Flush scoring, local record persistence, every overlay's complete Tab/Shift+Tab cycle, focus restoration, late-level callout geometry, end screen, and replay reset checks.
+- Desktop `1440 × 900` title, how-to, pause, and results states plus iPhone 12 early/level-10 play states were visually reviewed after animations settled.
 - ESLint completed with zero errors; the six warnings listed below predate this branch.
 - Diff whitespace and JavaScript syntax checks passed.
 - `npm audit --omit=dev` reports zero runtime vulnerabilities. The site remains a static no-install deployment.

@@ -11,6 +11,7 @@ import {
   computeCleanLevelBonus,
   computeLevelClearBonus,
   normalizeCareerStats,
+  parseCareerStats,
   recordCompletedRun,
   POWERS
 } from '../games/turdanoid_logic';
@@ -140,6 +141,15 @@ describe('TurdAnoid Balance Logic', () => {
         bestLevel: 7,
         bestCombo: 0,
         gamesPlayed: 3
+      });
+    });
+
+    it('preserves a valid legacy score when newer JSON is malformed', () => {
+      expect(parseCareerStats('{bad json', 1234)).toEqual({
+        bestScore: 1234,
+        bestLevel: 0,
+        bestCombo: 0,
+        gamesPlayed: 0
       });
     });
 

@@ -48,7 +48,8 @@
   #combo.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 
   /* Hype line */
-  #hype{position:absolute;top:27%;left:50%;width:calc(100% - 80px);transform:translateX(-50%);text-align:center;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
+  /* JavaScript replaces this safe fallback with the current wall's measured bottom. */
+  #hype{position:absolute;top:88px;left:50%;width:calc(100% - 80px);transform:translateX(-50%);text-align:center;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
   #hype.show{opacity:1}
 
   /* Power chips */
@@ -59,6 +60,7 @@
   .topbtns{position:absolute;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;gap:6px;z-index:5}
   .iconbtn{width:36px;height:36px;border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
   .iconbtn:active{transform:scale(.92)}
+  .iconbtn:disabled{opacity:.28;cursor:default}
   button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
   /* Overlay screens */
@@ -99,7 +101,6 @@
 
   @media (orientation:landscape) and (max-height:520px){
     .hud{font-size:11px}
-    #hype{top:38%}
   }
 </style>
 </head>
@@ -127,7 +128,7 @@
     <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
 
     <!-- Title screen -->
-    <div class="overlay show" id="titleScreen">
+    <div class="overlay show" id="titleScreen" role="dialog" aria-modal="true" aria-label="TurdAnoid start menu">
       <h1>TurdAnoid<span class="sub">— Turbo Edition —</span></h1>
       <p>Smash bricks. Catch unhinged power-ups. Survive the stink. The sewer's most ridiculous brick-breaker, remastered for your phone.</p>
       <div class="helprow">
@@ -145,7 +146,7 @@
     </div>
 
     <!-- Pause -->
-    <div class="overlay" id="pauseScreen">
+    <div class="overlay" id="pauseScreen" role="dialog" aria-modal="true" aria-label="Game paused">
       <h1>Paused<span class="sub">take a breather</span></h1>
       <p>The stink waits for no one. Or does it? It does, but only because you paused.</p>
       <button id="btnResume">RESUME</button>
@@ -155,7 +156,7 @@
     </div>
 
     <!-- How to play -->
-    <div class="overlay" id="howScreen">
+    <div class="overlay" id="howScreen" role="dialog" aria-modal="true" aria-label="How to play TurdAnoid">
       <h1>How To Play<span class="sub">it's brick breaker, but worse</span></h1>
       <p style="text-align:left;max-width:520px">
         🎯 Bounce the turd off the toilet seat to break every brick.<br><br>
@@ -169,7 +170,7 @@
     </div>
 
     <!-- Game Over / Win -->
-    <div class="overlay" id="endScreen">
+    <div class="overlay" id="endScreen" role="dialog" aria-modal="true" aria-label="Run results">
       <h1 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h1>
       <p class="quip" id="endQuip"></p>
       <div class="stats">
@@ -220,13 +221,17 @@ function normalizeCareerStats(raw, legacyBest=0){
     gamesPlayed: wholeNumber(value.gamesPlayed)
   };
 }
+function parseCareerStats(rawStats, legacyBest=0){
+  let parsed = {};
+  try{ parsed = JSON.parse(rawStats||'{}'); }catch(_error){}
+  return normalizeCareerStats(parsed, legacyBest);
+}
 function loadCareerStats(){
-  try{
-    const legacyBest = wholeNumber(localStorage.getItem(STORAGE_KEY));
-    return normalizeCareerStats(JSON.parse(localStorage.getItem(STATS_KEY)||'{}'), legacyBest);
-  }catch(_error){
-    return normalizeCareerStats({});
-  }
+  let legacyBest = 0;
+  try{ legacyBest = wholeNumber(localStorage.getItem(STORAGE_KEY)); }catch(_error){}
+  let rawStats = '';
+  try{ rawStats = localStorage.getItem(STATS_KEY)||''; }catch(_error){}
+  return parseCareerStats(rawStats, legacyBest);
 }
 function recordCompletedRun(career, run){
   const current = normalizeCareerStats(career);
@@ -254,6 +259,7 @@ try{ soundOn = localStorage.getItem(SOUND_KEY) !== '0'; }catch(_error){}
 let score=0, level=1, lives=3, comboHits=0, comboTimer=0;
 let runBestCombo=0, cleanClears=0, missesThisLevel=0;
 let bestAtRunStart=best, newBestAnnounced=false;
+let wallBottomForHype=70;
 let stink = 0;
 let shake = 0;
 let flash = 0;
@@ -381,9 +387,30 @@ const elCombo=$('combo'), elHype=$('hype'), elPowers=$('powers'), elToast=$('toa
 const tTitle=$('titleScreen'), tPause=$('pauseScreen'), tHow=$('howScreen'), tEnd=$('endScreen');
 const btnSound=$('btnSound'), btnPause=$('btnPause');
 const careerSummary=$('careerSummary'), endRunSummary=$('endRunSummary');
+const topButtons=document.querySelector('.topbtns');
+let activeOverlay=null;
 function focusWithoutScroll(el){
   try{ el.focus({preventScroll:true}); }catch(_error){ el.focus(); }
 }
+function setGameplayInteractive(exposed){
+  cv.tabIndex = exposed ? 0 : -1;
+  btnSound.disabled = !exposed;
+  btnPause.disabled = !exposed;
+  btnLaunch.disabled = !exposed;
+  for(const el of [cv, topButtons, btnLaunch]) el.toggleAttribute('inert', !exposed);
+}
+function overlayControls(el){
+  return [...el.querySelectorAll('button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])')];
+}
+function trapOverlayFocus(e){
+  if(e.key!=='Tab' || !activeOverlay || !activeOverlay.classList.contains('show')) return;
+  const controls = overlayControls(activeOverlay);
+  if(!controls.length){ e.preventDefault(); return; }
+  const current = controls.indexOf(document.activeElement);
+  if(e.shiftKey && current<=0){ e.preventDefault(); focusWithoutScroll(controls[controls.length-1]); }
+  else if(!e.shiftKey && (current<0 || current===controls.length-1)){ e.preventDefault(); focusWithoutScroll(controls[0]); }
+}
+document.addEventListener('keydown', trapOverlayFocus, true);
 function updateSoundButton(){
   btnSound.textContent = soundOn ? '🔊' : '🔇';
   btnSound.title = soundOn ? 'Mute sound' : 'Turn sound on';
@@ -415,6 +442,7 @@ function resize(){
   }
   buildStars();
   buildBgLayers();
+  positionHype();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize, 80));
@@ -530,6 +558,7 @@ function newLevel(){
       if(b){ b.hp = Math.min(5, b.hp + 2); b.metal = true; }
     }
   }
+  wallBottomForHype = bricks.reduce((bottom,b)=>Math.max(bottom,b.y+b.h),70);
   paddle.w = paddle.baseW;
   balls = [ newBall(true) ];
   waitingLaunch = true;
@@ -582,6 +611,16 @@ cv.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); }, {passiv
 cv.addEventListener('touchcancel', pointerUp);
 
 window.addEventListener('keydown', e=>{
+  if(activeOverlay){
+    if(activeOverlay===tPause && (e.key==='p' || e.key==='P' || e.key==='Escape')){
+      e.preventDefault();
+      doResume();
+    }else if(activeOverlay===tEnd && (e.key==='r' || e.key==='R')){
+      e.preventDefault();
+      restartGame();
+    }
+    return;
+  }
   if(e.key==='ArrowLeft' || e.key==='a' || e.key==='A') keys.left=true;
   else if(e.key==='ArrowRight' || e.key==='d' || e.key==='D') keys.right=true;
   else if(e.key===' '){
@@ -626,6 +665,7 @@ function updateCareerSummary(){
 }
 function setHype(msg, frames=80){
   elHype.textContent = msg;
+  positionHype();
   elHype.classList.add('show');
   clearTimeout(setHype._t);
   setHype._t = setTimeout(()=>elHype.classList.remove('show'), frames*16);
@@ -671,6 +711,23 @@ function updatePowers(){
   if(activePowers.fast)    items.push(`💨 Speed`);
   if(activePowers.reverse) items.push(`🔄 Reversed`);
   elPowers.innerHTML = items.length ? items.map(t=>`<span class="chip">${t}</span>`).join('') : '';
+  if(elHype.classList.contains('show')) positionHype();
+}
+function positionHype(){
+  if(!elHype || !H) return;
+  const stageRect = $('stage').getBoundingClientRect();
+  let controlCeiling = H - 104;
+  if(btnLaunch.classList.contains('show')){
+    const launchRect = btnLaunch.getBoundingClientRect();
+    if(launchRect.height) controlCeiling = Math.min(controlCeiling, launchRect.top-stageRect.top-22);
+  }
+  if(elPowers.childElementCount){
+    const powerRect = elPowers.getBoundingClientRect();
+    if(powerRect.height) controlCeiling = Math.min(controlCeiling, powerRect.top-stageRect.top-22);
+  }
+  const top = wallBottomForHype + 18;
+  elHype.style.top = Math.round(top)+'px';
+  elHype.style.visibility = top + 32 <= controlCeiling ? 'visible' : 'hidden';
 }
 function computeCleanLevelBonus(levelValue, misses=0){
   return wholeNumber(misses)>0 ? 0 : 100 + wholeNumber(levelValue)*50;
@@ -696,9 +753,18 @@ function startGame(){
   audio();
   sfx.launch();
 }
-function showOverlay(el){ el.classList.add('show'); }
-function hideOverlay(el){ el.classList.remove('show'); }
-function doPause(){ if(state!=='playing') return; state='paused'; paused=true; updatePauseButton(true); showOverlay(tPause); focusWithoutScroll($('btnResume')); announce('Game paused.'); }
+function showOverlay(el, focusTarget){
+  activeOverlay = el;
+  el.classList.add('show');
+  setGameplayInteractive(false);
+  const target = focusTarget || overlayControls(el)[0];
+  if(target) focusWithoutScroll(target);
+}
+function hideOverlay(el){
+  el.classList.remove('show');
+  if(activeOverlay===el){ activeOverlay=null; setGameplayInteractive(true); }
+}
+function doPause(){ if(state!=='playing') return; state='paused'; paused=true; updatePauseButton(true); showOverlay(tPause, $('btnResume')); announce('Game paused.'); }
 function doResume(){ if(state!=='paused') return; state='playing'; paused=false; updatePauseButton(); hideOverlay(tPause); focusWithoutScroll(cv); announce('Game resumed.'); }
 function cancelLevelTransition(){
   if(levelTimeoutId){ clearTimeout(levelTimeoutId); levelTimeoutId = 0; }
@@ -710,7 +776,7 @@ function quitToMenu(){
   btnLaunch.classList.remove('show');
   hideOverlay(tPause); hideOverlay(tEnd);
   updatePauseButton(); updateCareerSummary();
-  showOverlay(tTitle); focusWithoutScroll($('btnStart')); pickTitleQuip();
+  showOverlay(tTitle, $('btnStart')); pickTitleQuip();
 }
 function restartGame(){ hideOverlay(tEnd); startGame(); }
 function gameOver(won){
@@ -739,16 +805,15 @@ function gameOver(won){
   if(records.length) runBits.unshift(records.join(' • '));
   endRunSummary.textContent = runBits.join(' • ');
   updatePauseButton();
-  showOverlay(tEnd);
-  focusWithoutScroll($('btnRestart'));
+  showOverlay(tEnd, $('btnRestart'));
   announce(`${won?'You won':'Game over'}. Score ${score}. Level ${finalLevel}. Best chain ${runBestCombo}.`);
   won ? sfx.win() : sfx.death();
 }
 function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
 
 $('btnStart').addEventListener('click', startGame);
-$('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow); });
-$('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle); });
+$('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow, $('btnHowBack')); });
+$('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle, $('btnHowTo')); });
 $('btnResume').addEventListener('click', doResume);
 $('btnQuit').addEventListener('click', quitToMenu);
 $('btnRestart').addEventListener('click', restartGame);
@@ -1780,6 +1845,7 @@ paddle = newPaddle();
 buildStars();
 pickTitleQuip();
 updateCareerSummary();
+showOverlay(tTitle, $('btnStart'));
 lastTime = performance.now();
 requestAnimationFrame(loop);
 
@@ -1801,6 +1867,7 @@ window.__turdanoid = {
   get score(){ return score; },
   set score(v){ score = v; },
   get level(){ return level; },
+  set level(v){ level = Math.max(1,wholeNumber(v)); },
   get lives(){ return lives; },
   get balls(){ return balls; },
   set balls(v){ balls = v; },
