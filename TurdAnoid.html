@@ -30,15 +30,16 @@
   #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(8px,var(--safe-top)) 8px max(8px,var(--safe-bot))}
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center}
   canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
+  canvas:focus-visible{outline:3px solid var(--gold);outline-offset:-5px}
 
   /* HUD */
   .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.65)}
   .hud .col{display:flex;flex-direction:column;gap:2px}
   .hud .lbl{font-size:.78em;opacity:.65;letter-spacing:.18em}
   .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 18px rgba(158,255,200,.45),0 2px 6px rgba(0,0,0,.7)}
-  .hud .right{text-align:right}
+  .hud .right{text-align:right;margin-right:88px}
   .hud .right .val{color:var(--gold);text-shadow:0 0 18px rgba(255,215,106,.45),0 2px 6px rgba(0,0,0,.7)}
-  .hud .center{text-align:center;flex:1}
+  .hud .center{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
   .hud .center .val{color:var(--hot);text-shadow:0 0 18px rgba(255,157,116,.5),0 2px 6px rgba(0,0,0,.7)}
   .hud .lives{display:inline-flex;gap:3px;font-size:1.05em;letter-spacing:0}
 
@@ -47,7 +48,7 @@
   #combo.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 
   /* Hype line */
-  #hype{position:absolute;top:74px;left:50%;transform:translateX(-50%);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
+  #hype{position:absolute;top:27%;left:50%;width:calc(100% - 80px);transform:translateX(-50%);text-align:center;font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
   #hype.show{opacity:1}
 
   /* Power chips */
@@ -58,6 +59,7 @@
   .topbtns{position:absolute;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;gap:6px;z-index:5}
   .iconbtn{width:36px;height:36px;border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
   .iconbtn:active{transform:scale(.92)}
+  button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 
   /* Overlay screens */
   .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 35%,rgba(8,22,18,.55),rgba(8,22,18,.85));border-radius:18px;z-index:10}
@@ -75,6 +77,8 @@
   .overlay .stat .v{display:block;font-size:24px;font-weight:800;color:var(--gold);margin-top:2px}
   .overlay .helprow{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;justify-content:center;font-size:13px}
   .overlay .helprow span{background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;border:1px solid rgba(158,255,200,.2)}
+  .recordline{min-height:1.5em;color:var(--accent);font-size:clamp(12px,3vw,14px);font-weight:700;letter-spacing:.04em}
+  .career-summary{max-width:520px;color:var(--gold);font-size:clamp(12px,3vw,14px);font-weight:700;line-height:1.45}
   .menu-secondary{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
   .menu-secondary button{padding:9px 16px;font-size:13px;background:rgba(0,0,0,.45);color:var(--ink);border:1px solid rgba(158,255,200,.35)}
 
@@ -87,15 +91,22 @@
   #toast{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(16px,4.2vw,22px);color:#fff;text-shadow:0 0 18px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .35s}
   #toast.show{opacity:1;transform:translate(-50%,-65%)}
 
+  .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  }
+
   @media (orientation:landscape) and (max-height:520px){
     .hud{font-size:11px}
+    #hype{top:38%}
   }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="stage">
-    <canvas id="game"></canvas>
+    <canvas id="game" role="application" tabindex="0" aria-label="TurdAnoid brick-breaker playfield. Use left and right arrows or A and D to move, Space to launch or fire, P to pause, and R to restart."></canvas>
 
     <div class="hud" aria-hidden="true">
       <div class="col"><span class="lbl">Score</span><span class="val" id="hudScore">0</span></div>
@@ -104,14 +115,15 @@
     </div>
 
     <div class="topbtns">
-      <button class="iconbtn" id="btnSound" title="Sound">🔊</button>
-      <button class="iconbtn" id="btnPause" title="Pause">⏸</button>
+      <button class="iconbtn" id="btnSound" title="Mute sound" aria-label="Mute sound" aria-pressed="true">🔊</button>
+      <button class="iconbtn" id="btnPause" title="Pause game" aria-label="Pause game">⏸</button>
     </div>
 
     <div id="combo"></div>
     <div id="hype"></div>
     <div id="powers"></div>
     <div id="toast"></div>
+    <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
 
     <!-- Title screen -->
@@ -123,6 +135,7 @@
         <span>👆 Tap to launch</span>
         <span>⌨️ ←/→ + Space</span>
       </div>
+      <p class="career-summary" id="careerSummary">Personal records live only on this device.</p>
       <button id="btnStart">START FLUSHING</button>
       <div class="menu-secondary">
         <button id="btnHowTo">How To Play</button>
@@ -149,6 +162,7 @@
         🧻 Falling power-ups: 19 of them. Standard arkanoid stuff at first — 📏 enlarge, 🐌 slow, 🧲 catch, 🌀 multiball, 🔫 laser, ❤️ extra life. Then it gets weird: 🌭 hot dog rockets, 🪠 plunger magnet, 🚽 mega-flush, 👻 ghost ball, 🦨 skunk cloud, 💰 gold rush, and more.<br><br>
         🔥 Stack them. Multiball + 🔥 fire = three flaming turds. 📏 enlarge keeps stacking until your paddle is comically large. 🪠 plunger pulls every falling pickup toward you so you stop missing them.<br><br>
         💥 Tap to fire any active offensive power. Chain brick hits to build a combo — bigger combo, bigger score multiplier.<br><br>
+        ✨ Clear a whole level without losing a life for a Clean Flush skill bonus. Your best score, deepest level, and longest chain stay only on this device.<br><br>
         💀 Drop the ball and you lose a life. Run out and you're flushed. Forever. Or until you press restart.
       </p>
       <button id="btnHowBack">BACK</button>
@@ -163,6 +177,7 @@
         <div class="stat"><span class="l">Level</span><span class="v" id="endLevel">1</span></div>
         <div class="stat"><span class="l">Best</span><span class="v" id="endBest">0</span></div>
       </div>
+      <p class="recordline" id="endRunSummary"></p>
       <button id="btnRestart">PLAY AGAIN</button>
       <div class="menu-secondary">
         <button id="btnEndQuit">MAIN MENU</button>
@@ -186,15 +201,59 @@ let lastTime = 0;
 let running = false;
 let paused = false;
 let state = 'title'; // title | playing | paused | gameover | win
+const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 
 /* ---- Persistence ---- */
 const STORAGE_KEY = 'turdanoid_v2_best';
 const SOUND_KEY = 'turdanoid_v2_sound';
-let best = parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);
-let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
+const STATS_KEY = 'turdanoid_v3_career';
+function wholeNumber(value){
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+function normalizeCareerStats(raw, legacyBest=0){
+  const value = raw && typeof raw === 'object' ? raw : {};
+  return {
+    bestScore: Math.max(wholeNumber(value.bestScore), wholeNumber(legacyBest)),
+    bestLevel: wholeNumber(value.bestLevel),
+    bestCombo: wholeNumber(value.bestCombo),
+    gamesPlayed: wholeNumber(value.gamesPlayed)
+  };
+}
+function loadCareerStats(){
+  try{
+    const legacyBest = wholeNumber(localStorage.getItem(STORAGE_KEY));
+    return normalizeCareerStats(JSON.parse(localStorage.getItem(STATS_KEY)||'{}'), legacyBest);
+  }catch(_error){
+    return normalizeCareerStats({});
+  }
+}
+function recordCompletedRun(career, run){
+  const current = normalizeCareerStats(career);
+  return {
+    bestScore: Math.max(current.bestScore, wholeNumber(run.score)),
+    bestLevel: Math.max(current.bestLevel, wholeNumber(run.level)),
+    bestCombo: Math.max(current.bestCombo, wholeNumber(run.combo)),
+    gamesPlayed: current.gamesPlayed + 1
+  };
+}
+function saveCareerStats(){
+  try{
+    localStorage.setItem(STORAGE_KEY, String(careerStats.bestScore));
+    localStorage.setItem(STATS_KEY, JSON.stringify(careerStats));
+  }catch(_error){
+    // Storage can be unavailable in private browsing; the current run still works.
+  }
+}
+let careerStats = loadCareerStats();
+let best = careerStats.bestScore;
+let soundOn = true;
+try{ soundOn = localStorage.getItem(SOUND_KEY) !== '0'; }catch(_error){}
 
 /* ---- Game state ---- */
 let score=0, level=1, lives=3, comboHits=0, comboTimer=0;
+let runBestCombo=0, cleanClears=0, missesThisLevel=0;
+let bestAtRunStart=best, newBestAnnounced=false;
 let stink = 0;
 let shake = 0;
 let flash = 0;
@@ -318,10 +377,26 @@ const sfx = {
 /* ---- DOM helpers ---- */
 const $ = id => document.getElementById(id);
 const hudScore=$('hudScore'), hudLevel=$('hudLevel'), hudLives=$('hudLives');
-const elCombo=$('combo'), elHype=$('hype'), elPowers=$('powers'), elToast=$('toast'), btnLaunch=$('mobileLaunch');
+const elCombo=$('combo'), elHype=$('hype'), elPowers=$('powers'), elToast=$('toast'), elAnnouncer=$('announcer'), btnLaunch=$('mobileLaunch');
 const tTitle=$('titleScreen'), tPause=$('pauseScreen'), tHow=$('howScreen'), tEnd=$('endScreen');
 const btnSound=$('btnSound'), btnPause=$('btnPause');
-btnSound.textContent = soundOn ? '🔊' : '🔇';
+const careerSummary=$('careerSummary'), endRunSummary=$('endRunSummary');
+function focusWithoutScroll(el){
+  try{ el.focus({preventScroll:true}); }catch(_error){ el.focus(); }
+}
+function updateSoundButton(){
+  btnSound.textContent = soundOn ? '🔊' : '🔇';
+  btnSound.title = soundOn ? 'Mute sound' : 'Turn sound on';
+  btnSound.setAttribute('aria-label', btnSound.title);
+  btnSound.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+}
+function updatePauseButton(isPaused=false){
+  btnPause.textContent = isPaused ? '▶️' : '⏸';
+  btnPause.title = isPaused ? 'Resume game' : 'Pause game';
+  btnPause.setAttribute('aria-label', btnPause.title);
+}
+updateSoundButton();
+updatePauseButton();
 
 /* ---- Resize ---- */
 function resize(){
@@ -403,6 +478,7 @@ function newBall(stuck=true){
 const PATTERN_NAMES = ['Classic Wall','Checker','Tunnel','Wave','Pyramid','Diamond','Cross','Spiral','Hourglass','Brick House','Skull','Funhouse','Sewer Maze'];
 function newLevel(){
   bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
+  missesThisLevel = 0;
   const cols = Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = Math.min(10, 4 + Math.floor(level/2));
   const top = 70;
@@ -527,10 +603,27 @@ window.addEventListener('blur', ()=>{ if(state==='playing') doPause(); });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='playing') doPause(); });
 
 btnLaunch.addEventListener('click', e=>{ e.stopPropagation(); if(waitingLaunch) launch(); });
-btnSound.addEventListener('click', ()=>{ soundOn=!soundOn; localStorage.setItem(SOUND_KEY, soundOn?'1':'0'); btnSound.textContent = soundOn?'🔊':'🔇'; if(soundOn) sfx.power(); });
+btnSound.addEventListener('click', ()=>{
+  soundOn=!soundOn;
+  try{ localStorage.setItem(SOUND_KEY, soundOn?'1':'0'); }catch(_error){}
+  updateSoundButton();
+  if(soundOn) sfx.power();
+});
 btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
 
 /* ---- UI helpers ---- */
+function announce(msg){
+  elAnnouncer.textContent = '';
+  setTimeout(()=>{ elAnnouncer.textContent = msg; }, 20);
+}
+function updateCareerSummary(){
+  if(careerStats.gamesPlayed===0 && careerStats.bestScore===0){
+    careerSummary.textContent = 'First run: set your local score, level, and chain records.';
+    return;
+  }
+  const levelRecord = careerStats.bestLevel ? `Level ${careerStats.bestLevel}` : 'Level —';
+  careerSummary.textContent = `Local records: ${careerStats.bestScore.toLocaleString()} points • ${levelRecord} • ${careerStats.bestCombo}× chain`;
+}
 function setHype(msg, frames=80){
   elHype.textContent = msg;
   elHype.classList.add('show');
@@ -555,6 +648,11 @@ function updateHud(){
   hudScore.textContent = score.toLocaleString();
   hudLevel.textContent = level;
   hudLives.textContent = lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—';
+  if(state==='playing' && score>bestAtRunStart && !newBestAnnounced){
+    newBestAnnounced = true;
+    showToast('NEW PERSONAL BEST!');
+    announce(`New personal best: ${score.toLocaleString()} points.`);
+  }
 }
 function updatePowers(){
   const items = [];
@@ -574,25 +672,34 @@ function updatePowers(){
   if(activePowers.reverse) items.push(`🔄 Reversed`);
   elPowers.innerHTML = items.length ? items.map(t=>`<span class="chip">${t}</span>`).join('') : '';
 }
+function computeCleanLevelBonus(levelValue, misses=0){
+  return wholeNumber(misses)>0 ? 0 : 100 + wholeNumber(levelValue)*50;
+}
 
 /* ---- Flow ---- */
 function startGame(){
   resize();
   paddle = newPaddle();
   score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0;
+  runBestCombo=0; cleanClears=0; missesThisLevel=0;
+  bestAtRunStart=careerStats.bestScore; newBestAnnounced=false;
   activePowers = {};
   cancelLevelTransition();
   newLevel();
   state='playing'; running=true; paused=false;
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow);
+  endRunSummary.textContent='';
+  updatePauseButton();
+  focusWithoutScroll(cv);
   updateHud(); updatePowers();
+  announce('Run started. Level 1.');
   audio();
   sfx.launch();
 }
 function showOverlay(el){ el.classList.add('show'); }
 function hideOverlay(el){ el.classList.remove('show'); }
-function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); }
-function doResume(){ if(state!=='paused') return; state='playing'; paused=false; hideOverlay(tPause); }
+function doPause(){ if(state!=='playing') return; state='paused'; paused=true; updatePauseButton(true); showOverlay(tPause); focusWithoutScroll($('btnResume')); announce('Game paused.'); }
+function doResume(){ if(state!=='paused') return; state='playing'; paused=false; updatePauseButton(); hideOverlay(tPause); focusWithoutScroll(cv); announce('Game resumed.'); }
 function cancelLevelTransition(){
   if(levelTimeoutId){ clearTimeout(levelTimeoutId); levelTimeoutId = 0; }
   levelTransition = false;
@@ -600,23 +707,41 @@ function cancelLevelTransition(){
 function quitToMenu(){
   state='title'; paused=false; running=false;
   cancelLevelTransition();
+  btnLaunch.classList.remove('show');
   hideOverlay(tPause); hideOverlay(tEnd);
-  showOverlay(tTitle); pickTitleQuip();
+  updatePauseButton(); updateCareerSummary();
+  showOverlay(tTitle); focusWithoutScroll($('btnStart')); pickTitleQuip();
 }
 function restartGame(){ hideOverlay(tEnd); startGame(); }
 function gameOver(won){
+  const finalLevel = Math.min(level, 30);
+  const records = [];
+  if(score > careerStats.bestScore) records.push('NEW HIGH SCORE');
+  if(finalLevel > careerStats.bestLevel) records.push('NEW DEEPEST LEVEL');
+  if(runBestCombo > careerStats.bestCombo) records.push('NEW LONGEST CHAIN');
   state = won?'win':'gameover';
   running=false;
   cancelLevelTransition();
-  best = Math.max(best, score);
-  localStorage.setItem(STORAGE_KEY, best);
+  btnLaunch.classList.remove('show');
+  elHype.classList.remove('show');
+  elToast.classList.remove('show');
+  careerStats = recordCompletedRun(careerStats, {score, level:finalLevel, combo:runBestCombo});
+  best = careerStats.bestScore;
+  saveCareerStats();
+  updateCareerSummary();
   $('endTitle').firstChild.textContent = won?'You Win!':'Flushed.';
   $('endSub').textContent = won?'sewer royalty':'better luck next plunge';
   $('endQuip').textContent = (won?WIN_QUIPS:GAME_OVER_QUIPS)[Math.floor(Math.random()*(won?WIN_QUIPS:GAME_OVER_QUIPS).length)];
   $('endScore').textContent = score.toLocaleString();
-  $('endLevel').textContent = level;
+  $('endLevel').textContent = finalLevel;
   $('endBest').textContent = best.toLocaleString();
+  const runBits = [`Best chain ${runBestCombo}×`, `${cleanClears} clean flush${cleanClears===1?'':'es'}`];
+  if(records.length) runBits.unshift(records.join(' • '));
+  endRunSummary.textContent = runBits.join(' • ');
+  updatePauseButton();
   showOverlay(tEnd);
+  focusWithoutScroll($('btnRestart'));
+  announce(`${won?'You won':'Game over'}. Score ${score}. Level ${finalLevel}. Best chain ${runBestCombo}.`);
   won ? sfx.win() : sfx.death();
 }
 function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
@@ -982,6 +1107,7 @@ function step(dt){
         }
         if(scoreEvent){
           comboHits++; comboTimer = 90;
+          runBestCombo = Math.max(runBestCombo, comboHits);
           const mult = (1 + Math.floor(comboHits/4)*0.5) * (activePowers.gold ? 2 : 1);
           const earned = Math.round((10 + level*2)*mult);
           score += earned;
@@ -1025,6 +1151,7 @@ function step(dt){
   // cleared this same frame (the clear block below will start the transition).
   if(balls.length === 0 && !levelTransition && bricks.length > 0){
     lives--;
+    missesThisLevel++;
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
     shake = Math.max(shake, 12);
@@ -1142,9 +1269,20 @@ function step(dt){
 
   if(bricks.length === 0 && !levelTransition){
     levelTransition = true;
-    score += 200 + level*50;
-    setHype(`LEVEL ${level} CLEAR!`, 90);
-    floatText('+'+(200+level*50), W/2, H/2, '#9effc8');
+    const clearedLevel = level;
+    const clearBonus = 200 + clearedLevel*50;
+    const cleanBonus = computeCleanLevelBonus(clearedLevel, missesThisLevel);
+    const totalBonus = clearBonus + cleanBonus;
+    score += totalBonus;
+    if(cleanBonus){
+      cleanClears++;
+      setHype(`LEVEL ${clearedLevel} CLEAN FLUSH!`, 110);
+      showToast(`CLEAN BONUS +${cleanBonus.toLocaleString()}`);
+    }else{
+      setHype(`LEVEL ${clearedLevel} CLEAR!`, 90);
+    }
+    floatText('+'+totalBonus, W/2, H/2, '#9effc8');
+    announce(`Level ${clearedLevel} clear. ${cleanBonus?`Clean Flush bonus ${cleanBonus}. `:''}Total bonus ${totalBonus}.`);
     flash = Math.max(flash, 0.6);
     sfx.win();
     level++;
@@ -1166,7 +1304,7 @@ function step(dt){
 function render(){
   ctx.save();
   let sx=0, sy=0;
-  if(shake>0){ sx = (Math.random()-0.5)*shake; sy = (Math.random()-0.5)*shake; }
+  if(shake>0 && !reduceMotion){ sx = (Math.random()-0.5)*shake; sy = (Math.random()-0.5)*shake; }
   ctx.translate(sx, sy);
 
   const g = ctx.createLinearGradient(0,0,0,H);
@@ -1641,6 +1779,7 @@ resize();
 paddle = newPaddle();
 buildStars();
 pickTitleQuip();
+updateCareerSummary();
 lastTime = performance.now();
 requestAnimationFrame(loop);
 
@@ -1657,7 +1796,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
    Exposes game internals for the vitest regression suite
    (tests/turdanoid-game.test.js). Not used by gameplay code. */
 window.__turdanoid = {
-  startGame, step, newLevel, quitToMenu, doPause, doResume,
+  startGame, step, newLevel, quitToMenu, doPause, doResume, gameOver,
   get state(){ return state; },
   get score(){ return score; },
   set score(v){ score = v; },
@@ -1668,6 +1807,12 @@ window.__turdanoid = {
   get bricks(){ return bricks; },
   set bricks(v){ bricks = v; },
   get activePowers(){ return activePowers; },
+  get runBestCombo(){ return runBestCombo; },
+  set runBestCombo(v){ runBestCombo = wholeNumber(v); },
+  get cleanClears(){ return cleanClears; },
+  get missesThisLevel(){ return missesThisLevel; },
+  set missesThisLevel(v){ missesThisLevel = wholeNumber(v); },
+  get careerStats(){ return {...careerStats}; },
   get levelTransition(){ return levelTransition; },
   get waitingLaunch(){ return waitingLaunch; },
   get paddle(){ return paddle; },

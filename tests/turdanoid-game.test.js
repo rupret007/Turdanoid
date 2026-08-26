@@ -35,12 +35,15 @@ function makeCtxStub() {
   });
 }
 
-function bootGame() {
+function bootGame(storage = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url: 'http://localhost/TurdAnoid.html',
     beforeParse(window) {
       window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
+      for (const [key, value] of Object.entries(storage)) {
+        window.localStorage.setItem(key, value);
+      }
       // No rAF loop: tests drive step() manually for determinism.
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
@@ -60,10 +63,11 @@ function stepFrames(g, frames, dt = FRAME) {
 }
 
 describe('TurdAnoid game regressions', () => {
+  let dom;
   let g;
 
   beforeEach(() => {
-    ({ g } = bootGame());
+    ({ dom, g } = bootGame());
     g.startGame();
   });
 
@@ -75,12 +79,13 @@ describe('TurdAnoid game regressions', () => {
   });
 
   describe('level clear (regression: bonus/level fired every frame)', () => {
-    it('awards the clear bonus and increments the level exactly once', () => {
+    it('awards one clear plus clean-flush bonus and increments the level exactly once', () => {
       const baseScore = g.score;
       g.bricks = [];
       // Simulate many frames during the 600ms transition window
       stepFrames(g, 40);
-      expect(g.score).toBe(baseScore + 250); // 200 + 1*50, once
+      expect(g.score).toBe(baseScore + 400); // 250 clear + 150 clean, once
+      expect(g.cleanClears).toBe(1);
       expect(g.level).toBe(2);               // incremented once, not 40 times
       expect(g.state).toBe('playing');       // no accidental instant win
       expect(g.levelTransition).toBe(true);
@@ -104,6 +109,14 @@ describe('TurdAnoid game regressions', () => {
       expect(g.lives).toBe(lives);
     });
 
+    it('does not award the clean-flush bonus after a miss on that level', () => {
+      g.missesThisLevel = 1;
+      g.bricks = [];
+      stepFrames(g, 4);
+      expect(g.score).toBe(250);
+      expect(g.cleanClears).toBe(0);
+    });
+
     it('cancels the queued next level when quitting to menu mid-transition', async () => {
       g.bricks = [];
       stepFrames(g, 2);
@@ -113,6 +126,30 @@ describe('TurdAnoid game regressions', () => {
       expect(g.state).toBe('title');
       expect(g.levelTransition).toBe(false);
       expect(g.bricks.length).toBe(0); // newLevel() must not have run
+    });
+  });
+
+  describe('local replay records', () => {
+    it('saves score and chain records only when a run completes', () => {
+      g.score = 4200;
+      g.runBestCombo = 18;
+      g.gameOver(false);
+
+      expect(g.careerStats).toEqual({
+        bestScore: 4200,
+        bestLevel: 1,
+        bestCombo: 18,
+        gamesPlayed: 1
+      });
+      expect(JSON.parse(dom.window.localStorage.getItem('turdanoid_v3_career'))).toEqual(g.careerStats);
+      expect(dom.window.document.getElementById('endRunSummary').textContent).toContain('NEW HIGH SCORE');
+      expect(dom.window.document.getElementById('endRunSummary').textContent).toContain('Best chain 18×');
+    });
+
+    it('migrates the legacy best score into the local career summary', () => {
+      const { dom, g: migrated } = bootGame({ turdanoid_v2_best: '1234' });
+      expect(migrated.careerStats.bestScore).toBe(1234);
+      expect(dom.window.document.getElementById('careerSummary').textContent).toContain('1,234 points');
     });
   });
 

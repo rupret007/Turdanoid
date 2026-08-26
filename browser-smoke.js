@@ -128,12 +128,90 @@ async function main() {
     await runCheck(browser, 'turdanoid-mobile', 'TurdAnoid.html', {
       mobile: true,
       actions: async (page) => {
+        const titleState = await page.evaluate(() => ({
+          summary: document.getElementById('careerSummary')?.textContent,
+          soundLabel: document.getElementById('btnSound')?.getAttribute('aria-label'),
+          pauseLabel: document.getElementById('btnPause')?.getAttribute('aria-label'),
+          canvasLabel: document.querySelector('canvas')?.getAttribute('aria-label'),
+          livesRight: document.getElementById('hudLives')?.parentElement?.getBoundingClientRect().right,
+          controlsLeft: document.querySelector('.topbtns')?.getBoundingClientRect().left
+        }));
+        if (!titleState.summary?.includes('First run')) fail('turdanoid-mobile', 'first-run local record prompt is missing');
+        if (titleState.soundLabel !== 'Mute sound') fail('turdanoid-mobile', `sound control label is unclear: ${titleState.soundLabel}`);
+        if (titleState.pauseLabel !== 'Pause game') fail('turdanoid-mobile', `pause control label is unclear: ${titleState.pauseLabel}`);
+        if (!titleState.canvasLabel?.includes('Space to launch')) fail('turdanoid-mobile', 'canvas keyboard instructions are missing');
+        if (titleState.livesRight > titleState.controlsLeft) fail('turdanoid-mobile', 'lives HUD overlaps the sound/pause controls');
         await page.locator('#btnStart').click();
         await page.waitForTimeout(180);
         const canvas = page.locator('canvas');
         if (!(await canvas.isVisible())) fail('turdanoid-mobile', 'canvas not visible after starting the game');
-        const started = await page.evaluate(() => window.__turdanoid.state === 'playing');
-        if (!started) fail('turdanoid-mobile', 'START FLUSHING should put the game into the playing state');
+        const started = await page.evaluate(() => ({
+          playing: window.__turdanoid.state === 'playing',
+          activeId: document.activeElement?.id
+        }));
+        if (!started.playing) fail('turdanoid-mobile', 'START FLUSHING should put the game into the playing state');
+        if (started.activeId !== 'game') fail('turdanoid-mobile', `playfield should receive focus after start, saw ${started.activeId}`);
+      }
+    });
+
+    await runCheck(browser, 'turdanoid-replay-loop', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.locator('#btnStart').click();
+        const cleanClear = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          g.bricks = [];
+          g.step(1000 / 60);
+          return {
+            score: g.score,
+            level: g.level,
+            cleanClears: g.cleanClears,
+            hype: document.getElementById('hype')?.textContent
+          };
+        });
+        if (cleanClear.score !== 400 || cleanClear.level !== 2 || cleanClear.cleanClears !== 1) {
+          fail('turdanoid-replay-loop', `clean clear should award 400 and advance once, saw ${JSON.stringify(cleanClear)}`);
+        }
+        if (!cleanClear.hype?.includes('CLEAN FLUSH')) fail('turdanoid-replay-loop', 'clean clear feedback is missing');
+
+        const completed = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          g.score = 4321;
+          g.runBestCombo = 18;
+          g.gameOver(false);
+          return {
+            state: g.state,
+            stats: JSON.parse(localStorage.getItem('turdanoid_v3_career')),
+            summary: document.getElementById('endRunSummary')?.textContent,
+            endLevel: document.getElementById('endLevel')?.textContent,
+            launchVisible: document.getElementById('mobileLaunch')?.classList.contains('show'),
+            activeId: document.activeElement?.id
+          };
+        });
+        if (completed.state !== 'gameover') fail('turdanoid-replay-loop', `completed run should end at game over, saw ${completed.state}`);
+        if (completed.stats?.bestScore !== 4321 || completed.stats?.bestCombo !== 18 || completed.stats?.gamesPlayed !== 1) {
+          fail('turdanoid-replay-loop', `completed run stats are inaccurate: ${JSON.stringify(completed.stats)}`);
+        }
+        if (!completed.summary?.includes('NEW HIGH SCORE') || !completed.summary?.includes('Best chain 18×')) {
+          fail('turdanoid-replay-loop', `end-run record feedback is incomplete: ${completed.summary}`);
+        }
+        if (completed.endLevel !== '2') fail('turdanoid-replay-loop', `end screen should show level 2, saw ${completed.endLevel}`);
+        if (completed.launchVisible) fail('turdanoid-replay-loop', 'launch control should be hidden behind the end screen');
+        if (completed.activeId !== 'btnRestart') fail('turdanoid-replay-loop', `play-again control should receive end-screen focus, saw ${completed.activeId}`);
+
+        await page.locator('#btnRestart').click();
+        const replayed = await page.evaluate(() => ({
+          state: window.__turdanoid.state,
+          score: window.__turdanoid.score,
+          combo: window.__turdanoid.runBestCombo,
+          cleanClears: window.__turdanoid.cleanClears,
+          savedBest: window.__turdanoid.careerStats.bestScore,
+          activeId: document.activeElement?.id
+        }));
+        if (replayed.state !== 'playing' || replayed.score !== 0 || replayed.combo !== 0 || replayed.cleanClears !== 0) {
+          fail('turdanoid-replay-loop', `play again should reset only the run: ${JSON.stringify(replayed)}`);
+        }
+        if (replayed.savedBest !== 4321) fail('turdanoid-replay-loop', 'play again should retain the local personal best');
+        if (replayed.activeId !== 'game') fail('turdanoid-replay-loop', `playfield should regain focus on replay, saw ${replayed.activeId}`);
       }
     });
 

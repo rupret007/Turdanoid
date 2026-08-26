@@ -38,6 +38,7 @@ TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 le
 | Combo multiplier | +0.5× per 4 combo hits |
 | 💰 Gold Rush | 2× all brick points |
 | Level clear bonus | 200 + level × 50 |
+| Clean Flush bonus | 100 + level × 50 when no life was lost on that level |
 
 ### Power-Ups
 
@@ -71,6 +72,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 - Brick HP ramps up from level 3; metal bricks appear at level 6+
 - Ball and paddle speed scale with level (capped)
 - Win by clearing level 30
+- A run records its best score, deepest level, longest combo, and completed-game count in that browser only. No stat is uploaded.
 
 ---
 

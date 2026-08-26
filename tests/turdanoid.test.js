@@ -8,7 +8,10 @@ import {
   selectPowerUpType,
   unlockedPowers,
   computeBrickHitScore,
+  computeCleanLevelBonus,
   computeLevelClearBonus,
+  normalizeCareerStats,
+  recordCompletedRun,
   POWERS
 } from '../games/turdanoid_logic';
 
@@ -116,6 +119,46 @@ describe('TurdAnoid Balance Logic', () => {
     it('computes level clear bonus', () => {
       expect(computeLevelClearBonus(1)).toBe(250);
       expect(computeLevelClearBonus(30)).toBe(1700);
+    });
+
+    it('awards a clean-level bonus only when the player did not miss', () => {
+      expect(computeCleanLevelBonus(1, 0)).toBe(150);
+      expect(computeCleanLevelBonus(10, 0)).toBe(600);
+      expect(computeCleanLevelBonus(10, 1)).toBe(0);
+    });
+  });
+
+  describe('Local career records', () => {
+    it('sanitizes malformed values and migrates the legacy best score', () => {
+      expect(normalizeCareerStats({
+        bestScore: -10,
+        bestLevel: '7.9',
+        bestCombo: 'nope',
+        gamesPlayed: 3
+      }, 1200)).toEqual({
+        bestScore: 1200,
+        bestLevel: 7,
+        bestCombo: 0,
+        gamesPlayed: 3
+      });
+    });
+
+    it('records only honest maxima and increments completed games once', () => {
+      expect(recordCompletedRun({
+        bestScore: 5000,
+        bestLevel: 8,
+        bestCombo: 20,
+        gamesPlayed: 4
+      }, {
+        score: 4200,
+        level: 10,
+        combo: 24
+      })).toEqual({
+        bestScore: 5000,
+        bestLevel: 10,
+        bestCombo: 24,
+        gamesPlayed: 5
+      });
     });
   });
 });
