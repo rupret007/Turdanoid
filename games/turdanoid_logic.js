@@ -41,9 +41,57 @@ export const TURDANOID_BALANCE = {
     brickBreakPerLevel: 5,
     comboWindowFrames: 90,
     comboHitsPerMultStep: 4,
-    comboMultStep: 0.5
+    comboMultStep: 0.5,
+    cleanLevelBonusBase: 100,
+    cleanLevelBonusPerLevel: 50
   }
 };
+
+function wholeNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+}
+
+/**
+ * Sanitize locally persisted career stats and migrate the legacy score key.
+ */
+export function normalizeCareerStats(raw, legacyBest = 0) {
+  const value = raw && typeof raw === 'object' ? raw : {};
+  return {
+    bestScore: Math.max(wholeNumber(value.bestScore), wholeNumber(legacyBest)),
+    bestLevel: wholeNumber(value.bestLevel),
+    bestCombo: wholeNumber(value.bestCombo),
+    gamesPlayed: wholeNumber(value.gamesPlayed)
+  };
+}
+
+/**
+ * Parse the newer JSON record without allowing corruption to erase a valid
+ * legacy high score.
+ */
+export function parseCareerStats(rawStats, legacyBest = 0) {
+  let parsed = {};
+  try {
+    parsed = JSON.parse(rawStats || '{}');
+  } catch {
+    // Keep the empty record; normalization below still preserves legacyBest.
+  }
+  return normalizeCareerStats(parsed, legacyBest);
+}
+
+/**
+ * Fold one completed run into local-only career records.
+ */
+export function recordCompletedRun(career, run) {
+  const current = normalizeCareerStats(career);
+  const completed = run && typeof run === 'object' ? run : {};
+  return {
+    bestScore: Math.max(current.bestScore, wholeNumber(completed.score)),
+    bestLevel: Math.max(current.bestLevel, wholeNumber(completed.level)),
+    bestCombo: Math.max(current.bestCombo, wholeNumber(completed.combo)),
+    gamesPlayed: current.gamesPlayed + 1
+  };
+}
 
 /**
  * Ball launch speed for a level. Matches newBall() in TurdAnoid.html.
@@ -166,6 +214,17 @@ export function computeBrickHitScore(level, comboHits, goldActive = false) {
   const s = TURDANOID_BALANCE.scoring;
   const mult = (1 + Math.floor(comboHits / s.comboHitsPerMultStep) * s.comboMultStep) * (goldActive ? 2 : 1);
   return Math.round((s.brickHitBase + level * s.brickHitPerLevel) * mult);
+}
+
+/**
+ * Skill bonus for clearing a wall without losing a life on that level.
+ */
+export function computeCleanLevelBonus(level, missesThisLevel = 0) {
+  if (wholeNumber(missesThisLevel) > 0) {
+    return 0;
+  }
+  const s = TURDANOID_BALANCE.scoring;
+  return s.cleanLevelBonusBase + wholeNumber(level) * s.cleanLevelBonusPerLevel;
 }
 
 /**

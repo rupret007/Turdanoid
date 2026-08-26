@@ -4,10 +4,16 @@ A collection of six active browser games with a playful turd theme.
 
 ## Version
 
-- **Current build:** `v4.0.0`
-- **Build date:** May 4, 2026
+- **Current build:** `v4.1.0`
+- **Build date:** August 26, 2026
 
 ## Changelog (Latest)
+
+- TurdAnoid replay-loop pass:
+  - Added a **Clean Flush** skill bonus for clearing a level without losing a life.
+  - Added honest, device-local records for best score, deepest level, longest chain, and completed runs. No account, tracking, or remote service is involved.
+  - Added immediate personal-best and end-of-run record feedback while preserving the one-tap/Space replay loop.
+  - Improved keyboard/screen-reader labels, modal focus isolation, late-level callout placement, and reduced-motion behavior, with deterministic unit, real-game, and browser coverage.
 
 - TurdAnoid Turbo fixes and polish:
   - Fixed a level-clear bug that could award the clear bonus dozens of times and skip levels.
@@ -44,9 +50,11 @@ Silly Arkanoid variant (vanilla JavaScript + Canvas) with stink-based effects an
 - Stacking enlarge behavior (multiple length boosts actually stack)
 - Touch and mouse support
 - Responsive canvas (resizes on window change)
-- High score persistence
+- Clean Flush no-miss level bonuses
+- Device-local best score, deepest level, longest chain, and completed-run records
+- Clear replay feedback with no tracking or online account
 
-**Controls:** Mouse or touch to move paddle.
+**Controls:** Mouse/touch to move and tap to launch/fire; or `A`/`D` or arrow keys to move, `Space` to launch/fire, `P`/`Esc` to pause, and `R` to restart.
 
 ### Turdtris
 
