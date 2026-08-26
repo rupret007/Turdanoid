@@ -37,7 +37,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
   - Added a **Clean Flush** skill bonus for clearing a level without losing a life.
   - Added honest, device-local records for best score, deepest level, longest chain, and completed runs. No account, tracking, or remote service is involved.
   - Added immediate personal-best and end-of-run record feedback while preserving the one-tap/Space replay loop.
-  - Improved keyboard/screen-reader labels and reduced-motion behavior, with deterministic unit, real-game, and browser coverage.
+  - Improved keyboard/screen-reader labels, modal focus isolation, late-level callout placement, and reduced-motion behavior, with deterministic unit, real-game, and browser coverage.
 
 - Suite-wide graphics pass (render/CSS only — no rules, scoring, physics, or controls changed):
   - Hub: inline-SVG cover art for all six games with hover motion, a 3×2 collection grid, and per-game accent colours.
