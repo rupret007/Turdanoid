@@ -6,8 +6,8 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Version
 
-- **Current build:** `v4.0.0`
-- **Build date:** May 4, 2026
+- **Current build:** `v4.1.0`
+- **Build date:** August 26, 2026
 
 ## Unreleased
 
@@ -32,6 +32,12 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 - After leftover #18: Turdtris keeps Hold, soft drop, and Pause on the thumb dock instead of behind More Controls. A stalled frame cannot dump extra gravity. Game over shows whether the run set a device best, and Space or Enter starts the next stack. Arcade mid-run saves stay parked with PR #8.
 
 ## Changelog (Latest)
+
+- TurdAnoid replay-loop pass:
+  - Added a **Clean Flush** skill bonus for clearing a level without losing a life.
+  - Added honest, device-local records for best score, deepest level, longest chain, and completed runs. No account, tracking, or remote service is involved.
+  - Added immediate personal-best and end-of-run record feedback while preserving the one-tap/Space replay loop.
+  - Improved keyboard/screen-reader labels and reduced-motion behavior, with deterministic unit, real-game, and browser coverage.
 
 - Suite-wide graphics pass (render/CSS only — no rules, scoring, physics, or controls changed):
   - Hub: inline-SVG cover art for all six games with hover motion, a 3×2 collection grid, and per-game accent colours.
@@ -77,9 +83,11 @@ Silly Arkanoid variant (vanilla JavaScript + Canvas) with stink-based effects an
 - Enlarge and Shrink keep their paddle size when the next wall builds; dying still resets both
 - Touch and mouse support
 - Responsive canvas (resizes on window change)
-- High score persistence
+- Clean Flush no-miss level bonuses
+- Device-local best score, deepest level, longest chain, and completed-run records
+- Clear replay feedback with no tracking or online account
 
-**Controls:** Mouse or touch to move paddle.
+**Controls:** Mouse/touch to move and tap to launch/fire; or `A`/`D` or arrow keys to move, `Space` to launch/fire, `P`/`Esc` to pause, and `R` to restart.
 
 ### Turdtris
 
