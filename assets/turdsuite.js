@@ -6,6 +6,8 @@
    - Suite.fart() / .beep() / .ding() / .buzz()  shared SFX
    - auto: back-to-hub pill on every page (suppress with
      <body data-suite-no-back="1"> or window.SUITE_NO_BACK = true)
+   - auto: ambient sewer backdrop (.suite-bg — tiles, wisps, bubbles;
+     suppress with <body data-suite-no-bg="1">)
    - auto: iPhone double-tap-zoom prevention
    ============================================================ */
 (function () {
@@ -142,6 +144,26 @@
     } catch (e) {}
   }
 
+  // ---------- Ambient sewer backdrop ----------
+  // Fixed layer behind every page (tiles, stink wisps, rising bubbles,
+  // vignette). Pure CSS animation; suppress with <body data-suite-no-bg="1">.
+  function injectAmbientBg() {
+    try {
+      if (!document.body) return;
+      if (document.body.dataset && document.body.dataset.suiteNoBg === '1') return;
+      if (document.querySelector('.suite-bg')) return;
+      const bg = document.createElement('div');
+      bg.className = 'suite-bg';
+      bg.setAttribute('aria-hidden', 'true');
+      let html = '<div class="suite-bg-tiles"></div>';
+      for (let i = 0; i < 3; i++) html += '<div class="suite-bg-wisp"></div>';
+      for (let i = 0; i < 12; i++) html += '<i class="suite-bg-bubble"></i>';
+      html += '<div class="suite-bg-vignette"></div>';
+      bg.innerHTML = html;
+      document.body.insertBefore(bg, document.body.firstChild);
+    } catch (e) {}
+  }
+
   // ---------- iPhone niceties ----------
   function preventDoubleTapZoom() {
     let last = 0;
@@ -160,6 +182,7 @@
 
   // ---------- Boot ----------
   function boot() {
+    injectAmbientBg();
     injectBackPill();
     preventDoubleTapZoom();
     // unlock audio context on first interaction
