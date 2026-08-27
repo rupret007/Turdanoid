@@ -143,6 +143,83 @@ describe('TurdAnoid game regressions', () => {
     });
   });
 
+  describe('new-wall power continuity', () => {
+    it('carries still-active ball powers through a real wall clear', async () => {
+      g.activePowers.slow = 120;
+      g.activePowers.fast = 120;
+      g.activePowers.fire = 120;
+      g.activePowers.ghost = 120;
+
+      g.bricks = [];
+      g.step(FRAME);
+      expect(g.levelTransition).toBe(true);
+      expect(g.level).toBe(2);
+
+      await new Promise((resolve) => setTimeout(resolve, 750));
+
+      const [ball] = g.balls;
+      const baseSpeed = 5.4 + 2 * 0.16;
+      const expectedSpeed = Math.max(3.5, baseSpeed * 0.7) * 1.35;
+      expect(g.levelTransition).toBe(false);
+      expect(g.level).toBe(2);
+      expect(ball.baseSpeed).toBeCloseTo(baseSpeed, 6);
+      expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(expectedSpeed, 6);
+      expect(ball.speed).toBeCloseTo(expectedSpeed, 6);
+      expect(ball.fire).toBe(119);
+      expect(ball.ghost).toBe(119);
+    });
+
+    it('restores the natural speed as slow and fast expire independently', () => {
+      g.activePowers.slow = 1;
+      g.activePowers.fast = 2;
+      g.newLevel();
+
+      const [ball] = g.balls;
+      const baseSpeed = 5.4 + 1 * 0.16;
+      expect(ball.speed).toBeCloseTo(Math.max(3.5, baseSpeed * 0.7) * 1.35, 6);
+
+      g.step(FRAME);
+      expect(g.activePowers.slow).toBeUndefined();
+      expect(g.activePowers.fast).toBe(1);
+      expect(ball.speed).toBeCloseTo(baseSpeed * 1.35, 6);
+      expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed * 1.35, 6);
+
+      g.step(FRAME);
+      expect(g.activePowers.fast).toBeUndefined();
+      expect(ball.speed).toBeCloseTo(baseSpeed, 6);
+      expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed, 6);
+    });
+
+    it('refreshes speed powers without stacking and copies them to multiball', () => {
+      const [source] = g.balls;
+      const baseSpeed = source.baseSpeed;
+
+      g.applyPower({ t: 'slow' });
+      const slowSpeed = source.speed;
+      g.applyPower({ t: 'slow' });
+      expect(source.speed).toBeCloseTo(slowSpeed, 6);
+
+      g.applyPower({ t: 'speed', bad: true });
+      const combinedSpeed = source.speed;
+      g.applyPower({ t: 'speed', bad: true });
+      expect(source.speed).toBeCloseTo(combinedSpeed, 6);
+      expect(combinedSpeed).toBeCloseTo(Math.max(3.5, baseSpeed * 0.7) * 1.35, 6);
+
+      g.applyPower({ t: 'fire' });
+      g.applyPower({ t: 'ghost' });
+      g.spawnMulti();
+
+      expect(g.balls).toHaveLength(3);
+      for (const ball of g.balls) {
+        expect(ball.baseSpeed).toBeCloseTo(baseSpeed, 6);
+        expect(ball.speed).toBeCloseTo(combinedSpeed, 6);
+        expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(combinedSpeed, 6);
+        expect(ball.fire).toBe(60 * 8);
+        expect(ball.ghost).toBe(60 * 5);
+      }
+    });
+  });
+
   describe('frame-rate independence', () => {
     it('moves the ball the same distance for the same elapsed time', () => {
       const run = (dt, frames) => {
