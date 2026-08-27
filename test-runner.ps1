@@ -117,8 +117,8 @@ if ($turd -match 'function cancelLevelTransition\(') { Pass("level transition ca
 if ($turd -match 'balls\.length === 0 && !levelTransition && bricks\.length > 0') { Pass("no life lost during level transition") } else { Fail("no life lost during level transition") }
 if ($turd -match 'const BASE_FRAME_MS = 1000/60;') { Pass("delta-time base frame") } else { Fail("delta-time base frame") }
 if ($turd -match 'const ts = dt / BASE_FRAME_MS;') { Pass("delta-time scaling in step") } else { Fail("delta-time scaling in step") }
-if ($turd -match 'window\.addEventListener\(''blur'', \(\)=>\{ if\(state===''playing''\) doPause\(\); \}\);') { Pass("blur auto-pause") } else { Fail("blur auto-pause") }
-if ($turd -match 'document\.addEventListener\(''visibilitychange''') { Pass("visibilitychange auto-pause") } else { Fail("visibilitychange auto-pause") }
+if ($turd -match 'function handleWindowBlur\(' -and $turd -match 'keys\.left = false' -and $turd -match 'pointerActive = false' -and $turd -match 'window\.addEventListener\(''blur'', handleWindowBlur\);') { Pass("blur auto-pause") } else { Fail("blur auto-pause") }
+if ($turd -match 'document\.addEventListener\(''visibilitychange''' -and $turd -match 'if\(document\.hidden\) handleWindowBlur\(\);') { Pass("visibilitychange auto-pause") } else { Fail("visibilitychange auto-pause") }
 if ($turd -match 'if\(activePowers\.shield\)\{') { Pass("shield saves any ball") } else { Fail("shield saves any ball") }
 if ($turd -match 'function killBrick\(') { Pass("brick death animation") } else { Fail("brick death animation") }
 if ($turd -match 'function drawDyingBrick\(') { Pass("dying brick renderer") } else { Fail("dying brick renderer") }

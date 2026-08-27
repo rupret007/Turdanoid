@@ -60,10 +60,11 @@ function stepFrames(g, frames, dt = FRAME) {
 }
 
 describe('TurdAnoid game regressions', () => {
+  let dom;
   let g;
 
   beforeEach(() => {
-    ({ g } = bootGame());
+    ({ dom, g } = bootGame());
     g.startGame();
   });
 
@@ -236,8 +237,11 @@ describe('TurdAnoid game regressions', () => {
       };
       const at60 = run(FRAME, 30);       // 30 frames at 60Hz
       const at120 = run(FRAME / 2, 60);  // 60 frames at 120Hz, same wall time
+      const at144 = run(1000 / 144, 72); // 72 frames at 144Hz, same wall time
       expect(at120.x).toBeCloseTo(at60.x, 6);
       expect(at120.y).toBeCloseTo(at60.y, 6);
+      expect(at144.x).toBeCloseTo(at60.x, 6);
+      expect(at144.y).toBeCloseTo(at60.y, 6);
     });
 
     it('expires timed power-ups after the same wall time regardless of frame rate', () => {
@@ -254,6 +258,47 @@ describe('TurdAnoid game regressions', () => {
       expect(g120.activePowers.laser).toBeGreaterThan(0);
       stepFrames(g120, 4, FRAME / 2);
       expect(g120.activePowers.laser).toBeUndefined();
+    });
+  });
+
+  describe('auto-pause on tab blur', () => {
+    it('reuses doPause and clears held paddle and fire inputs', () => {
+      g.keys.left = true;
+      g.keys.right = true;
+      g.pointerActive = true;
+
+      dom.window.dispatchEvent(new dom.window.Event('blur'));
+
+      expect(g.state).toBe('paused');
+      expect(g.keys).toEqual({ left: false, right: false });
+      expect(g.pointerActive).toBe(false);
+
+      g.doResume();
+      expect(g.state).toBe('playing');
+      expect(g.keys).toEqual({ left: false, right: false });
+      expect(g.pointerActive).toBe(false);
+    });
+
+    it('clears held inputs on visibility loss through the same handler', () => {
+      g.keys.left = true;
+      g.pointerActive = true;
+      Object.defineProperty(dom.window.document, 'hidden', { configurable: true, value: true });
+
+      dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+
+      expect(g.state).toBe('paused');
+      expect(g.keys.left).toBe(false);
+      expect(g.pointerActive).toBe(false);
+    });
+
+    it('does not clear held inputs on a manual pause', () => {
+      g.keys.left = true;
+      g.pointerActive = true;
+      g.doPause();
+
+      expect(g.state).toBe('paused');
+      expect(g.keys.left).toBe(true);
+      expect(g.pointerActive).toBe(true);
     });
   });
 });
