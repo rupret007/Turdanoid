@@ -548,8 +548,15 @@ window.addEventListener('keyup', e=>{
 });
 
 // Auto-pause when the tab/window loses focus so the ball can't die unattended.
-window.addEventListener('blur', ()=>{ if(state==='playing') doPause(); });
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='playing') doPause(); });
+// Reuse the legacy Neon blur contract: drop held paddle/fire inputs, then pause.
+function handleWindowBlur(){
+  keys.left = false;
+  keys.right = false;
+  pointerActive = false;
+  if(state==='playing') doPause();
+}
+window.addEventListener('blur', handleWindowBlur);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) handleWindowBlur(); });
 
 btnLaunch.addEventListener('click', e=>{ e.stopPropagation(); if(waitingLaunch) launch(); });
 btnSound.addEventListener('click', ()=>{ soundOn=!soundOn; localStorage.setItem(SOUND_KEY, soundOn?'1':'0'); btnSound.textContent = soundOn?'🔊':'🔇'; if(soundOn) sfx.power(); });
@@ -617,7 +624,15 @@ function startGame(){
 function showOverlay(el){ el.classList.add('show'); }
 function hideOverlay(el){ el.classList.remove('show'); }
 function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); }
-function doResume(){ if(state!=='paused') return; state='playing'; paused=false; hideOverlay(tPause); }
+function doResume(){
+  if(state!=='paused') return;
+  state='playing';
+  paused=false;
+  // Same clock reset Turdtris already uses after blur: a hidden tab can
+  // freeze rAF, and the first playing frame must not inherit that gap.
+  lastTime = performance.now();
+  hideOverlay(tPause);
+}
 function cancelLevelTransition(){
   if(levelTimeoutId){ clearTimeout(levelTimeoutId); levelTimeoutId = 0; }
   levelTransition = false;
@@ -1691,7 +1706,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
    (tests/turdanoid-game.test.js). Not used by gameplay code. */
 window.__turdanoid = {
   startGame, step, newLevel, quitToMenu, doPause, doResume,
-  applyPower, spawnMulti,
+  applyPower, spawnMulti, handleWindowBlur,
   get state(){ return state; },
   get score(){ return score; },
   set score(v){ score = v; },
@@ -1702,6 +1717,9 @@ window.__turdanoid = {
   get bricks(){ return bricks; },
   set bricks(v){ bricks = v; },
   get activePowers(){ return activePowers; },
+  get keys(){ return keys; },
+  get pointerActive(){ return pointerActive; },
+  set pointerActive(v){ pointerActive = !!v; },
   get levelTransition(){ return levelTransition; },
   get waitingLaunch(){ return waitingLaunch; },
   get paddle(){ return paddle; },

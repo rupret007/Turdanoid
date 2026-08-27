@@ -171,10 +171,22 @@ async function main() {
         await page.locator('#btnStart').click();
         await page.waitForTimeout(180);
         const blurState = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          g.keys.left = true;
+          g.keys.right = true;
+          g.pointerActive = true;
           window.dispatchEvent(new Event('blur'));
-          return { state: window.__turdanoid.state };
+          return {
+            state: g.state,
+            left: g.keys.left,
+            right: g.keys.right,
+            pointerActive: g.pointerActive
+          };
         });
         if (blurState.state !== 'paused') fail('turdanoid-blur-pause', `blur should pause TurdAnoid, saw ${blurState.state}`);
+        if (blurState.left || blurState.right || blurState.pointerActive) {
+          fail('turdanoid-blur-pause', `blur should clear held paddle and fire inputs: ${JSON.stringify(blurState)}`);
+        }
         const resumeState = await page.evaluate(() => {
           window.__turdanoid.doResume();
           return { state: window.__turdanoid.state };
