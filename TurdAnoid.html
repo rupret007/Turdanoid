@@ -388,14 +388,39 @@ function newPaddle(){
   const w = Math.max(82, Math.min(160, W*0.22));
   return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0, recoil:0 };
 }
+function computeTimedBallSpeed(baseSpeed){
+  let speed = baseSpeed;
+  if(activePowers.slow) speed = Math.max(3.5, speed*0.7);
+  if(activePowers.fast) speed *= 1.35;
+  return speed;
+}
+function syncTimedBallSpeeds(){
+  for(const b of balls){
+    const baseSpeed = Number.isFinite(b.baseSpeed) ? b.baseSpeed : b.speed;
+    const nextSpeed = computeTimedBallSpeed(baseSpeed);
+    const currentSpeed = Math.hypot(b.vx,b.vy);
+    if(currentSpeed > 0){
+      b.vx *= nextSpeed/currentSpeed;
+      b.vy *= nextSpeed/currentSpeed;
+    }
+    b.baseSpeed = baseSpeed;
+    b.speed = nextSpeed;
+  }
+}
 function newBall(stuck=true){
   const r = Math.max(8, Math.min(11, W*0.018));
-  const speed = 5.4 + Math.min(level*0.16, 3.0);
+  const baseSpeed = 5.4 + Math.min(level*0.16, 3.0);
+  // Timed power chips survive a wall clear, so the replacement ball must
+  // keep the ball-scoped effects they still advertise.
+  const speed = computeTimedBallSpeed(baseSpeed);
   const ang = -Math.PI/2 + (Math.random()-0.5)*0.4;
   return {
     x: paddle.x, y: paddle.y - r - 1, r,
     vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed,
-    speed, stuck, fire:0, trail:[]
+    speed, baseSpeed, stuck,
+    fire: activePowers.fire||0,
+    ghost: activePowers.ghost||0,
+    trail:[]
   };
 }
 
@@ -700,7 +725,7 @@ function applyPower(p){
       break;
     case 'slow':
       activePowers.slow = f;
-      balls.forEach(b=>{ const k=0.7; b.vx*=k; b.vy*=k; b.speed=Math.max(3.5, b.speed*k); });
+      syncTimedBallSpeeds();
       break;
     case 'laser':   activePowers.laser  = f; break;
     case 'paper':   activePowers.paper  = f; break;
@@ -747,7 +772,7 @@ function applyPower(p){
       bricks.forEach(b => { b._origC1 = b.c1; b._origC2 = b.c2; b.c1 = '#ffd76a'; b.c2 = '#bf8a13'; });
       break;
     case 'shrink':  activePowers.shrink  = f; paddle.w = Math.max(56, paddle.w*0.65); break;
-    case 'speed':   activePowers.fast    = f; balls.forEach(b=>{ const k=1.35; b.vx*=k; b.vy*=k; b.speed*=k; }); break;
+    case 'speed':   activePowers.fast    = f; syncTimedBallSpeeds(); break;
     case 'reverse': activePowers.reverse = 60*5; break;
   }
   const bank = PICKUP_QUIPS[p.t] || [p.t.toUpperCase()];
@@ -807,7 +832,12 @@ function spawnMulti(){
   for(let i=0;i<2;i++){
     const ang = Math.atan2(src.vy, src.vx) + (i?-0.4:0.4);
     const sp = Math.hypot(src.vx,src.vy);
-    balls.push({x:src.x,y:src.y,r:src.r,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,speed:src.speed,stuck:false,fire:src.fire,trail:[]});
+    balls.push({
+      x:src.x,y:src.y,r:src.r,
+      vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,
+      speed:src.speed,baseSpeed:src.baseSpeed,
+      stuck:false,fire:src.fire,ghost:src.ghost||0,trail:[]
+    });
   }
 }
 function detonate(){
@@ -907,10 +937,12 @@ function step(dt){
   if(paddle.recoil > 0) paddle.recoil = Math.max(0, paddle.recoil - 0.8*ts);
   // Auto-fire while held: easier on phones than tap-spamming.
   if(pointerActive) fireAll();
+  let speedPowersChanged = false;
   for(const k of Object.keys(activePowers)){
     activePowers[k] -= ts;
     if(activePowers[k]<=0){
       delete activePowers[k];
+      if(k==='slow' || k==='fast') speedPowersChanged = true;
       if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
       if(k==='shrink') paddle.w = paddle.baseW;
       if(k==='ghost') balls.forEach(b=>b.ghost=0);
@@ -921,6 +953,7 @@ function step(dt){
       updatePowers();
     }
   }
+  if(speedPowersChanged) syncTimedBallSpeeds();
 
   if(comboTimer>0){ comboTimer -= ts; if(comboTimer<=0){ comboTimer=0; comboHits=0; } }
 
@@ -1658,6 +1691,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
    (tests/turdanoid-game.test.js). Not used by gameplay code. */
 window.__turdanoid = {
   startGame, step, newLevel, quitToMenu, doPause, doResume,
+  applyPower, spawnMulti,
   get state(){ return state; },
   get score(){ return score; },
   set score(v){ score = v; },
