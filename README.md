@@ -2,10 +2,18 @@
 
 A collection of six active browser games with a playful turd theme.
 
+The repository root is the finished six-game launcher. The original Neon Arkanoid remains playable as a secondary direct link instead of acting as the product's front door.
+
 ## Version
 
 - **Current build:** `v4.0.0`
 - **Build date:** May 4, 2026
+
+## Unreleased
+
+- Made `index.html` the canonical six-game launcher so the root GitHub Pages URL opens the complete suite.
+- Moved the original Neon Arkanoid to `neon-arkanoid.html` and kept `hub.html` as a compatibility redirect.
+- Simplified the launcher's opening copy and added routing assertions to the browser smoke pass.
 
 ## Changelog (Latest)
 
@@ -26,7 +34,7 @@ A collection of six active browser games with a playful turd theme.
 Previous (v3.1):
 
 - Hub refresh:
-  - TurdAnoid moved to the top card in `hub.html`.
+  - TurdAnoid moved to the top card in the game launcher.
   - Neon Arkanoid removed from hub card list.
   - New **TurdRummy** (Gin Rummy) added as the bottom hub card.
 - New game added:
@@ -130,11 +138,11 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
 
 ## Legacy Game (Direct Link)
 
-- `index.html` - Neon Arkanoid (still available directly, no longer surfaced in hub cards)
+- `neon-arkanoid.html` - Neon Arkanoid (still available directly, not part of the six-card lineup)
 
 ## Getting Started
 
-1. Open `hub.html` in a browser to access the current game lineup.
+1. Open `index.html` (or the repository root when served) to access the current game lineup.
 2. Or open an individual file:
    - `TurdAnoid.html` - TurdAnoid
    - `turdtris.html` - Turdtris
@@ -196,14 +204,14 @@ powershell -ExecutionPolicy Bypass -File browser-smoke.ps1
 
 After deployment:
 
-- **Game Hub:** https://rupret007.github.io/Turdanoid/hub.html
+- **Turdanoid:** https://rupret007.github.io/Turdanoid/
 - **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
 - **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
 - **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
 - **Crappy Eights:** https://rupret007.github.io/Turdanoid/crapeights.html
 - **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
 - **TurdSpades:** https://rupret007.github.io/Turdanoid/turdspades.html
-- **Neon Arkanoid (legacy):** https://rupret007.github.io/Turdanoid/index.html
+- **Neon Arkanoid (original):** https://rupret007.github.io/Turdanoid/neon-arkanoid.html
 
 The `.nojekyll` file ensures GitHub Pages serves files as-is.
 

@@ -33,7 +33,7 @@ const server = createServer(async (req, res) => {
   try {
     const urlPath = decodeURIComponent(new URL(req.url, `http://127.0.0.1:${port}`).pathname);
     const safePath = normalize(urlPath).replace(/^(\.\.[/\\])+/, '');
-    const filePath = join(root, safePath === '/' ? 'hub.html' : safePath);
+    const filePath = join(root, safePath === '/' ? 'index.html' : safePath);
     const body = await readFile(filePath);
     res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
     res.end(body);
