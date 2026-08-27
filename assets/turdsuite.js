@@ -131,13 +131,13 @@
       const skip = (document.body && document.body.dataset && document.body.dataset.suiteNoBack === '1') ||
                    window.SUITE_NO_BACK === true;
       if (skip) return;
-      // Don't inject on the hub itself
-      const path = (location.pathname || '').toLowerCase();
-      if (path.endsWith('/hub.html') || path.endsWith('hub.html')) return;
+      // Don't inject on either the canonical root hub or its legacy redirect.
+      const page = (location.pathname || '').toLowerCase().split('/').pop();
+      if (!page || page === 'index.html' || page === 'hub.html') return;
       if (document.querySelector('.suite-back-pill')) return;
       const a = document.createElement('a');
       a.className = 'suite-back-pill';
-      a.href = 'hub.html';
+      a.href = './';
       a.innerHTML = '<span class="arrow">←</span> Hub';
       a.setAttribute('aria-label', 'Back to game hub');
       document.body.appendChild(a);

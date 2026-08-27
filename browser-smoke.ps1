@@ -14,7 +14,7 @@ try {
   for ($attempt = 0; $attempt -lt 20; $attempt++) {
     Start-Sleep -Milliseconds 500
     try {
-      $response = Invoke-WebRequest -Uri "http://$HostName`:$Port/hub.html" -UseBasicParsing -TimeoutSec 2
+      $response = Invoke-WebRequest -Uri "http://$HostName`:$Port/" -UseBasicParsing -TimeoutSec 2
       if ($response.StatusCode -eq 200) {
         $serverReady = $true
         break

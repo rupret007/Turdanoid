@@ -9,36 +9,41 @@ function Pass { param($msg) $script:passed++; Write-Host "  [PASS] $msg" -Foregr
 function Fail { param($msg, $detail) $script:failed++; Write-Host "  [FAIL] $msg $detail" -ForegroundColor Red }
 
 Write-Host "`n=== File Existence ===" -ForegroundColor Cyan
-@('index.html','hub.html','turdtris.html','TurdAnoid.html','turdjack.html','crapeights.html','turdrummy.html','turdspades.html','game.js','README.md','browser-smoke.js','browser-smoke.ps1','package.json','package-lock.json','.gitignore','favicon.svg') | ForEach-Object {
+@('index.html','hub.html','neon-arkanoid.html','turdtris.html','TurdAnoid.html','turdjack.html','crapeights.html','turdrummy.html','turdspades.html','game.js','README.md','browser-smoke.js','browser-smoke.ps1','package.json','package-lock.json','.gitignore','favicon.svg') | ForEach-Object {
     if (Test-Path $_) { Pass("$_ exists") } else { Fail("$_ missing") }
 }
 
-Write-Host "`n=== index.html ===" -ForegroundColor Cyan
-$idx = Get-Content index.html -Raw
-if ($idx -match 'id="gameCanvas"') { Pass("gameCanvas") } else { Fail("gameCanvas") }
-if ($idx -match 'id="score"') { Pass("score") } else { Fail("score") }
-if ($idx -match 'id="highScore"') { Pass("highScore") } else { Fail("highScore") }
-if ($idx -match 'id="comboDisplay"') { Pass("comboDisplay") } else { Fail("comboDisplay") }
-if ($idx -match 'id="muteBtn"') { Pass("muteBtn") } else { Fail("muteBtn") }
-if ($idx -match 'game\.js') { Pass("game.js script") } else { Fail("game.js script") }
-if ($idx -match 'restartGame') { Pass("restartGame") } else { Fail("restartGame") }
-if ($idx -match 'togglePause') { Pass("togglePause") } else { Fail("togglePause") }
-if ($idx -match 'mobile-menu') { Pass("mobile menu ui") } else { Fail("mobile menu ui") }
-if ($idx -match 'quickStartPlay') { Pass("quick start handler") } else { Fail("quick start handler") }
-if ($idx -match 'let guidePausedGame = false;') { Pass("index guide pause state") } else { Fail("index guide pause state") }
-if ($idx -match '(?s)function showHowToPlay\(\)\s*\{.*?window\.gameInstance\.togglePause\(true\);.*?guidePausedGame = true;') { Pass("index guide pauses live run") } else { Fail("index guide pauses live run") }
-if ($idx -match '(?s)function dismissHowToPlay\(\)\s*\{.*?if \(\s*guidePausedGame.*?window\.gameInstance\.togglePause\(false\);') { Pass("index guide resumes guided pause only") } else { Fail("index guide resumes guided pause only") }
+Write-Host "`n=== neon-arkanoid.html ===" -ForegroundColor Cyan
+$neon = Get-Content neon-arkanoid.html -Raw
+if ($neon -match 'id="gameCanvas"') { Pass("gameCanvas") } else { Fail("gameCanvas") }
+if ($neon -match 'id="score"') { Pass("score") } else { Fail("score") }
+if ($neon -match 'id="highScore"') { Pass("highScore") } else { Fail("highScore") }
+if ($neon -match 'id="comboDisplay"') { Pass("comboDisplay") } else { Fail("comboDisplay") }
+if ($neon -match 'id="muteBtn"') { Pass("muteBtn") } else { Fail("muteBtn") }
+if ($neon -match 'game\.js') { Pass("game.js script") } else { Fail("game.js script") }
+if ($neon -match 'restartGame') { Pass("restartGame") } else { Fail("restartGame") }
+if ($neon -match 'togglePause') { Pass("togglePause") } else { Fail("togglePause") }
+if ($neon -match 'mobile-menu') { Pass("mobile menu ui") } else { Fail("mobile menu ui") }
+if ($neon -match 'quickStartPlay') { Pass("quick start handler") } else { Fail("quick start handler") }
+if ($neon -match 'let guidePausedGame = false;') { Pass("Neon guide pause state") } else { Fail("Neon guide pause state") }
+if ($neon -match '(?s)function showHowToPlay\(\)\s*\{.*?window\.gameInstance\.togglePause\(true\);.*?guidePausedGame = true;') { Pass("Neon guide pauses live run") } else { Fail("Neon guide pauses live run") }
+if ($neon -match '(?s)function dismissHowToPlay\(\)\s*\{.*?if \(\s*guidePausedGame.*?window\.gameInstance\.togglePause\(false\);') { Pass("Neon guide resumes guided pause only") } else { Fail("Neon guide resumes guided pause only") }
 
-Write-Host "`n=== hub.html ===" -ForegroundColor Cyan
-$hub = Get-Content hub.html -Raw
+Write-Host "`n=== index.html (canonical hub) ===" -ForegroundColor Cyan
+$hub = Get-Content index.html -Raw
 if ($hub -match 'href="turdtris\.html"') { Pass("link to turdtris") } else { Fail("link to turdtris") }
 if ($hub -match 'href="TurdAnoid\.html"') { Pass("link to TurdAnoid") } else { Fail("link to TurdAnoid") }
 if ($hub -match 'href="turdjack\.html"') { Pass("link to turdjack") } else { Fail("link to turdjack") }
 if ($hub -match 'href="crapeights\.html"') { Pass("link to crapeights") } else { Fail("link to crapeights") }
 if ($hub -match 'href="turdrummy\.html"') { Pass("link to turdrummy") } else { Fail("link to turdrummy") }
 if ($hub -match 'href="turdspades\.html"') { Pass("link to turdspades") } else { Fail("link to turdspades") }
-if ($hub -match '(?s)<div class="games">\s*<a href="TurdAnoid\.html"') { Pass("TurdAnoid is first card") } else { Fail("TurdAnoid is first card") }
-if ($hub -notmatch 'Neon Arkanoid') { Pass("Neon removed from hub cards") } else { Fail("Neon removed from hub cards") }
+if ($hub -match '(?s)<main class="games"[^>]*>\s*<a href="TurdAnoid\.html"') { Pass("TurdAnoid is first card") } else { Fail("TurdAnoid is first card") }
+if (([regex]::Matches($hub, 'class="game-card"')).Count -eq 6) { Pass("exactly six game cards") } else { Fail("exactly six game cards") }
+if ($hub -match 'href="neon-arkanoid\.html"') { Pass("Neon remains a secondary playable game") } else { Fail("Neon remains a secondary playable game") }
+
+Write-Host "`n=== hub.html (legacy redirect) ===" -ForegroundColor Cyan
+$redirect = Get-Content hub.html -Raw
+if ($redirect -match 'url=\./' -and $redirect -match 'location\.replace') { Pass("legacy hub redirects to root") } else { Fail("legacy hub redirects to root") }
 
 Write-Host "`n=== game.js ===" -ForegroundColor Cyan
 $game = Get-Content game.js -Raw

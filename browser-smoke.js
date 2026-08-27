@@ -66,14 +66,31 @@ async function launchBrowser() {
 async function main() {
   const browser = await launchBrowser();
   try {
-    await runCheck(browser, 'hub', 'hub.html', {
+    await runCheck(browser, 'root-hub', '', {
       assert: async (page) => {
         const cards = await page.locator('.game-card').count();
-        if (cards !== 6) fail('hub', `expected 6 game cards, saw ${cards}`);
+        if (cards !== 6) fail('root-hub', `expected 6 game cards, saw ${cards}`);
+        const hrefs = await page.locator('.game-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('href')));
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+        if (JSON.stringify(hrefs) !== JSON.stringify(expected)) {
+          fail('root-hub', `expected the six-game lineup, saw ${JSON.stringify(hrefs)}`);
+        }
+        if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 1) {
+          fail('root-hub', 'expected one secondary link to the original Neon Arkanoid game');
+        }
       }
     });
 
-    await runCheck(browser, 'index-guide-and-blur', 'index.html', {
+    await runCheck(browser, 'legacy-hub-redirect', 'hub.html', {
+      assert: async (page) => {
+        if (!page.url().endsWith('/')) fail('legacy-hub-redirect', `expected redirect to root, saw ${page.url()}`);
+        if ((await page.locator('.game-card').count()) !== 6) {
+          fail('legacy-hub-redirect', 'legacy hub URL did not land on the six-game lineup');
+        }
+      }
+    });
+
+    await runCheck(browser, 'neon-guide-and-blur', 'neon-arkanoid.html', {
       actions: async (page) => {
         await page.keyboard.press('Enter');
         await page.waitForTimeout(150);
@@ -82,9 +99,9 @@ async function main() {
           awaitingLaunch: window.gameInstance.awaitingLaunch,
           paused: window.gameInstance.paused
         }));
-        if (legacyGuideState.guideOpen) fail('index-guide-and-blur', 'Enter should dismiss the opening guide');
-        if (!legacyGuideState.awaitingLaunch) fail('index-guide-and-blur', 'Enter should not launch the ball behind the guide');
-        if (legacyGuideState.paused) fail('index-guide-and-blur', 'Guide dismissal should not leave a fresh game paused');
+        if (legacyGuideState.guideOpen) fail('neon-guide-and-blur', 'Enter should dismiss the opening guide');
+        if (!legacyGuideState.awaitingLaunch) fail('neon-guide-and-blur', 'Enter should not launch the ball behind the guide');
+        if (legacyGuideState.paused) fail('neon-guide-and-blur', 'Guide dismissal should not leave a fresh game paused');
 
         const legacyBlurState = await page.evaluate(() => {
           window.gameInstance.controls.left = true;
@@ -99,10 +116,10 @@ async function main() {
             pointerActive: window.gameInstance.controls.pointerActive
           };
         });
-        if (!legacyBlurState.paused) fail('index-guide-and-blur', 'blur should pause the legacy breakout shell');
-        if (!legacyBlurState.loopStopped) fail('index-guide-and-blur', 'blur should stop the legacy breakout render loop');
+        if (!legacyBlurState.paused) fail('neon-guide-and-blur', 'blur should pause the legacy breakout shell');
+        if (!legacyBlurState.loopStopped) fail('neon-guide-and-blur', 'blur should stop the legacy breakout render loop');
         if (legacyBlurState.left || legacyBlurState.right || legacyBlurState.pointerActive) {
-          fail('index-guide-and-blur', 'blur should clear held legacy breakout inputs');
+          fail('neon-guide-and-blur', 'blur should clear held legacy breakout inputs');
         }
 
         const legacyRestartState = await page.evaluate(() => {
@@ -116,11 +133,11 @@ async function main() {
             score: window.gameInstance.score
           };
         });
-        if (!legacyRestartState.awaitingLaunch) fail('index-guide-and-blur', 'restart churn should leave the legacy game waiting to launch');
-        if (legacyRestartState.paused) fail('index-guide-and-blur', 'restart churn should clear pause state in the legacy game');
-        if (!legacyRestartState.loopRunning) fail('index-guide-and-blur', 'restart churn should restart the legacy render loop');
+        if (!legacyRestartState.awaitingLaunch) fail('neon-guide-and-blur', 'restart churn should leave the legacy game waiting to launch');
+        if (legacyRestartState.paused) fail('neon-guide-and-blur', 'restart churn should clear pause state in the legacy game');
+        if (!legacyRestartState.loopRunning) fail('neon-guide-and-blur', 'restart churn should restart the legacy render loop');
         if (legacyRestartState.level !== 1 || legacyRestartState.score !== 0) {
-          fail('index-guide-and-blur', `restart churn should reset level/score, saw L${legacyRestartState.level} S${legacyRestartState.score}`);
+          fail('neon-guide-and-blur', `restart churn should reset level/score, saw L${legacyRestartState.level} S${legacyRestartState.score}`);
         }
       }
     });

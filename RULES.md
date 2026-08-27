@@ -19,7 +19,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ### Overview
 
-TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels, 19 power-ups, and a unique "stink" mechanic. (The legacy 69-level Neon Arkanoid remains available directly at `index.html`.)
+TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels, 19 power-ups, and a unique "stink" mechanic. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
 
 ### Controls
 
