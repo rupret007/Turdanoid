@@ -9,6 +9,12 @@ A collection of six active browser games with a playful turd theme.
 
 ## Changelog (Latest)
 
+- Suite-wide graphics pass (render/CSS only — no rules, scoring, physics, or controls changed):
+  - Hub: inline-SVG cover art for all six games with hover motion, a 3×2 collection grid, and per-game accent colours.
+  - Shared theme (`assets/turdsuite.css`): ambient sewer backdrop (brick tiles, rising bubbles, stink wisps, vignette) injected behind every page, plus shared tokens for card paper, card-back weave, felt grain, wooden rails, and glass panels.
+  - TurdAnoid: pre-rendered sewer brick wall, shaded pipes, slime drips, a live sludge surface, vignette, smoke on brick kills, HP pips on tough bricks, glass HUD chips, gradient title screen.
+  - Turdtris: HiDPI board, beveled glossy tiles, cracked-stone garbage rows, dashed ghost piece, lock flash, line-clear light sweep with sparks, framed board.
+  - Crapjack 21 / Crappy Eights / TurdRummy / TurdSpades: real felt with grain and wooden rails, one shared card design (paper faces, gold-foil aces, ribbon court stickers, diamond-weave backs), casino chips, action-card badges, meld tints, four-seat Spades table with trick well and bid dial, deal/flip animations, glass HUD tiles, framed guides and overlays.
 - TurdAnoid Turbo fixes and polish:
   - Fixed a level-clear bug that could award the clear bonus dozens of times and skip levels.
   - Shield now saves every ball during multiball.
