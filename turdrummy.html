@@ -38,7 +38,7 @@
       --back-h: clamp(48px, 8.4vw, 66px);
       --radius: 12px;
       --tr-dock-clear: max(92px, env(safe-area-inset-bottom) + 84px);
-      --tr-watermark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='120' viewBox='0 0 560 120'%3E%3Ctext x='280' y='88' text-anchor='middle' font-family='Trebuchet MS, Segoe UI, sans-serif' font-size='84' font-weight='900' letter-spacing='12' fill='%23ffffff' fill-opacity='0.045'%3ETURDANOID%3C/text%3E%3C/svg%3E");
+      --tr-watermark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='120' viewBox='0 0 640 120'%3E%3Ctext x='320' y='88' text-anchor='middle' font-family='Trebuchet MS, Segoe UI, sans-serif' font-size='84' font-weight='900' letter-spacing='12' fill='%23ffffff' fill-opacity='0.04'%3ETURDANOID%3C/text%3E%3C/svg%3E");
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -424,6 +424,7 @@
       border: 0;
       padding: 14px;
       background:
+        var(--tr-watermark) right 24px top 44px / 400px 75px no-repeat,
         linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 42%),
         var(--suite-felt-noise),
         linear-gradient(180deg, rgba(26, 92, 68, 0.55), rgba(14, 58, 44, 0.6));
@@ -447,7 +448,6 @@
     .zone--hand {
       border: 1px solid rgba(0, 0, 0, 0.38);
       background:
-        var(--tr-watermark) right 14px center / 360px 78px no-repeat,
         var(--suite-felt-noise),
         linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.34));
       box-shadow:
@@ -1236,6 +1236,16 @@
     }
 
     /* ---------- Responsive ---------- */
+    /* Desktop: the fixed deadwood gauge (viewport left 12px, ~167px wide) sits level with the meld
+       readout row, so reserve its footprint on the row. The app is centered at 1100px, so the
+       indent shrinks as the viewport grows: 155px - appLeft, where appLeft = max(8px, (100vw - 1100px) / 2). */
+    @media (min-width: 921px) {
+      .melds {
+        padding-left: 176px;
+        padding-left: clamp(0px, calc(155px - max(8px, (100vw - 1100px) / 2)), 176px);
+      }
+    }
+
     @media (max-width: 920px) {
       :root { --tr-dock-clear: max(142px, env(safe-area-inset-bottom) + 134px); }
 
@@ -1259,10 +1269,37 @@
     }
 
     @media (max-width: 640px) {
-      :root { --tr-dock-clear: max(194px, env(safe-area-inset-bottom) + 186px); }
+      :root { --tr-dock-clear: max(152px, env(safe-area-inset-bottom) + 146px); }
+
+      /* Compact 4 + 3 dock: two 44px rows, tighter padding/type; the footer-note band is tall
+         enough (34px) that the shared fixed "Hub" pill sits beside the note instead of on a button. */
+      .action-dock {
+        padding: 6px 8px;
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+        gap: 4px;
+      }
 
       .action-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+      }
+
+      .action-grid .btn {
+        min-height: 44px;
+        padding: 6px 3px;
+        font-size: 0.7rem;
+        letter-spacing: 0;
+        border-radius: 10px;
+      }
+
+      .footer-note {
+        min-height: 34px;
+        padding-left: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        line-height: 1.2;
       }
 
       .card[data-face]:not([data-face=""])::after {
@@ -1279,7 +1316,7 @@
 
       .zone { padding: 9px; }
       .zone--center { padding: 12px 10px; }
-      .zone--hand { background-size: 300px 64px, auto, auto; }
+      .zone--center { background-size: 300px 56px, auto, auto, auto; }
 
       .stat { padding: 6px 8px 6px 10px; }
       .stat-value { font-size: 1.05rem; }
@@ -1333,6 +1370,15 @@
     .tr-deadwood .bar::after{content:"";position:absolute;left:90%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.75);z-index:2;pointer-events:none}
     .tr-deadwood #trDeadwoodValue{font-size:13px;color:#ffe08d;text-shadow:0 0 10px rgba(255,215,106,.45)}
     .tr-deadwood #trDeadwoodValue::after{content:" \00B7  knock \2264  10";font-size:9px;color:rgba(238,249,240,.55);letter-spacing:.12em}
+    /* Small screens: collapse the gauge to a single-line pill (label · bar · number) so it covers less table.
+       Kept after the base gauge rules so it wins the cascade. */
+    @media (max-width: 920px) {
+      .tr-deadwood{flex-direction:row;align-items:center;gap:8px;min-width:0;padding:6px 11px 6px 12px;border-radius:999px}
+      .tr-deadwood .label{font-size:8px;white-space:nowrap}
+      .tr-deadwood .bar{width:60px;flex:0 0 60px;height:8px}
+      .tr-deadwood #trDeadwoodValue{font-size:12px;white-space:nowrap}
+      .tr-deadwood #trDeadwoodValue::after{content:none}
+    }
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
