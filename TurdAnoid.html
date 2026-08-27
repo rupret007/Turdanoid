@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#0b1d24">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>TurdAnoid Turbo — Bricks. Busted.</title>
+<link rel="stylesheet" href="assets/turdsuite.css">
 <style>
   :root{
     --bg-a:#0b1d24; --bg-b:#15303a; --bg-c:#244a3f;
@@ -29,66 +30,90 @@
   }
   #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(8px,var(--safe-top)) 8px max(8px,var(--safe-bot))}
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center}
-  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
+  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(158,255,200,.14), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
 
-  /* HUD */
-  .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.65)}
-  .hud .col{display:flex;flex-direction:column;gap:2px}
-  .hud .lbl{font-size:.78em;opacity:.65;letter-spacing:.18em}
-  .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 18px rgba(158,255,200,.45),0 2px 6px rgba(0,0,0,.7)}
-  .hud .right{text-align:right}
+  /* HUD — glass chips so the numbers read over any wall */
+  .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.65);gap:8px}
+  .hud .col{display:flex;flex-direction:column;gap:1px;padding:6px 12px 7px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)),rgba(4,16,12,.58);border:1px solid rgba(158,255,200,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);min-width:74px}
+  .hud .lbl{font-size:.72em;opacity:.6;letter-spacing:.2em}
+  .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 18px rgba(158,255,200,.45),0 2px 6px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
+  .hud .right{text-align:right;margin-right:84px}
   .hud .right .val{color:var(--gold);text-shadow:0 0 18px rgba(255,215,106,.45),0 2px 6px rgba(0,0,0,.7)}
-  .hud .center{text-align:center;flex:1}
+  .hud .center{text-align:center}
   .hud .center .val{color:var(--hot);text-shadow:0 0 18px rgba(255,157,116,.5),0 2px 6px rgba(0,0,0,.7)}
   .hud .lives{display:inline-flex;gap:3px;font-size:1.05em;letter-spacing:0}
+  .hud .val.bump{animation:hudBump .32s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes hudBump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
 
   /* Combo badge */
-  #combo{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) scale(.4);opacity:0;font-weight:900;font-size:clamp(28px,9vw,60px);color:#fff;letter-spacing:.06em;pointer-events:none;text-shadow:0 0 24px rgba(255,215,106,.9),0 4px 12px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+  #combo{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) scale(.4);opacity:0;font-weight:900;font-size:clamp(28px,9vw,60px);color:#fff;letter-spacing:.06em;pointer-events:none;text-shadow:0 0 24px rgba(255,215,106,.9),0 4px 12px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s;-webkit-text-stroke:1.5px rgba(80,40,0,.55);paint-order:stroke fill}
   #combo.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 
-  /* Hype line */
-  #hype{position:absolute;top:74px;left:50%;transform:translateX(-50%);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s}
-  #hype.show{opacity:1}
+  /* Hype line — level banner */
+  #hype{position:absolute;top:58%;left:50%;transform:translateX(-50%) translateY(-6px);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(158,255,200,.6),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1);padding:6px 16px;border-radius:999px;background:rgba(4,16,12,.55);border:1px solid rgba(158,255,200,.3);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+  #hype.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   /* Power chips */
   #powers{position:absolute;left:8px;right:8px;bottom:max(120px,calc(var(--safe-bot) + 110px));display:flex;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:none}
-  .chip{font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.55);border:1px solid rgba(158,255,200,.4);color:var(--ink);padding:4px 8px;border-radius:999px;backdrop-filter:blur(4px);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .chip{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.01)),rgba(4,16,12,.62);border:1px solid rgba(158,255,200,.34);color:var(--ink);padding:5px 10px;border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 6px 14px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);animation:chipIn .3s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes chipIn{from{transform:translateY(8px) scale(.8);opacity:0}to{transform:none;opacity:1}}
 
   /* Buttons row */
   .topbtns{position:absolute;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;gap:6px;z-index:5}
-  .iconbtn{width:36px;height:36px;border-radius:12px;background:rgba(0,0,0,.45);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
+  .iconbtn{width:36px;height:36px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(4,16,12,.6);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .15s,border-color .15s}
+  .iconbtn:hover{border-color:rgba(158,255,200,.6)}
   .iconbtn:active{transform:scale(.92)}
 
   /* Overlay screens */
-  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 35%,rgba(8,22,18,.55),rgba(8,22,18,.85));border-radius:18px;z-index:10}
+  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;border-radius:18px;z-index:10;overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 30%,rgba(8,22,18,.35),rgba(6,16,14,.9) 70%),
+      var(--suite-tiles, none);
+    background-size:auto,96px 48px}
+  .overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(158,255,200,.1),transparent 60%);pointer-events:none}
+  .overlay > *{position:relative}
   .overlay.show{display:flex;animation:fadeIn .35s ease}
   @keyframes fadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-  .overlay h1{font-size:clamp(36px,11vw,72px);color:var(--gold);letter-spacing:.04em;text-shadow:0 0 24px rgba(255,215,106,.55),0 6px 20px rgba(0,0,0,.6);margin-bottom:6px;line-height:1}
-  .overlay h1 .sub{display:block;font-size:.4em;color:var(--accent);letter-spacing:.3em;margin-top:8px;text-shadow:0 0 12px rgba(158,255,200,.6)}
+  .overlay h1{font-size:clamp(38px,11vw,76px);letter-spacing:.04em;margin-bottom:6px;line-height:1;
+    background:linear-gradient(180deg,#fff2c4 0%,var(--gold) 45%,#e0962a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 22px rgba(255,215,106,.45)) drop-shadow(0 5px 0 rgba(90,50,0,.6)) drop-shadow(0 12px 22px rgba(0,0,0,.6))}
+  .overlay h1 .sub{display:block;font-size:.36em;letter-spacing:.32em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(158,255,200,.6);filter:none}
+  #titleScreen h1{animation:titleBob 3.2s ease-in-out infinite}
+  @keyframes titleBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
   .overlay p{max-width:480px;font-size:clamp(14px,3.4vw,16px);line-height:1.5;color:var(--ink);opacity:.9;margin:14px 0}
   .overlay .quip{color:var(--hot);font-style:italic;font-size:clamp(12px,3vw,14px);margin-top:6px;min-height:1.4em}
-  .overlay button{margin-top:22px;padding:14px 32px;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;background:linear-gradient(180deg,#9effc8,#5ce0a3);color:#08221a;border:0;border-radius:14px;cursor:pointer;box-shadow:0 12px 28px rgba(94,224,163,.35),inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .15s}
+  .overlay button{margin-top:22px;padding:14px 34px;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;background:linear-gradient(180deg,#c4ffe2 0%,#9effc8 45%,#5ce0a3 100%);color:#08221a;border:0;border-radius:14px;cursor:pointer;box-shadow:0 12px 28px rgba(94,224,163,.35),inset 0 -3px 0 rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .15s,box-shadow .15s;font-family:inherit}
+  .overlay button:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(94,224,163,.45),inset 0 -3px 0 rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.7)}
   .overlay button:active{transform:scale(.95)}
-  .overlay .stats{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:12px}
-  .overlay .stat{background:rgba(0,0,0,.4);border:1px solid var(--panel-border);padding:10px 14px;border-radius:12px;min-width:90px}
+  .overlay .stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .overlay .stat{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)),rgba(4,16,12,.62);border:1px solid var(--panel-border);padding:10px 16px;border-radius:12px;min-width:96px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.3)}
   .overlay .stat .l{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);opacity:.8}
-  .overlay .stat .v{display:block;font-size:24px;font-weight:800;color:var(--gold);margin-top:2px}
-  .overlay .helprow{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;justify-content:center;font-size:13px}
-  .overlay .helprow span{background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;border:1px solid rgba(158,255,200,.2)}
+  .overlay .stat .v{display:block;font-size:24px;font-weight:800;color:var(--gold);margin-top:2px;font-variant-numeric:tabular-nums}
+  .overlay .helprow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center;font-size:13px}
+  .overlay .helprow span{background:rgba(4,16,12,.55);padding:7px 12px;border-radius:999px;border:1px solid rgba(158,255,200,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
   .menu-secondary{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  .menu-secondary button{padding:9px 16px;font-size:13px;background:rgba(0,0,0,.45);color:var(--ink);border:1px solid rgba(158,255,200,.35)}
+  .menu-secondary button{padding:9px 16px;font-size:13px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),rgba(4,16,12,.6);color:var(--ink);border:1px solid rgba(158,255,200,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 18px rgba(0,0,0,.3);margin-top:0}
+  .menu-secondary button:hover{border-color:rgba(158,255,200,.65)}
 
   /* Mobile launch button */
-  #mobileLaunch{position:absolute;left:50%;bottom:max(20px,calc(var(--safe-bot) + 14px));transform:translateX(-50%);padding:12px 28px;font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,#ffd76a,#f1a83b);color:#3a1d00;border:0;border-radius:999px;box-shadow:0 8px 20px rgba(241,168,59,.45);display:none;z-index:6}
+  #mobileLaunch{position:absolute;left:50%;bottom:max(20px,calc(var(--safe-bot) + 14px));transform:translateX(-50%);padding:12px 28px;font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,#ffe9a8,#ffd76a 45%,#f1a83b);color:#3a1d00;border:0;border-radius:999px;box-shadow:0 8px 20px rgba(241,168,59,.45),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(0,0,0,.15);display:none;z-index:6;font-family:inherit}
   #mobileLaunch.show{display:block;animation:pulse 1.4s infinite ease-in-out}
   @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 
   /* Toast for power-up pickups */
-  #toast{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-weight:800;font-size:clamp(16px,4.2vw,22px);color:#fff;text-shadow:0 0 18px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .35s}
+  #toast{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%);font-weight:900;font-size:clamp(16px,4.2vw,22px);letter-spacing:.06em;color:#fff;text-shadow:0 0 18px rgba(0,0,0,.7),0 2px 0 rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .35s;-webkit-text-stroke:1px rgba(0,30,20,.5);paint-order:stroke fill}
   #toast.show{opacity:1;transform:translate(-50%,-65%)}
 
   @media (orientation:landscape) and (max-height:520px){
     .hud{font-size:11px}
+    .hud .col{padding:4px 9px 5px;min-width:0}
+  }
+  @media (max-width:420px){
+    .hud .col{padding:4px 8px 5px;min-width:0}
+    .hud .right{margin-right:80px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #titleScreen h1,#mobileLaunch.show,.chip{animation:none}
   }
 </style>
 </head>
@@ -213,6 +238,12 @@ let activePowers = {};
 let paddle = null;
 let bgStars = [];
 let bgLayers = [];
+/* ---- Render-only state (never read or written by step()) ---- */
+let fxParticles = [];     // smoke puffs and other pure-cosmetic particles, advanced on the render clock
+let wallPattern = null;   // pre-rendered sewer brick wall (rebuilt on resize)
+let bgDrips = [];         // slime drips hanging from the top edge
+let lastRenderTime = 0;
+const FX_MAX = 160;
 
 /* ---- Funny copy ---- */
 const HYPE_LINES = [
@@ -340,6 +371,7 @@ function resize(){
   }
   buildStars();
   buildBgLayers();
+  buildWallPattern();
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', ()=>setTimeout(resize, 80));
@@ -355,9 +387,9 @@ function buildStars(){
 function buildBgLayers(){
   bgLayers = [];
   const defs = [
-    { speed: 0.06, alpha: 0.10, kind: 'pipe', count: Math.max(3, Math.floor(W/220)) },
-    { speed: 0.14, alpha: 0.14, kind: 'pipe', count: Math.max(3, Math.floor(W/170)) },
-    { speed: 0.28, alpha: 0.16, kind: 'blob', count: Math.max(4, Math.floor(W/130)) },
+    { speed: 0.06, alpha: 0.16, kind: 'pipe', count: Math.max(3, Math.floor(W/220)) },
+    { speed: 0.14, alpha: 0.22, kind: 'pipe', count: Math.max(3, Math.floor(W/170)) },
+    { speed: 0.28, alpha: 0.2, kind: 'blob', count: Math.max(4, Math.floor(W/130)) },
   ];
   for(const d of defs){
     const shapes = [];
@@ -381,6 +413,64 @@ function buildBgLayers(){
     }
     bgLayers.push({ ...d, shapes, off: 0 });
   }
+  // Slime drips along the top edge (cosmetic; stretch slowly on the render clock).
+  bgDrips = [];
+  const nd = Math.max(3, Math.floor(W/150));
+  for(let i=0;i<nd;i++){
+    bgDrips.push({
+      x: (i+0.5)*(W/nd) + (Math.random()-0.5)*48,
+      w: 6 + Math.random()*9,
+      len: 12 + Math.random()*26,
+      ph: Math.random()*Math.PI*2,
+      sp: 0.4 + Math.random()*0.6
+    });
+  }
+}
+
+// Pre-render one tile of sewer brick wall into an offscreen canvas and keep
+// it as a repeating pattern. Rendered at device resolution so mortar lines
+// stay crisp on HiDPI phones; falls back to no wall if patterns are unavailable.
+function buildWallPattern(){
+  wallPattern = null;
+  try{
+    const scale = DPR;
+    const tw = 112, th = 56, bw = 52, bh = 24, gap = 4;
+    const c = document.createElement('canvas');
+    c.width = Math.round(tw*scale); c.height = Math.round(th*scale);
+    const pc = c.getContext('2d');
+    if(!pc) return;
+    pc.setTransform(scale,0,0,scale,0,0);
+    pc.fillStyle = '#061714';
+    pc.fillRect(0,0,tw,th);
+    // Running bond: two rows, second offset by half a brick, tile wraps exactly.
+    const rows = [[0,0],[-(bw+gap)/2, bh+gap]];
+    for(const [ox,oy] of rows){
+      for(let x = ox; x < tw; x += bw+gap){
+        const k = (((x + 200)*7 + oy*13) % 17)/17;   // deterministic per-brick tint
+        const shade = 0.82 + k*0.34;
+        const g = pc.createLinearGradient(x, oy, x, oy+bh);
+        g.addColorStop(0, `rgb(${Math.round(34*shade)},${Math.round(78*shade)},${Math.round(66*shade)})`);
+        g.addColorStop(1, `rgb(${Math.round(18*shade)},${Math.round(50*shade)},${Math.round(44*shade)})`);
+        pc.fillStyle = g;
+        roundRect(pc, x, oy, bw, bh, 3); pc.fill();
+        pc.fillStyle = 'rgba(255,255,255,.07)';
+        pc.fillRect(x+2, oy+1, bw-4, 2);
+        pc.fillStyle = 'rgba(0,0,0,.28)';
+        pc.fillRect(x+2, oy+bh-2, bw-4, 1.5);
+        if(k > 0.7){
+          const sg = pc.createRadialGradient(x+bw*0.62, oy+bh*0.62, 1, x+bw*0.62, oy+bh*0.62, bh*0.9);
+          sg.addColorStop(0,'rgba(70,110,50,.4)');
+          sg.addColorStop(1,'rgba(70,110,50,0)');
+          pc.fillStyle = sg; pc.fillRect(x, oy, bw, bh);
+        }
+      }
+    }
+    const pat = ctx.createPattern(c, 'repeat');
+    if(pat && typeof pat.setTransform === 'function' && typeof DOMMatrix !== 'undefined'){
+      pat.setTransform(new DOMMatrix().scale(1/scale));
+    }
+    wallPattern = pat || null;
+  }catch(e){ wallPattern = null; }
 }
 
 /* ---- Game objects ---- */
@@ -583,10 +673,16 @@ function showToast(msg){
   clearTimeout(showToast._t);
   showToast._t = setTimeout(()=>elToast.classList.remove('show'), 900);
 }
+function bumpHud(el){
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
 function updateHud(){
-  hudScore.textContent = score.toLocaleString();
-  hudLevel.textContent = level;
-  hudLives.textContent = lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—';
+  const scoreText = score.toLocaleString();
+  if(hudScore.textContent !== scoreText){ hudScore.textContent = scoreText; bumpHud(hudScore); }
+  const levelText = String(level);
+  if(hudLevel.textContent !== levelText){ hudLevel.textContent = levelText; bumpHud(hudLevel); }
+  const livesText = lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—';
+  if(hudLives.textContent !== livesText){ hudLives.textContent = livesText; bumpHud(hudLives); }
 }
 function updatePowers(){
   const items = [];
@@ -876,6 +972,7 @@ function detonate(){
 // shrinks and fades instead of vanishing instantly.
 function killBrick(b){
   spawnBrickBits(b);
+  spawnSmoke(b.x+b.w/2, b.y+b.h/2, 4, '128,150,124');
   dyingBricks.push({
     x: b.x, y: b.y, w: b.w, h: b.h, c1: b.c1, c2: b.c2, glow: b.glow,
     vy: -1.5 - Math.random()*1.5,
@@ -895,6 +992,18 @@ function spawnBrickBits(b){
       g:0.18, life:30+Math.random()*20, r:2+Math.random()*3, col:Math.random()<0.5?b.c1:b.c2
     });
   }
+}
+// Cosmetic smoke puffs: live in fxParticles and are advanced by render(), not step().
+function spawnSmoke(x, y, n, col){
+  for(let i=0;i<n;i++){
+    fxParticles.push({
+      x: x + (Math.random()-0.5)*16, y: y + (Math.random()-0.5)*8,
+      vx: (Math.random()-0.5)*0.9, vy: -0.35 - Math.random()*0.5,
+      r: 4 + Math.random()*5, vr: 0.32 + Math.random()*0.3,
+      life: 34 + Math.random()*18, max: 52, col
+    });
+  }
+  if(fxParticles.length > FX_MAX) fxParticles.splice(0, fxParticles.length - FX_MAX);
 }
 function spawnHitSpark(x,y,col){
   for(let i=0;i<6;i++){
@@ -1212,6 +1321,12 @@ function step(dt){
 
 /* ---- Render ---- */
 function render(){
+  // Render clock: only cosmetic effects (smoke, drips, sludge) use it.
+  const nowMs = performance.now();
+  const rdt = lastRenderTime ? Math.min(50, nowMs - lastRenderTime) : BASE_FRAME_MS;
+  lastRenderTime = nowMs;
+  const rts = rdt / BASE_FRAME_MS;
+
   ctx.save();
   let sx=0, sy=0;
   if(shake>0){ sx = (Math.random()-0.5)*shake; sy = (Math.random()-0.5)*shake; }
@@ -1224,9 +1339,29 @@ function render(){
   ctx.fillStyle = g;
   ctx.fillRect(0,0,W,H);
 
+  // Sewer brick wall behind everything, faded in the middle so the play
+  // area stays readable, with the light falling off toward the sides.
+  if(wallPattern){
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = wallPattern;
+    ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha = 1;
+    const fade = ctx.createLinearGradient(0,0,0,H);
+    fade.addColorStop(0, 'rgba(6,20,26,.05)');
+    fade.addColorStop(0.16, 'rgba(6,20,26,.5)');
+    fade.addColorStop(0.55, 'rgba(6,20,26,.72)');
+    fade.addColorStop(0.9, 'rgba(6,20,26,.35)');
+    fade.addColorStop(1, 'rgba(6,20,26,.1)');
+    ctx.fillStyle = fade; ctx.fillRect(0,0,W,H);
+    const side = ctx.createLinearGradient(0,0,W,0);
+    side.addColorStop(0, 'rgba(0,0,0,.4)'); side.addColorStop(0.22, 'rgba(0,0,0,0)');
+    side.addColorStop(0.78, 'rgba(0,0,0,0)'); side.addColorStop(1, 'rgba(0,0,0,.4)');
+    ctx.fillStyle = side; ctx.fillRect(0,0,W,H);
+  }
+
   // Parallax sewer layers — driven by wall-clock time so they drift on the
   // title screen too and stay frame-rate independent.
-  const bgT = performance.now() * 0.06;
+  const bgT = nowMs * 0.06;
   for(const layer of bgLayers){
     const off = (bgT * layer.speed) % W;
     ctx.globalAlpha = layer.alpha;
@@ -1236,17 +1371,29 @@ function render(){
       // so shapes slide off one edge while entering the other.
       for(const x of [bx, bx - W]){
         if(layer.kind === 'pipe'){
-          ctx.fillStyle = '#1c4438';
+          // Cylindrical shading + flange rings + a specular line
           if(s.vertical){
+            const pg = ctx.createLinearGradient(x, 0, x + s.h, 0);
+            pg.addColorStop(0, '#0f2b24'); pg.addColorStop(0.32, '#2f6b58');
+            pg.addColorStop(0.62, '#1d4a3c'); pg.addColorStop(1, '#0b201a');
+            ctx.fillStyle = pg;
             roundRect(ctx, x, s.y, s.h, s.w, s.h/2); ctx.fill();
-            ctx.fillStyle = '#2a5c4c';
+            ctx.fillStyle = '#3b7c66';
             ctx.fillRect(x-2, s.y+4, s.h+4, 4);
             ctx.fillRect(x-2, s.y+s.w-8, s.h+4, 4);
+            ctx.fillStyle = 'rgba(255,255,255,.14)';
+            ctx.fillRect(x + s.h*0.3, s.y+6, 1.5, s.w-12);
           } else {
+            const pg = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
+            pg.addColorStop(0, '#0f2b24'); pg.addColorStop(0.32, '#2f6b58');
+            pg.addColorStop(0.62, '#1d4a3c'); pg.addColorStop(1, '#0b201a');
+            ctx.fillStyle = pg;
             roundRect(ctx, x, s.y, s.w, s.h, s.h/2); ctx.fill();
-            ctx.fillStyle = '#2a5c4c';
+            ctx.fillStyle = '#3b7c66';
             ctx.fillRect(x+4, s.y-2, 4, s.h+4);
             ctx.fillRect(x+s.w-8, s.y-2, 4, s.h+4);
+            ctx.fillStyle = 'rgba(255,255,255,.14)';
+            ctx.fillRect(x+6, s.y + s.h*0.3, s.w-12, 1.5);
           }
         } else {
           const wobY = Math.sin(bgT*0.02 + s.wob) * 6;
@@ -1268,6 +1415,29 @@ function render(){
     ctx.fillStyle = sg; ctx.fillRect(0,0,W,H);
   }
 
+  // Slime drips hanging from the top edge, stretching slowly.
+  ctx.globalAlpha = 0.55;
+  for(const d of bgDrips){
+    const len = d.len + Math.sin(bgT*0.01*d.sp + d.ph)*4;
+    ctx.save();
+    ctx.translate(d.x, 0);
+    const dg = ctx.createLinearGradient(0, 0, 0, len + 8);
+    dg.addColorStop(0, 'rgba(150,220,140,.95)');
+    dg.addColorStop(0.7, 'rgba(110,190,110,.7)');
+    dg.addColorStop(1, 'rgba(90,170,100,.35)');
+    ctx.fillStyle = dg;
+    ctx.beginPath();
+    ctx.moveTo(-d.w/2, 0); ctx.lineTo(d.w/2, 0);
+    ctx.quadraticCurveTo(d.w*0.45, len*0.7, 0, len);
+    ctx.quadraticCurveTo(-d.w*0.45, len*0.7, -d.w/2, 0);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, len + 2, d.w*0.28, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.35)';
+    ctx.beginPath(); ctx.arc(-d.w*0.12, len*0.35, d.w*0.12, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
   // bubbles (parallax bubble field, drifting up)
   const tAmb = performance.now() * 0.0006;
   for(const s of bgStars){
@@ -1281,6 +1451,33 @@ function render(){
     ctx.beginPath(); ctx.arc(s.x - s.r*0.35, s.y - s.r*0.35, s.r*0.3, 0, 6.283); ctx.fill();
   }
   ctx.globalAlpha = 1;
+
+  // Sludge surface along the bottom edge — two slow sine waves plus a
+  // highlight line. The ball falls into it when you miss.
+  {
+    const base = H - 14;
+    const surf = (x)=> base + Math.sin(x*0.045 + bgT*0.03)*2.2 + Math.sin(x*0.02 - bgT*0.017)*1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, H); ctx.lineTo(0, surf(0));
+    for(let x=12; x<=W+12; x+=12) ctx.lineTo(Math.min(x,W), surf(x));
+    ctx.lineTo(W, H); ctx.closePath();
+    const sl = ctx.createLinearGradient(0, base-4, 0, H);
+    sl.addColorStop(0, `rgba(${96+stink*30},${150+stink*20},70,.8)`);
+    sl.addColorStop(0.4, 'rgba(58,96,46,.88)');
+    sl.addColorStop(1, 'rgba(28,46,26,.96)');
+    ctx.fillStyle = sl; ctx.fill();
+    ctx.strokeStyle = 'rgba(190,255,170,.38)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for(let x=0; x<=W+12; x+=12){ const xx = Math.min(x,W), y = surf(xx) - 0.5; if(x===0) ctx.moveTo(xx,y); else ctx.lineTo(xx,y); }
+    ctx.stroke();
+  }
+
+  // Edge vignette
+  const vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.42, W/2, H/2, Math.max(W,H)*0.78);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,.45)');
+  ctx.fillStyle = vig; ctx.fillRect(0,0,W,H);
+
   if(typeof lives === "number" && lives <= 1){
     const intensity = 0.55 - lives*0.15;
     const vg = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.3, W/2, H/2, Math.max(W,H)*0.7);
@@ -1290,18 +1487,23 @@ function render(){
     ctx.fillRect(0,0,W,H);
   }
 
-  ctx.strokeStyle = 'rgba(158,255,200,0.18)';
+  ctx.strokeStyle = 'rgba(158,255,200,0.16)';
   ctx.lineWidth = 2;
   ctx.strokeRect(2,2,W-4,H-4);
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(4.5,4.5,W-9,H-9);
 
   for(const b of bricks){ drawBrick(b); }
   for(const d of dyingBricks){ drawDyingBrick(d); }
   for(const p of powerups){ drawPowerup(p); }
   for(const l of lasers){
     ctx.fillStyle = '#ff7ab6';
-    ctx.shadowColor = '#ff7ab6'; ctx.shadowBlur = 10;
-    ctx.fillRect(l.x-2, l.y, 4, 18);
+    ctx.shadowColor = '#ff7ab6'; ctx.shadowBlur = 12;
+    roundRect(ctx, l.x-2.5, l.y, 5, 18, 2.5); ctx.fill();
     ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, l.x-1, l.y+2, 2, 14, 1); ctx.fill();
   }
   for(const s of paddleShots){
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.rot);
@@ -1354,21 +1556,43 @@ function render(){
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
   }
   ctx.globalAlpha = 1;
+  // Cosmetic smoke (render clock, so it keeps drifting while paused).
+  for(let i=fxParticles.length-1;i>=0;i--){
+    const p = fxParticles[i];
+    p.x += p.vx*rts; p.y += p.vy*rts; p.vy -= 0.012*rts; p.r += p.vr*rts; p.life -= rts;
+    if(p.life<=0){ fxParticles.splice(i,1); continue; }
+    const a = Math.max(0, p.life/p.max);
+    const sg = ctx.createRadialGradient(p.x,p.y,p.r*0.1,p.x,p.y,p.r);
+    sg.addColorStop(0, `rgba(${p.col},${0.4*a})`);
+    sg.addColorStop(1, `rgba(${p.col},0)`);
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+  }
   for(const f of floats){
     ctx.globalAlpha = Math.max(0, f.life/50);
-    ctx.fillStyle = f.col;
     ctx.font = 'bold 14px Trebuchet MS, system-ui, sans-serif';
     ctx.textAlign='center';
+    ctx.lineWidth = 3; ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(0,20,14,.7)';
+    ctx.strokeText(f.text, f.x, f.y);
+    ctx.fillStyle = f.col;
     ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
 
   if(waitingLaunch && state==='playing'){
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    ctx.font = 'bold 14px Trebuchet MS, system-ui, sans-serif';
+    const txt = 'TAP / SPACE TO LAUNCH';
+    ctx.font = 'bold 12px Trebuchet MS, system-ui, sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('TAP / SPACE to launch', W/2, paddle.y - 30);
-    ctx.beginPath(); ctx.moveTo(W/2,paddle.y-22); ctx.lineTo(W/2-6,paddle.y-14); ctx.lineTo(W/2+6,paddle.y-14); ctx.closePath();
+    const m = ctx.measureText(txt);
+    const tw = ((m && m.width) || 150) + 30;
+    ctx.fillStyle = 'rgba(4,16,12,.62)';
+    roundRect(ctx, W/2 - tw/2, paddle.y - 50, tw, 24, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(158,255,200,.4)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.fillText(txt, W/2, paddle.y - 34);
+    const bob = Math.sin(nowMs*0.008)*2;
+    ctx.beginPath(); ctx.moveTo(W/2,paddle.y-22+bob); ctx.lineTo(W/2-6,paddle.y-14+bob); ctx.lineTo(W/2+6,paddle.y-14+bob); ctx.closePath();
     ctx.fillStyle='#9effc8'; ctx.fill();
   }
 
@@ -1409,6 +1633,17 @@ function drawBrick(b){
   ctx.strokeStyle = 'rgba(255,255,255,.18)';
   ctx.lineWidth = 1;
   roundRect(ctx, px+0.5, py+0.5, pw-1, ph-1, 4.5); ctx.stroke();
+  // Remaining-HP pips (bottom-right) so tough bricks read at a glance
+  if(b.maxHp > 1){
+    const pips = Math.max(1, Math.min(5, Math.ceil(b.hp)));
+    for(let i=0;i<pips;i++){
+      const cx = px+pw-6-i*5, cy = py+ph-5;
+      ctx.fillStyle = 'rgba(0,0,0,.4)';
+      ctx.beginPath(); ctx.arc(cx, cy+0.5, 1.7, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.8)';
+      ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, 6.283); ctx.fill();
+    }
+  }
   // Metal: corner rivets + brushed band
   if(b.metal){
     ctx.fillStyle = 'rgba(255,255,255,.55)';
