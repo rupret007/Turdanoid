@@ -78,7 +78,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 ### Overview
 
-Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS kicks, combo system).
+Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS kicks, combo system) across a 69-level run.
 
 ### Controls
 
@@ -88,6 +88,8 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Space**: Hard drop
 - **Shift or Z**: Rotate counter-clockwise
 - **C**: Hold piece
+- **P**: Pause/Resume
+- **M**: Toggle sound
 
 ### Scoring
 
@@ -99,19 +101,26 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 | Tetris (4 lines) | 800 × level |
 | Back-to-Back Tetris | 1.5× bonus |
 | Combo | 50 × combo × level |
+| Perfect clear | 1200 × level |
 
 ### Mechanics
 
 - **7-Bag**: All 7 pieces dealt before repeats
 - **SRS (Super Rotation System)**: Wall kicks for rotation near walls
 - **Lock Delay**: Piece locks after touching ground for 500ms
-- **Infinity Rotation**: Unlimited rotation before piece locks (within lock delay)
+- **Move Resets**: Movement or rotation can restart lock delay up to 12 times per piece
+- **Level Mutators**: Higher levels add changing garbage-row pressure
 
 ### Levels
 
-- Level increases every 10 lines cleared
+- Levels 1-5 require 8 lines each
+- Levels 6-15 require 10 lines each
+- Levels 16-30 require 12 lines each
+- Levels 31-45 require 14 lines each
+- Levels 46-60 require 16 lines each
+- Levels 61-69 require 18 lines each
 - Speed increases with level
-- Max level is 15
+- Max level is 69
 
 ---
 
@@ -171,31 +180,45 @@ The game provides basic strategy advice based on:
 
 ### Overview
 
-Classic Crazy Eights card game against a CPU opponent.
+Crazy Eights match for you and three bot opponents.
 
 ### Rules
 
-- **Goal**: Be the first to play all cards
+- **Goal**: Empty your hand to win rounds; the first player to 200 points wins the match
 - **8s**: Wild - can be played anytime, allows suit declaration
 - **Matching**: Play must match suit OR rank of top discard
-- **Draw**: If no playable card, draw from deck
+- **2**: Next player draws 2 cards and loses their turn
+- **J**: Skips the next player
+- **Q**: Reverses play direction
+- **Draw**: Draw once, then play the drawn card when legal or pass
 
 ### Scoring
 
-- No points during play
-- Winner is first to empty their hand
-- Opponent's cards count against them (simplified: just win/lose)
+The round winner receives the value of every card left in the other three hands:
+
+| Card | Points |
+|------|--------|
+| 8 | 50 |
+| 10, J, Q, K | 10 |
+| A | 1 |
+| 2-9 (except 8) | Face value |
+
+The first player to reach 200 points wins the match.
 
 ### Controls
 
-- **Click card**: Play card (when valid)
-- **Click deck**: Draw card
+- **Click/Tap**: Select a card, then use `Play Selected`; use `Draw`, `Pass`, or `Smart` as available
+- **P**: Play selected card
+- **D**: Draw
+- **A / Enter**: Smart move
+- **M**: Toggle sound
 
 ### AI Strategy
 
-1. Play non-8 matches first (saves 8s for tough situations)
-2. If must play 8, declare suit with most cards in hand
-3. Draw when no playable cards
+1. Score legal choices by action value and the bot's remaining hand
+2. Save or play wild 8s according to the best available move
+3. When playing an 8, declare the suit most represented in hand
+4. Draw and pass when no legal play is available
 
 ---
 
@@ -212,6 +235,8 @@ Gin Rummy card game against an AI opponent.
 - **Knock**: Declare when deadwood ≤ 10
 - **Gin**: 0 deadwood - automatic win
 - **Undercut**: If opponent knocks and you have less deadwood
+- **Layoff**: After a non-gin knock, the defender may add deadwood cards to the knocker's melds before scoring
+- **Match**: First to 100 points wins
 
 ### Hand Size
 
@@ -223,17 +248,16 @@ Gin Rummy card game against an AI opponent.
 
 | Outcome | Points |
 |---------|--------|
-| Knock | Opponent deadwood - your deadwood |
-| Gin | 25 bonus + opponent deadwood |
-| Undercut | 25 bonus |
-| Opponent Deadwood | Added to your score |
+| Knock | Defender deadwood after layoffs - knocker deadwood |
+| Gin | 25 + defender deadwood; no layoffs |
+| Undercut | 25 + the deadwood advantage held by the defender |
 
 ### AI Strategy
 
-1. Prioritize forming sets over runs
-2. Hold onto high cards for potential sets
-3. Track discards for opponent's likely melds
-4. Knock when safe (deadwood ≤ 10)
+1. Evaluate each draw and discard by resulting deadwood and meld potential
+2. Prefer useful discard-pile cards and shed expensive deadwood when safe
+3. Adjust the knock threshold to the match score and round length
+4. Call gin at 0 deadwood and knock only within the current threshold
 
 ---
 
@@ -246,32 +270,33 @@ Partnership Spades trick-taking game against two CPU opponents.
 ### Rules
 
 - **Goal**: Meet or exceed your declared tricks
-- **Teams**: Players 0+2 vs Players 1+3
-- **Leading**: Can lead any card
+- **Teams**: You + North vs West + East
+- **Bidding**: Each player bids 1-13 tricks; partners' bids form the team contract
+- **Leading**: Lead any non-spade until spades are broken; an all-spade hand may lead spades
 - **Following**: Must follow suit if possible
 - **Spades**: Trump suit - wins non-spade tricks
-- **Breaking Spades**: Cannot lead spade until a player is void in lead suit
+- **Breaking Spades**: A spade played while void in the lead suit breaks spades
 
 ### Scoring
 
 | Outcome | Points |
 |---------|--------|
-| Made bid exactly | Bid value |
-| Made bid + overtricks | Bid + overtricks |
-| Failed bid | -Bid value |
-| Sandbagging (exact) | Bid × 2 |
+| Make team bid | 10 × team bid + 1 per overtrick |
+| Miss team bid | -10 × team bid |
+| Overtrick | +1 point and +1 bag |
+| 10 accumulated bags | -100 points; bag count rolls over |
 
 ### Winning
 
-- First team to 500 points wins
--bags (under 100 score) can result in bag penalty
+- First team to 250 points wins
+- If both teams tie at or above 250, play one tiebreaker round
 
 ### AI Strategy
 
-1. Count cards played to track remaining suits
-2. Save high spades for winning tricks
-3. Lead strong suits early
-4. Bid based on spade count and high cards
+1. Bid from spade strength and high cards
+2. Track the partnership's remaining contract need
+3. Use the lowest winning card when the team still needs tricks
+4. Shed low cards when the contract is safe and trump when void if a trick is needed
 
 ---
 
