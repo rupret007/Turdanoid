@@ -1822,6 +1822,9 @@
     let activeHandIndex = 0;
     let onboardingOpen = false;
     let runningCount = 0;
+    let shoeGeneration = 0;
+    let dealerHoleShoeGeneration = null;
+    let dealerHoleCountResolved = false;
     let cutCardsRemaining = 18;
     let shoeDecks = 4;
     let decisionStreak = 0;
@@ -2222,6 +2225,7 @@
 
       shoeDecks = decks;
       shoe = next;
+      shoeGeneration += 1;
       discard = [];
       runningCount = 0;
       const cutMin = Math.floor(next.length * 0.2);
@@ -2250,14 +2254,25 @@
       }
     }
 
-    function drawCard() {
+    function drawCard({ count = true } = {}) {
       if (shoe.length <= 0) {
         setStatus('Shoe exhausted. Shuffling fresh poop cards.');
         createShoe(rules.decks || 4);
       }
       const card = shoe.pop();
-      runningCount += hiLoValue(card);
+      if (count) runningCount += hiLoValue(card);
       return card;
+    }
+
+    function revealDealerHole() {
+      dealerHoleHidden = false;
+      const holeCard = dealerHand[1];
+      if (!holeCard || dealerHoleCountResolved) return false;
+      if (dealerHoleShoeGeneration === shoeGeneration) {
+        runningCount += hiLoValue(holeCard);
+      }
+      dealerHoleCountResolved = true;
+      return true;
     }
 
     function cardValue(card) {
@@ -2709,6 +2724,8 @@
       roundActive = true;
       firstDecisionOpen = true;
       dealerHoleHidden = true;
+      dealerHoleShoeGeneration = null;
+      dealerHoleCountResolved = false;
       splitRound = false;
       activeHandIndex = 0;
       playerHand = [];
@@ -2719,7 +2736,8 @@
       playerHand.push(drawCard());
       dealerHand.push(drawCard());
       playerHand.push(drawCard());
-      dealerHand.push(drawCard());
+      dealerHand.push(drawCard({ count: false }));
+      dealerHoleShoeGeneration = shoeGeneration;
       playSfx('deal');
 
       stats.hands = (stats.hands || 0) + 1;
@@ -2738,7 +2756,7 @@
             `Dealer shows Ace and you have blackjack. Take even money for guaranteed $${currentBet * 2}?`
           );
           if (evenMoney) {
-            dealerHoleHidden = false;
+            revealDealerHole();
             bankroll += currentBet * 2;
             stats.wins = (stats.wins || 0) + 1;
             stats.blackjacks = (stats.blackjacks || 0) + 1;
@@ -2774,7 +2792,7 @@
       }
 
       if (pBJ || dBJ) {
-        dealerHoleHidden = false;
+        revealDealerHole();
         renderCards();
 
         if (insuranceBet > 0 && dBJ) {
@@ -2945,7 +2963,7 @@
       }
       trackDecision('surrender');
       firstDecisionOpen = false;
-      dealerHoleHidden = false;
+      revealDealerHole();
       roundActive = false;
       activeHandIndex = 0;
 
@@ -2996,7 +3014,7 @@
 
     function dealerTurnAndResolve() {
       firstDecisionOpen = false;
-      dealerHoleHidden = false;
+      revealDealerHole();
       const hands = [
         { cards: playerHand, bet: currentBet, label: splitRound ? 'Hand 1' : 'Main hand' }
       ];
@@ -3071,7 +3089,6 @@
       splitRound = false;
       splitBet = 0;
       activeHandIndex = 0;
-      dealerHoleHidden = false;
       const finalNote = notes.join(' ');
       setStatus(finalNote);
       logHistory(finalNote);
@@ -3131,6 +3148,8 @@
       splitHand = [];
       dealerHand = [];
       dealerHoleHidden = true;
+      dealerHoleShoeGeneration = null;
+      dealerHoleCountResolved = false;
       createShoe(rules.decks || 4);
       renderCards();
       setStatus('Bankroll and stats reset. Start a fresh stink streak.');

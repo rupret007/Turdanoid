@@ -166,6 +166,7 @@ Single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, an
 - **Low cards (2-6)**: +1
 - **High cards (10, J, Q, K, A)**: -1
 - **True Count**: Running count ÷ remaining decks
+- **Dealer hole card**: Enters the count only when it is revealed
 
 ### Strategy Hint
 
