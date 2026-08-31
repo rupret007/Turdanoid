@@ -281,6 +281,112 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdjack-hidden-hole-count', 'turdjack.html', {
+      actions: async (page) => {
+        const countStates = await page.evaluate(() => {
+          function runHand(hiddenRank, replaceShoeBeforeReveal = false) {
+            bankroll = 1000;
+            currentBet = 20;
+            lastBet = 20;
+            splitBet = 0;
+            roundActive = false;
+            firstDecisionOpen = false;
+            splitRound = false;
+            activeHandIndex = 0;
+            playerHand = [];
+            splitHand = [];
+            dealerHand = [];
+            runningCount = 0;
+            dealerHoleHidden = true;
+            dealerHoleShoeGeneration = null;
+            dealerHoleCountResolved = false;
+            cutCardsRemaining = 0;
+            decisionStreak = 0;
+            hotStreak = 0;
+            coldStreak = 0;
+            roundHistory = [];
+            stats = normalizeStats({});
+            rules = normalizeRules({ ...rules, allowSurrender: true });
+            shoe = [
+              { rank: hiddenRank, suit: 'S' },
+              { rank: '9', suit: 'D' },
+              { rank: '5', suit: 'H' },
+              { rank: '2', suit: 'C' }
+            ];
+
+            startRound();
+            const before = {
+              count: runningCount,
+              trueCount: trueCount(),
+              display: ui.runningCountText.textContent,
+              hint: ui.hintText.textContent,
+              hidden: dealerHoleHidden,
+              holeResolved: dealerHoleCountResolved
+            };
+
+            if (replaceShoeBeforeReveal) createShoe(1);
+            playerSurrender();
+            const afterReveal = {
+              count: runningCount,
+              hidden: dealerHoleHidden,
+              holeResolved: dealerHoleCountResolved
+            };
+
+            revealDealerHole();
+            const afterRepeatedReveal = runningCount;
+
+            return { before, afterReveal, afterRepeatedReveal };
+          }
+
+          return {
+            highHole: runHand('K'),
+            lowHole: runHand('3'),
+            replacedShoeHole: runHand('3', true)
+          };
+        });
+
+        const { highHole, lowHole, replacedShoeHole } = countStates;
+        if (!highHole.before.hidden || !lowHole.before.hidden) {
+          fail('turdjack-hidden-hole-count', 'dealer hole should remain hidden before surrender');
+        }
+        if (highHole.before.holeResolved || lowHole.before.holeResolved) {
+          fail('turdjack-hidden-hole-count', 'hidden dealer hole entered the visible running count');
+        }
+        if (highHole.before.count !== 2 || lowHole.before.count !== 2) {
+          fail('turdjack-hidden-hole-count', `identical exposed cards should count 2, saw ${highHole.before.count}/${lowHole.before.count}`);
+        }
+        if (
+          highHole.before.trueCount !== lowHole.before.trueCount ||
+          highHole.before.display !== lowHole.before.display ||
+          highHole.before.hint !== lowHole.before.hint
+        ) {
+          fail('turdjack-hidden-hole-count', 'hidden card changed pre-reveal count or guidance');
+        }
+        if (highHole.afterReveal.count !== 1 || lowHole.afterReveal.count !== 3) {
+          fail('turdjack-hidden-hole-count', `revealed K/3 should move the count to 1/3, saw ${highHole.afterReveal.count}/${lowHole.afterReveal.count}`);
+        }
+        if (highHole.afterReveal.hidden || lowHole.afterReveal.hidden) {
+          fail('turdjack-hidden-hole-count', 'surrender should reveal the dealer hole');
+        }
+        if (!highHole.afterReveal.holeResolved || !lowHole.afterReveal.holeResolved) {
+          fail('turdjack-hidden-hole-count', 'revealed dealer hole was not resolved for counting');
+        }
+        if (
+          highHole.afterRepeatedReveal !== highHole.afterReveal.count ||
+          lowHole.afterRepeatedReveal !== lowHole.afterReveal.count
+        ) {
+          fail('turdjack-hidden-hole-count', 'repeated reveal counted the dealer hole twice');
+        }
+        if (
+          replacedShoeHole.afterReveal.count !== 0 ||
+          replacedShoeHole.afterRepeatedReveal !== 0 ||
+          !replacedShoeHole.afterReveal.holeResolved
+        ) {
+          fail('turdjack-hidden-hole-count', 'an old-shoe hole contaminated the fresh shoe count');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdjack-mobile', 'turdjack.html', {
       mobile: true,
       actions: async (page) => {
