@@ -132,8 +132,8 @@
                    window.SUITE_NO_BACK === true;
       if (skip) return;
       // Don't inject on either the canonical root hub or its legacy redirect.
-      const page = (location.pathname || '').toLowerCase().split('/').pop();
-      if (!page || page === 'index.html' || page === 'hub.html') return;
+      // GitHub Pages project URLs can be /Turdanoid or /Turdanoid/ — both are the door.
+      if (isSuiteHubPage(currentPageName())) return;
       if (document.querySelector('.suite-back-pill')) return;
       const a = document.createElement('a');
       a.className = 'suite-back-pill';
@@ -180,11 +180,48 @@
     }, { passive: false });
   }
 
+  // ---------- Last-played hub mark ----------
+  const LIVE_HUB_GAMES = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+  const LAST_GAME_KEY = 'turdsuite_last_game';
+
+  function currentPageName() {
+    return (location.pathname || '').split('/').pop() || '';
+  }
+
+  function isSuiteHubPage(page) {
+    const name = String(page || '').toLowerCase();
+    return !name || name === 'index.html' || name === 'hub.html' || name === 'turdanoid';
+  }
+
+  function recordLastGame() {
+    const page = currentPageName();
+    if (!LIVE_HUB_GAMES.includes(page)) return;
+    try { localStorage.setItem(LAST_GAME_KEY, page); } catch (e) {}
+  }
+
+  function markLastPlayedCard() {
+    if (!isSuiteHubPage(currentPageName())) return;
+    let last = '';
+    try { last = localStorage.getItem(LAST_GAME_KEY) || ''; } catch (e) {}
+    if (!LIVE_HUB_GAMES.includes(last)) return;
+    const card = document.querySelector('.game-card[href="' + last + '"]');
+    if (!card || card.classList.contains('last-played')) return;
+    card.classList.add('last-played');
+    const play = card.querySelector('.play');
+    if (play) play.innerHTML = 'Play again <i>\u2192</i>';
+    const title = card.querySelector('h2');
+    if (title && !card.getAttribute('aria-label')) {
+      card.setAttribute('aria-label', title.textContent.trim() + ', last played');
+    }
+  }
+
   // ---------- Boot ----------
   function boot() {
     injectAmbientBg();
     injectBackPill();
     preventDoubleTapZoom();
+    recordLastGame();
+    markLastPlayedCard();
     // unlock audio context on first interaction
     const unlock = function () {
       ctx();

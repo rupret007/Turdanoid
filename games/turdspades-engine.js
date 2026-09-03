@@ -28,6 +28,46 @@ export const RANK_VALUES = {
  * Nil is deliberately rare for the bots. A hand must have no ace or king,
  * no dangerous high spade, no more than three spades, and at most one queen.
  */
+function cardRankValue(card) {
+  if (!card) {
+    return 0;
+  }
+  if (typeof card.rank === 'number') {
+    return card.rank;
+  }
+  return RANK_VALUES[card.rank] || 0;
+}
+
+/**
+ * When a partner called Nil and is currently winning the trick,
+ * play the cheapest legal overtake. Returns null when covering
+ * does not apply or no overtake exists.
+ */
+export function pickNilCoverCard(
+  legal,
+  { partnerBid, winnerPlayer, partner, cardBeatsWinner } = {}
+) {
+  if (
+    partnerBid !== 0 ||
+    winnerPlayer !== partner ||
+    !Array.isArray(legal) ||
+    typeof cardBeatsWinner !== 'function'
+  ) {
+    return null;
+  }
+  const covers = legal.filter((card) => cardBeatsWinner(card));
+  if (!covers.length) {
+    return null;
+  }
+  return covers.slice().sort((a, b) => {
+    const rankDelta = cardRankValue(a) - cardRankValue(b);
+    if (rankDelta !== 0) {
+      return rankDelta;
+    }
+    return String(a.suit || '').localeCompare(String(b.suit || ''));
+  })[0];
+}
+
 export function shouldBidNil(hand) {
   if (!Array.isArray(hand) || hand.length !== 13) {
     return false;

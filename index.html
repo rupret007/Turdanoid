@@ -265,6 +265,30 @@
 
     .game-card:active { transform: translateY(-2px) scale(0.995); }
 
+    .game-card.last-played {
+      border-color: color-mix(in srgb, var(--c) 50%, transparent);
+      box-shadow:
+        0 18px 34px rgba(2, 10, 20, 0.32),
+        0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .game-card.last-played .play { color: var(--gold); }
+
+    .game-card.last-played .title-row h2::after {
+      content: "Last played";
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #102016;
+      background: var(--gold);
+      vertical-align: middle;
+    }
+
     /* Cover art */
     .cover {
       position: relative;
@@ -744,7 +768,7 @@
         </div>
         <div class="body">
           <div class="title-row"><span class="emoji">♠️</span><h2>TurdSpades</h2></div>
-          <p>4-player Spades: bid tricks, break spades, manage bags, and beat the bot partnership.</p>
+          <p>4-player Spades: bid tricks or Nil, break spades, manage bags, and beat the bot partnership.</p>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -753,6 +777,7 @@
     <details class="changelog">
       <summary>Latest Changelog</summary>
       <ul>
+        <li><strong>Playability leftover after Nil:</strong> TurdSpades now plays bot cards one at a time, pauses those turns when the tab hides, and has partners overtake a winning Nil card when they can. The hub marks the last game you opened. The TurdAnoid test hook stays off the public Pages host.</li>
         <li><strong>Graphics pass:</strong> new hub cover art for every game, a shared ambient sewer backdrop (tiles, bubbles, stink wisps), one card-paper and card-back design across the four card games, felt grain and wooden rails on every table, beveled Turdtris tiles with line-clear bursts, and a richer TurdAnoid sewer with a slime surface, brick wall, and smoke on every kill. Physics, scoring, rules, and controls untouched.</li>
         <li><strong>Suite-wide v4.0:</strong> shared theme &amp; SFX across every game. Each one now has consistent fart noises, hype callouts, toasts, a back-to-hub pill, and proper iPhone safe-area handling.</li>
         <li><strong>TurdAnoid Turbo:</strong> full Canvas remaster, 19 power-ups, gentle early difficulty so the player gets hooked.</li>

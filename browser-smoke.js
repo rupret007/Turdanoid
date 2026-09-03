@@ -78,6 +78,9 @@ async function main() {
         if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 1) {
           fail('root-hub', 'expected one secondary link to the original Neon Arkanoid game');
         }
+        if ((await page.locator('.game-card.last-played').count()) !== 0) {
+          fail('root-hub', 'a first visit should not mark a last-played game');
+        }
       }
     });
 
@@ -278,6 +281,8 @@ async function main() {
         if (jackState.guideOpen) fail('turdjack-guide-keyboard', 'Enter should dismiss the opening guide');
         if (jackState.roundActive) fail('turdjack-guide-keyboard', 'Enter should not start a Crapjack hand behind the guide');
         if (jackState.currentBet !== 0) fail('turdjack-guide-keyboard', `Enter should not alter the starting bet, saw ${jackState.currentBet}`);
+        const debugHook = await page.evaluate(() => window._crapjackBoss);
+        if (debugHook) fail('turdjack-guide-keyboard', 'Pages should not expose the leftover Crapjack debug hook');
       }
     });
 
@@ -559,6 +564,7 @@ async function main() {
         }
 
         const shippedLogic = await page.evaluate(() => {
+          if (typeof clearAiTimer === 'function') clearAiTimer();
           const originalBids = state.bids.slice();
           const originalTricks = state.tricks.slice();
           state.bids = [0, 3, 4, 3];
@@ -613,6 +619,141 @@ async function main() {
         if (!shippedLogic.recap.includes('You made NIL (+100)') || !shippedLogic.recap.includes('round total +141')) {
           fail('turdspades-nil-flow', `round recap should itemize Nil scoring, saw ${shippedLogic.recap}`);
         }
+      }
+    });
+
+    await runCheck(browser, 'turdspades-pace-cover-blur', 'turdspades.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(120);
+        await page.locator('#lockBid').click();
+        const atLock = await page.evaluate(() => {
+          if (typeof clearAiTimer === 'function') clearAiTimer();
+          return {
+            phase: state.phase,
+            currentPlayer: state.currentPlayer,
+            trick: state.trick.length,
+            timerArmed: typeof scheduleAiIfNeeded === 'function'
+          };
+        });
+        if (atLock.phase !== 'play') fail('turdspades-pace-cover-blur', `locking a bid should start play, saw ${atLock.phase}`);
+        if (atLock.currentPlayer === 0) fail('turdspades-pace-cover-blur', 'round-1 lead should belong to a bot so pacing is visible');
+        if (atLock.trick !== 0) fail('turdspades-pace-cover-blur', 'bot cards should not dump onto the trick in the same turn as lock');
+
+        await page.evaluate(() => {
+          focusSuspendedPlay = false;
+          scheduleAiIfNeeded(40);
+        });
+        await page.waitForTimeout(80);
+        const afterOne = await page.evaluate(() => ({
+          trick: state.trick.length,
+          currentPlayer: state.currentPlayer,
+          pending: aiTurnTimeoutId !== null
+        }));
+        if (afterOne.trick < 1 && afterOne.currentPlayer === atLock.currentPlayer) {
+          fail('turdspades-pace-cover-blur', `first paced bot card never appeared, saw ${JSON.stringify(afterOne)}`);
+        }
+
+        const cover = await page.evaluate(() => {
+          if (typeof clearAiTimer === 'function') clearAiTimer();
+          focusSuspendedPlay = false;
+          state.phase = 'play';
+          state.currentPlayer = 1;
+          state.bids = [4, 3, 4, 0];
+          state.tricks = [0, 0, 0, 0];
+          state.spadesBroken = false;
+          state.trick = [{ player: 3, card: { id: 'east-win', suit: 'H', rank: 9 } }];
+          state.hands[1] = [
+            { id: 'low', suit: 'H', rank: 3 },
+            { id: 'cover', suit: 'H', rank: 12 },
+            { id: 'ace', suit: 'H', rank: 14 }
+          ];
+          return aiCard(1)?.id;
+        });
+        if (cover !== 'cover') fail('turdspades-pace-cover-blur', `West should overtake East's Nil winner with Q♥, saw ${cover}`);
+
+        const blurState = await page.evaluate(() => {
+          if (typeof clearAiTimer === 'function') clearAiTimer();
+          focusSuspendedPlay = false;
+          state.phase = 'play';
+          state.currentPlayer = 1;
+          state.hands[1] = [{ id: 'wait', suit: 'C', rank: 2 }];
+          state.trick = [];
+          scheduleAiIfNeeded(10000);
+          const armed = aiTurnTimeoutId !== null;
+          window.dispatchEvent(new Event('blur'));
+          return {
+            armed,
+            suspended: focusSuspendedPlay,
+            timer: aiTurnTimeoutId,
+            message: state.msg
+          };
+        });
+        if (!blurState.armed) fail('turdspades-pace-cover-blur', 'pending bot turn should arm a timer before blur');
+        if (!blurState.suspended) fail('turdspades-pace-cover-blur', 'blur should suspend a pending bot turn');
+        if (blurState.timer !== null) fail('turdspades-pace-cover-blur', 'blur should cancel the pending bot timer');
+        if (!String(blurState.message).includes('paused')) {
+          fail('turdspades-pace-cover-blur', `blur should tell the player the table paused, saw ${blurState.message}`);
+        }
+
+        const resumeState = await page.evaluate(() => {
+          Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+          document.dispatchEvent(new Event('visibilitychange'));
+          return {
+            suspended: focusSuspendedPlay,
+            timerArmed: aiTurnTimeoutId !== null
+          };
+        });
+        if (resumeState.suspended) fail('turdspades-pace-cover-blur', 'returning to the tab should clear the focus suspend flag');
+        if (!resumeState.timerArmed) fail('turdspades-pace-cover-blur', 'returning to the tab should rearm the pending bot turn');
+        await page.evaluate(() => { if (typeof clearAiTimer === 'function') clearAiTimer(); });
+      }
+    });
+
+    await runCheck(browser, 'hub-last-played', 'turdspades.html', {
+      actions: async (page) => {
+        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
+        await page.waitForTimeout(250);
+        const marked = await page.evaluate(() => {
+          const card = document.querySelector('.game-card.last-played');
+          return {
+            cards: document.querySelectorAll('.game-card').length,
+            href: card?.getAttribute('href') || '',
+            play: card?.querySelector('.play')?.textContent || '',
+            neon: document.querySelectorAll('a[href="neon-arkanoid.html"]').length
+          };
+        });
+        if (marked.cards !== 6) fail('hub-last-played', `hub should still show six games, saw ${marked.cards}`);
+        if (marked.href !== 'turdspades.html') {
+          fail('hub-last-played', `last opened game should be marked, saw ${marked.href}`);
+        }
+        if (!marked.play.includes('Play again')) {
+          fail('hub-last-played', `last-played card should say Play again, saw ${marked.play}`);
+        }
+        if (marked.neon !== 1) fail('hub-last-played', 'last-played mark must not replace the Neon secondary link');
+
+        await page.evaluate(() => localStorage.setItem('turdsuite_last_game', 'not-a-game.html'));
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(200);
+        const afterJunk = await page.evaluate(() => ({
+          cards: document.querySelectorAll('.game-card').length,
+          last: document.querySelectorAll('.game-card.last-played').length,
+          hrefs: Array.from(document.querySelectorAll('.game-card')).map((card) => card.getAttribute('href'))
+        }));
+        if (afterJunk.cards !== 6 || afterJunk.last !== 0) {
+          fail('hub-last-played', `malformed last-played data should not invent a mark, saw ${JSON.stringify(afterJunk)}`);
+        }
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+        if (JSON.stringify(afterJunk.hrefs) !== JSON.stringify(expected)) {
+          fail('hub-last-played', `six-game door drifted, saw ${JSON.stringify(afterJunk.hrefs)}`);
+        }
+      }
+    });
+
+    await runCheck(browser, 'turdanoid-local-debug-hook', 'TurdAnoid.html', {
+      actions: async (page) => {
+        const exposed = await page.evaluate(() => !!window.__turdanoid);
+        if (!exposed) fail('turdanoid-local-debug-hook', 'localhost smoke should still expose the TurdAnoid test hook');
       }
     });
   } finally {
