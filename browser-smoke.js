@@ -822,7 +822,12 @@ async function main() {
     await runCheck(browser, 'turdrummy-continue-restore', 'turdrummy.html', {
       actions: async (page) => {
         await page.evaluate(() => document.getElementById('startRoundBtn')?.click());
-        await page.waitForTimeout(220);
+        await page.waitForFunction(() => (
+          typeof state !== 'undefined'
+          && state.initialized
+          && state.turn === 'player'
+          && state.playerHand.length === 10
+        ), undefined, { timeout: 4000 });
         const before = await page.evaluate(() => ({
           round: state.round,
           phase: state.phase,
@@ -830,11 +835,16 @@ async function main() {
           cards: state.playerHand.map((card) => card.id).sort().join(','),
           stock: state.stock.length
         }));
-        if (!before.round || before.cards === '') {
-          fail('turdrummy-continue-restore', `Rummy should deal before leaving, saw ${JSON.stringify(before)}`);
+        if (!before.round || before.cards === '' || before.turn !== 'player') {
+          fail('turdrummy-continue-restore', `Rummy should wait on the player before leaving, saw ${JSON.stringify(before)}`);
         }
         await page.reload({ waitUntil: 'load' });
-        await page.waitForTimeout(250);
+        await page.waitForFunction(() => (
+          typeof state !== 'undefined'
+          && state.initialized
+          && state.playerHand.length === 10
+          && !document.getElementById('guideOverlay')?.classList.contains('show')
+        ), undefined, { timeout: 4000 });
         const after = await page.evaluate(() => ({
           guide: document.getElementById('guideOverlay')?.classList.contains('show'),
           initialized: state.initialized,
@@ -847,7 +857,7 @@ async function main() {
         if (after.guide) {
           fail('turdrummy-continue-restore', 'returning to a saved Rummy table should skip the welcome guide');
         }
-        if (!after.initialized || after.round !== before.round || after.cards !== before.cards || after.stock !== before.stock) {
+        if (!after.initialized || after.round !== before.round || after.cards !== before.cards || after.stock !== before.stock || after.turn !== before.turn) {
           fail('turdrummy-continue-restore', `Rummy should restore the same table, saw ${JSON.stringify({ before, after })}`);
         }
       }
@@ -856,7 +866,13 @@ async function main() {
     await runCheck(browser, 'crapeights-continue-restore', 'crapeights.html', {
       actions: async (page) => {
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(160);
+        await page.waitForFunction(() => (
+          typeof isHumanTurn === 'function'
+          && isHumanTurn()
+          && Array.isArray(players)
+          && players[0]
+          && players[0].hand.length > 0
+        ), undefined, { timeout: 5000 });
         const before = await page.evaluate(() => ({
           round: roundNumber,
           you: players[0].hand.map((card) => card.id).sort().join(','),
@@ -867,7 +883,12 @@ async function main() {
           fail('crapeights-continue-restore', `Eights should deal before leaving, saw ${JSON.stringify(before)}`);
         }
         await page.reload({ waitUntil: 'load' });
-        await page.waitForTimeout(250);
+        await page.waitForFunction((expectedYou) => (
+          Array.isArray(players)
+          && players[0]
+          && players[0].hand.map((card) => card.id).sort().join(',') === expectedYou
+          && document.getElementById('welcomeGuide')?.style.display !== 'flex'
+        ), before.you, { timeout: 4000 });
         const after = await page.evaluate(() => ({
           guide: document.getElementById('welcomeGuide')?.style.display === 'flex',
           round: roundNumber,
