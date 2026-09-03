@@ -132,8 +132,8 @@
                    window.SUITE_NO_BACK === true;
       if (skip) return;
       // Don't inject on either the canonical root hub or its legacy redirect.
-      const page = (location.pathname || '').toLowerCase().split('/').pop();
-      if (!page || page === 'index.html' || page === 'hub.html') return;
+      // GitHub Pages project URLs can be /Turdanoid or /Turdanoid/ — both are the door.
+      if (isSuiteHubPage(currentPageName())) return;
       if (document.querySelector('.suite-back-pill')) return;
       const a = document.createElement('a');
       a.className = 'suite-back-pill';
@@ -188,6 +188,11 @@
     return (location.pathname || '').split('/').pop() || '';
   }
 
+  function isSuiteHubPage(page) {
+    const name = String(page || '').toLowerCase();
+    return !name || name === 'index.html' || name === 'hub.html' || name === 'turdanoid';
+  }
+
   function recordLastGame() {
     const page = currentPageName();
     if (!LIVE_HUB_GAMES.includes(page)) return;
@@ -195,8 +200,7 @@
   }
 
   function markLastPlayedCard() {
-    const page = currentPageName().toLowerCase();
-    if (page && page !== 'index.html') return;
+    if (!isSuiteHubPage(currentPageName())) return;
     let last = '';
     try { last = localStorage.getItem(LAST_GAME_KEY) || ''; } catch (e) {}
     if (!LIVE_HUB_GAMES.includes(last)) return;

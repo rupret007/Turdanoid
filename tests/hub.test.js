@@ -21,14 +21,15 @@ const LIVE_GAMES = [
 function bootHub(lastGame, url = 'http://localhost/') {
   const dom = new JSDOM(hubHtml, {
     url,
-    runScripts: 'outside-only',
-    beforeParse(window) {
-      if (lastGame !== undefined) {
-        window.localStorage.setItem('turdsuite_last_game', lastGame);
-      }
-    }
+    runScripts: 'outside-only'
   });
+  if (lastGame !== undefined) {
+    dom.window.localStorage.setItem('turdsuite_last_game', lastGame);
+  }
   dom.window.eval(suiteJs);
+  if (dom.window.document.readyState === 'loading') {
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+  }
   return dom;
 }
 
@@ -57,10 +58,17 @@ describe('six-game hub last-played mark', () => {
   });
 
   it('marks last-played on the GitHub Pages hub path', () => {
-    const dom = bootHub('TurdAnoid.html', 'https://rupret007.github.io/Turdanoid/');
-    expect(dom.window.document.querySelector('.game-card.last-played')?.getAttribute('href')).toBe(
-      'TurdAnoid.html'
+    const slashed = bootHub('TurdAnoid.html', 'https://rupret007.github.io/Turdanoid/');
+    expect(
+      slashed.window.document.querySelector('.game-card.last-played')?.getAttribute('href')
+    ).toBe('TurdAnoid.html');
+    expect(slashed.window.document.querySelector('.suite-back-pill')).toBeNull();
+
+    const bare = bootHub('turdspades.html', 'https://rupret007.github.io/Turdanoid');
+    expect(bare.window.document.querySelector('.game-card.last-played')?.getAttribute('href')).toBe(
+      'turdspades.html'
     );
+    expect(bare.window.document.querySelector('.suite-back-pill')).toBeNull();
   });
 
   it('ignores malformed last-played data and Neon', () => {
