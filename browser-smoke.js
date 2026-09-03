@@ -400,6 +400,23 @@ async function main() {
       actions: async (page) => {
         await page.getByRole('button', { name: 'Quick Start' }).click();
         await page.waitForTimeout(200);
+        await page.evaluate(() => {
+          createShoe(4);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const playerTwo = pull('9', 'D');
+          const dealerUp = pull('5', 'H');
+          const playerOne = pull('2', 'C');
+          shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+          bankroll = 1000;
+          currentBet = 20;
+          lastBet = 20;
+          startRound();
+        });
+        await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 3000 });
         await page.locator('.mobile-menu summary').click();
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
