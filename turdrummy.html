@@ -1455,7 +1455,7 @@
       <div class="footer-note">Core controls stay fixed at bottom for mobile play.</div>
     </footer>
 
-    <div class="overlay show" id="guideOverlay">
+    <div class="overlay" id="guideOverlay">
       <div class="overlay-card">
         <h2>How TurdRummy Works</h2>
         <p>Goal: first to 100 by making melds and minimizing deadwood.</p>
@@ -2791,6 +2791,7 @@
       if (!restoredTable) renderAll();
       const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen("turdrummy.html"));
       if (!skipGuide) openGuide();
+      else el.guideOverlay.classList.remove("show");
     }
 
     window.addEventListener("blur", suspendAiForBackground);

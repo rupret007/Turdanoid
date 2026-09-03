@@ -819,6 +819,71 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdrummy-continue-restore', 'turdrummy.html', {
+      actions: async (page) => {
+        await page.evaluate(() => document.getElementById('startRoundBtn')?.click());
+        await page.waitForTimeout(220);
+        const before = await page.evaluate(() => ({
+          round: state.round,
+          phase: state.phase,
+          turn: state.turn,
+          cards: state.playerHand.map((card) => card.id).sort().join(','),
+          stock: state.stock.length
+        }));
+        if (!before.round || before.cards === '') {
+          fail('turdrummy-continue-restore', `Rummy should deal before leaving, saw ${JSON.stringify(before)}`);
+        }
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(250);
+        const after = await page.evaluate(() => ({
+          guide: document.getElementById('guideOverlay')?.classList.contains('show'),
+          initialized: state.initialized,
+          round: state.round,
+          phase: state.phase,
+          turn: state.turn,
+          cards: state.playerHand.map((card) => card.id).sort().join(','),
+          stock: state.stock.length
+        }));
+        if (after.guide) {
+          fail('turdrummy-continue-restore', 'returning to a saved Rummy table should skip the welcome guide');
+        }
+        if (!after.initialized || after.round !== before.round || after.cards !== before.cards || after.stock !== before.stock) {
+          fail('turdrummy-continue-restore', `Rummy should restore the same table, saw ${JSON.stringify({ before, after })}`);
+        }
+      }
+    });
+
+    await runCheck(browser, 'crapeights-continue-restore', 'crapeights.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(160);
+        const before = await page.evaluate(() => ({
+          round: roundNumber,
+          you: players[0].hand.map((card) => card.id).sort().join(','),
+          discard: discard.map((card) => card.id).join(','),
+          current: currentPlayer
+        }));
+        if (!before.round || before.you === '') {
+          fail('crapeights-continue-restore', `Eights should deal before leaving, saw ${JSON.stringify(before)}`);
+        }
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(250);
+        const after = await page.evaluate(() => ({
+          guide: document.getElementById('welcomeGuide')?.style.display === 'flex',
+          round: roundNumber,
+          you: players[0].hand.map((card) => card.id).sort().join(','),
+          discard: discard.map((card) => card.id).join(','),
+          current: currentPlayer
+        }));
+        if (after.guide) {
+          fail('crapeights-continue-restore', 'returning to a saved Eights table should skip the welcome guide');
+        }
+        if (after.round !== before.round || after.you !== before.you || after.discard !== before.discard) {
+          fail('crapeights-continue-restore', `Eights should restore the same table, saw ${JSON.stringify({ before, after })}`);
+        }
+      }
+    });
+
     await runCheck(browser, 'turdrummy-continue-no-round-skip', 'turdrummy.html', {
       actions: async (page) => {
         await page.evaluate(() => {
