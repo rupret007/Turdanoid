@@ -496,6 +496,17 @@ async function main() {
         await page.waitForTimeout(250);
         const bidBox = page.locator('#bidBox');
         if (!(await bidBox.isVisible())) fail('turdspades-mobile', 'bid controls not visible after guide close');
+        const bidBoxBounds = await bidBox.boundingBox();
+        const viewport = page.viewportSize();
+        if (!bidBoxBounds || !viewport || bidBoxBounds.y < 0 || bidBoxBounds.y + bidBoxBounds.height > viewport.height + 1) {
+          fail('turdspades-mobile', `bid controls should stay inside the mobile viewport, saw ${JSON.stringify(bidBoxBounds)}`);
+        }
+        const nilButton = page.locator('#bidNil');
+        if (!(await nilButton.isVisible())) fail('turdspades-mobile', 'Nil bid choice is not visible on mobile');
+        const nilButtonBox = await nilButton.boundingBox();
+        if (!nilButtonBox || nilButtonBox.height < 44) {
+          fail('turdspades-mobile', `Nil bid touch target should be at least 44px tall, saw ${nilButtonBox?.height ?? 0}`);
+        }
       }
     });
 
@@ -511,6 +522,97 @@ async function main() {
         if (spadesState.guideOpen) fail('turdspades-guide-keyboard', 'Enter should dismiss the Spades guide');
         if (spadesState.phase !== 'bidding') fail('turdspades-guide-keyboard', `guide dismissal should keep the game in bidding, saw ${spadesState.phase}`);
         if (spadesState.bidTurn !== 0) fail('turdspades-guide-keyboard', `guide dismissal should not advance bidding, saw turn ${spadesState.bidTurn}`);
+      }
+    });
+
+    await runCheck(browser, 'turdspades-nil-flow', 'turdspades.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('n');
+        await page.waitForTimeout(120);
+        const selected = await page.evaluate(() => ({
+          bidChoice: state.bidChoice,
+          dial: document.getElementById('bidV')?.textContent,
+          pressed: document.getElementById('bidNil')?.getAttribute('aria-pressed'),
+          message: state.msg
+        }));
+        if (selected.bidChoice !== 0 || selected.dial !== 'NIL' || selected.pressed !== 'true') {
+          fail('turdspades-nil-flow', `N should visibly select Nil, saw ${JSON.stringify(selected)}`);
+        }
+        if (!selected.message.includes('Nil selected')) {
+          fail('turdspades-nil-flow', 'selecting Nil should explain the risk before it is locked');
+        }
+
+        await page.locator('#lockBid').click();
+        await page.waitForTimeout(180);
+        const locked = await page.evaluate(() => ({
+          bid: state.bids[0],
+          phase: state.phase,
+          playerMeta: document.getElementById('youMeta')?.textContent,
+          bidBoxVisible: document.getElementById('bidBox')?.style.display !== 'none'
+        }));
+        if (locked.bid !== 0 || locked.phase !== 'play' || locked.bidBoxVisible) {
+          fail('turdspades-nil-flow', `locking Nil should begin play, saw ${JSON.stringify(locked)}`);
+        }
+        if (!locked.playerMeta.includes('bid NIL')) {
+          fail('turdspades-nil-flow', `locked Nil should remain visible in player status, saw ${locked.playerMeta}`);
+        }
+
+        const shippedLogic = await page.evaluate(() => {
+          const originalBids = state.bids.slice();
+          const originalTricks = state.tricks.slice();
+          state.bids = [0, 3, 4, 3];
+          state.tricks = [0, 3, 5, 5];
+          const made = scoreTeamRound([0, 2], 8);
+          state.bids = [0, 3, 4, 3];
+          state.tricks = [2, 3, 4, 4];
+          const failed = scoreTeamRound([0, 2], 8);
+          state.bids = [4, 0, 3, 3];
+          state.tricks = [0, 0, 0, 0];
+          state.trick = [{ player: 0, card: { id: 'lead', suit: 'H', rank: 10 } }];
+          state.hands[1] = [
+            { id: 'low', suit: 'H', rank: 2 },
+            { id: 'safe-dump', suit: 'H', rank: 9 },
+            { id: 'winner', suit: 'H', rank: 11 }
+          ];
+          const nilDuck = aiCard(1).id;
+          const safeHand = [
+            { rank: 2, suit: 'S' },
+            { rank: 3, suit: 'S' },
+            { rank: 4, suit: 'S' },
+            { rank: 2, suit: 'H' },
+            { rank: 5, suit: 'H' },
+            { rank: 8, suit: 'H' },
+            { rank: 10, suit: 'H' },
+            { rank: 3, suit: 'D' },
+            { rank: 6, suit: 'D' },
+            { rank: 9, suit: 'D' },
+            { rank: 12, suit: 'D' },
+            { rank: 2, suit: 'C' },
+            { rank: 7, suit: 'C' }
+          ];
+          const safeBid = aiBid(safeHand);
+          state.scores = [0, 0];
+          state.bags = [8, 0];
+          state.bids = [0, 3, 4, 3];
+          state.tricks = [0, 3, 5, 5];
+          scoreRound('browser proof');
+          const recap = state.summary;
+          state.bids = originalBids;
+          state.tricks = originalTricks;
+          return { made, failed, aiBid: safeBid, nilDuck, recap };
+        });
+        if (shippedLogic.made.delta !== 141 || shippedLogic.made.bags !== 9) {
+          fail('turdspades-nil-flow', `made Nil scoring drifted: ${JSON.stringify(shippedLogic.made)}`);
+        }
+        if (shippedLogic.failed.delta !== -158 || shippedLogic.failed.bags !== 0 || shippedLogic.failed.bagPenalties !== 1) {
+          fail('turdspades-nil-flow', `failed Nil/bag scoring drifted: ${JSON.stringify(shippedLogic.failed)}`);
+        }
+        if (shippedLogic.aiBid !== 0) fail('turdspades-nil-flow', `safe Nil bot hand should bid 0, saw ${shippedLogic.aiBid}`);
+        if (shippedLogic.nilDuck !== 'safe-dump') fail('turdspades-nil-flow', `Nil bot should shed its highest losing card, saw ${shippedLogic.nilDuck}`);
+        if (!shippedLogic.recap.includes('You made NIL (+100)') || !shippedLogic.recap.includes('round total +141')) {
+          fail('turdspades-nil-flow', `round recap should itemize Nil scoring, saw ${shippedLogic.recap}`);
+        }
       }
     });
   } finally {

@@ -272,7 +272,8 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 - **Goal**: Meet or exceed your declared tricks
 - **Teams**: You + North vs West + East
-- **Bidding**: Each player bids 1-13 tricks; partners' bids form the team contract
+- **Bidding**: Each player bids 1-13 tricks or calls Nil; partners' non-Nil bids form the team contract
+- **Nil**: A player calling Nil must take zero tricks. Nil tricks still count toward the team contract and overtrick bags
 - **Leading**: Lead any non-spade until spades are broken; an all-spade hand may lead spades
 - **Following**: Must follow suit if possible
 - **Spades**: Trump suit - wins non-spade tricks
@@ -284,6 +285,8 @@ Partnership Spades trick-taking game against two CPU opponents.
 |---------|--------|
 | Make team bid | 10 × team bid + 1 per overtrick |
 | Miss team bid | -10 × team bid |
+| Make Nil (take zero tricks) | +100 points |
+| Miss Nil (take one or more tricks) | -100 points |
 | Overtrick | +1 point and +1 bag |
 | 10 accumulated bags | -100 points; bag count rolls over |
 
@@ -294,10 +297,11 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 ### AI Strategy
 
-1. Bid from spade strength and high cards
+1. Bid from spade strength and high cards; call Nil only with a tightly risk-gated weak hand
 2. Track the partnership's remaining contract need
-3. Use the lowest winning card when the team still needs tricks
-4. Shed low cards when the contract is safe and trump when void if a trick is needed
+3. A Nil bidder sheds the highest card that can safely lose, while its partner still protects the team contract
+4. Use the lowest winning card when the team still needs tricks
+5. Shed low cards when the contract is safe and trump when void if a trick is needed
 
 ---
 

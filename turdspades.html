@@ -560,7 +560,7 @@
       0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 2px rgba(255,215,106,.22), 0 0 22px rgba(255,215,106,.18), 0 12px 26px rgba(0,0,0,.3); }
       50%     { box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 2px rgba(255,215,106,.5), 0 0 36px rgba(255,215,106,.38), 0 12px 26px rgba(0,0,0,.3); }
     }
-    .bid-controls { display: grid; grid-template-columns: 44px 70px 44px auto; gap: 12px; align-items: center; justify-content: center; padding: 11px 0; }
+    .bid-controls { display: grid; grid-template-columns: 44px 70px 44px auto auto; gap: 12px; align-items: center; justify-content: center; padding: 11px 0; }
     #bidDown, #bidUp {
       width: 44px; height: 44px; border-radius: 50%; padding: 0;
       font-size: 1.4rem; font-weight: 900; line-height: 1; color: var(--gold-2);
@@ -580,6 +580,18 @@
     }
     .bid-v::before{ content:"";position:absolute;inset:-9px;border-radius:50%;border:2px dashed rgba(255,215,106,.42);pointer-events:none; }
     .bid-v::after{ content:"TRICKS";position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:.4rem;letter-spacing:.2em;font-weight:900;color:rgba(90,60,10,.78); }
+    .bid-v.nil { font-size: 1rem; letter-spacing: .08em; padding-bottom: 8px; }
+    .bid-v.nil::after { content: "ZERO TRICKS"; width: 100%; letter-spacing: .08em; }
+    #bidNil {
+      min-height: 44px; padding: 0 18px; border-radius: 999px; font-size: .82rem;
+      letter-spacing: .08em; text-transform: uppercase; color: #ffdce8;
+      border-color: rgba(255,92,147,.55); background: rgba(72,12,36,.72);
+    }
+    #bidNil:hover:not(:disabled), #bidNil[aria-pressed="true"] {
+      color: #fff; border-color: #ff5c93;
+      background: linear-gradient(180deg, rgba(255,92,147,.34), rgba(72,12,36,.86));
+      box-shadow: 0 0 0 2px rgba(255,92,147,.2), 0 0 20px rgba(255,92,147,.25);
+    }
     #lockBid { min-height: 44px; padding: 0 22px; border-radius: 999px; font-size: .86rem; letter-spacing: .06em; text-transform: uppercase; }
 
     /* ---------- rules guide overlay ---------- */
@@ -636,11 +648,13 @@
       .bid-box { grid-template-columns: 1fr; gap: 4px; }
       .bid-box .name { justify-self: center; }
       .bid-controls { grid-template-columns: 44px 70px 44px; }
+      #bidNil { grid-column: 1 / -1; }
       .bid-controls .btn.lock { grid-column: 1 / -1; }
       .seat-west::after, .seat-east::after { font-size: 2.4rem; bottom: 6px; }
     }
     @media (max-width: 640px) {
       body { padding: 6px; }
+      body[data-turn="bid"] { padding-bottom: 204px; }
       .app { min-height: calc(100vh - 12px); border-radius: 14px; }
       .topbar { padding: 10px; }
       .actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
@@ -654,6 +668,17 @@
       .card { width: clamp(44px, 11.6vw, 62px); height: clamp(64px, 16.8vw, 90px); }
       .card[data-face]:not([data-face=""])::after { font-size: .32rem; width: 60px; right: -18px; top: 8px; }
       .trick-pile { min-height: 110px; }
+      body[data-turn="bid"] .dock {
+        position: fixed; left: 6px; right: 6px; bottom: 6px; z-index: 25;
+        border: 1px solid rgba(255,215,106,.42); border-radius: 16px;
+      }
+      body[data-turn="bid"] .dock-grid { display: none; }
+      body[data-turn="bid"] .bid-controls { grid-template-columns: 44px 70px 44px minmax(96px,1fr); gap: 8px; width: 100%; }
+      body[data-turn="bid"] #bidNil { grid-column: 4; grid-row: 1; padding: 0 8px; }
+      body[data-turn="bid"] #lockBid { grid-column: 1 / -1; grid-row: 2; }
+      body[data-turn="bid"] .ts-boss,
+      body[data-turn="bid"] .ts-bubble,
+      body[data-turn="bid"] .ts-bagwarn { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
       .card.deal-in, .back.deal-in, .entry.pop-in, .guide.show .guide-card, .v.flash,
@@ -691,13 +716,14 @@
       <h2>TurdSpades</h2>
       <p>Classic 4-player Spades: you + North partner vs West/East bots.</p>
       <ul>
-        <li>Bid 1-13 tricks before play starts.</li>
+        <li>Bid 1-13 tricks, or call Nil and try to take zero.</li>
         <li>You must follow lead suit when possible.</li>
         <li>Spades are trump and cannot lead until broken, unless your hand is all spades.</li>
         <li>Make bid: +10 per bid trick, plus +1 per overtrick bag.</li>
+        <li>Nil succeeds for +100 or fails for -100. Your tricks still help the team contract and can become bags.</li>
         <li>Every 10 bags = -100 penalty.</li>
       </ul>
-      <p><strong>Controls:</strong> choose bid with +/- then Lock Bid. During play, select card then Play Selected. Press Enter to confirm bid/play.</p>
+      <p><strong>Controls:</strong> choose a bid with +/- or press N for Nil, then Lock Bid. During play, select a card then Play Selected. Press Enter to confirm bid/play.</p>
       <div class="guide-actions">
         <button class="btn" id="quickStart">Quick Start</button>
         <button class="btn" id="closeGuide">Review Then Play</button>
@@ -766,6 +792,7 @@
           <button class="btn" id="bidDown">-</button>
           <div class="bid-v" id="bidV">4</div>
           <button class="btn" id="bidUp">+</button>
+          <button class="btn" id="bidNil" type="button" aria-pressed="false">Bid Nil</button>
           <button class="btn lock" id="lockBid">Lock Bid</button>
         </div>
       </div>
@@ -805,7 +832,8 @@
       trickMeta: document.getElementById('trickMeta'), trickPile: document.getElementById('trickPile'),
       youCards: document.getElementById('youCards'), bidBox: document.getElementById('bidBox'),
       bidV: document.getElementById('bidV'), bidDown: document.getElementById('bidDown'),
-      bidUp: document.getElementById('bidUp'), lockBid: document.getElementById('lockBid'),
+      bidUp: document.getElementById('bidUp'), bidNil: document.getElementById('bidNil'),
+      lockBid: document.getElementById('lockBid'),
       playBtn: document.getElementById('playBtn'), sortSuit: document.getElementById('sortSuit'),
       sortRank: document.getElementById('sortRank'), nextRoundTop: document.getElementById('nextRoundTop'),
       nextRoundDock: document.getElementById('nextRoundDock'), newMatchBtn: document.getElementById('newMatchBtn'),
@@ -838,6 +866,47 @@
     const cardText = (c) => rankLabel(c.rank) + SUIT_SYMBOL[c.suit];
     const teamOf = (p) => p % 2 === 0 ? 0 : 1;
     const partnerOf = (p) => (p + 2) % 4;
+    const formatBid = (bid) => bid === 0 ? 'NIL' : (bid ?? '-');
+
+    function shouldBidNil(hand) {
+      if (!Array.isArray(hand) || hand.length !== 13) return false;
+      const spades = hand.filter((card) => card.suit === 'S');
+      const acesOrKings = hand.filter((card) => card.rank >= 13);
+      const queens = hand.filter((card) => card.rank === 12);
+      const highSpades = spades.filter((card) => card.rank >= 10);
+      return spades.length <= 3 && acesOrKings.length === 0 && queens.length <= 1 && highSpades.length === 0;
+    }
+
+    function scoreTeamRound(players, startingBags) {
+      const bids = players.map((player) => state.bids[player]);
+      const tricks = players.map((player) => state.tricks[player]);
+      const contractBid = bids.reduce((sum, bid) => sum + (bid === 0 ? 0 : bid), 0);
+      const tricksTaken = tricks.reduce((sum, count) => sum + count, 0);
+      const contractMade = tricksTaken >= contractBid;
+      const overtricks = contractMade ? tricksTaken - contractBid : 0;
+      const contractPoints = contractMade ? contractBid * 10 + overtricks : -contractBid * 10;
+      const nilResults = players.flatMap((player, index) => {
+        if (bids[index] !== 0) return [];
+        const succeeded = tricks[index] === 0;
+        return [{ player, succeeded, tricks: tricks[index], points: succeeded ? 100 : -100 }];
+      });
+      const nilPoints = nilResults.reduce((sum, result) => sum + result.points, 0);
+      let bags = startingBags + overtricks;
+      let bagPenalties = 0;
+      while (bags >= 10) { bags -= 10; bagPenalties += 1; }
+      return {
+        contractBid, tricksTaken, contractMade, contractPoints, overtricks,
+        nilResults, nilPoints, bagPenalties, bags,
+        delta: contractPoints + nilPoints - bagPenalties * 100
+      };
+    }
+
+    function teamBidLabel(players) {
+      if (players.some((player) => state.bids[player] === null)) return '-';
+      const contract = players.reduce((sum, player) => sum + (state.bids[player] || 0), 0);
+      const nilNames = players.filter((player) => state.bids[player] === 0).map((player) => NAMES[player]);
+      return nilNames.length ? `${contract} + ${nilNames.join('&')} NIL` : String(contract);
+    }
     // Cosmetic only: remembers when a card first hit the DOM so deal/pop animations
     // play once per deal instead of on every re-render (render() rebuilds innerHTML on each click).
     const seenCardKeys = new Map();
@@ -938,7 +1007,7 @@
       state.round += 1;
       if (state.round > 1) state.dealer = (state.dealer + 1) % 4;
       resetRoundState();
-      state.bidChoice = Math.min(13, Math.max(1, state.bidChoice || 4));
+      state.bidChoice = Number.isInteger(state.bidChoice) ? Math.min(13, Math.max(0, state.bidChoice)) : 4;
       const deck = makeDeck();
       for (let i = 0; i < 13; i++) for (let p = 0; p < 4; p++) state.hands[p].push(deck.pop());
       sortHand(state.hands[0]);
@@ -952,6 +1021,7 @@
     }
 
     function aiBid(hand) {
+      if (shouldBidNil(hand)) return 0;
       let v = 0, s = 0;
       for (const c of hand) {
         if (c.suit === 'S') { s++; if (c.rank >= 14) v += 1; else if (c.rank >= 13) v += .8; else if (c.rank >= 11) v += .5; }
@@ -1018,6 +1088,12 @@
     function aiCard(player) {
       const legal = legalCards(player), partner = partnerOf(player);
       const need = (state.bids[player] + state.bids[partner]) - (state.tricks[player] + state.tricks[partner]);
+      if (state.bids[player] === 0) {
+        if (!state.trick.length) return low(legal);
+        const lead = state.trick[0].card.suit, best = winnerEntry(state.trick)?.card;
+        const losing = legal.filter((card) => !beats(card, best, lead));
+        return losing.length ? high(losing) : low(legal);
+      }
       if (!state.trick.length) return need > 0 ? high(legal.filter((c) => c.suit !== 'S').length ? legal.filter((c) => c.suit !== 'S') : legal) : low(legal);
       const lead = state.trick[0].card.suit, best = winnerEntry(state.trick)?.card;
       const follow = legal.filter((c) => c.suit === lead);
@@ -1068,17 +1144,25 @@
       const line = [];
       const deltas = [0, 0];
       for (let t = 0; t < 2; t++) {
-        const [a, b] = TEAM[t], bid = (state.bids[a] || 0) + (state.bids[b] || 0), took = state.tricks[a] + state.tricks[b];
-        let delta = 0;
-        if (took >= bid) {
-          const over = took - bid;
-          delta = bid * 10 + over;
-          state.bags[t] += over;
-          while (state.bags[t] >= 10) { state.bags[t] -= 10; delta -= 100; }
-        } else delta = -bid * 10;
-        state.scores[t] += delta;
-        deltas[t] = delta;
-        line.push(`${t === 0 ? 'You+North' : 'West+East'} bid ${bid}, took ${took}, ${delta >= 0 ? '+' : ''}${delta}.`);
+        const players = TEAM[t];
+        const result = scoreTeamRound(players, state.bags[t]);
+        state.bags[t] = result.bags;
+        state.scores[t] += result.delta;
+        deltas[t] = result.delta;
+
+        const label = t === 0 ? 'You+North' : 'West+East';
+        const contract = result.contractMade ? 'made' : 'missed';
+        const details = [
+          `${label} ${contract} contract ${result.contractBid} with ${result.tricksTaken} tricks (${result.contractPoints >= 0 ? '+' : ''}${result.contractPoints})`
+        ];
+        for (const nil of result.nilResults) {
+          details.push(nil.succeeded
+            ? `${NAMES[nil.player]} made NIL (+100)`
+            : `${NAMES[nil.player]} missed NIL with ${nil.tricks} trick${nil.tricks === 1 ? '' : 's'} (-100)`);
+        }
+        if (result.bagPenalties) details.push(`${result.bagPenalties * 10}-bag penalty (-${result.bagPenalties * 100})`);
+        details.push(`round total ${result.delta >= 0 ? '+' : ''}${result.delta}`);
+        line.push(`${details.join('; ')}.`);
       }
       state.lastRoundTone = deltas[0] > deltas[1] ? 'victory' : deltas[1] > deltas[0] ? 'defeat' : 'draw';
       const teamAReached = state.scores[0] >= TARGET;
@@ -1154,8 +1238,8 @@
     }
 
     function renderStats() {
-      const bidA = state.bids[0] === null || state.bids[2] === null ? '-' : state.bids[0] + state.bids[2];
-      const bidB = state.bids[1] === null || state.bids[3] === null ? '-' : state.bids[1] + state.bids[3];
+      const bidA = teamBidLabel(TEAM[0]);
+      const bidB = teamBidLabel(TEAM[1]);
       const trickA = state.tricks[0] + state.tricks[2];
       const trickB = state.tricks[1] + state.tricks[3];
       const turn = state.phase === 'bidding' ? `${NAMES[state.bidTurn]} (bid)` : state.phase === 'play' ? NAMES[state.currentPlayer] : '-';
@@ -1165,10 +1249,10 @@
       el.teamAV.textContent = `${state.scores[0]} (bags ${state.bags[0]})`;
       el.teamBV.textContent = `${state.scores[1]} (bags ${state.bags[1]})`;
       el.bidTrickV.textContent = `${bidA}/${trickA} vs ${bidB}/${trickB}`;
-      el.northMeta.textContent = `${state.hands[2].length} cards | bid ${state.bids[2] ?? '-'} | tricks ${state.tricks[2]}`;
-      el.westMeta.textContent = `${state.hands[1].length} cards | bid ${state.bids[1] ?? '-'} | tricks ${state.tricks[1]}`;
-      el.eastMeta.textContent = `${state.hands[3].length} cards | bid ${state.bids[3] ?? '-'} | tricks ${state.tricks[3]}`;
-      el.youMeta.textContent = `bid ${state.bids[0] ?? '-'} | tricks ${state.tricks[0]} | ${state.hands[0].length} cards`;
+      el.northMeta.textContent = `${state.hands[2].length} cards | bid ${formatBid(state.bids[2])} | tricks ${state.tricks[2]}`;
+      el.westMeta.textContent = `${state.hands[1].length} cards | bid ${formatBid(state.bids[1])} | tricks ${state.tricks[1]}`;
+      el.eastMeta.textContent = `${state.hands[3].length} cards | bid ${formatBid(state.bids[3])} | tricks ${state.tricks[3]}`;
+      el.youMeta.textContent = `bid ${formatBid(state.bids[0])} | tricks ${state.tricks[0]} | ${state.hands[0].length} cards`;
       // Cosmetic only: expose turn + spades-broken state to CSS, and flash stat tiles whose value changed.
       document.body.classList.toggle('spades-broken', state.spadesBroken);
       document.body.dataset.turn = state.phase === 'bidding'
@@ -1187,9 +1271,12 @@
       const playMode = state.phase === 'play' && state.currentPlayer === 0;
       const nextMode = state.phase === 'roundEnd';
       el.bidBox.style.display = bidMode ? 'grid' : 'none';
-      el.bidV.textContent = String(state.bidChoice);
+      el.bidV.textContent = formatBid(state.bidChoice);
+      el.bidV.classList.toggle('nil', state.bidChoice === 0);
       el.bidDown.disabled = !bidMode || state.bidChoice <= 1;
       el.bidUp.disabled = !bidMode || state.bidChoice >= 13;
+      el.bidNil.disabled = !bidMode;
+      el.bidNil.setAttribute('aria-pressed', String(bidMode && state.bidChoice === 0));
       el.lockBid.disabled = !bidMode;
       el.playBtn.disabled = !playMode || !state.selected;
       el.nextRoundTop.disabled = !nextMode;
@@ -1225,6 +1312,12 @@
       });
       el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); render(); });
       el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); render(); });
+      el.bidNil.addEventListener('click', () => {
+        if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
+        state.bidChoice = 0;
+        setMessage('Nil selected. Lock it when ready.', 'Take zero tricks for +100; one or more is -100.');
+        render();
+      });
       el.lockBid.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
         state.bids[0] = state.bidChoice;
@@ -1253,6 +1346,9 @@
           e.preventDefault();
           if (state.phase === 'bidding' && state.bidTurn === 0) el.lockBid.click();
           else playSelected();
+        } else if (e.code === 'KeyN' && state.phase === 'bidding' && state.bidTurn === 0) {
+          e.preventDefault();
+          el.bidNil.click();
         }
       });
     }
