@@ -110,6 +110,8 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Lock Delay**: Piece locks after touching ground for 500ms
 - **Move Resets**: Movement or rotation can restart lock delay up to 12 times per piece
 - **Level Mutators**: Higher levels add changing garbage-row pressure
+- **Next-level pulse**: Shows the exact remaining line goal and previews the next recorded modifier before it lands
+- **Mobile play dock**: Primary move, rotate, and drop controls remain reachable while the board is in view
 
 ### Levels
 
