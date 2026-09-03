@@ -92,4 +92,15 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('10 accumulated bags | -100 points');
     expect(documented).not.toContain('First team to 500 points wins');
   });
+
+  it('records Crapjack live-hand continue and hidden-hole counting', () => {
+    const game = readRepoFile('turdjack.html');
+    const documented = section(rules, 'Turdjack (Blackjack)');
+
+    expect(game).toContain("Suite.table.remember('turdjack.html'");
+    expect(game).toContain('if (roundActive) return;');
+    expect(documented).toContain('A live hand is saved on this device');
+    expect(documented).toContain('lifetime bankroll is not rewritten until the hand settles');
+    expect(documented).toContain('Hidden dealer holes stay out of the count');
+  });
 });

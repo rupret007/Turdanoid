@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#18311f">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
@@ -1938,9 +1939,11 @@
       const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : "";
       const styleAttrs = ` data-rank="${rankLabel(card.rank)}" data-suit="${card.suit}"`;
       const cornerIndex = `<span class="card-index-rank">${rankLabel(card.rank)}</span><span class="card-index-suit">${SUIT_SYMBOLS[card.suit]}</span>`;
+      const safeId = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(card.id) : String(card.id).replace(/[<>"]/g, '');
+      const safeLabel = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(label) : String(label).replace(/[<>"]/g, '');
       if (interactive) {
         return `
-          <button class="card ${redClass} ${buttonClass}" data-card-id="${card.id}" aria-label="${label}"${faceAttrs}${styleAttrs}>
+          <button class="card ${redClass} ${buttonClass}" data-card-id="${safeId}" aria-label="${safeLabel}"${faceAttrs}${styleAttrs}>
             <div class="card-face">${cornerIndex}</div>
             <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
             <div class="card-face">${cornerIndex}</div>

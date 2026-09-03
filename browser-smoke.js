@@ -400,6 +400,23 @@ async function main() {
       actions: async (page) => {
         await page.getByRole('button', { name: 'Quick Start' }).click();
         await page.waitForTimeout(200);
+        await page.evaluate(() => {
+          createShoe(4);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const playerTwo = pull('9', 'D');
+          const dealerUp = pull('5', 'H');
+          const playerOne = pull('2', 'C');
+          shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+          bankroll = 1000;
+          currentBet = 20;
+          lastBet = 20;
+          startRound();
+        });
+        await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 3000 });
         await page.locator('.mobile-menu summary').click();
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
@@ -647,7 +664,9 @@ async function main() {
           focusSuspendedPlay = false;
           scheduleAiIfNeeded(40);
         });
-        await page.waitForTimeout(80);
+        await page.waitForFunction((lead) => (
+          state.trick.length >= 1 || state.currentPlayer !== lead || aiTurnTimeoutId === null
+        ), atLock.currentPlayer, { timeout: 2000 });
         const afterOne = await page.evaluate(() => ({
           trick: state.trick.length,
           currentPlayer: state.currentPlayer,
@@ -802,6 +821,33 @@ async function main() {
           fail('table-continue-restore', `Spades should restore the same scores, saw ${JSON.stringify({ before, after })}`);
         }
 
+        const played = await page.evaluate(() => {
+          if (state.phase === 'bidding' && state.bidTurn === 0) {
+            const beforeBid = state.bids[0];
+            document.getElementById('lockBid')?.click();
+            return { acted: 'bid', beforeBid, afterBid: state.bids[0], phase: state.phase };
+          }
+          if (state.phase === 'play' && state.currentPlayer === 0) {
+            const legal = typeof legalCards === 'function' ? legalCards(0)[0] : null;
+            if (!legal) return { acted: 'none' };
+            state.selected = legal.id;
+            playSelected();
+            return { acted: 'play', remaining: state.hands[0].length };
+          }
+          return { acted: 'wait', phase: state.phase, turn: state.currentPlayer };
+        });
+        if (played.acted === 'bid' && played.afterBid === null) {
+          fail('table-continue-restore', `restored Spades should accept a bid, saw ${JSON.stringify(played)}`);
+        }
+        if (played.acted === 'play' && !(played.remaining < before.you.split(',').filter(Boolean).length)) {
+          fail('table-continue-restore', `restored Spades should play a card, saw ${JSON.stringify(played)}`);
+        }
+        if (played.acted === 'none') {
+          fail('table-continue-restore', `restored Spades should have a legal card, saw ${JSON.stringify(played)}`);
+        }
+
+        await page.evaluate(() => { if (typeof clearAiTimer === 'function') clearAiTimer(); });
+        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
         await page.evaluate(() => {
           localStorage.setItem('turdsuite_continue_v1', JSON.stringify({
             v: 1,
@@ -812,7 +858,7 @@ async function main() {
             }
           }));
         });
-        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
+        await page.reload({ waitUntil: 'load' });
         await page.waitForTimeout(200);
         const dirtyHub = await page.evaluate(() => document.querySelectorAll('.game-card.in-progress').length);
         if (dirtyHub !== 0) fail('table-continue-restore', 'script-bearing continue data must not mark a hub card');
@@ -860,6 +906,10 @@ async function main() {
         if (!after.initialized || after.round !== before.round || after.cards !== before.cards || after.stock !== before.stock || after.turn !== before.turn) {
           fail('turdrummy-continue-restore', `Rummy should restore the same table, saw ${JSON.stringify({ before, after })}`);
         }
+        if (after.phase === 'draw' && after.turn === 'player') {
+          await page.locator('#drawStockBtn').click();
+          await page.waitForFunction(() => state.phase === 'discard' && state.playerHand.length === 11, undefined, { timeout: 3000 });
+        }
       }
     });
 
@@ -902,6 +952,13 @@ async function main() {
         if (after.round !== before.round || after.you !== before.you || after.discard !== before.discard) {
           fail('crapeights-continue-restore', `Eights should restore the same table, saw ${JSON.stringify({ before, after })}`);
         }
+        const canAct = await page.evaluate(() => ({
+          human: typeof isHumanTurn === 'function' && isHumanTurn(),
+          playable: typeof isPlayable === 'function' && players[0].hand.some((card) => isPlayable(card))
+        }));
+        if (!canAct.human) {
+          fail('crapeights-continue-restore', `restored Eights should still be the human turn, saw ${JSON.stringify(canAct)}`);
+        }
       }
     });
 
@@ -934,6 +991,110 @@ async function main() {
         }
         if (!dealt.initialized || dealt.cards !== 10) {
           fail('turdrummy-continue-no-round-skip', `starting after dropping a ghost save should deal a real round, saw ${JSON.stringify(dealt)}`);
+        }
+      }
+    });
+
+    await runCheck(browser, 'turdjack-continue-restore', 'turdjack.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(120);
+        const before = await page.evaluate(() => {
+          createShoe(4);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const playerTwo = pull('9', 'D');
+          const dealerUp = pull('5', 'H');
+          const playerOne = pull('2', 'C');
+          shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+          bankroll = 1000;
+          currentBet = 20;
+          lastBet = 20;
+          startRound();
+          const nextHit = pull('4', 'C');
+          shoe.push(nextHit);
+          persistTable();
+          return {
+            active: roundActive,
+            you: playerHand.map((card) => card.rank + card.suit).join(','),
+            dealerUp: dealerHand[0] ? dealerHand[0].rank + dealerHand[0].suit : '',
+            holeHidden: dealerHoleHidden,
+            count: runningCount,
+            bankroll,
+            storedBankroll: localStorage.getItem('turdjackBankroll')
+          };
+        });
+        if (!before.active || before.you === '' || !before.holeHidden) {
+          fail('turdjack-continue-restore', `Crapjack should deal a live hand before leaving, saw ${JSON.stringify(before)}`);
+        }
+        if (before.storedBankroll === '980') {
+          fail('turdjack-continue-restore', 'mid-hand bankroll must not be written to lifetime storage');
+        }
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForFunction(() => (
+          typeof roundActive !== 'undefined'
+          && roundActive
+          && playerHand.length === 2
+          && document.getElementById('welcomeGuide')?.style.display !== 'flex'
+        ), undefined, { timeout: 4000 });
+        const after = await page.evaluate(() => ({
+          guide: document.getElementById('welcomeGuide')?.style.display === 'flex',
+          active: roundActive,
+          you: playerHand.map((card) => card.rank + card.suit).join(','),
+          dealerUp: dealerHand[0] ? dealerHand[0].rank + dealerHand[0].suit : '',
+          holeHidden: dealerHoleHidden,
+          count: runningCount,
+          bankroll,
+          hitDisabled: document.getElementById('hitBtn')?.disabled
+        }));
+        if (after.guide) fail('turdjack-continue-restore', 'returning to a live Crapjack hand should skip the welcome guide');
+        if (!after.active || after.you !== before.you || after.dealerUp !== before.dealerUp || after.count !== before.count) {
+          fail('turdjack-continue-restore', `Crapjack should restore the same live hand, saw ${JSON.stringify({ before, after })}`);
+        }
+        if (!after.holeHidden) {
+          fail('turdjack-continue-restore', 'restored Crapjack must keep the dealer hole hidden');
+        }
+        if (after.hitDisabled) {
+          fail('turdjack-continue-restore', 'restored Crapjack should let the player hit');
+        }
+        const staged = await page.evaluate(() => {
+          const index = shoe.findIndex((card) => card.rank === '4');
+          if (index >= 0) shoe.push(shoe.splice(index, 1)[0]);
+          return {
+            next: shoe[shoe.length - 1],
+            value: typeof handValue === 'function' ? handValue(playerHand) : 0
+          };
+        });
+        if (!staged.next || staged.next.rank !== '4' || staged.value !== 11) {
+          fail('turdjack-continue-restore', `restored hand should stay live for a low hit, saw ${JSON.stringify(staged)}`);
+        }
+        await page.locator('#hitBtn').click();
+        await page.waitForTimeout(150);
+        const hitState = await page.evaluate(() => ({
+          cards: playerHand.length,
+          value: typeof handValue === 'function' ? handValue(playerHand) : 0,
+          stillHidden: dealerHoleHidden,
+          active: roundActive
+        }));
+        if (hitState.cards < 3 || hitState.value !== 15 || !hitState.active) {
+          fail('turdjack-continue-restore', `Continue must be playable: hit should add a 4, saw ${JSON.stringify(hitState)}`);
+        }
+        if (!hitState.stillHidden) {
+          fail('turdjack-continue-restore', 'hitting after Continue must not flash the dealer hole');
+        }
+
+        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
+        await page.waitForTimeout(200);
+        const hub = await page.evaluate(() => ({
+          cards: document.querySelectorAll('.game-card').length,
+          href: document.querySelector('.game-card.in-progress')?.getAttribute('href') || '',
+          play: document.querySelector('.game-card.in-progress .play')?.textContent || ''
+        }));
+        if (hub.cards !== 6 || hub.href !== 'turdjack.html' || !hub.play.includes('Continue')) {
+          fail('turdjack-continue-restore', `hub should mark the live Crapjack hand Continue, saw ${JSON.stringify(hub)}`);
         }
       }
     });

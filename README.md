@@ -17,6 +17,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 - Deepened TurdSpades with player/bot Nil bids, honest ±100 scoring receipts, Nil-aware bot play, and always-reachable mobile bidding controls.
 - After Nil landed: TurdSpades bot cards play one at a time, tab-hide pauses those turns, and a partner overtakes a winning Nil card when it can. The hub marks the last opened game. The TurdAnoid test hook no longer ships on the public Pages host.
 - After leftover #15: leaving TurdSpades, TurdRummy, or Crappy Eights saves the live table on this device. The hub says Continue when a table is waiting, returning players skip the welcome guide, and malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now loads the suite runtime so last-played is honest. Mid-run arcade saves stay parked with PR #8.
+- After leftover #16: Crapjack 21 continues the live hand, so leaving mid-round no longer keeps the deducted bet without the cards. Continue now uses the same validators on the live suite as in tests, the hub only says Continue for an unfinished playable table, and restored tables accept a real action. Arcade mid-run saves stay parked with PR #8.
 
 ## Changelog (Latest)
 
@@ -88,6 +89,7 @@ Blackjack with a toilet-dealer vibe and persistent bankroll.
 - Blackjack rules with dealer logic, blackjack payout, push handling, and double down/split/surrender support
 - Betting chips and quick mobile action controls
 - Persistent bankroll + stats in localStorage
+- Device-local continue for a live hand; lifetime bankroll is not rewritten until the hand settles
 - Responsive table layout and themed card rendering
 
 **Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).

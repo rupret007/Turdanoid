@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#0f1914">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>Crapjack 21</title>
   <style>
@@ -2087,12 +2088,123 @@
     }
 
     function saveState() {
+      if (roundActive) return;
       try {
         localStorage.setItem(STORAGE.bankroll, String(bankroll));
         localStorage.setItem(STORAGE.stats, JSON.stringify(stats));
         localStorage.setItem(STORAGE.rules, JSON.stringify(rules));
         localStorage.setItem(STORAGE.lastBet, String(lastBet));
       } catch (e) {}
+    }
+
+    function copyJackCard(card) {
+      return { rank: card.rank, suit: card.suit };
+    }
+
+    function persistTable() {
+      if (!window.Suite || !Suite.table) return;
+      if (!roundActive) {
+        Suite.table.clear('turdjack.html');
+        return;
+      }
+      Suite.table.remember('turdjack.html', {
+        kind: 'turdjack',
+        v: 1,
+        bankroll,
+        currentBet,
+        splitBet,
+        lastBet,
+        playerHand: playerHand.map(copyJackCard),
+        dealerHand: dealerHand.map(copyJackCard),
+        splitHand: splitHand.map(copyJackCard),
+        shoe: shoe.map(copyJackCard),
+        discard: discard.map(copyJackCard),
+        runningCount,
+        shoeGeneration,
+        dealerHoleHidden,
+        dealerHoleShoeGeneration,
+        dealerHoleCountResolved,
+        firstDecisionOpen,
+        splitRound,
+        activeHandIndex,
+        cutCardsRemaining,
+        shoeDecks,
+        roundActive: true,
+        rules: {
+          dealerHitsSoft17: !!rules.dealerHitsSoft17,
+          blackjackPayout: rules.blackjackPayout,
+          decks: rules.decks,
+          allowDoubleAfterSplit: !!rules.allowDoubleAfterSplit,
+          allowSurrender: !!rules.allowSurrender,
+          allowInsurance: !!rules.allowInsurance,
+          allowHitSplitAces: !!rules.allowHitSplitAces
+        },
+        stats: {
+          hands: stats.hands || 0,
+          wins: stats.wins || 0,
+          losses: stats.losses || 0,
+          pushes: stats.pushes || 0,
+          surrenders: stats.surrenders || 0,
+          blackjacks: stats.blackjacks || 0,
+          insuranceBets: stats.insuranceBets || 0,
+          insuranceWins: stats.insuranceWins || 0,
+          decisions: stats.decisions || 0,
+          correctDecisions: stats.correctDecisions || 0,
+          bestDecisionStreak: stats.bestDecisionStreak || 0
+        },
+        status: String(ui.statusText ? ui.statusText.textContent || '' : ''),
+        decisionStreak,
+        hotStreak,
+        coldStreak
+      });
+    }
+
+    function applyJackSnapshot(snap) {
+      if (!snap || snap.kind !== 'turdjack' || snap.v !== 1 || snap.roundActive !== true) return false;
+      if (!Array.isArray(snap.playerHand) || !Array.isArray(snap.dealerHand)) return false;
+      if (!Array.isArray(snap.shoe) || snap.playerHand.length < 2 || snap.dealerHand.length < 2) return false;
+      bankroll = snap.bankroll;
+      currentBet = snap.currentBet;
+      splitBet = snap.splitBet;
+      lastBet = snap.lastBet;
+      playerHand = snap.playerHand.map(copyJackCard);
+      dealerHand = snap.dealerHand.map(copyJackCard);
+      splitHand = (snap.splitHand || []).map(copyJackCard);
+      shoe = snap.shoe.map(copyJackCard);
+      discard = (snap.discard || []).map(copyJackCard);
+      runningCount = snap.runningCount;
+      shoeGeneration = snap.shoeGeneration;
+      dealerHoleHidden = !!snap.dealerHoleHidden;
+      dealerHoleShoeGeneration = snap.dealerHoleShoeGeneration;
+      dealerHoleCountResolved = !!snap.dealerHoleCountResolved;
+      firstDecisionOpen = !!snap.firstDecisionOpen;
+      splitRound = !!snap.splitRound;
+      activeHandIndex = snap.activeHandIndex === 1 ? 1 : 0;
+      cutCardsRemaining = snap.cutCardsRemaining;
+      shoeDecks = snap.shoeDecks;
+      roundActive = true;
+      rules = normalizeRules(snap.rules);
+      stats = normalizeStats(snap.stats);
+      decisionStreak = snap.decisionStreak || 0;
+      hotStreak = snap.hotStreak || 0;
+      coldStreak = snap.coldStreak || 0;
+      return true;
+    }
+
+    function tryRestoreTable() {
+      if (!window.Suite || !Suite.table) return false;
+      const snap = Suite.table.load('turdjack.html');
+      if (!snap || !applyJackSnapshot(snap)) {
+        if (snap) Suite.table.clear('turdjack.html');
+        return false;
+      }
+      syncRulesToUi();
+      updateRuleSummary();
+      renderCards();
+      setStatus(snap.status || 'Picked up the live hand.');
+      updateHud();
+      try { Suite.toast('Picked up where you left off.'); } catch (e) {}
+      return true;
     }
 
     function randomIntExclusive(max) {
@@ -2120,6 +2232,27 @@
       ui.ruleHitSplitAces.checked = rules.allowHitSplitAces;
     }
 
+    function writeLabeledLine(target, label, text) {
+      if (!target) return;
+      target.textContent = '';
+      const strong = document.createElement('strong');
+      strong.textContent = label;
+      target.append(strong, ' ' + String(text || ''));
+    }
+
+    function renderHistory() {
+      if (!ui.historyText) return;
+      ui.historyText.textContent = '';
+      if (!roundHistory.length) {
+        ui.historyText.textContent = 'No resolved hands yet.';
+        return;
+      }
+      roundHistory.forEach((line, index) => {
+        if (index) ui.historyText.appendChild(document.createElement('br'));
+        ui.historyText.appendChild(document.createTextNode(String(line)));
+      });
+    }
+
     function estimateHouseEdge() {
       let edge = 0.52; // baseline approximation, multi-deck blackjack with decent rules
       if (rules.dealerHitsSoft17) edge += 0.20;
@@ -2143,11 +2276,17 @@
       const splitAces = rules.allowHitSplitAces ? 'Hit split aces' : 'Split aces get one card';
       const edge = estimateHouseEdge();
       ui.ruleSummary.textContent = `${soft17}. BJ ${blackjackPayoutLabel()}. ${rules.decks}-deck shoe. ${das}. ${surrender}. ${insurance}. ${splitAces}. Est. house edge: ~${edge.toFixed(2)}%.`;
-      ui.payoutText.innerHTML =
-        `<strong>Payouts:</strong> Blackjack pays ${blackjackPayoutLabel()}, normal win pays 1:1, push returns bet.`;
       const surrenderLine = rules.allowSurrender ? 'surrender is pre-split only' : 'surrender is disabled';
-      ui.tableRulesText.innerHTML =
-        `<strong>Table Rules:</strong> ${soft17.toLowerCase()}, ${rules.decks}-deck shoe, one split per round, and ${surrenderLine}.`;
+      writeLabeledLine(
+        ui.payoutText,
+        'Payouts:',
+        `Blackjack pays ${blackjackPayoutLabel()}, normal win pays 1:1, push returns bet.`
+      );
+      writeLabeledLine(
+        ui.tableRulesText,
+        'Table Rules:',
+        `${soft17.toLowerCase()}, ${rules.decks}-deck shoe, one split per round, and ${surrenderLine}.`
+      );
     }
 
     function applyRulesFromUi() {
@@ -2250,9 +2389,7 @@
       const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       roundHistory.unshift(`${stamp} ${message}`);
       if (roundHistory.length > 9) roundHistory.pop();
-      if (ui.historyText) {
-        ui.historyText.innerHTML = roundHistory.length ? roundHistory.join('<br>') : 'No resolved hands yet.';
-      }
+      renderHistory();
     }
 
     function drawCard({ count = true } = {}) {
@@ -2374,7 +2511,10 @@
       const div = document.createElement('div');
       if (hidden) {
         div.className = 'playing-card back';
-        div.innerHTML = '<div class="center">💩</div>';
+        const center = document.createElement('div');
+        center.className = 'center';
+        center.textContent = '💩';
+        div.appendChild(center);
         return div;
       }
 
@@ -2385,11 +2525,19 @@
         div.dataset.face = faceMeta.face;
         div.dataset.badge = faceMeta.badge;
       }
-      div.innerHTML =
-        `<div class="rank">${card.rank}</div>` +
-        `<div class="suit">${suit}</div>` +
-        `<div class="center">${suit}</div>` +
-        `<div class="small">${card.rank}<br>${suit}</div>`;
+      const rankTop = document.createElement('div');
+      rankTop.className = 'rank';
+      rankTop.textContent = String(card.rank);
+      const suitEl = document.createElement('div');
+      suitEl.className = 'suit';
+      suitEl.textContent = suit;
+      const center = document.createElement('div');
+      center.className = 'center';
+      center.textContent = suit;
+      const small = document.createElement('div');
+      small.className = 'small';
+      small.append(String(card.rank), document.createElement('br'), suit);
+      div.append(rankTop, suitEl, center, small);
       return div;
     }
 
@@ -2605,11 +2753,10 @@
         ui.hintText.textContent = `${getBasicHint()} Shoe: ${shoe.length} cards left (cut at ${cutCardsRemaining}, ${shoeDecks}D). ${getTableFlavor()}`;
       }
 
-      if (ui.historyText && roundHistory.length === 0) {
-        ui.historyText.textContent = 'No resolved hands yet.';
-      }
+      if (roundHistory.length === 0) renderHistory();
 
       syncMobileControls();
+      persistTable();
       saveState();
     }
 
@@ -3296,9 +3443,12 @@
       wireEvents();
       syncRulesToUi();
       updateRuleSummary();
-      updateHud();
-      setStatus('Welcome to Crapjack 21. Use Quick Start to auto-bet and deal fast.');
-      const skipGuide = window.Suite && Suite.guide && Suite.guide.hasSeen('turdjack.html');
+      const restoredTable = tryRestoreTable();
+      if (!restoredTable) {
+        updateHud();
+        setStatus('Welcome to Crapjack 21. Use Quick Start to auto-bet and deal fast.');
+      }
+      const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('turdjack.html'));
       if (!skipGuide) showWelcomeGuide();
     }
 

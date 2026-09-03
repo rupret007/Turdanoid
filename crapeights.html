@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#121a11">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>Crappy Eights</title>
   <style>
@@ -1124,7 +1125,10 @@
         );
       }
       updateAll();
-      if (!lastOverlay) scheduleTurnIfNeeded();
+      if (!lastOverlay) {
+        applyPendingEffectsAtTurnStart();
+        scheduleTurnIfNeeded();
+      }
       try { Suite.toast('Picked up where you left off.'); } catch (e) {}
       return true;
     }

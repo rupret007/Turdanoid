@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#102016">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>TurdSpades</title>
   <style>
@@ -1286,7 +1287,8 @@
         const faceMeta = cardFaceMeta(c.rank);
         const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : '';
         const deal = dealAnimClass(`${state.round}:${c.id}`, 'deal-in');
-        return `<button class="card ${red} ${illegal} ${sel} ${deal}" data-id="${c.id}" data-suit="${c.suit}" ${legal ? '' : 'disabled'}${faceAttrs} style="animation-delay:${i * 26}ms">
+        const safeId = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(c.id) : String(c.id).replace(/[<>"]/g, '');
+        return `<button class="card ${red} ${illegal} ${sel} ${deal}" data-id="${safeId}" data-suit="${c.suit}" ${legal ? '' : 'disabled'}${faceAttrs} style="animation-delay:${i * 26}ms">
           <div class="r">${rankLabel(c.rank)}</div><div class="s">${SUIT_SYMBOL[c.suit]}</div><div class="r">${rankLabel(c.rank)}</div></button>`;
       }).join('');
     }
@@ -1426,6 +1428,7 @@
       }
       focusSuspendedPlay = false;
       render();
+      if (state.phase === 'bidding' && state.bidTurn !== 0) runBidFlow();
       if (state.phase === 'play' && state.currentPlayer !== 0) scheduleAiIfNeeded(220);
       try { Suite.toast('Picked up where you left off.'); } catch (e) {}
       return true;
