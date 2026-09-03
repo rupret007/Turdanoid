@@ -6,11 +6,97 @@
 
 export const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 export const SUITS = ['S', 'H', 'D', 'C'];
+export const MATCH_TARGET = 250;
 
 export const RANK_VALUES = {
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-  J: 11, Q: 12, K: 13, A: 14
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
+  J: 11,
+  Q: 12,
+  K: 13,
+  A: 14
 };
+
+/**
+ * Nil is deliberately rare for the bots. A hand must have no ace or king,
+ * no dangerous high spade, no more than three spades, and at most one queen.
+ */
+export function shouldBidNil(hand) {
+  if (!Array.isArray(hand) || hand.length !== 13) {
+    return false;
+  }
+
+  const spades = hand.filter((card) => card.suit === 'S');
+  const acesOrKings = hand.filter((card) => RANK_VALUES[card.rank] >= 13);
+  const queens = hand.filter((card) => card.rank === 'Q');
+  const highSpades = spades.filter((card) => RANK_VALUES[card.rank] >= 10);
+
+  return (
+    spades.length <= 3 && acesOrKings.length === 0 && queens.length <= 1 && highSpades.length === 0
+  );
+}
+
+/**
+ * Score one partnership's round, including individual Nil contracts.
+ * Nil tricks still count toward the partnership contract and can become bags.
+ */
+export function scoreSpadesTeamRound({ bids, tricks, bags = 0 }) {
+  if (!Array.isArray(bids) || bids.length !== 2 || !Array.isArray(tricks) || tricks.length !== 2) {
+    throw new TypeError('bids and tricks must each contain two partnership values');
+  }
+  if (bids.some((bid) => !Number.isInteger(bid) || bid < 0 || bid > 13)) {
+    throw new RangeError('bids must be whole numbers from 0 through 13');
+  }
+  if (tricks.some((count) => !Number.isInteger(count) || count < 0 || count > 13)) {
+    throw new RangeError('tricks must be whole numbers from 0 through 13');
+  }
+  if (!Number.isInteger(bags) || bags < 0) {
+    throw new RangeError('bags must be a non-negative whole number');
+  }
+
+  const contractBid = bids.reduce((sum, bid) => sum + (bid === 0 ? 0 : bid), 0);
+  const tricksTaken = tricks.reduce((sum, count) => sum + count, 0);
+  const contractMade = tricksTaken >= contractBid;
+  const overtricks = contractMade ? tricksTaken - contractBid : 0;
+  const contractPoints = contractMade ? contractBid * 10 + overtricks : -contractBid * 10;
+  const nilResults = bids.flatMap((bid, playerIndex) => {
+    if (bid !== 0) {
+      return [];
+    }
+    const succeeded = tricks[playerIndex] === 0;
+    return [
+      { playerIndex, succeeded, tricks: tricks[playerIndex], points: succeeded ? 100 : -100 }
+    ];
+  });
+  const nilPoints = nilResults.reduce((sum, result) => sum + result.points, 0);
+
+  let nextBags = bags + overtricks;
+  let bagPenalties = 0;
+  while (nextBags >= 10) {
+    nextBags -= 10;
+    bagPenalties += 1;
+  }
+
+  return {
+    contractBid,
+    tricksTaken,
+    contractMade,
+    contractPoints,
+    overtricks,
+    nilResults,
+    nilPoints,
+    bagPenalties,
+    bags: nextBags,
+    delta: contractPoints + nilPoints - bagPenalties * 100
+  };
+}
 
 export class TurdspadesEngine {
   constructor() {
@@ -24,6 +110,9 @@ export class TurdspadesEngine {
     this.actualTricks = [0, 0, 0, 0]; // Tricks each player actually took
     this.team1Score = 0;
     this.team2Score = 0;
+    this.team1Bags = 0;
+    this.team2Bags = 0;
+    this.lastRoundResult = null;
     this.gameOver = false;
     this.winner = null;
     this.dealer = 0; // Player who deals
@@ -33,6 +122,7 @@ export class TurdspadesEngine {
   }
 
   createAndDeal() {
+    this.hands = [[], [], [], []];
     this.createDeck();
     this.dealCards();
   }
@@ -76,12 +166,14 @@ export class TurdspadesEngine {
   }
 
   canFollowSuit(card, leadSuit) {
-    if (!leadSuit) {return true;}
+    if (!leadSuit) {
+      return true;
+    }
     return card.suit === leadSuit;
   }
 
   hasSuit(player, suit) {
-    return this.hands[player].some(card => card.suit === suit);
+    return this.hands[player].some((card) => card.suit === suit);
   }
 
   getCardValue(card) {
@@ -102,7 +194,9 @@ export class TurdspadesEngine {
   spadesBroken() {
     // Check if any spade has been played in tricks 2-13 of this round
     // (First trick doesn't break spades unless someone leads spade)
-    if (this.tricksInRound === 0) {return false;}
+    if (this.tricksInRound === 0) {
+      return false;
+    }
 
     // Check if spade was played in any previous trick of this round
     // For simplicity, track if any non-lead suit was spade
@@ -185,44 +279,28 @@ export class TurdspadesEngine {
   }
 
   resolveRound() {
-    // Calculate scores
-    // Team 1: Players 0 and 2
-    // Team 2: Players 1 and 3
+    const team1Result = scoreSpadesTeamRound({
+      bids: [this.declarations[0], this.declarations[2]],
+      tricks: [this.actualTricks[0], this.actualTricks[2]],
+      bags: this.team1Bags
+    });
+    const team2Result = scoreSpadesTeamRound({
+      bids: [this.declarations[1], this.declarations[3]],
+      tricks: [this.actualTricks[1], this.actualTricks[3]],
+      bags: this.team2Bags
+    });
 
-    const team1Actual = this.actualTricks[0] + this.actualTricks[2];
-    const team2Actual = this.actualTricks[1] + this.actualTricks[3];
+    this.team1Score += team1Result.delta;
+    this.team2Score += team2Result.delta;
+    this.team1Bags = team1Result.bags;
+    this.team2Bags = team2Result.bags;
+    this.lastRoundResult = { team1: team1Result, team2: team2Result };
 
-    const team1Declared = this.declarations[0] + this.declarations[2];
-    const team2Declared = this.declarations[1] + this.declarations[3];
-
-    // Team 1 scoring
-    if (team1Actual >= team1Declared) {
-      const over = team1Actual - team1Declared;
-      this.team1Score += team1Declared + (over > 0 ? over : 0);
-      // Sandbagging penalty for under-declaring
-      if (over === 0 && team1Declared > 0) {
-        this.team1Score += team1Declared; // Made it exactly
-      }
-    } else {
-      // Set - lost all tricks they declared
-      this.team1Score -= team1Declared;
-    }
-
-    // Team 2 scoring
-    if (team2Actual >= team2Declared) {
-      const over = team2Actual - team2Declared;
-      this.team2Score += team2Declared + (over > 0 ? over : 0);
-      if (over === 0 && team2Declared > 0) {
-        this.team2Score += team2Declared;
-      }
-    } else {
-      this.team2Score -= team2Declared;
-    }
-
-    // Check for game over (usually first to 500)
-    if (this.team1Score >= 500 || this.team2Score >= 500) {
+    const team1ReachedTarget = this.team1Score >= MATCH_TARGET;
+    const team2ReachedTarget = this.team2Score >= MATCH_TARGET;
+    if ((team1ReachedTarget || team2ReachedTarget) && this.team1Score !== this.team2Score) {
       this.gameOver = true;
-      this.winner = this.team1Score >= 500 ? 'team1' : 'team2';
+      this.winner = this.team1Score > this.team2Score ? 'team1' : 'team2';
     }
 
     // Setup next round
@@ -238,7 +316,9 @@ export class TurdspadesEngine {
   }
 
   declareBid(player, tricks) {
-    if (tricks < 0 || tricks > 13) {return false;}
+    if (tricks < 0 || tricks > 13) {
+      return false;
+    }
     this.declarations[player] = tricks;
     return true;
   }
@@ -246,23 +326,33 @@ export class TurdspadesEngine {
   // CPU auto-declaration based on spade count and strength
   cpuDeclareBid(player) {
     const hand = this.hands[player];
+    if (shouldBidNil(hand)) {
+      this.declarations[player] = 0;
+      return 0;
+    }
     let spades = 0;
     let highCards = 0;
 
     for (const card of hand) {
-      if (card.suit === 'S') {spades++;}
-      if (this.getCardValue(card) >= 10) {highCards++;}
+      if (card.suit === 'S') {
+        spades++;
+      }
+      if (this.getCardValue(card) >= 10) {
+        highCards++;
+      }
     }
 
     // Simple bid calculation
-    const bid = Math.min(13, Math.max(0, Math.floor(spades * 0.5) + Math.floor(highCards * 0.3)));
+    const bid = Math.min(13, Math.max(1, Math.floor(spades * 0.5) + Math.floor(highCards * 0.3)));
     this.declarations[player] = bid;
     return bid;
   }
 
   // Simple CPU play - plays lowest valid card
   cpuPlayCard(player) {
-    if (this.currentPlayer !== player) {return null;}
+    if (this.currentPlayer !== player) {
+      return null;
+    }
 
     const hand = this.hands[player];
     const leadSuit = this.trick.length > 0 ? this.trick[0].card.suit : null;
@@ -271,14 +361,16 @@ export class TurdspadesEngine {
 
     if (leadSuit && this.hasSuit(player, leadSuit)) {
       // Must follow suit
-      playable = hand.filter(card => card.suit === leadSuit);
+      playable = hand.filter((card) => card.suit === leadSuit);
     } else if (leadSuit && !this.hasSuit(player, leadSuit)) {
       // Can play anything - prefer playing spades if not leading
       playable = hand;
     } else {
       // Leading - play highest non-spade if possible to save spades
-      playable = hand.filter(card => card.suit !== 'S');
-      if (playable.length === 0) {playable = hand;}
+      playable = hand.filter((card) => card.suit !== 'S');
+      if (playable.length === 0) {
+        playable = hand;
+      }
     }
 
     // Play lowest card in playable set
@@ -292,7 +384,9 @@ export class TurdspadesEngine {
   getScore() {
     return {
       team1: this.team1Score,
-      team2: this.team2Score
+      team2: this.team2Score,
+      team1Bags: this.team1Bags,
+      team2Bags: this.team2Bags
     };
   }
 

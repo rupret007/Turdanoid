@@ -1,5 +1,27 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TurdspadesEngine, RANK_VALUES } from '../games/turdspades-engine.js';
+import {
+  MATCH_TARGET,
+  RANK_VALUES,
+  TurdspadesEngine,
+  scoreSpadesTeamRound,
+  shouldBidNil
+} from '../games/turdspades-engine.js';
+
+const safeNilHand = [
+  { rank: '2', suit: 'S' },
+  { rank: '3', suit: 'S' },
+  { rank: '4', suit: 'S' },
+  { rank: '2', suit: 'H' },
+  { rank: '5', suit: 'H' },
+  { rank: '8', suit: 'H' },
+  { rank: '10', suit: 'H' },
+  { rank: '3', suit: 'D' },
+  { rank: '6', suit: 'D' },
+  { rank: '9', suit: 'D' },
+  { rank: 'Q', suit: 'D' },
+  { rank: '2', suit: 'C' },
+  { rank: '7', suit: 'C' }
+];
 
 describe('TurdspadesEngine', () => {
   let game;
@@ -112,6 +134,19 @@ describe('TurdspadesEngine', () => {
       expect(bid).toBeGreaterThanOrEqual(0);
       expect(bid).toBeLessThanOrEqual(13);
     });
+
+    it('recognizes a deliberately low-risk Nil hand', () => {
+      expect(shouldBidNil(safeNilHand)).toBe(true);
+      expect(shouldBidNil([...safeNilHand.slice(0, 12), { rank: 'A', suit: 'C' }])).toBe(false);
+      expect(shouldBidNil([...safeNilHand.slice(0, 12), { rank: 'J', suit: 'S' }])).toBe(false);
+    });
+
+    it('lets a bot call Nil only when its hand passes the risk gate', () => {
+      game.hands[1] = safeNilHand.map((card) => ({ ...card }));
+
+      expect(game.cpuDeclareBid(1)).toBe(0);
+      expect(game.declarations[1]).toBe(0);
+    });
   });
 
   describe('Scoring', () => {
@@ -123,6 +158,58 @@ describe('TurdspadesEngine', () => {
 
     it('should detect game over', () => {
       expect(game.isGameOver()).toBe(false);
+    });
+
+    it('awards a made Nil separately from the partnership contract', () => {
+      const result = scoreSpadesTeamRound({ bids: [0, 4], tricks: [0, 5], bags: 8 });
+
+      expect(result).toMatchObject({
+        contractBid: 4,
+        tricksTaken: 5,
+        contractMade: true,
+        contractPoints: 41,
+        nilPoints: 100,
+        overtricks: 1,
+        bags: 9,
+        bagPenalties: 0,
+        delta: 141
+      });
+      expect(result.nilResults).toEqual([
+        { playerIndex: 0, succeeded: true, tricks: 0, points: 100 }
+      ]);
+    });
+
+    it('charges a failed Nil and counts those tricks toward bags', () => {
+      const result = scoreSpadesTeamRound({ bids: [0, 4], tricks: [2, 4], bags: 8 });
+
+      expect(result).toMatchObject({
+        contractBid: 4,
+        tricksTaken: 6,
+        contractPoints: 42,
+        nilPoints: -100,
+        overtricks: 2,
+        bags: 0,
+        bagPenalties: 1,
+        delta: -158
+      });
+      expect(result.nilResults[0]).toMatchObject({ succeeded: false, tricks: 2, points: -100 });
+    });
+
+    it('still awards a made Nil when the partnership misses its contract', () => {
+      expect(scoreSpadesTeamRound({ bids: [0, 6], tricks: [0, 5] }).delta).toBe(40);
+    });
+
+    it('uses the shipped 250-point target and redeals cleanly after scoring', () => {
+      game.declarations = [0, 3, 4, 3];
+      game.actualTricks = [0, 3, 5, 5];
+      game.team1Score = MATCH_TARGET - 1;
+      game.resolveRound();
+
+      expect(game.lastRoundResult.team1.delta).toBe(141);
+      expect(game.team1Score).toBe(390);
+      expect(game.gameOver).toBe(true);
+      expect(game.winner).toBe('team1');
+      expect(game.hands.every((hand) => hand.length === 13)).toBe(true);
     });
   });
 });

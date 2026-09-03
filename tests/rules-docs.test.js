@@ -71,16 +71,20 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('defender may add deadwood cards');
   });
 
-  it('records the shipped TurdSpades target, contract score, and bags', () => {
+  it('records the shipped TurdSpades target, contract score, Nil, and bags', () => {
     const game = readRepoFile('turdspades.html');
     const documented = section(rules, 'Turdspades');
     const target = numericConstant(game, 'TARGET');
 
-    expect(game).toContain('delta = bid * 10 + over');
-    expect(game).toContain('delta = -bid * 10');
-    expect(game).toContain('delta -= 100');
+    expect(game).toContain('contractBid * 10 + overtricks');
+    expect(game).toContain('-contractBid * 10');
+    expect(game).toContain('bagPenalties * 100');
+    expect(game).toContain('succeeded ? 100 : -100');
     expect(documented).toContain(`First team to ${target} points wins`);
     expect(documented).toContain('10 × team bid + 1 per overtrick');
+    expect(documented).toContain('Make Nil (take zero tricks) | +100 points');
+    expect(documented).toContain('Miss Nil (take one or more tricks) | -100 points');
+    expect(documented).toContain('Nil tricks still count toward the team contract');
     expect(documented).toContain('10 accumulated bags | -100 points');
     expect(documented).not.toContain('First team to 500 points wins');
   });
