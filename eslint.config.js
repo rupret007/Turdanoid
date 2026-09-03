@@ -20,7 +20,8 @@ export default [
         document: 'readonly',
         localStorage: 'readonly',
         Uint32Array: 'readonly',
-        crypto: 'readonly'
+        crypto: 'readonly',
+        globalThis: 'readonly'
       }
     },
     rules: {

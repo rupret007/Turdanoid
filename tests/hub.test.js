@@ -5,8 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
+import { validJackSnapshot, validSpadesSnapshot } from './continue-fixtures.js';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const hubHtml = readFileSync(join(root, 'index.html'), 'utf8');
+const coreJs = readFileSync(join(root, 'games/table-continue-core.js'), 'utf8');
 const suiteJs = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');
 
 const LIVE_GAMES = [
@@ -35,6 +38,7 @@ function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
       JSON.stringify({ v: 1, games: extras.continueGames })
     );
   }
+  dom.window.eval(coreJs);
   dom.window.eval(suiteJs);
   if (dom.window.document.readyState === 'loading') {
     dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
@@ -50,7 +54,11 @@ describe('six-game hub last-played mark', () => {
     }
     expect(hubHtml).toContain('href="neon-arkanoid.html"');
     expect(hubHtml).toContain('bid tricks or Nil');
-    expect(suiteJs).toContain(`const LIVE_HUB_GAMES = ['${LIVE_GAMES.join("', '")}']`);
+    expect(hubHtml).toContain('games/table-continue-core.js');
+    for (const href of LIVE_GAMES) {
+      expect(coreJs).toContain(`'${href}'`);
+    }
+    expect(suiteJs).toContain('TurdSuiteTableContinue');
     expect(suiteJs).not.toContain('neon-arkanoid.html');
   });
 
@@ -96,7 +104,7 @@ describe('six-game hub continue mark', () => {
       continueGames: {
         'turdspades.html': {
           updatedAt: 1,
-          snapshot: { kind: 'turdspades', v: 1, msg: 'Your play.' }
+          snapshot: validSpadesSnapshot()
         }
       }
     });
@@ -114,12 +122,30 @@ describe('six-game hub continue mark', () => {
     expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
   });
 
+  it('marks a live Crapjack hand Continue and ignores a finished Spades match', () => {
+    const finished = validSpadesSnapshot();
+    finished.phase = 'matchEnd';
+    const dom = bootHub('turdjack.html', 'http://localhost/', {
+      continueGames: {
+        'turdjack.html': { updatedAt: 2, snapshot: validJackSnapshot() },
+        'turdspades.html': { updatedAt: 1, snapshot: finished }
+      }
+    });
+    const continuing = [...dom.window.document.querySelectorAll('.game-card.in-progress')];
+    expect(continuing).toHaveLength(1);
+    expect(continuing[0].getAttribute('href')).toBe('turdjack.html');
+    expect(continuing[0].querySelector('.play')?.textContent).toContain('Continue');
+    expect(dom.window.document.querySelector('.game-card.last-played')?.getAttribute('href')).toBe(
+      'turdjack.html'
+    );
+  });
+
   it('prefers Continue when the last opened game still has a table', () => {
     const dom = bootHub('turdspades.html', 'http://localhost/', {
       continueGames: {
         'turdspades.html': {
           updatedAt: 1,
-          snapshot: { kind: 'turdspades', v: 1, msg: 'Your play.' }
+          snapshot: validSpadesSnapshot()
         }
       }
     });
@@ -141,6 +167,15 @@ describe('six-game hub continue mark', () => {
     });
     expect(dirty.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
 
+    const incomplete = bootHub(undefined, 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': {
+          snapshot: { kind: 'turdspades', v: 1, msg: 'Safe status' }
+        }
+      }
+    });
+    expect(incomplete.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
+
     const neon = bootHub(undefined, 'http://localhost/', {
       continueGames: {
         'neon-arkanoid.html': {
@@ -152,7 +187,7 @@ describe('six-game hub continue mark', () => {
     expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(6);
   });
 
-  it('refuses to remember Neon or a seventh game from the suite API', () => {
+  it('refuses to remember Neon, a seventh game, or an unplayable snapshot from the suite API', () => {
     const dom = bootHub();
     expect(
       dom.window.Suite.table.remember('neon-arkanoid.html', { kind: 'turdspades', v: 1 })
@@ -166,7 +201,10 @@ describe('six-game hub continue mark', () => {
         v: 1,
         msg: 'Safe status'
       })
-    ).toBe(true);
+    ).toBe(false);
+    expect(dom.window.Suite.table.remember('turdspades.html', validSpadesSnapshot())).toBe(true);
     expect(dom.window.Suite.table.has('turdspades.html')).toBe(true);
+    expect(dom.window.Suite.table.remember('turdjack.html', validJackSnapshot())).toBe(true);
+    expect(dom.window.Suite.table.has('turdjack.html')).toBe(true);
   });
 });

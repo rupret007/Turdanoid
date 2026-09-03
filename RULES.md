@@ -141,6 +141,7 @@ Single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, an
 - **C**: Clear bet
 - **B**: Rebet last amount
 - **Enter**: Smart action (follows basic strategy)
+- **Continue**: A live hand is saved on this device. The deducted bet comes back with the cards; lifetime bankroll is not rewritten until the hand settles. Hidden dealer holes stay out of the count.
 
 ### Rules Configuration
 
