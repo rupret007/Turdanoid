@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#10192d">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
-  <script src="assets/turdsuite.js" defer></script>
+  <script src="assets/turdsuite.js"></script>
   <title>Turdanoid — Six Games, One Sewer</title>
   <style>
     :root {
@@ -273,10 +273,11 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
-    .game-card.last-played .play { color: var(--gold); }
+    .game-card.last-played .play,
+    .game-card.in-progress .play { color: var(--gold); }
 
-    .game-card.last-played .title-row h2::after {
-      content: "Last played";
+    .game-card.last-played .title-row h2::after,
+    .game-card.in-progress .title-row h2::after {
       display: inline-block;
       margin-left: 8px;
       padding: 2px 7px;
@@ -287,6 +288,14 @@
       color: #102016;
       background: var(--gold);
       vertical-align: middle;
+    }
+
+    .game-card.last-played .title-row h2::after { content: "Last played"; }
+
+    .game-card.in-progress .title-row h2::after {
+      content: "In progress";
+      background: var(--accent);
+      color: #08221a;
     }
 
     /* Cover art */
@@ -777,6 +786,7 @@
     <details class="changelog">
       <summary>Latest Changelog</summary>
       <ul>
+        <li><strong>Continue leftover after #15:</strong> TurdSpades, TurdRummy, and Crappy Eights save the live table on this device. The hub says Continue when a match is waiting. Returning players skip the welcome guide. Malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now records last-played. Arcade mid-run saves stay parked with PR #8.</li>
         <li><strong>Playability leftover after Nil:</strong> TurdSpades now plays bot cards one at a time, pauses those turns when the tab hides, and has partners overtake a winning Nil card when they can. The hub marks the last game you opened. The TurdAnoid test hook stays off the public Pages host.</li>
         <li><strong>Graphics pass:</strong> new hub cover art for every game, a shared ambient sewer backdrop (tiles, bubbles, stink wisps), one card-paper and card-back design across the four card games, felt grain and wooden rails on every table, beveled Turdtris tiles with line-clear bursts, and a richer TurdAnoid sewer with a slime surface, brick wall, and smoke on every kill. Physics, scoring, rules, and controls untouched.</li>
         <li><strong>Suite-wide v4.0:</strong> shared theme &amp; SFX across every game. Each one now has consistent fart noises, hype callouts, toasts, a back-to-hub pill, and proper iPhone safe-area handling.</li>

@@ -180,9 +180,19 @@
     }, { passive: false });
   }
 
-  // ---------- Last-played hub mark ----------
+  // ---------- Last-played + honest table continue ----------
   const LIVE_HUB_GAMES = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+  const TABLE_CONTINUE_GAMES = ['crapeights.html', 'turdrummy.html', 'turdspades.html'];
   const LAST_GAME_KEY = 'turdsuite_last_game';
+  const CONTINUE_KEY = 'turdsuite_continue_v1';
+  const GUIDE_SEEN_KEY = 'turdsuite_guides_seen_v1';
+  const CONTINUE_VERSION = 1;
+  const CONTINUE_MAX_BYTES = 48 * 1024;
+  const KIND_BY_PAGE = {
+    'crapeights.html': 'crapeights',
+    'turdrummy.html': 'turdrummy',
+    'turdspades.html': 'turdspades'
+  };
 
   function currentPageName() {
     return (location.pathname || '').split('/').pop() || '';
@@ -193,25 +203,180 @@
     return !name || name === 'index.html' || name === 'hub.html' || name === 'turdanoid';
   }
 
+  function isPlainObject(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function hasDangerousKey(value) {
+    return Object.prototype.hasOwnProperty.call(value, '__proto__')
+      || Object.prototype.hasOwnProperty.call(value, 'constructor')
+      || Object.prototype.hasOwnProperty.call(value, 'prototype');
+  }
+
+  function sanitizeStoredValue(value, depth) {
+    if (depth > 8) return { ok: false };
+    if (value === null) return { ok: true, value: null };
+    const type = typeof value;
+    if (type === 'boolean') return { ok: true, value };
+    if (type === 'number') {
+      return Number.isFinite(value) ? { ok: true, value } : { ok: false };
+    }
+    if (type === 'string') {
+      if (value.length > 800 || /[<>]/.test(value)) return { ok: false };
+      return { ok: true, value };
+    }
+    if (Array.isArray(value)) {
+      if (value.length > 60) return { ok: false };
+      const out = [];
+      for (let i = 0; i < value.length; i++) {
+        const next = sanitizeStoredValue(value[i], depth + 1);
+        if (!next.ok) return { ok: false };
+        out.push(next.value);
+      }
+      return { ok: true, value: out };
+    }
+    if (!isPlainObject(value) || hasDangerousKey(value)) return { ok: false };
+    const keys = Object.keys(value);
+    if (keys.length > 40) return { ok: false };
+    const out = {};
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(key)) return { ok: false };
+      const next = sanitizeStoredValue(value[key], depth + 1);
+      if (!next.ok) return { ok: false };
+      out[key] = next.value;
+    }
+    return { ok: true, value: out };
+  }
+
+  function emptyContinueStore() {
+    return { v: CONTINUE_VERSION, games: {} };
+  }
+
+  function readContinueStore() {
+    let raw = '';
+    try { raw = localStorage.getItem(CONTINUE_KEY) || ''; } catch (e) { return emptyContinueStore(); }
+    if (typeof raw !== 'string' || !raw || raw.length > CONTINUE_MAX_BYTES) return emptyContinueStore();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { return emptyContinueStore(); }
+    if (!isPlainObject(parsed) || hasDangerousKey(parsed) || parsed.v !== CONTINUE_VERSION) return emptyContinueStore();
+    if (!isPlainObject(parsed.games) || hasDangerousKey(parsed.games)) return emptyContinueStore();
+    const games = {};
+    for (let i = 0; i < TABLE_CONTINUE_GAMES.length; i++) {
+      const page = TABLE_CONTINUE_GAMES[i];
+      const entry = parsed.games[page];
+      if (!isPlainObject(entry) || hasDangerousKey(entry) || !isPlainObject(entry.snapshot)) continue;
+      if (entry.snapshot.kind !== KIND_BY_PAGE[page] || entry.snapshot.v !== CONTINUE_VERSION) continue;
+      const clean = sanitizeStoredValue(entry.snapshot, 0);
+      if (!clean.ok) continue;
+      games[page] = {
+        updatedAt: typeof entry.updatedAt === 'number' && Number.isFinite(entry.updatedAt) ? entry.updatedAt : 0,
+        snapshot: clean.value
+      };
+    }
+    return { v: CONTINUE_VERSION, games };
+  }
+
+  function writeContinueStore(store) {
+    const payload = JSON.stringify(store);
+    if (payload.length > CONTINUE_MAX_BYTES) return false;
+    try { localStorage.setItem(CONTINUE_KEY, payload); return true; } catch (e) { return false; }
+  }
+
+  Suite.table = {
+    remember(page, snapshot) {
+      if (!TABLE_CONTINUE_GAMES.includes(page) || !isPlainObject(snapshot)) return false;
+      if (snapshot.kind !== KIND_BY_PAGE[page] || snapshot.v !== CONTINUE_VERSION) return false;
+      const clean = sanitizeStoredValue(snapshot, 0);
+      if (!clean.ok) return false;
+      const store = readContinueStore();
+      store.games[page] = { updatedAt: Date.now(), snapshot: clean.value };
+      return writeContinueStore(store);
+    },
+    load(page) {
+      if (!TABLE_CONTINUE_GAMES.includes(page)) return null;
+      const entry = readContinueStore().games[page];
+      return entry ? entry.snapshot : null;
+    },
+    clear(page) {
+      if (!TABLE_CONTINUE_GAMES.includes(page)) return false;
+      const store = readContinueStore();
+      if (!store.games[page]) return false;
+      delete store.games[page];
+      return writeContinueStore(store);
+    },
+    has(page) {
+      return !!readContinueStore().games[page];
+    },
+    list() {
+      return Object.keys(readContinueStore().games);
+    }
+  };
+
+  function readGuideStore() {
+    let raw = '';
+    try { raw = localStorage.getItem(GUIDE_SEEN_KEY) || ''; } catch (e) { return {}; }
+    if (typeof raw !== 'string' || !raw || raw.length > 2000) return {};
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { return {}; }
+    if (!isPlainObject(parsed) || hasDangerousKey(parsed)) return {};
+    const seen = {};
+    for (let i = 0; i < LIVE_HUB_GAMES.length; i++) {
+      const page = LIVE_HUB_GAMES[i];
+      if (parsed[page] === true) seen[page] = true;
+    }
+    return seen;
+  }
+
+  Suite.guide = {
+    hasSeen(page) {
+      return LIVE_HUB_GAMES.includes(page) && readGuideStore()[page] === true;
+    },
+    mark(page) {
+      if (!LIVE_HUB_GAMES.includes(page)) return false;
+      const seen = readGuideStore();
+      seen[page] = true;
+      try { localStorage.setItem(GUIDE_SEEN_KEY, JSON.stringify(seen)); return true; } catch (e) { return false; }
+    }
+  };
+
   function recordLastGame() {
     const page = currentPageName();
     if (!LIVE_HUB_GAMES.includes(page)) return;
     try { localStorage.setItem(LAST_GAME_KEY, page); } catch (e) {}
   }
 
-  function markLastPlayedCard() {
+  function decorateHubCard(card, { lastPlayed, inProgress }) {
+    if (!card) return;
+    if (lastPlayed) card.classList.add('last-played');
+    if (inProgress) card.classList.add('in-progress');
+    const play = card.querySelector('.play');
+    if (play) {
+      play.textContent = '';
+      play.appendChild(document.createTextNode(inProgress ? 'Continue ' : lastPlayed ? 'Play again ' : 'Play '));
+      const arrow = document.createElement('i');
+      arrow.textContent = '\u2192';
+      play.appendChild(arrow);
+    }
+    const title = card.querySelector('h2');
+    if (title && (lastPlayed || inProgress) && !card.getAttribute('aria-label')) {
+      card.setAttribute('aria-label', title.textContent.trim() + (inProgress ? ', in progress' : ', last played'));
+    }
+  }
+
+  function markHubProgress() {
     if (!isSuiteHubPage(currentPageName())) return;
     let last = '';
     try { last = localStorage.getItem(LAST_GAME_KEY) || ''; } catch (e) {}
-    if (!LIVE_HUB_GAMES.includes(last)) return;
-    const card = document.querySelector('.game-card[href="' + last + '"]');
-    if (!card || card.classList.contains('last-played')) return;
-    card.classList.add('last-played');
-    const play = card.querySelector('.play');
-    if (play) play.innerHTML = 'Play again <i>\u2192</i>';
-    const title = card.querySelector('h2');
-    if (title && !card.getAttribute('aria-label')) {
-      card.setAttribute('aria-label', title.textContent.trim() + ', last played');
+    if (!LIVE_HUB_GAMES.includes(last)) last = '';
+    const continuing = Suite.table.list();
+    const cards = document.querySelectorAll('.game-card');
+    for (let i = 0; i < cards.length; i++) {
+      const href = cards[i].getAttribute('href') || '';
+      decorateHubCard(cards[i], {
+        lastPlayed: href === last,
+        inProgress: continuing.indexOf(href) !== -1
+      });
     }
   }
 
@@ -221,7 +386,7 @@
     injectBackPill();
     preventDoubleTapZoom();
     recordLastGame();
-    markLastPlayedCard();
+    markHubProgress();
     // unlock audio context on first interaction
     const unlock = function () {
       ctx();

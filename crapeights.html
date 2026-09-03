@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#121a11">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
-  <script src="assets/turdsuite.js" defer></script>
+  <script src="assets/turdsuite.js"></script>
   <title>Crappy Eights</title>
   <style>
     :root{
@@ -728,6 +728,7 @@
     let soundEnabled = true;
     let audioCtx = null;
     let nextCardId = 1;
+    let lastOverlay = null;
     let stats = readObject(STORAGE.stats, { matchesPlayed: 0, matchesWon: 0, roundsPlayed: 0, roundsWon: 0, bestRoundPoints: 0 });
 
     function readObject(key, fallback) {
@@ -898,11 +899,24 @@
       }, 920);
     }
 
+    function renderHistory() {
+      if (!ui.historyText) return;
+      ui.historyText.textContent = '';
+      if (!historyLog.length) {
+        ui.historyText.textContent = 'No plays yet.';
+        return;
+      }
+      historyLog.forEach((line, index) => {
+        if (index) ui.historyText.appendChild(document.createElement('br'));
+        ui.historyText.appendChild(document.createTextNode(line));
+      });
+    }
+
     function addHistory(message) {
       const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       historyLog.unshift(`${stamp} ${message}`);
       if (historyLog.length > 12) historyLog.pop();
-      if (ui.historyText) ui.historyText.innerHTML = historyLog.length ? historyLog.join('<br>') : 'No plays yet.';
+      renderHistory();
     }
 
     function updateSuitChips() {
@@ -942,7 +956,13 @@
     }
 
     function updateStandings() {
-      if (ui.standingsText) ui.standingsText.innerHTML = players.map((p) => `${p.name}: ${p.score} / ${MATCH_TARGET}`).join('<br>');
+      if (ui.standingsText) {
+        ui.standingsText.textContent = '';
+        players.forEach((p, index) => {
+          if (index) ui.standingsText.appendChild(document.createElement('br'));
+          ui.standingsText.appendChild(document.createTextNode(`${p.name}: ${p.score} / ${MATCH_TARGET}`));
+        });
+      }
       if (ui.statsText) {
         const matchRate = stats.matchesPlayed > 0 ? Math.round((stats.matchesWon / stats.matchesPlayed) * 100) : 0;
         const roundRate = stats.roundsPlayed > 0 ? Math.round((stats.roundsWon / stats.roundsPlayed) * 100) : 0;
@@ -1021,12 +1041,101 @@
       }
     }
 
+    function copyEightsCard(card) {
+      return { id: card.id, suit: card.suit, rank: card.rank };
+    }
+
+    function persistTable() {
+      if (!window.Suite || !Suite.table || !players.length) return;
+      Suite.table.remember('crapeights.html', {
+        kind: 'crapeights',
+        v: 1,
+        players: players.map((player) => ({
+          name: player.name,
+          human: !!player.human,
+          score: player.score,
+          hand: player.hand.map(copyEightsCard)
+        })),
+        deck: deck.map(copyEightsCard),
+        discard: discard.map(copyEightsCard),
+        roundNumber,
+        currentPlayer,
+        direction,
+        activeSuit,
+        pendingDrawCards,
+        pendingSkips,
+        roundActive,
+        hasDrawnThisTurn,
+        selectedCardId,
+        pendingWildCard: pendingWildCard ? copyEightsCard(pendingWildCard) : null,
+        historyLog: historyLog.slice(0, 12),
+        nextCardId,
+        overlay: lastOverlay
+      });
+    }
+
+    function applyEightsSnapshot(snap) {
+      if (!snap || snap.kind !== 'crapeights' || snap.v !== 1) return false;
+      if (!Array.isArray(snap.players) || snap.players.length !== 4) return false;
+      if (!Array.isArray(snap.deck) || !Array.isArray(snap.discard)) return false;
+      players = snap.players.map((player, index) => ({
+        name: player.name,
+        human: index === 0,
+        score: player.score,
+        hand: (player.hand || []).map(copyEightsCard)
+      }));
+      deck = snap.deck.map(copyEightsCard);
+      discard = snap.discard.map(copyEightsCard);
+      roundNumber = snap.roundNumber;
+      currentPlayer = snap.currentPlayer;
+      direction = snap.direction === -1 ? -1 : 1;
+      activeSuit = snap.activeSuit;
+      pendingDrawCards = snap.pendingDrawCards;
+      pendingSkips = snap.pendingSkips;
+      roundActive = !!snap.roundActive;
+      hasDrawnThisTurn = !!snap.hasDrawnThisTurn;
+      selectedCardId = snap.selectedCardId;
+      pendingWildCard = snap.pendingWildCard ? copyEightsCard(snap.pendingWildCard) : null;
+      historyLog = Array.isArray(snap.historyLog) ? snap.historyLog.slice(0, 12) : [];
+      nextCardId = snap.nextCardId;
+      lastOverlay = snap.overlay || null;
+      return true;
+    }
+
+    function tryRestoreTable() {
+      if (!window.Suite || !Suite.table) return false;
+      const snap = Suite.table.load('crapeights.html');
+      if (!snap || !applyEightsSnapshot(snap)) {
+        if (snap) Suite.table.clear('crapeights.html');
+        return false;
+      }
+      focusSuspendedRound = false;
+      resumeHumanAutoPassAfterFocus = false;
+      renderHistory();
+      if (pendingWildCard) showSuitChooser(pendingWildCard);
+      if (lastOverlay) {
+        showRoundOverlay(
+          lastOverlay.title,
+          lastOverlay.summary,
+          lastOverlay.matchFinished,
+          lastOverlay.tone,
+          lastOverlay.flavor,
+          lastOverlay.kicker
+        );
+      }
+      updateAll();
+      if (!lastOverlay) scheduleTurnIfNeeded();
+      try { Suite.toast('Picked up where you left off.'); } catch (e) {}
+      return true;
+    }
+
     function updateAll() {
       updateHud();
       renderDiscard();
       renderPlayerHand();
       for (let i = 0; i < 3; i++) renderOpponent(i);
       updateActionButtons();
+      persistTable();
     }
 
     function chooseBestSuit(hand, excludeId) {
@@ -1111,22 +1220,46 @@
       clearHumanAutoPassTimer();
     }
 
-    function hideWelcomeGuide() { if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none'; onboardingOpen = false; scheduleTurnIfNeeded(); }
+    function hideWelcomeGuide() {
+      if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none';
+      onboardingOpen = false;
+      if (window.Suite && Suite.guide) Suite.guide.mark('crapeights.html');
+      scheduleTurnIfNeeded();
+    }
     function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
     function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
 
     function showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker) {
-      if (ui.roundOverlayCard) ui.roundOverlayCard.dataset.tone = tone || 'victory';
-      if (ui.roundKicker) ui.roundKicker.textContent = kicker || 'Round Riot';
+      lastOverlay = {
+        title,
+        summary,
+        matchFinished: !!matchFinished,
+        tone: tone || 'victory',
+        flavor: flavor || 'The table smelled consequences coming.',
+        kicker: kicker || 'Round Riot'
+      };
+      if (ui.roundOverlayCard) ui.roundOverlayCard.dataset.tone = lastOverlay.tone;
+      if (ui.roundKicker) ui.roundKicker.textContent = lastOverlay.kicker;
       if (ui.roundTitle) ui.roundTitle.textContent = title;
       if (ui.roundSummary) ui.roundSummary.textContent = summary;
-      if (ui.roundFlavor) ui.roundFlavor.textContent = flavor || 'The table smelled consequences coming.';
-      if (ui.roundScoreboard) ui.roundScoreboard.innerHTML = players.map((p) => `${p.name}: ${p.score} / ${MATCH_TARGET}`).join('<br>');
+      if (ui.roundFlavor) ui.roundFlavor.textContent = lastOverlay.flavor;
+      if (ui.roundScoreboard) {
+        ui.roundScoreboard.textContent = '';
+        players.forEach((p, index) => {
+          if (index) ui.roundScoreboard.appendChild(document.createElement('br'));
+          ui.roundScoreboard.appendChild(document.createTextNode(`${p.name}: ${p.score} / ${MATCH_TARGET}`));
+        });
+      }
       if (ui.nextRoundBtn) ui.nextRoundBtn.style.display = matchFinished ? 'none' : 'inline-flex';
       if (ui.roundOverlay) ui.roundOverlay.style.display = 'flex';
+      persistTable();
     }
 
-    function hideRoundOverlay() { if (ui.roundOverlay) ui.roundOverlay.style.display = 'none'; }
+    function hideRoundOverlay() {
+      lastOverlay = null;
+      if (ui.roundOverlay) ui.roundOverlay.style.display = 'none';
+      persistTable();
+    }
 
     function applyPendingEffectsAtTurnStart() {
       let guard = 0;
@@ -1428,9 +1561,13 @@
       soundEnabled = loadSoundPref();
       updateSoundButtons();
       wireEvents();
-      startRound();
-      showWelcomeGuide();
-      updateAll();
+      const restoredTable = tryRestoreTable();
+      if (!restoredTable) {
+        startRound();
+        updateAll();
+      }
+      const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('crapeights.html'));
+      if (!skipGuide) showWelcomeGuide();
     }
 
     window.addEventListener('blur', suspendRoundForBackground);

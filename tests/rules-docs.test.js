@@ -55,6 +55,7 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('**2**: Next player draws 2 cards');
     expect(documented).toContain('**J**: Skips the next player');
     expect(documented).toContain('**Q**: Reverses play direction');
+    expect(documented).toContain("Leaving for the hub saves this device's match");
     expect(documented).not.toContain('simplified: just win/lose');
   });
 
@@ -69,6 +70,7 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain(`Gin | ${ginBonus} + defender deadwood`);
     expect(documented).toContain(`Undercut | ${undercutBonus} +`);
     expect(documented).toContain('defender may add deadwood cards');
+    expect(documented).toContain('Match scores without a table are not restored');
   });
 
   it('records the shipped TurdSpades target, contract score, Nil, and bags', () => {
@@ -86,6 +88,7 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('Miss Nil (take one or more tricks) | -100 points');
     expect(documented).toContain('Nil tricks still count toward the team contract');
     expect(documented).toContain('overtakes that Nil winner when a cheaper cover exists');
+    expect(documented).toContain('returning continues the same bids, tricks, and score');
     expect(documented).toContain('10 accumulated bags | -100 points');
     expect(documented).not.toContain('First team to 500 points wins');
   });

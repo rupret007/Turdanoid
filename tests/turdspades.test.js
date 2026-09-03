@@ -279,6 +279,14 @@ describe('TurdspadesEngine', () => {
       expect(livePage).not.toContain('guard < 80');
     });
 
+    it('ships table continue and skips the leftover status HTML sink', () => {
+      expect(livePage).toContain('function persistTable');
+      expect(livePage).toContain('function tryRestoreTable');
+      expect(livePage).toContain("Suite.table.remember('turdspades.html'");
+      expect(livePage).toContain('function writeStatusBox');
+      expect(livePage).not.toContain('el.msg.innerHTML');
+    });
+
     it('uses the shipped 250-point target and redeals cleanly after scoring', () => {
       game.declarations = [0, 3, 4, 3];
       game.actualTricks = [0, 3, 5, 5];

@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#102016">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
-  <script src="assets/turdsuite.js" defer></script>
+  <script src="assets/turdsuite.js"></script>
   <title>TurdSpades</title>
   <style>
     :root {
@@ -981,13 +981,26 @@
       return { tone: 'neutral', ribbon: '' };
     }
 
+    function writeStatusBox(target, statusText, summaryText) {
+      target.textContent = '';
+      const statusLabel = document.createElement('strong');
+      statusLabel.textContent = 'Status:';
+      target.append(statusLabel, ' ' + String(statusText || ''));
+      if (summaryText) {
+        target.appendChild(document.createElement('br'));
+        const roundLabel = document.createElement('strong');
+        roundLabel.textContent = 'Round:';
+        target.append(roundLabel, ' ' + String(summaryText));
+      }
+    }
+
     function setMessage(text, summary) {
       state.msg = text;
       if (summary !== undefined) state.summary = summary;
       const mood = messageMood();
       el.msg.dataset.tone = mood.tone;
       el.msg.dataset.ribbon = mood.ribbon;
-      el.msg.innerHTML = `<strong>Status:</strong> ${state.msg}${state.summary ? `<br><strong>Round:</strong> ${state.summary}` : ''}`;
+      writeStatusBox(el.msg, state.msg, state.summary);
       try {
         if (!window.Suite) return;
         const note = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
@@ -1342,6 +1355,82 @@
       el.sortRank.disabled = state.phase === 'matchEnd';
     }
 
+    function persistTable() {
+      if (!window.Suite || !Suite.table) return;
+      Suite.table.remember('turdspades.html', {
+        kind: 'turdspades',
+        v: 1,
+        round: state.round,
+        dealer: state.dealer,
+        leader: state.leader,
+        currentPlayer: state.currentPlayer,
+        bidTurn: state.bidTurn,
+        phase: state.phase,
+        scores: state.scores.slice(),
+        bags: state.bags.slice(),
+        bids: state.bids.slice(),
+        tricks: state.tricks.slice(),
+        hands: state.hands.map((hand) => hand.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank }))),
+        trick: state.trick.map((entry) => ({
+          player: entry.player,
+          card: { id: entry.card.id, suit: entry.card.suit, rank: entry.card.rank }
+        })),
+        spadesBroken: !!state.spadesBroken,
+        selected: state.selected,
+        bidChoice: state.bidChoice,
+        sortMode: state.sortMode,
+        msg: String(state.msg || ''),
+        summary: String(state.summary || ''),
+        lastRoundTone: state.lastRoundTone
+      });
+    }
+
+    function applySpadesSnapshot(snap) {
+      if (!snap || snap.kind !== 'turdspades' || snap.v !== 1) return false;
+      if (!Number.isInteger(snap.round) || snap.round < 1) return false;
+      if (!Array.isArray(snap.hands) || snap.hands.length !== 4) return false;
+      if (!Array.isArray(snap.scores) || snap.scores.length !== 2) return false;
+      if (!Array.isArray(snap.bags) || snap.bags.length !== 2) return false;
+      if (!['bidding', 'play', 'roundEnd', 'matchEnd'].includes(snap.phase)) return false;
+      state.round = snap.round;
+      state.dealer = snap.dealer;
+      state.leader = snap.leader;
+      state.currentPlayer = snap.currentPlayer;
+      state.bidTurn = snap.bidTurn;
+      state.phase = snap.phase;
+      state.scores = snap.scores.slice();
+      state.bags = snap.bags.slice();
+      state.bids = snap.bids.slice();
+      state.tricks = snap.tricks.slice();
+      state.hands = snap.hands.map((hand) => hand.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank })));
+      state.trick = (snap.trick || []).map((entry) => ({
+        player: entry.player,
+        card: { id: entry.card.id, suit: entry.card.suit, rank: entry.card.rank }
+      }));
+      state.spadesBroken = !!snap.spadesBroken;
+      state.selected = snap.selected;
+      state.bidChoice = snap.bidChoice;
+      state.sortMode = snap.sortMode === 'rank' ? 'rank' : 'suit';
+      state.msg = String(snap.msg || '');
+      state.summary = String(snap.summary || '');
+      state.lastRoundTone = snap.lastRoundTone || 'neutral';
+      return true;
+    }
+
+    function tryRestoreTable() {
+      if (!window.Suite || !Suite.table) return false;
+      const snap = Suite.table.load('turdspades.html');
+      if (!snap || !applySpadesSnapshot(snap)) {
+        if (snap) Suite.table.clear('turdspades.html');
+        return false;
+      }
+      focusSuspendedPlay = false;
+      render();
+      if (state.phase === 'play' && state.currentPlayer !== 0) scheduleAiIfNeeded(220);
+      try { Suite.toast('Picked up where you left off.'); } catch (e) {}
+      return true;
+    }
+
     function render() {
       renderBack(el.northBack, state.hands[2].length);
       renderBack(el.westBack, state.hands[1].length);
@@ -1350,6 +1439,7 @@
       renderTrick();
       renderStats();
       renderControls();
+      persistTable();
     }
 
     function openGuide() {
@@ -1359,6 +1449,7 @@
 
     function closeGuide() {
       el.guide.classList.remove('show');
+      if (window.Suite && Suite.guide) Suite.guide.mark('turdspades.html');
       if (!focusSuspendedPlay) scheduleAiIfNeeded(220);
     }
 
@@ -1419,8 +1510,10 @@
     });
 
     bind();
-    startMatch();
-    openGuide();
+    const restoredTable = tryRestoreTable();
+    if (!restoredTable) startMatch();
+    const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('turdspades.html'));
+    if (!skipGuide) openGuide();
   
 
 // ============================================================

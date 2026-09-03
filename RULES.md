@@ -192,6 +192,7 @@ Crazy Eights match for you and three bot opponents.
 - **J**: Skips the next player
 - **Q**: Reverses play direction
 - **Draw**: Draw once, then play the drawn card when legal or pass
+- **Continue**: Leaving for the hub saves this device's match; returning restores hands, scores, and the current turn
 
 ### Scoring
 
@@ -238,6 +239,7 @@ Gin Rummy card game against an AI opponent.
 - **Undercut**: If opponent knocks and you have less deadwood
 - **Layoff**: After a non-gin knock, the defender may add deadwood cards to the knocker's melds before scoring
 - **Match**: First to 100 points wins
+- **Continue**: A live table is saved on this device. Match scores without a table are not restored, so an abandoned round cannot skip ahead
 
 ### Hand Size
 
@@ -294,6 +296,7 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 - First team to 250 points wins
 - If both teams tie at or above 250, play one tiebreaker round
+- Leaving for the hub saves the match on this device; returning continues the same bids, tricks, and score
 
 ### AI Strategy
 
