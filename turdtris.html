@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#120d0a">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="assets/turdsuite.css">
-<script src="assets/turdsuite.js" defer></script>
+<script src="assets/turdsuite.js"></script>
 <title>Turdtris Turbo</title>
 <style>
 :root {
@@ -1117,6 +1117,7 @@ function hideWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'none';
   onboardingOpen = false;
+  if (window.Suite && Suite.guide) Suite.guide.mark('turdtris.html');
   if (guidePausedGame && !gameOver) paused = false;
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
@@ -2491,7 +2492,9 @@ if (canvas) {
 soundEnabled = loadSoundPref();
 updateSoundButtons();
 restartGame();
-showWelcomeGuide();
+if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
+  showWelcomeGuide();
+}
 
 
 // ============================================================

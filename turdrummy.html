@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#18311f">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
-  <script src="assets/turdsuite.js" defer></script>
+  <script src="assets/turdsuite.js"></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -1584,11 +1584,8 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") {
-          state.playerScore = Number(parsed.playerScore) || 0;
-          state.aiScore = Number(parsed.aiScore) || 0;
-          state.stats = Object.assign({}, state.stats, parsed.stats || {});
-          state.round = Number(parsed.round) || 0;
+        if (parsed && typeof parsed === "object" && parsed.stats && typeof parsed.stats === "object") {
+          state.stats = Object.assign({}, state.stats, parsed.stats);
         }
       } catch (err) {
         console.warn("Could not load TurdRummy stats:", err);
@@ -1598,14 +1595,85 @@
     function saveStats() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          playerScore: state.playerScore,
-          aiScore: state.aiScore,
-          round: state.round,
           stats: state.stats
         }));
       } catch (err) {
         console.warn("Could not save TurdRummy stats:", err);
       }
+    }
+
+    function persistTable() {
+      if (!window.Suite || !Suite.table) return;
+      if (!state.initialized) {
+        Suite.table.clear("turdrummy.html");
+        return;
+      }
+      Suite.table.remember("turdrummy.html", {
+        kind: "turdrummy",
+        v: 1,
+        round: state.round,
+        dealer: state.dealer,
+        turn: state.turn,
+        phase: state.phase,
+        playerScore: state.playerScore,
+        aiScore: state.aiScore,
+        stock: state.stock.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank })),
+        discard: state.discard.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank })),
+        playerHand: state.playerHand.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank })),
+        aiHand: state.aiHand.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank })),
+        selectedCardId: state.selectedCardId,
+        drawnCardId: state.drawnCardId,
+        drawnCardSource: state.drawnCardSource,
+        playerSortMode: state.playerSortMode,
+        message: String(state.message || ""),
+        roundSummary: String(state.roundSummary || ""),
+        lastAiAction: String(state.lastAiAction || ""),
+        roundOver: !!state.roundOver,
+        matchOver: !!state.matchOver,
+        initialized: true
+      });
+    }
+
+    function applyRummySnapshot(snap) {
+      if (!snap || snap.kind !== "turdrummy" || snap.v !== 1 || !snap.initialized) return false;
+      if (!Array.isArray(snap.playerHand) || !Array.isArray(snap.aiHand)) return false;
+      if (!Array.isArray(snap.stock) || !Array.isArray(snap.discard)) return false;
+      const copyCards = (cards) => cards.map((card) => ({ id: card.id, suit: card.suit, rank: card.rank }));
+      state.round = snap.round;
+      state.dealer = snap.dealer === "ai" ? "ai" : "player";
+      state.turn = snap.turn === "ai" ? "ai" : "player";
+      state.phase = snap.phase === "discard" ? "discard" : "draw";
+      state.playerScore = snap.playerScore;
+      state.aiScore = snap.aiScore;
+      state.stock = copyCards(snap.stock);
+      state.discard = copyCards(snap.discard);
+      state.playerHand = copyCards(snap.playerHand);
+      state.aiHand = copyCards(snap.aiHand);
+      state.selectedCardId = snap.selectedCardId;
+      state.drawnCardId = snap.drawnCardId;
+      state.drawnCardSource = snap.drawnCardSource;
+      state.playerSortMode = snap.playerSortMode === "rank" ? "rank" : "suit";
+      state.message = String(snap.message || "");
+      state.roundSummary = String(snap.roundSummary || "");
+      state.lastAiAction = String(snap.lastAiAction || "");
+      state.roundOver = !!snap.roundOver;
+      state.matchOver = !!snap.matchOver;
+      state.initialized = true;
+      return true;
+    }
+
+    function tryRestoreTable() {
+      if (!window.Suite || !Suite.table) return false;
+      const snap = Suite.table.load("turdrummy.html");
+      if (!snap || !applyRummySnapshot(snap)) {
+        if (snap) Suite.table.clear("turdrummy.html");
+        return false;
+      }
+      focusPausedAiTurn = false;
+      renderAll();
+      if (!state.roundOver && state.turn === "ai") queueAiTurn(220);
+      try { Suite.toast("Picked up where you left off."); } catch (e) {}
+      return true;
     }
 
     function clearAiTurnTimeout() {
@@ -1629,6 +1697,8 @@
       if (state.roundOver || state.turn !== "ai") return;
       clearAiTurnTimeout();
       focusPausedAiTurn = true;
+      state.message = "Table paused while you were away. The bot will move when you return.";
+      renderAll();
     }
 
     function resumeAiFromBackground() {
@@ -2033,14 +2103,26 @@
       decorateMeldCards(analysis);
     }
 
+    function writeStatusBox(target, statusText, summaryText) {
+      target.textContent = "";
+      const statusLabel = document.createElement("strong");
+      statusLabel.textContent = "Status:";
+      target.append(statusLabel, " " + String(statusText || ""));
+      if (summaryText) {
+        target.appendChild(document.createElement("br"));
+        const roundLabel = document.createElement("strong");
+        roundLabel.textContent = "Round:";
+        target.append(roundLabel, " " + String(summaryText));
+      }
+    }
+
     function setMessage(text, summary) {
       state.message = text;
       if (summary !== undefined) state.roundSummary = summary;
-      const roundText = state.roundSummary ? "<br><strong>Round:</strong> " + state.roundSummary : "";
       const mood = messageTone(state.message, state.roundSummary);
       el.messageBox.dataset.tone = mood.tone;
       el.messageBox.dataset.ribbon = mood.ribbon;
-      el.messageBox.innerHTML = "<strong>Status:</strong> " + state.message + roundText;
+      writeStatusBox(el.messageBox, state.message, state.roundSummary);
       try {
         if (!window.Suite) return;
         const note = (String(text || "") + " " + String(summary || "")).toLowerCase();
@@ -2110,6 +2192,7 @@
       renderMeldPreview();
       updateActionButtons();
       setMessage(state.message, state.roundSummary);
+      persistTable();
     }
 
     function refillStockIfNeeded() {
@@ -2615,6 +2698,7 @@
         undercuts: 0
       };
       saveStats();
+      if (window.Suite && Suite.table) Suite.table.clear("turdrummy.html");
       renderAll();
     }
 
@@ -2636,6 +2720,7 @@
 
     function closeGuide() {
       el.guideOverlay.classList.remove("show");
+      if (window.Suite && Suite.guide) Suite.guide.mark("turdrummy.html");
       if (!state.roundOver && state.turn === "ai") {
         queueAiTurn(220);
       }
@@ -2702,8 +2787,10 @@
     function init() {
       loadStats();
       bindEvents();
-      renderAll();
-      openGuide();
+      const restoredTable = tryRestoreTable();
+      if (!restoredTable) renderAll();
+      const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen("turdrummy.html"));
+      if (!skipGuide) openGuide();
     }
 
     window.addEventListener("blur", suspendAiForBackground);

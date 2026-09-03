@@ -16,6 +16,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 - Simplified the launcher's opening copy and added routing assertions to the browser smoke pass.
 - Deepened TurdSpades with player/bot Nil bids, honest ±100 scoring receipts, Nil-aware bot play, and always-reachable mobile bidding controls.
 - After Nil landed: TurdSpades bot cards play one at a time, tab-hide pauses those turns, and a partner overtakes a winning Nil card when it can. The hub marks the last opened game. The TurdAnoid test hook no longer ships on the public Pages host.
+- After leftover #15: leaving TurdSpades, TurdRummy, or Crappy Eights saves the live table on this device. The hub says Continue when a table is waiting, returning players skip the welcome guide, and malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now loads the suite runtime so last-played is honest. Mid-run arcade saves stay parked with PR #8.
 
 ## Changelog (Latest)
 
@@ -106,6 +107,7 @@ Crazy Eights with Uno-style pacing and themed table presentation.
 - Round scoring by opponents' leftover card values
 - Match target race to 200 points
 - Mobile-friendly controls, on-entry rules guide, and local stats persistence
+- Device-local continue for the live match when you leave for the hub
 
 **Controls:** Tap/click cards and actions, or keyboard (`P` play, `D` draw, `A` smart, `M` sound).
 
@@ -120,6 +122,7 @@ Gin Rummy game themed to match the rest of the hub.
 - AI draw/discard logic tuned for reasonable play
 - Fixed mobile control dock for draw/discard/knock/gin actions
 - Round/match scoring with localStorage persistence
+- Device-local continue for the live table; ghost scores cannot skip a round
 
 **Controls:** Tap/click cards to select discard, then use bottom action buttons.
 
@@ -131,6 +134,7 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
 - You + North partner vs West/East bot team
 - Full bidding phase each round, including risk-gated Nil bids for people and bots
 - Watchable bot play with tab-hide pause, plus partner cover when a Nil winner can be overtaken
+- Device-local continue: the same match, bids, and tricks come back when you return from the hub
 - Trick-taking with suit-following and trump-spade rules
 - Spades break logic
 - Team contract scoring with transparent Nil bonuses/penalties, bags, and the 10-bag penalty

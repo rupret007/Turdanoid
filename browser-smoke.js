@@ -81,6 +81,9 @@ async function main() {
         if ((await page.locator('.game-card.last-played').count()) !== 0) {
           fail('root-hub', 'a first visit should not mark a last-played game');
         }
+        if ((await page.locator('.game-card.in-progress').count()) !== 0) {
+          fail('root-hub', 'a first visit should not mark an in-progress game');
+        }
       }
     });
 
@@ -727,10 +730,12 @@ async function main() {
         if (marked.href !== 'turdspades.html') {
           fail('hub-last-played', `last opened game should be marked, saw ${marked.href}`);
         }
-        if (!marked.play.includes('Play again')) {
-          fail('hub-last-played', `last-played card should say Play again, saw ${marked.play}`);
+        if (!marked.play.includes('Continue')) {
+          fail('hub-last-played', `an opened Spades table should say Continue, saw ${marked.play}`);
         }
         if (marked.neon !== 1) fail('hub-last-played', 'last-played mark must not replace the Neon secondary link');
+        const inProgress = await page.locator('.game-card.in-progress').count();
+        if (inProgress !== 1) fail('hub-last-played', `expected one in-progress table, saw ${inProgress}`);
 
         await page.evaluate(() => localStorage.setItem('turdsuite_last_game', 'not-a-game.html'));
         await page.reload({ waitUntil: 'load' });
@@ -738,10 +743,15 @@ async function main() {
         const afterJunk = await page.evaluate(() => ({
           cards: document.querySelectorAll('.game-card').length,
           last: document.querySelectorAll('.game-card.last-played').length,
+          continuing: document.querySelector('.game-card.in-progress')?.getAttribute('href') || '',
+          play: document.querySelector('.game-card.in-progress .play')?.textContent || '',
           hrefs: Array.from(document.querySelectorAll('.game-card')).map((card) => card.getAttribute('href'))
         }));
         if (afterJunk.cards !== 6 || afterJunk.last !== 0) {
           fail('hub-last-played', `malformed last-played data should not invent a mark, saw ${JSON.stringify(afterJunk)}`);
+        }
+        if (afterJunk.continuing !== 'turdspades.html' || !afterJunk.play.includes('Continue')) {
+          fail('hub-last-played', `junk last-played data should not wipe a real table, saw ${JSON.stringify(afterJunk)}`);
         }
         const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
         if (JSON.stringify(afterJunk.hrefs) !== JSON.stringify(expected)) {
@@ -754,6 +764,116 @@ async function main() {
       actions: async (page) => {
         const exposed = await page.evaluate(() => !!window.__turdanoid);
         if (!exposed) fail('turdanoid-local-debug-hook', 'localhost smoke should still expose the TurdAnoid test hook');
+        if ((await page.locator('.suite-back-pill').count()) !== 1) {
+          fail('turdanoid-local-debug-hook', 'TurdAnoid should now load the suite runtime so the hub pill and last-played mark work');
+        }
+      }
+    });
+
+    await runCheck(browser, 'table-continue-restore', 'turdspades.html', {
+      actions: async (page) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(120);
+        const before = await page.evaluate(() => ({
+          round: state.round,
+          phase: state.phase,
+          scores: state.scores.slice(),
+          you: state.hands[0].map((card) => card.id).sort().join(','),
+          north: state.hands[2].length
+        }));
+        if (before.round < 1 || before.you === '') {
+          fail('table-continue-restore', `Spades should deal a live table before leaving, saw ${JSON.stringify(before)}`);
+        }
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(250);
+        const after = await page.evaluate(() => ({
+          guide: document.getElementById('guide')?.classList.contains('show'),
+          round: state.round,
+          phase: state.phase,
+          scores: state.scores.slice(),
+          you: state.hands[0].map((card) => card.id).sort().join(','),
+          north: state.hands[2].length
+        }));
+        if (after.guide) fail('table-continue-restore', 'returning to a saved Spades table should skip the welcome guide');
+        if (after.round !== before.round || after.phase !== before.phase || after.you !== before.you || after.north !== before.north) {
+          fail('table-continue-restore', `Spades should restore the same table, saw ${JSON.stringify({ before, after })}`);
+        }
+        if (JSON.stringify(after.scores) !== JSON.stringify(before.scores)) {
+          fail('table-continue-restore', `Spades should restore the same scores, saw ${JSON.stringify({ before, after })}`);
+        }
+
+        await page.evaluate(() => {
+          localStorage.setItem('turdsuite_continue_v1', JSON.stringify({
+            v: 1,
+            games: {
+              'turdspades.html': {
+                snapshot: { kind: 'turdspades', v: 1, msg: '<img src=x onerror=alert(1)>' }
+              }
+            }
+          }));
+        });
+        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
+        await page.waitForTimeout(200);
+        const dirtyHub = await page.evaluate(() => document.querySelectorAll('.game-card.in-progress').length);
+        if (dirtyHub !== 0) fail('table-continue-restore', 'script-bearing continue data must not mark a hub card');
+      }
+    });
+
+    await runCheck(browser, 'turdrummy-continue-no-round-skip', 'turdrummy.html', {
+      actions: async (page) => {
+        await page.evaluate(() => {
+          localStorage.setItem('turdrummy_stats_v1', JSON.stringify({
+            playerScore: 45,
+            aiScore: 30,
+            round: 3,
+            stats: { roundsPlayed: 2, playerRoundWins: 1, aiRoundWins: 1, playerGins: 0, aiGins: 0, undercuts: 0 }
+          }));
+        });
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(220);
+        await page.evaluate(() => document.getElementById('startRoundBtn')?.click());
+        await page.waitForTimeout(220);
+        const dealt = await page.evaluate(() => ({
+          round: state.round,
+          playerScore: state.playerScore,
+          aiScore: state.aiScore,
+          initialized: state.initialized,
+          cards: state.playerHand.length
+        }));
+        if (dealt.round !== 1) {
+          fail('turdrummy-continue-no-round-skip', `old score ghosts must not skip a round, saw ${JSON.stringify(dealt)}`);
+        }
+        if (dealt.playerScore !== 0 || dealt.aiScore !== 0) {
+          fail('turdrummy-continue-no-round-skip', `old match scores without a table must not restore a zombie match, saw ${JSON.stringify(dealt)}`);
+        }
+        if (!dealt.initialized || dealt.cards !== 10) {
+          fail('turdrummy-continue-no-round-skip', `starting after dropping a ghost save should deal a real round, saw ${JSON.stringify(dealt)}`);
+        }
+      }
+    });
+
+    await runCheck(browser, 'hub-turdanoid-last-played', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.goto(`${baseUrl}/`, { waitUntil: 'load' });
+        await page.waitForTimeout(220);
+        const marked = await page.evaluate(() => {
+          const card = document.querySelector('.game-card.last-played');
+          return {
+            href: card?.getAttribute('href') || '',
+            play: card?.querySelector('.play')?.textContent || '',
+            continuing: document.querySelectorAll('.game-card.in-progress').length,
+            cards: document.querySelectorAll('.game-card').length
+          };
+        });
+        if (marked.cards !== 6 || marked.href !== 'TurdAnoid.html') {
+          fail('hub-turdanoid-last-played', `TurdAnoid should record last-played now that it loads the suite, saw ${JSON.stringify(marked)}`);
+        }
+        if (!marked.play.includes('Play again')) {
+          fail('hub-turdanoid-last-played', `arcade last-played should stay Play again, saw ${marked.play}`);
+        }
+        if (marked.continuing !== 0) {
+          fail('hub-turdanoid-last-played', 'TurdAnoid must not invent a mid-run continue');
+        }
       }
     });
   } finally {

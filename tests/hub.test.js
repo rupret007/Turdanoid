@@ -18,13 +18,22 @@ const LIVE_GAMES = [
   'turdspades.html'
 ];
 
-function bootHub(lastGame, url = 'http://localhost/') {
+function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
   const dom = new JSDOM(hubHtml, {
     url,
     runScripts: 'outside-only'
   });
   if (lastGame !== undefined) {
     dom.window.localStorage.setItem('turdsuite_last_game', lastGame);
+  }
+  if (extras.continueStore !== undefined) {
+    dom.window.localStorage.setItem('turdsuite_continue_v1', extras.continueStore);
+  }
+  if (extras.continueGames) {
+    dom.window.localStorage.setItem(
+      'turdsuite_continue_v1',
+      JSON.stringify({ v: 1, games: extras.continueGames })
+    );
   }
   dom.window.eval(suiteJs);
   if (dom.window.document.readyState === 'loading') {
@@ -78,5 +87,86 @@ describe('six-game hub last-played mark', () => {
 
     const neon = bootHub('neon-arkanoid.html');
     expect(neon.window.document.querySelectorAll('.game-card.last-played')).toHaveLength(0);
+  });
+});
+
+describe('six-game hub continue mark', () => {
+  it('marks an in-progress table as Continue without adding a card', () => {
+    const dom = bootHub('turdtris.html', 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': {
+          updatedAt: 1,
+          snapshot: { kind: 'turdspades', v: 1, msg: 'Your play.' }
+        }
+      }
+    });
+    const cards = [...dom.window.document.querySelectorAll('.game-card')];
+    const continuing = cards.filter((card) => card.classList.contains('in-progress'));
+    const last = cards.filter((card) => card.classList.contains('last-played'));
+
+    expect(cards).toHaveLength(6);
+    expect(continuing).toHaveLength(1);
+    expect(continuing[0].getAttribute('href')).toBe('turdspades.html');
+    expect(continuing[0].querySelector('.play')?.textContent).toContain('Continue');
+    expect(last).toHaveLength(1);
+    expect(last[0].getAttribute('href')).toBe('turdtris.html');
+    expect(last[0].querySelector('.play')?.textContent).toContain('Play again');
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+  });
+
+  it('prefers Continue when the last opened game still has a table', () => {
+    const dom = bootHub('turdspades.html', 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': {
+          updatedAt: 1,
+          snapshot: { kind: 'turdspades', v: 1, msg: 'Your play.' }
+        }
+      }
+    });
+    const card = dom.window.document.querySelector('.game-card.last-played');
+    expect(card?.classList.contains('in-progress')).toBe(true);
+    expect(card?.querySelector('.play')?.textContent).toContain('Continue');
+  });
+
+  it('ignores malformed continue data, script payloads, and Neon', () => {
+    const junk = bootHub(undefined, 'http://localhost/', { continueStore: 'not-json' });
+    expect(junk.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
+
+    const dirty = bootHub(undefined, 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': {
+          snapshot: { kind: 'turdspades', v: 1, msg: '<img src=x onerror=alert(1)>' }
+        }
+      }
+    });
+    expect(dirty.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
+
+    const neon = bootHub(undefined, 'http://localhost/', {
+      continueGames: {
+        'neon-arkanoid.html': {
+          snapshot: { kind: 'turdspades', v: 1, msg: 'nope' }
+        }
+      }
+    });
+    expect(neon.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
+    expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(6);
+  });
+
+  it('refuses to remember Neon or a seventh game from the suite API', () => {
+    const dom = bootHub();
+    expect(
+      dom.window.Suite.table.remember('neon-arkanoid.html', { kind: 'turdspades', v: 1 })
+    ).toBe(false);
+    expect(dom.window.Suite.table.remember('chicken.html', { kind: 'crapeights', v: 1 })).toBe(
+      false
+    );
+    expect(
+      dom.window.Suite.table.remember('turdspades.html', {
+        kind: 'turdspades',
+        v: 1,
+        msg: 'Safe status'
+      })
+    ).toBe(true);
+    expect(dom.window.Suite.table.has('turdspades.html')).toBe(true);
   });
 });

@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#0f1914">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
-  <script src="assets/turdsuite.js" defer></script>
+  <script src="assets/turdsuite.js"></script>
   <title>Crapjack 21</title>
   <style>
     :root {
@@ -2182,6 +2182,7 @@
       const guide = document.getElementById('welcomeGuide');
       if (guide) guide.style.display = 'none';
       onboardingOpen = false;
+      if (window.Suite && Suite.guide) Suite.guide.mark('turdjack.html');
     }
 
     function quickStartRound() {
@@ -3297,7 +3298,8 @@
       updateRuleSummary();
       updateHud();
       setStatus('Welcome to Crapjack 21. Use Quick Start to auto-bet and deal fast.');
-      showWelcomeGuide();
+      const skipGuide = window.Suite && Suite.guide && Suite.guide.hasSeen('turdjack.html');
+      if (!skipGuide) showWelcomeGuide();
     }
 
     init();
