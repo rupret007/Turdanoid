@@ -1,11 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   MATCH_TARGET,
   RANK_VALUES,
   TurdspadesEngine,
+  pickNilCoverCard,
   scoreSpadesTeamRound,
   shouldBidNil
 } from '../games/turdspades-engine.js';
+
+const livePage = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '..', 'turdspades.html'),
+  'utf8'
+);
 
 const safeNilHand = [
   { rank: '2', suit: 'S' },
@@ -141,6 +151,68 @@ describe('TurdspadesEngine', () => {
       expect(shouldBidNil([...safeNilHand.slice(0, 12), { rank: 'J', suit: 'S' }])).toBe(false);
     });
 
+    it('covers a partner Nil winner with the cheapest overtake', () => {
+      const legal = [
+        { rank: '3', suit: 'H' },
+        { rank: 'Q', suit: 'H' },
+        { rank: 'K', suit: 'H' }
+      ];
+      const cover = pickNilCoverCard(legal, {
+        partnerBid: 0,
+        winnerPlayer: 2,
+        partner: 2,
+        cardBeatsWinner: (card) => RANK_VALUES[card.rank] > 9
+      });
+
+      expect(cover).toMatchObject({ rank: 'Q', suit: 'H' });
+    });
+
+    it('covers using numeric ranks from the live table', () => {
+      const cover = pickNilCoverCard(
+        [
+          { id: 'low', rank: 3, suit: 'H' },
+          { id: 'cover', rank: 12, suit: 'H' },
+          { id: 'ace', rank: 14, suit: 'H' }
+        ],
+        {
+          partnerBid: 0,
+          winnerPlayer: 3,
+          partner: 3,
+          cardBeatsWinner: (card) => card.rank > 9
+        }
+      );
+
+      expect(cover.id).toBe('cover');
+    });
+
+    it('does not cover when the partner is not winning or not on Nil', () => {
+      const legal = [{ rank: 'A', suit: 'H' }];
+      expect(
+        pickNilCoverCard(legal, {
+          partnerBid: 4,
+          winnerPlayer: 2,
+          partner: 2,
+          cardBeatsWinner: () => true
+        })
+      ).toBeNull();
+      expect(
+        pickNilCoverCard(legal, {
+          partnerBid: 0,
+          winnerPlayer: 1,
+          partner: 2,
+          cardBeatsWinner: () => true
+        })
+      ).toBeNull();
+      expect(
+        pickNilCoverCard(legal, {
+          partnerBid: 0,
+          winnerPlayer: 2,
+          partner: 2,
+          cardBeatsWinner: () => false
+        })
+      ).toBeNull();
+    });
+
     it('lets a bot call Nil only when its hand passes the risk gate', () => {
       game.hands[1] = safeNilHand.map((card) => ({ ...card }));
 
@@ -197,6 +269,14 @@ describe('TurdspadesEngine', () => {
 
     it('still awards a made Nil when the partnership misses its contract', () => {
       expect(scoreSpadesTeamRound({ bids: [0, 6], tricks: [0, 5] }).delta).toBe(40);
+    });
+
+    it('ships paced bot turns, blur pause, and partner Nil cover on the live table', () => {
+      expect(livePage).toContain('function pickNilCoverCard');
+      expect(livePage).toContain('function scheduleAiIfNeeded');
+      expect(livePage).toContain('function suspendPlayForBackground');
+      expect(livePage).toContain("window.addEventListener('blur', suspendPlayForBackground)");
+      expect(livePage).not.toContain('guard < 80');
     });
 
     it('uses the shipped 250-point target and redeals cleanly after scoring', () => {

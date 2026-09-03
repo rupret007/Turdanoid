@@ -299,7 +299,7 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 1. Bid from spade strength and high cards; call Nil only with a tightly risk-gated weak hand
 2. Track the partnership's remaining contract need
-3. A Nil bidder sheds the highest card that can safely lose, while its partner still protects the team contract
+3. A Nil bidder sheds the highest card that can safely lose; its partner overtakes that Nil winner when a cheaper cover exists and still plays for the team contract
 4. Use the lowest winning card when the team still needs tricks
 5. Shed low cards when the contract is safe and trump when void if a trick is needed
 

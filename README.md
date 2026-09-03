@@ -15,6 +15,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 - Moved the original Neon Arkanoid to `neon-arkanoid.html` and kept `hub.html` as a compatibility redirect.
 - Simplified the launcher's opening copy and added routing assertions to the browser smoke pass.
 - Deepened TurdSpades with player/bot Nil bids, honest ±100 scoring receipts, Nil-aware bot play, and always-reachable mobile bidding controls.
+- After Nil landed: TurdSpades bot cards play one at a time, tab-hide pauses those turns, and a partner overtakes a winning Nil card when it can. The hub marks the last opened game. The TurdAnoid test hook no longer ships on the public Pages host.
 
 ## Changelog (Latest)
 
@@ -129,6 +130,7 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
 **Features:**
 - You + North partner vs West/East bot team
 - Full bidding phase each round, including risk-gated Nil bids for people and bots
+- Watchable bot play with tab-hide pause, plus partner cover when a Nil winner can be overtaken
 - Trick-taking with suit-following and trump-spade rules
 - Spades break logic
 - Team contract scoring with transparent Nil bonuses/penalties, bags, and the 10-bag penalty

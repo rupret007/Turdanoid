@@ -85,6 +85,7 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('Make Nil (take zero tricks) | +100 points');
     expect(documented).toContain('Miss Nil (take one or more tricks) | -100 points');
     expect(documented).toContain('Nil tricks still count toward the team contract');
+    expect(documented).toContain('overtakes that Nil winner when a cheaper cover exists');
     expect(documented).toContain('10 accumulated bags | -100 points');
     expect(documented).not.toContain('First team to 500 points wins');
   });

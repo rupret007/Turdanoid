@@ -1937,30 +1937,37 @@ document.addEventListener('touchend', e=>{
 document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
 
 /* ---- Test hook ----
-   Exposes game internals for the vitest regression suite
-   (tests/turdanoid-game.test.js). Not used by gameplay code. */
-window.__turdanoid = {
-  startGame, step, newLevel, quitToMenu, doPause, doResume,
-  applyPower, spawnMulti, handleWindowBlur,
-  get state(){ return state; },
-  get score(){ return score; },
-  set score(v){ score = v; },
-  get level(){ return level; },
-  get lives(){ return lives; },
-  get balls(){ return balls; },
-  set balls(v){ balls = v; },
-  get bricks(){ return bricks; },
-  set bricks(v){ bricks = v; },
-  get activePowers(){ return activePowers; },
-  get keys(){ return keys; },
-  get pointerActive(){ return pointerActive; },
-  set pointerActive(v){ pointerActive = !!v; },
-  get levelTransition(){ return levelTransition; },
-  get waitingLaunch(){ return waitingLaunch; },
-  get paddle(){ return paddle; },
-  get W(){ return W; },
-  get H(){ return H; }
-};
+   Local/dev only. The public GitHub Pages host must not ship a
+   live console API that can set score, lives, balls, or powers.
+   Vitest and the local smoke server still get the hook. */
+(function exposeTurdanoidTestHook(){
+  try {
+    const host = String(location.hostname || '');
+    if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') return;
+  } catch (e) { return; }
+  window.__turdanoid = {
+    startGame, step, newLevel, quitToMenu, doPause, doResume,
+    applyPower, spawnMulti, handleWindowBlur,
+    get state(){ return state; },
+    get score(){ return score; },
+    set score(v){ score = v; },
+    get level(){ return level; },
+    get lives(){ return lives; },
+    get balls(){ return balls; },
+    set balls(v){ balls = v; },
+    get bricks(){ return bricks; },
+    set bricks(v){ bricks = v; },
+    get activePowers(){ return activePowers; },
+    get keys(){ return keys; },
+    get pointerActive(){ return pointerActive; },
+    set pointerActive(v){ pointerActive = !!v; },
+    get levelTransition(){ return levelTransition; },
+    get waitingLaunch(){ return waitingLaunch; },
+    get paddle(){ return paddle; },
+    get W(){ return W; },
+    get H(){ return H; }
+  };
+})();
 
 </script>
 </body>

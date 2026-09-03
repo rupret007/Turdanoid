@@ -821,6 +821,56 @@
       msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral'
     };
 
+    let aiTurnTimeoutId = null;
+    let focusSuspendedPlay = false;
+    const AI_TURN_MS = 480;
+
+    function clearAiTimer() {
+      if (aiTurnTimeoutId !== null) {
+        clearTimeout(aiTurnTimeoutId);
+        aiTurnTimeoutId = null;
+      }
+    }
+
+    function scheduleAiIfNeeded(delayMs) {
+      clearAiTimer();
+      if (focusSuspendedPlay) return;
+      if (el.guide && el.guide.classList.contains('show')) return;
+      if (state.phase !== 'play' || state.currentPlayer === 0) return;
+      const wait = Number.isFinite(delayMs) ? delayMs : AI_TURN_MS;
+      aiTurnTimeoutId = setTimeout(() => {
+        aiTurnTimeoutId = null;
+        if (focusSuspendedPlay || (el.guide && el.guide.classList.contains('show'))) return;
+        if (state.phase !== 'play' || state.currentPlayer === 0) return;
+        const player = state.currentPlayer;
+        const card = aiCard(player);
+        if (!card) { render(); return; }
+        removeCard(player, card.id);
+        playCard(player, card);
+        render();
+        scheduleAiIfNeeded(AI_TURN_MS);
+      }, wait);
+    }
+
+    function suspendPlayForBackground() {
+      if (focusSuspendedPlay) return;
+      if (el.guide && el.guide.classList.contains('show')) return;
+      if (state.phase !== 'play' || state.currentPlayer === 0) return;
+      clearAiTimer();
+      focusSuspendedPlay = true;
+      setMessage('Table paused while you were away. Bots will finish the trick when you return.', state.summary);
+      render();
+    }
+
+    function resumePlayFromBackground() {
+      if (!focusSuspendedPlay) return;
+      focusSuspendedPlay = false;
+      if (el.guide && el.guide.classList.contains('show')) return;
+      if (state.phase === 'play' && state.currentPlayer !== 0) {
+        scheduleAiIfNeeded(220);
+      }
+    }
+
     const el = {
       roundV: document.getElementById('roundV'), turnV: document.getElementById('turnV'),
       spadeV: document.getElementById('spadeV'), teamAV: document.getElementById('teamAV'),
@@ -1004,6 +1054,8 @@
     }
 
     function startRound() {
+      clearAiTimer();
+      focusSuspendedPlay = false;
       state.round += 1;
       if (state.round > 1) state.dealer = (state.dealer + 1) % 4;
       resetRoundState();
@@ -1085,6 +1137,15 @@
     function low(cards) { return cards.slice().sort((a, b) => a.rank - b.rank || SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit])[0]; }
     function high(cards) { return cards.slice().sort((a, b) => b.rank - a.rank || SUIT_ORDER[b.suit] - SUIT_ORDER[a.suit])[0]; }
 
+    function pickNilCoverCard(legal, partner) {
+      if (state.bids[partner] !== 0 || !state.trick.length) return null;
+      const lead = state.trick[0].card.suit;
+      const best = winnerEntry(state.trick);
+      if (!best || best.player !== partner) return null;
+      const covers = legal.filter((card) => beats(card, best.card, lead));
+      return covers.length ? low(covers) : null;
+    }
+
     function aiCard(player) {
       const legal = legalCards(player), partner = partnerOf(player);
       const need = (state.bids[player] + state.bids[partner]) - (state.tricks[player] + state.tricks[partner]);
@@ -1094,6 +1155,8 @@
         const losing = legal.filter((card) => !beats(card, best, lead));
         return losing.length ? high(losing) : low(legal);
       }
+      const nilCover = pickNilCoverCard(legal, partner);
+      if (nilCover) return nilCover;
       if (!state.trick.length) return need > 0 ? high(legal.filter((c) => c.suit !== 'S').length ? legal.filter((c) => c.suit !== 'S') : legal) : low(legal);
       const lead = state.trick[0].card.suit, best = winnerEntry(state.trick)?.card;
       const follow = legal.filter((c) => c.suit === lead);
@@ -1141,6 +1204,7 @@
     }
 
     function scoreRound(lastTrick) {
+      clearAiTimer();
       const line = [];
       const deltas = [0, 0];
       for (let t = 0; t < 2; t++) {
@@ -1177,14 +1241,7 @@
     }
 
     function runAiTurns() {
-      let guard = 0;
-      while (state.phase === 'play' && state.currentPlayer !== 0 && guard < 80) {
-        const p = state.currentPlayer, card = aiCard(p);
-        removeCard(p, card.id);
-        playCard(p, card);
-        guard++;
-      }
-      render();
+      scheduleAiIfNeeded(AI_TURN_MS);
     }
 
     function playSelected() {
@@ -1196,8 +1253,8 @@
       removeCard(0, card.id);
       state.selected = null;
       playCard(0, card);
-      runAiTurns();
       render();
+      runAiTurns();
     }
 
     function renderBack(target, count) {
@@ -1297,10 +1354,12 @@
 
     function openGuide() {
       el.guide.classList.add('show');
+      clearAiTimer();
     }
 
     function closeGuide() {
       el.guide.classList.remove('show');
+      if (!focusSuspendedPlay) scheduleAiIfNeeded(220);
     }
 
     function bind() {
@@ -1352,6 +1411,12 @@
         }
       });
     }
+
+    window.addEventListener('blur', suspendPlayForBackground);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) suspendPlayForBackground();
+      else resumePlayFromBackground();
+    });
 
     bind();
     startMatch();

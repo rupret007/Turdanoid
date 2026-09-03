@@ -11,7 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { JSDOM } from 'jsdom';
 
-const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'TurdAnoid.html'), 'utf8');
+const html = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '..', 'TurdAnoid.html'),
+  'utf8'
+);
 
 const FRAME = 1000 / 60;
 
@@ -35,10 +38,10 @@ function makeCtxStub() {
   });
 }
 
-function bootGame() {
+function bootAt(url) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
-    url: 'http://localhost/TurdAnoid.html',
+    url,
     beforeParse(window) {
       window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
       // No rAF loop: tests drive step() manually for determinism.
@@ -46,6 +49,11 @@ function bootGame() {
       window.cancelAnimationFrame = () => {};
     }
   });
+  return dom;
+}
+
+function bootGame() {
+  const dom = bootAt('http://localhost/TurdAnoid.html');
   const g = dom.window.__turdanoid;
   if (!g) {
     throw new Error('TurdAnoid test hook (window.__turdanoid) missing');
@@ -82,8 +90,8 @@ describe('TurdAnoid game regressions', () => {
       // Simulate many frames during the 600ms transition window
       stepFrames(g, 40);
       expect(g.score).toBe(baseScore + 250); // 200 + 1*50, once
-      expect(g.level).toBe(2);               // incremented once, not 40 times
-      expect(g.state).toBe('playing');       // no accidental instant win
+      expect(g.level).toBe(2); // incremented once, not 40 times
+      expect(g.state).toBe('playing'); // no accidental instant win
       expect(g.levelTransition).toBe(true);
     });
 
@@ -139,7 +147,7 @@ describe('TurdAnoid game regressions', () => {
         { x: 50, y: H + 30, r: 9, vx: 0, vy: 5, speed: 5, stuck: false, fire: 0, trail: [] }
       ];
       g.step(FRAME);
-      expect(g.balls.length).toBe(1);       // saved
+      expect(g.balls.length).toBe(1); // saved
       expect(g.activePowers.shield).toBeUndefined(); // fully consumed
     });
   });
@@ -235,8 +243,8 @@ describe('TurdAnoid game regressions', () => {
         stepFrames(game, frames, dt);
         return { x: game.balls[0].x, y: game.balls[0].y };
       };
-      const at60 = run(FRAME, 30);       // 30 frames at 60Hz
-      const at120 = run(FRAME / 2, 60);  // 60 frames at 120Hz, same wall time
+      const at60 = run(FRAME, 30); // 30 frames at 60Hz
+      const at120 = run(FRAME / 2, 60); // 60 frames at 120Hz, same wall time
       const at144 = run(1000 / 144, 72); // 72 frames at 144Hz, same wall time
       expect(at120.x).toBeCloseTo(at60.x, 6);
       expect(at120.y).toBeCloseTo(at60.y, 6);
@@ -300,5 +308,28 @@ describe('TurdAnoid game regressions', () => {
       expect(g.keys.left).toBe(true);
       expect(g.pointerActive).toBe(true);
     });
+  });
+});
+
+describe('TurdAnoid Pages debug surface', () => {
+  it('exposes the test hook on localhost', () => {
+    const dom = bootAt('http://localhost/TurdAnoid.html');
+    expect(dom.window.__turdanoid).toBeTruthy();
+    expect(typeof dom.window.__turdanoid.startGame).toBe('function');
+  });
+
+  it('exposes the test hook on the local smoke host', () => {
+    const dom = bootAt('http://127.0.0.1:8123/TurdAnoid.html');
+    expect(dom.window.__turdanoid).toBeTruthy();
+  });
+
+  it('hides the test hook on the public GitHub Pages host', () => {
+    const dom = bootAt('https://rupret007.github.io/Turdanoid/TurdAnoid.html');
+    expect(dom.window.__turdanoid).toBeUndefined();
+  });
+
+  it('hides the test hook on file URLs', () => {
+    const dom = bootAt('file:///TurdAnoid.html');
+    expect(dom.window.__turdanoid).toBeUndefined();
   });
 });
