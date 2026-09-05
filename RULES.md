@@ -113,6 +113,7 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Level Mutators**: Higher levels add changing garbage-row pressure
 - **Next-level pulse**: Shows the exact remaining line goal and previews the next recorded modifier before it lands
 - **Mobile play dock**: Move, rotate, hard drop, soft drop, hold, and pause stay on the thumb dock — none of them hide behind More Controls
+- **Mobile Hold / Next**: The held piece and next piece stay on the thumb dock so a phone run can see the queue without scrolling. Hold dims after it is used this piece, and a second tap does not swap
 - **Frame hitch clamp**: A stalled frame cannot dump extra gravity; motion stays capped to one 33ms step
 - **End-run receipt**: Game over shows the run score against this device's best, marks a new best, and Space or Enter starts the next run
 

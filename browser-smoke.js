@@ -231,12 +231,19 @@ async function main() {
           const dock = document.getElementById('mobileControls');
           const hub = document.querySelector('.suite-back-pill');
           const progress = document.getElementById('mobileLevelProgressBar');
+          const queue = document.getElementById('mobilePieceQueue');
+          const mobileHold = document.getElementById('mobileHold');
+          const mobileNext = document.getElementById('mobileNext');
           const extra = dock?.querySelector('details, .mobile-extra');
           const buttons = [...document.querySelectorAll('#mobileControls [data-action]')];
           const actions = buttons.map((button) => button.getAttribute('data-action'));
-          if (!dock || !hub || !progress || buttons.length !== 7) return null;
+          if (!dock || !hub || !progress || !queue || !mobileHold || !mobileNext || buttons.length !== 7) return null;
           const dockRect = dock.getBoundingClientRect();
           const hubRect = hub.getBoundingClientRect();
+          const inViewport = (el) => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= window.innerHeight + 1;
+          };
           return {
             position: getComputedStyle(dock).position,
             dockTop: dockRect.top,
@@ -244,6 +251,7 @@ async function main() {
             viewportHeight: window.innerHeight,
             hubBottom: hubRect.bottom,
             progressVisible: getComputedStyle(progress).display !== 'none',
+            queueVisible: getComputedStyle(queue).display !== 'none' && inViewport(mobileHold) && inViewport(mobileNext),
             buriedExtra: !!extra,
             actions,
             buttonsVisible: buttons.every((button) => {
@@ -260,6 +268,7 @@ async function main() {
         }
         if (!dockState.buttonsVisible) fail('turdtris-mobile', 'a primary thumb control is hidden or covered');
         if (!dockState.progressVisible) fail('turdtris-mobile', 'next-flush progress is hidden during mobile play');
+        if (!dockState.queueVisible) fail('turdtris-mobile', 'Hold and Next must stay visible on the thumb dock');
         if (dockState.hubBottom > dockState.dockTop - 4) fail('turdtris-mobile', 'Hub escape overlaps the fixed play dock');
         if (dockState.buriedExtra) fail('turdtris-mobile', 'Hold, Down, and Pause must stay on the dock, not behind More Controls');
         if (!['left', 'rotate', 'right', 'drop', 'down', 'hold', 'pause'].every((action) => dockState.actions.includes(action))) {
@@ -273,9 +282,32 @@ async function main() {
 
         const holdState = await page.evaluate(() => tetromino.name);
         await page.getByRole('button', { name: 'Hold', exact: true }).click();
-        const afterHold = await page.evaluate(() => ({ holdName, current: tetromino && tetromino.name }));
+        const afterHold = await page.evaluate(() => ({
+          holdName,
+          current: tetromino && tetromino.name,
+          canHold,
+          holdUsed: document.querySelector('#mobileControls [data-action="hold"]')?.classList.contains('is-used'),
+          holdBoxUsed: document.getElementById('mobileHoldBox')?.classList.contains('is-used'),
+          holdDisabled: document.querySelector('#mobileControls [data-action="hold"]')?.getAttribute('aria-disabled')
+        }));
         if (afterHold.holdName !== holdState) {
           fail('turdtris-mobile', `visible Hold control did not store the active piece: ${JSON.stringify({ holdState, afterHold })}`);
+        }
+        if (afterHold.canHold || !afterHold.holdUsed || !afterHold.holdBoxUsed || afterHold.holdDisabled !== 'true') {
+          fail('turdtris-mobile', `used Hold must dim on the dock: ${JSON.stringify(afterHold)}`);
+        }
+        await page.getByRole('button', { name: 'Hold', exact: true }).click();
+        const refusedHold = await page.evaluate(() => ({
+          holdName,
+          current: tetromino && tetromino.name,
+          canHold,
+          statusText
+        }));
+        if (refusedHold.holdName !== holdState || refusedHold.current !== afterHold.current || refusedHold.canHold) {
+          fail('turdtris-mobile', `a second Hold tap must not swap this piece: ${JSON.stringify({ holdState, afterHold, refusedHold })}`);
+        }
+        if (refusedHold.statusText !== 'Hold already used this piece.') {
+          fail('turdtris-mobile', `used Hold must say why it refused: ${refusedHold.statusText}`);
         }
 
         await page.getByRole('button', { name: 'Pause', exact: true }).click();

@@ -42,10 +42,15 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('none of them hide behind More Controls');
     expect(documented).toContain('capped to one 33ms step');
     expect(documented).toContain('Space or Enter starts the next run');
+    expect(documented).toContain('held piece and next piece stay on the thumb dock');
+    expect(documented).toContain('Hold dims after it is used this piece');
     expect(game).toContain('clampFrameDelta');
     expect(game).toContain('data-action="hold"');
     expect(game).toContain('data-action="down"');
     expect(game).toContain('data-action="pause"');
+    expect(game).toContain('id="mobileHold"');
+    expect(game).toContain('id="mobileNext"');
+    expect(game).toContain('Hold already used this piece.');
     expect(game).not.toContain('More Controls');
     expect(game).not.toContain('Infinity Rotation');
     expect(documented).not.toContain('Infinity Rotation');

@@ -109,6 +109,7 @@ if ($tris -match 'id="endOverlayCard"' -and $tris -match 'id="endFlavor"') { Pas
 if ($tris -match 'overlay-card\[data-tone="victory"\]' -and $tris -match 'function showGameOver\(won\)') { Pass("turdtris overlay tone polish") } else { Fail("turdtris overlay tone polish") }
 if ($tris -match 'function clampFrameDelta\(' -and $tris -match 'const MAX_FRAME_MS = 33;') { Pass("turdtris frame hitch clamp") } else { Fail("turdtris frame hitch clamp") }
 if ($tris -match 'class="mobile-controls-meta"' -and $tris -notmatch 'More Controls') { Pass("turdtris hold stays on the dock") } else { Fail("turdtris hold stays on the dock") }
+if ($tris -match 'id="mobileHold"' -and $tris -match 'id="mobileNext"' -and $tris -match 'Hold already used this piece\.') { Pass("turdtris hold and next stay on the dock") } else { Fail("turdtris hold and next stay on the dock") }
 if ($tris -match 'endBestLabel' -and $tris -match 'Space or Enter runs it back') { Pass("turdtris new-best receipt and replay") } else { Fail("turdtris new-best receipt and replay") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
