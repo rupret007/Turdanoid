@@ -18,6 +18,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 - After Nil landed: TurdSpades bot cards play one at a time, tab-hide pauses those turns, and a partner overtakes a winning Nil card when it can. The hub marks the last opened game. The TurdAnoid test hook no longer ships on the public Pages host.
 - After leftover #15: leaving TurdSpades, TurdRummy, or Crappy Eights saves the live table on this device. The hub says Continue when a table is waiting, returning players skip the welcome guide, and malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now loads the suite runtime so last-played is honest. Mid-run arcade saves stay parked with PR #8.
 - After leftover #16: Crapjack 21 continues the live hand, so leaving mid-round no longer keeps the deducted bet without the cards. Continue now uses the same validators on the live suite as in tests, the hub only says Continue for an unfinished playable table, and restored tables accept a real action. Arcade mid-run saves stay parked with PR #8.
+- After leftover #18: Turdtris keeps Hold, soft drop, and Pause on the thumb dock instead of behind More Controls. A stalled frame cannot dump extra gravity. Game over shows whether the run set a device best, and Space or Enter starts the next stack. Arcade mid-run saves stay parked with PR #8.
 
 ## Changelog (Latest)
 
@@ -78,7 +79,9 @@ Tetris-inspired stacker with modern guideline-style mechanics and progressive ch
 - Lock delay + gravity progression
 - Level modifiers with themed progression and garbage pressure
 - A visible next-level pulse that names remaining lines and the next garbage modifier
-- Always-reachable mobile thumb controls that stay with the board while scrolling
+- Always-reachable mobile thumb controls for move, rotate, soft drop, hard drop, hold, and pause — none of them hide behind More Controls
+- Frame-hitch gravity clamp so a stalled tab cannot slam the stack
+- End-run best-score receipt with Space/Enter replay
 - High score persistence
 
 **Controls:** Arrow keys or touch gestures.

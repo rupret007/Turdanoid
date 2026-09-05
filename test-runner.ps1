@@ -76,7 +76,7 @@ if ($game -match 'const overdriveActive = this\.activePowerUps && this\.activePo
 
 Write-Host "`n=== turdtris.html ===" -ForegroundColor Cyan
 $tris = Get-Content turdtris.html -Raw
-if ($tris -match 'let highScore = parseInt') { Pass("highScore declared") } else { Fail("highScore declared") }
+if ($tris -match 'function readStoredHighScore\(' -and $tris -match 'let highScore = readStoredHighScore\(\);') { Pass("highScore declared") } else { Fail("highScore declared") }
 if ($tris -match 'if \(canvas\)') { Pass("touch guard") } else { Fail("touch guard") }
 if ($tris -match 'Math\.min\(linesClearedThisTurn') { Pass("lineScores bounds") } else { Fail("lineScores bounds") }
 if ($tris -match 'if \(!matrix\) return getNextTetromino') { Pass("tetromino fallback") } else { Fail("tetromino fallback") }
@@ -107,6 +107,9 @@ if ($tris -match 'if \(e\.code === ''KeyM''\)') { Pass("turdtris keybind sound t
 if ($tris -match 'statusEl\.classList\.toggle\(''hype'', hypeTimer > 0\);') { Pass("turdtris hype status class") } else { Fail("turdtris hype status class") }
 if ($tris -match 'id="endOverlayCard"' -and $tris -match 'id="endFlavor"') { Pass("turdtris end overlay detail card") } else { Fail("turdtris end overlay detail card") }
 if ($tris -match 'overlay-card\[data-tone="victory"\]' -and $tris -match 'function showGameOver\(won\)') { Pass("turdtris overlay tone polish") } else { Fail("turdtris overlay tone polish") }
+if ($tris -match 'function clampFrameDelta\(' -and $tris -match 'const MAX_FRAME_MS = 33;') { Pass("turdtris frame hitch clamp") } else { Fail("turdtris frame hitch clamp") }
+if ($tris -match 'class="mobile-controls-meta"' -and $tris -notmatch 'More Controls') { Pass("turdtris hold stays on the dock") } else { Fail("turdtris hold stays on the dock") }
+if ($tris -match 'endBestLabel' -and $tris -match 'Space or Enter runs it back') { Pass("turdtris new-best receipt and replay") } else { Fail("turdtris new-best receipt and replay") }
 
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw

@@ -39,6 +39,15 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain(`Max level is ${maxLevel}`);
     expect(documented).toContain(`up to ${maxMoveResets} times per piece`);
     expect(documented).toContain('Levels 1-5 require 8 lines each');
+    expect(documented).toContain('none of them hide behind More Controls');
+    expect(documented).toContain('capped to one 33ms step');
+    expect(documented).toContain('Space or Enter starts the next run');
+    expect(game).toContain('clampFrameDelta');
+    expect(game).toContain('data-action="hold"');
+    expect(game).toContain('data-action="down"');
+    expect(game).toContain('data-action="pause"');
+    expect(game).not.toContain('More Controls');
+    expect(game).not.toContain('Infinity Rotation');
     expect(documented).not.toContain('Infinity Rotation');
   });
 

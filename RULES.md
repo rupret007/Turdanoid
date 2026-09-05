@@ -90,6 +90,7 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **C**: Hold piece
 - **P**: Pause/Resume
 - **M**: Toggle sound
+- **Space / Enter** after a wipeout: Play Again
 
 ### Scoring
 
@@ -111,7 +112,9 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Move Resets**: Movement or rotation can restart lock delay up to 12 times per piece
 - **Level Mutators**: Higher levels add changing garbage-row pressure
 - **Next-level pulse**: Shows the exact remaining line goal and previews the next recorded modifier before it lands
-- **Mobile play dock**: Primary move, rotate, and drop controls remain reachable while the board is in view
+- **Mobile play dock**: Move, rotate, hard drop, soft drop, hold, and pause stay on the thumb dock — none of them hide behind More Controls
+- **Frame hitch clamp**: A stalled frame cannot dump extra gravity; motion stays capped to one 33ms step
+- **End-run receipt**: Game over shows the run score against this device's best, marks a new best, and Space or Enter starts the next run
 
 ### Levels
 
