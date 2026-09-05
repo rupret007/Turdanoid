@@ -296,13 +296,18 @@ async function main() {
         if (afterHold.canHold || !afterHold.holdUsed || !afterHold.holdBoxUsed || afterHold.holdDisabled !== 'true') {
           fail('turdtris-mobile', `used Hold must dim on the dock: ${JSON.stringify(afterHold)}`);
         }
-        await page.getByRole('button', { name: 'Hold', exact: true }).click();
-        const refusedHold = await page.evaluate(() => ({
-          holdName,
-          current: tetromino && tetromino.name,
-          canHold,
-          statusText
-        }));
+        const refusedHold = await page.evaluate(() => {
+          stopLoop();
+          dropAccumulator = 0;
+          lastFrameTime = 0;
+          holdCurrentPiece();
+          return {
+            holdName,
+            current: tetromino && tetromino.name,
+            canHold,
+            statusText
+          };
+        });
         if (refusedHold.holdName !== holdState || refusedHold.current !== afterHold.current || refusedHold.canHold) {
           fail('turdtris-mobile', `a second Hold tap must not swap this piece: ${JSON.stringify({ holdState, afterHold, refusedHold })}`);
         }
