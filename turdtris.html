@@ -540,6 +540,53 @@ body::after {
   animation: statusPulse 0.9s ease-in-out infinite alternate;
 }
 
+.run-progress {
+  border: 1px solid rgba(143, 245, 198, 0.26);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(143, 245, 198, 0.08), rgba(16, 10, 6, 0.76));
+  padding: 9px 10px;
+}
+
+.run-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.run-progress-head strong {
+  color: #8ff5c6;
+  font-variant-numeric: tabular-nums;
+}
+
+.run-progress-track {
+  height: 8px;
+  margin-top: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 245, 198, 0.2);
+  border-radius: 999px;
+  background: rgba(4, 12, 9, 0.72);
+}
+
+.run-progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6ee7b7, #ffd68f);
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.4);
+  transition: width 0.24s ease;
+}
+
+.run-progress-copy {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 @keyframes statusPulse {
   from { transform: translateY(0); }
   to { transform: translateY(-1px); }
@@ -556,6 +603,10 @@ body::after {
   gap: 8px;
   width: 100%;
   margin-top: 12px;
+}
+
+.mobile-level-progress {
+  display: none;
 }
 
 .mobile-controls-main {
@@ -673,7 +724,7 @@ body::after {
 @media (max-width: 980px) {
   body {
     padding: clamp(8px, 2.5vw, 12px);
-    padding-bottom: 90px;
+    padding-bottom: calc(154px + env(safe-area-inset-bottom));
   }
   .layout {
     width: min(900px, 94vw);
@@ -699,7 +750,11 @@ body::after {
   }
   .mobile-controls {
     display: grid;
-    position: sticky;
+    position: fixed;
+    left: 50%;
+    width: min(560px, calc(100vw - 16px));
+    margin: 0;
+    transform: translateX(-50%);
     bottom: max(8px, env(safe-area-inset-bottom));
     z-index: 30;
     border: 1px solid rgba(255, 203, 135, 0.25);
@@ -707,6 +762,39 @@ body::after {
     background: rgba(26, 16, 10, 0.92);
     padding: 7px;
     padding-bottom: max(7px, env(safe-area-inset-bottom));
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  .mobile-level-progress {
+    display: grid;
+    grid-template-columns: auto minmax(48px, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+  .mobile-level-progress strong {
+    color: #8ff5c6;
+    font-variant-numeric: tabular-nums;
+  }
+  .mobile-level-track {
+    height: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(143, 245, 198, 0.25);
+    border-radius: 999px;
+    background: rgba(4, 12, 9, 0.86);
+  }
+  .mobile-level-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #6ee7b7, #ffd68f);
+    transition: width 0.24s ease;
+  }
+  .suite-back-pill {
+    bottom: max(140px, calc(var(--suite-safe-bot) + 136px));
   }
   .control-btn {
     min-width: 82px;
@@ -789,6 +877,11 @@ body::after {
     .pb-danger.warn{border-color:rgba(255,140,80,.55);box-shadow:inset 0 0 60px rgba(255,140,80,.25);animation:pbPulse 1.2s infinite}
     .pb-danger.alarm{border-color:rgba(255,80,80,.85);box-shadow:inset 0 0 80px rgba(255,80,80,.4);animation:pbPulse .55s infinite}
     @keyframes pbPulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+    @media (max-width: 980px) {
+      .pb-boss{bottom:max(140px,calc(env(safe-area-inset-bottom) + 134px))}
+      .pb-bubble{bottom:max(180px,calc(env(safe-area-inset-bottom) + 174px))}
+    }
 
   </style>
 </head>
@@ -888,6 +981,14 @@ body::after {
         </div>
       </div>
 
+      <div class="run-progress">
+        <div class="run-progress-head"><span>Next flush</span><strong id="levelProgressText">0 / 8 lines</strong></div>
+        <div class="run-progress-track" id="levelProgressBar" role="progressbar" aria-label="Lines toward the next Turdtris level" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" aria-valuetext="0 of 8 lines">
+          <div class="run-progress-fill" id="levelProgressFill"></div>
+        </div>
+        <p class="run-progress-copy" id="nextLevelPreview">Clear 8 more lines to reach Level 2. Warmup Flow adds no garbage yet.</p>
+      </div>
+
       <div>
         <h3>Status</h3>
         <div class="status" id="statusText">Stack clean, survive long, and chain line clears.</div>
@@ -908,8 +1009,16 @@ body::after {
       </div>
     </aside>
   </div>
+</div>
 
-  <div class="mobile-controls" id="mobileControls">
+<div class="mobile-controls" id="mobileControls">
+    <div class="mobile-level-progress">
+      <span>Next flush</span>
+      <div class="mobile-level-track" id="mobileLevelProgressBar" role="progressbar" aria-label="Lines toward the next Turdtris level on mobile" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" aria-valuetext="0 of 8 lines">
+        <div class="mobile-level-fill" id="mobileLevelProgressFill"></div>
+      </div>
+      <strong id="mobileLevelProgressText">0 / 8</strong>
+    </div>
     <div class="mobile-controls-main">
       <button class="control-btn" data-action="left">Left</button>
       <button class="control-btn" data-action="rotate">Rotate</button>
@@ -924,7 +1033,6 @@ body::after {
         <button class="control-btn" data-action="pause">Pause</button>
       </div>
     </details>
-  </div>
 </div>
 
 <script>
@@ -2161,6 +2269,13 @@ function updateScore() {
   const comboEl = document.getElementById('combo');
   const b2bEl = document.getElementById('b2b');
   const statusEl = document.getElementById('statusText');
+  const levelProgressTextEl = document.getElementById('levelProgressText');
+  const levelProgressBarEl = document.getElementById('levelProgressBar');
+  const levelProgressFillEl = document.getElementById('levelProgressFill');
+  const nextLevelPreviewEl = document.getElementById('nextLevelPreview');
+  const mobileLevelProgressBarEl = document.getElementById('mobileLevelProgressBar');
+  const mobileLevelProgressFillEl = document.getElementById('mobileLevelProgressFill');
+  const mobileLevelProgressTextEl = document.getElementById('mobileLevelProgressText');
 
   if (scoreEl) scoreEl.textContent = String(score);
   if (highScoreEl) highScoreEl.textContent = String(highScore);
@@ -2168,6 +2283,36 @@ function updateScore() {
   if (linesEl) linesEl.textContent = String(linesCleared);
   if (comboEl) comboEl.textContent = String(combo);
   if (b2bEl) b2bEl.textContent = String(b2b);
+  const boundedGoal = Math.max(1, Number.isFinite(levelGoal) ? Math.floor(levelGoal) : 1);
+  const boundedProgress = Math.max(0, Math.min(boundedGoal, Number.isFinite(levelLines) ? Math.floor(levelLines) : 0));
+  const progressPercent = Math.round((boundedProgress / boundedGoal) * 100);
+  if (levelProgressTextEl) levelProgressTextEl.textContent = `${boundedProgress} / ${boundedGoal} lines`;
+  if (levelProgressBarEl) {
+    levelProgressBarEl.setAttribute('aria-valuemax', String(boundedGoal));
+    levelProgressBarEl.setAttribute('aria-valuenow', String(boundedProgress));
+    levelProgressBarEl.setAttribute('aria-valuetext', `${boundedProgress} of ${boundedGoal} lines`);
+  }
+  if (levelProgressFillEl) levelProgressFillEl.style.width = `${progressPercent}%`;
+  if (mobileLevelProgressTextEl) mobileLevelProgressTextEl.textContent = `${boundedProgress} / ${boundedGoal}`;
+  if (mobileLevelProgressBarEl) {
+    mobileLevelProgressBarEl.setAttribute('aria-valuemax', String(boundedGoal));
+    mobileLevelProgressBarEl.setAttribute('aria-valuenow', String(boundedProgress));
+    mobileLevelProgressBarEl.setAttribute('aria-valuetext', `${boundedProgress} of ${boundedGoal} lines`);
+  }
+  if (mobileLevelProgressFillEl) mobileLevelProgressFillEl.style.width = `${progressPercent}%`;
+  if (nextLevelPreviewEl) {
+    if (level >= MAX_LEVEL) {
+      nextLevelPreviewEl.textContent = `Level ${MAX_LEVEL} reached. The sewer run is complete.`;
+    } else {
+      const remaining = Math.max(0, boundedGoal - boundedProgress);
+      const nextLevel = level + 1;
+      const nextMutator = buildLevelMutator(nextLevel);
+      const challenge = nextMutator.lines > 0
+        ? `${nextMutator.name} adds ${nextMutator.lines} garbage line${nextMutator.lines === 1 ? '' : 's'}.`
+        : 'Warmup Flow adds no garbage yet.';
+      nextLevelPreviewEl.textContent = `Clear ${remaining} more line${remaining === 1 ? '' : 's'} to reach Level ${nextLevel}. ${challenge}`;
+    }
+  }
   if (statusEl) {
     const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
     const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';

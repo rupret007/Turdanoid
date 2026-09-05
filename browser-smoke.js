@@ -224,6 +224,73 @@ async function main() {
         await page.getByRole('button', { name: 'Review Then Start' }).click();
         const playfield = page.locator('#game');
         if (!(await playfield.isVisible())) fail('turdtris-mobile', 'playfield not visible after guide close');
+
+        await page.evaluate(() => window.scrollTo(0, 480));
+        await page.waitForTimeout(100);
+        const dockState = await page.evaluate(() => {
+          const dock = document.getElementById('mobileControls');
+          const hub = document.querySelector('.suite-back-pill');
+          const progress = document.getElementById('mobileLevelProgressBar');
+          const buttons = [...document.querySelectorAll('#mobileControls .mobile-controls-main [data-action]')];
+          if (!dock || !hub || !progress || buttons.length !== 4) return null;
+          const dockRect = dock.getBoundingClientRect();
+          const hubRect = hub.getBoundingClientRect();
+          return {
+            position: getComputedStyle(dock).position,
+            dockTop: dockRect.top,
+            dockBottom: dockRect.bottom,
+            viewportHeight: window.innerHeight,
+            hubBottom: hubRect.bottom,
+            progressVisible: getComputedStyle(progress).display !== 'none',
+            buttonsVisible: buttons.every((button) => {
+              const rect = button.getBoundingClientRect();
+              const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+              return rect.top >= 0 && rect.bottom <= window.innerHeight && (hit === button || button.contains(hit));
+            })
+          };
+        });
+        if (!dockState) fail('turdtris-mobile', 'mobile play dock or Hub escape is missing');
+        if (dockState.position !== 'fixed') fail('turdtris-mobile', `play dock should stay fixed during the run, saw ${dockState.position}`);
+        if (dockState.dockTop < 0 || dockState.dockBottom > dockState.viewportHeight + 1) {
+          fail('turdtris-mobile', `play dock escaped the viewport: ${JSON.stringify(dockState)}`);
+        }
+        if (!dockState.buttonsVisible) fail('turdtris-mobile', 'a primary thumb control is hidden or covered');
+        if (!dockState.progressVisible) fail('turdtris-mobile', 'next-flush progress is hidden during mobile play');
+        if (dockState.hubBottom > dockState.dockTop - 4) fail('turdtris-mobile', 'Hub escape overlaps the fixed play dock');
+
+        const beforeCol = await page.evaluate(() => tetromino.col);
+        await page.getByRole('button', { name: 'Right', exact: true }).click();
+        const afterCol = await page.evaluate(() => tetromino.col);
+        if (afterCol !== beforeCol + 1) fail('turdtris-mobile', `visible Right control did not move the active piece: ${beforeCol} -> ${afterCol}`);
+
+        const progress = await page.evaluate(() => {
+          level = 3;
+          levelLines = 4;
+          levelGoal = 8;
+          updateScore();
+          const bar = document.getElementById('levelProgressBar');
+          const mobileBar = document.getElementById('mobileLevelProgressBar');
+          return {
+            text: document.getElementById('levelProgressText')?.textContent,
+            preview: document.getElementById('nextLevelPreview')?.textContent,
+            width: document.getElementById('levelProgressFill')?.style.width,
+            now: bar?.getAttribute('aria-valuenow'),
+            max: bar?.getAttribute('aria-valuemax'),
+            mobileText: document.getElementById('mobileLevelProgressText')?.textContent,
+            mobileWidth: document.getElementById('mobileLevelProgressFill')?.style.width,
+            mobileNow: mobileBar?.getAttribute('aria-valuenow'),
+            mobileMax: mobileBar?.getAttribute('aria-valuemax')
+          };
+        });
+        if (progress.text !== '4 / 8 lines' || progress.width !== '50%' || progress.now !== '4' || progress.max !== '8') {
+          fail('turdtris-mobile', `next-level pulse is not bound to the recorded run: ${JSON.stringify(progress)}`);
+        }
+        if (!/Level 4/.test(progress.preview || '') || !/1 garbage line/.test(progress.preview || '')) {
+          fail('turdtris-mobile', `next modifier is not previewed honestly: ${progress.preview}`);
+        }
+        if (progress.mobileText !== '4 / 8' || progress.mobileWidth !== '50%' || progress.mobileNow !== '4' || progress.mobileMax !== '8') {
+          fail('turdtris-mobile', `mobile next-flush pulse is not bound to the recorded run: ${JSON.stringify(progress)}`);
+        }
       }
     });
 

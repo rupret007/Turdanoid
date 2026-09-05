@@ -77,6 +77,8 @@ Tetris-inspired stacker with modern guideline-style mechanics and progressive ch
 - Combo, back-to-back, T-Spin, and perfect-clear scoring
 - Lock delay + gravity progression
 - Level modifiers with themed progression and garbage pressure
+- A visible next-level pulse that names remaining lines and the next garbage modifier
+- Always-reachable mobile thumb controls that stay with the board while scrolling
 - High score persistence
 
 **Controls:** Arrow keys or touch gestures.
