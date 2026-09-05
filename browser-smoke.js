@@ -231,8 +231,10 @@ async function main() {
           const dock = document.getElementById('mobileControls');
           const hub = document.querySelector('.suite-back-pill');
           const progress = document.getElementById('mobileLevelProgressBar');
-          const buttons = [...document.querySelectorAll('#mobileControls .mobile-controls-main [data-action]')];
-          if (!dock || !hub || !progress || buttons.length !== 4) return null;
+          const extra = dock?.querySelector('details, .mobile-extra');
+          const buttons = [...document.querySelectorAll('#mobileControls [data-action]')];
+          const actions = buttons.map((button) => button.getAttribute('data-action'));
+          if (!dock || !hub || !progress || buttons.length !== 7) return null;
           const dockRect = dock.getBoundingClientRect();
           const hubRect = hub.getBoundingClientRect();
           return {
@@ -242,6 +244,8 @@ async function main() {
             viewportHeight: window.innerHeight,
             hubBottom: hubRect.bottom,
             progressVisible: getComputedStyle(progress).display !== 'none',
+            buriedExtra: !!extra,
+            actions,
             buttonsVisible: buttons.every((button) => {
               const rect = button.getBoundingClientRect();
               const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -257,11 +261,32 @@ async function main() {
         if (!dockState.buttonsVisible) fail('turdtris-mobile', 'a primary thumb control is hidden or covered');
         if (!dockState.progressVisible) fail('turdtris-mobile', 'next-flush progress is hidden during mobile play');
         if (dockState.hubBottom > dockState.dockTop - 4) fail('turdtris-mobile', 'Hub escape overlaps the fixed play dock');
+        if (dockState.buriedExtra) fail('turdtris-mobile', 'Hold, Down, and Pause must stay on the dock, not behind More Controls');
+        if (!['left', 'rotate', 'right', 'drop', 'down', 'hold', 'pause'].every((action) => dockState.actions.includes(action))) {
+          fail('turdtris-mobile', `play dock is missing a live control: ${JSON.stringify(dockState.actions)}`);
+        }
 
         const beforeCol = await page.evaluate(() => tetromino.col);
         await page.getByRole('button', { name: 'Right', exact: true }).click();
         const afterCol = await page.evaluate(() => tetromino.col);
         if (afterCol !== beforeCol + 1) fail('turdtris-mobile', `visible Right control did not move the active piece: ${beforeCol} -> ${afterCol}`);
+
+        const holdState = await page.evaluate(() => tetromino.name);
+        await page.getByRole('button', { name: 'Hold', exact: true }).click();
+        const afterHold = await page.evaluate(() => ({ holdName, current: tetromino && tetromino.name }));
+        if (afterHold.holdName !== holdState) {
+          fail('turdtris-mobile', `visible Hold control did not store the active piece: ${JSON.stringify({ holdState, afterHold })}`);
+        }
+
+        await page.getByRole('button', { name: 'Pause', exact: true }).click();
+        const pausedState = await page.evaluate(() => ({
+          paused,
+          overlay: document.getElementById('pauseOverlay')?.style.display
+        }));
+        if (!pausedState.paused || pausedState.overlay !== 'grid') {
+          fail('turdtris-mobile', `visible Pause control did not pause the run: ${JSON.stringify(pausedState)}`);
+        }
+        await page.getByRole('button', { name: 'Resume', exact: true }).click();
 
         const progress = await page.evaluate(() => {
           level = 3;
@@ -335,6 +360,49 @@ async function main() {
         }
         if (turdtrisRestartState.onboardingOpen || turdtrisRestartState.gameOver) {
           fail('turdtris-restart-churn', 'restart churn should not reopen the guide or leave game-over state set');
+        }
+
+        const slamState = await page.evaluate(() => {
+          const startRow = tetromino.row;
+          lastFrameTime = 1000;
+          loop(1000 + 5000);
+          return {
+            startRow,
+            row: tetromino.row,
+            dropAccumulator,
+            clamped: clampFrameDelta(5000)
+          };
+        });
+        if (slamState.clamped !== 33) {
+          fail('turdtris-restart-churn', `a hitch must clamp to one frame, saw ${slamState.clamped}`);
+        }
+        if (slamState.row !== slamState.startRow || slamState.dropAccumulator > 33) {
+          fail('turdtris-restart-churn', `a 5s frame hitch must not dump gravity: ${JSON.stringify(slamState)}`);
+        }
+
+        await page.evaluate(() => {
+          score = 240;
+          runBestAtStart = 100;
+          showGameOver(false);
+        });
+        const overState = await page.evaluate(() => ({
+          gameOver,
+          bestLabel: document.getElementById('endBestLabel')?.textContent,
+          best: document.getElementById('endBest')?.textContent
+        }));
+        if (!overState.gameOver) fail('turdtris-restart-churn', 'forced wipeout should open game over');
+        if (overState.bestLabel !== 'New best' || overState.best !== '240') {
+          fail('turdtris-restart-churn', `game over must show an honest new-best receipt: ${JSON.stringify(overState)}`);
+        }
+        await page.keyboard.press('Space');
+        const replayState = await page.evaluate(() => ({
+          gameOver,
+          score,
+          overlay: document.getElementById('gameOverOverlay')?.style.display,
+          loopRunning: rAF !== null
+        }));
+        if (replayState.gameOver || replayState.score !== 0 || replayState.overlay !== 'none' || !replayState.loopRunning) {
+          fail('turdtris-restart-churn', `Space must replay after game over: ${JSON.stringify(replayState)}`);
         }
       }
     });
