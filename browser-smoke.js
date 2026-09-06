@@ -505,6 +505,85 @@ async function main() {
       }
     });
 
+    for (const mobile of [false, true]) {
+      const name = mobile ? 'turdjack-soft-smart-mobile-continue' : 'turdjack-soft-smart-keyboard';
+      await runCheck(browser, name, 'turdjack.html', {
+        mobile,
+        actions: async (page) => {
+          await page.keyboard.press('Enter'); // Dismiss the guide, not a deal.
+          await page.evaluate(() => {
+            rules = normalizeRules({ ...rules, decks: 1, allowSurrender: true, allowInsurance: false });
+            createShoe(1);
+            const pull = (rank, suit) => {
+              const index = shoe.findIndex(card => card.rank === rank && card.suit === suit);
+              if (index < 0) throw new Error(`Missing physical fixture card ${rank}${suit}`);
+              return shoe.splice(index, 1)[0];
+            };
+            const nextHit = pull('2', 'C');
+            const hole = pull('8', 'S');
+            const second = pull('5', 'C');
+            const up = pull('9', 'D');
+            const first = pull('A', 'H');
+            shoe.push(nextHit, hole, second, up, first);
+            bankroll = 1000;
+            currentBet = 100;
+            lastBet = 100;
+            stats = normalizeStats({});
+            decisionStreak = 0;
+            hotStreak = 0;
+            coldStreak = 0;
+            startRound();
+          });
+
+          // The phone path also proves that Continue recomputes live advice;
+          // no persisted recommendation or new public debug hook is involved.
+          if (mobile) await page.reload({ waitUntil: 'load' });
+          const before = await page.evaluate(() => ({
+            active: roundActive,
+            bankroll,
+            total: handValue(playerHand),
+            soft: isSoftHand(playerHand),
+            hint: ui.hintText.textContent,
+            surrenderAvailable: !ui.surrenderBtn.disabled,
+            cards: [...shoe, ...discard, ...playerHand, ...dealerHand, ...splitHand]
+              .map(card => card.rank + card.suit)
+          }));
+          if (!before.active || before.bankroll !== 900 || before.total !== 16 || !before.soft
+            || before.cards.length !== 52 || new Set(before.cards).size !== 52) {
+            throw new Error(`Expected a real single-deck soft16 fixture: ${JSON.stringify(before)}`);
+          }
+          if (!before.hint.startsWith('Hint: Hit.') || !before.hint.includes('Soft 16')) {
+            fail(name, `soft16 must recommend Hit and explain the soft total, saw ${before.hint}`);
+          }
+          if (!before.surrenderAvailable) fail(name, 'manual surrender must remain an available choice');
+          if (mobile) await page.locator('#mobilePit [data-mobile-action="smart"]').click();
+          else await page.keyboard.press('Enter');
+
+          const after = await page.evaluate(() => ({
+            active: roundActive,
+            bankroll,
+            cards: playerHand.map(card => card.rank + card.suit),
+            total: handValue(playerHand),
+            hidden: dealerHoleHidden,
+            surrenderCount: stats.surrenders,
+            losses: stats.losses,
+            decisions: stats.decisions,
+            correct: stats.correctDecisions,
+            discipline: ui.disciplineText.textContent,
+            bankrollLabel: ui.bankrollText.textContent,
+            firstDecisionOpen
+          }));
+          if (!after.active || after.bankroll !== 900 || after.total !== 18
+            || JSON.stringify(after.cards) !== JSON.stringify(['AH', '5C', '2C'])
+            || !after.hidden || after.surrenderCount !== 0 || after.losses !== 0
+            || after.decisions !== 1 || after.correct !== 1 || after.discipline !== '100%'
+            || after.bankrollLabel !== '$900' || after.firstDecisionOpen) {
+            fail(name, `Smart should draw once and retain the live hand, not forfeit half the bet: ${JSON.stringify(after)}`);
+          }
+        }
+      });
+    }
+
     await runCheck(browser, 'turdjack-hidden-hole-count', 'turdjack.html', {
       actions: async (page) => {
         const countStates = await page.evaluate(() => {
