@@ -1686,8 +1686,12 @@
 
     function queueAiTurn(delayMs) {
       clearAiTurnTimeout();
+      if (document.hidden) { suspendAiForBackground(); return; }
+      if (focusPausedAiTurn || el.guideOverlay.classList.contains("show") || state.roundOver || state.turn !== "ai") return;
       aiTurnTimeoutId = window.setTimeout(() => {
         aiTurnTimeoutId = null;
+        if (document.hidden) { suspendAiForBackground(); return; }
+        if (focusPausedAiTurn || el.guideOverlay.classList.contains("show")) return;
         aiTurn();
       }, delayMs);
     }
@@ -1703,7 +1707,7 @@
     }
 
     function resumeAiFromBackground() {
-      if (!focusPausedAiTurn) return;
+      if (document.hidden || !focusPausedAiTurn) return;
       focusPausedAiTurn = false;
       if (!el.guideOverlay.classList.contains("show") && !state.roundOver && state.turn === "ai") {
         queueAiTurn(220);
@@ -2717,7 +2721,6 @@
 
     function openGuide() {
       clearAiTurnTimeout();
-      focusPausedAiTurn = false;
       el.guideOverlay.classList.add("show");
     }
 
@@ -2798,6 +2801,7 @@
     }
 
     window.addEventListener("blur", suspendAiForBackground);
+    window.addEventListener("focus", resumeAiFromBackground);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) suspendAiForBackground();
       else resumeAiFromBackground();

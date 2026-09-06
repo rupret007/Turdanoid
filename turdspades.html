@@ -835,12 +835,14 @@
 
     function scheduleAiIfNeeded(delayMs) {
       clearAiTimer();
+      if (document.hidden) { suspendPlayForBackground(); return; }
       if (focusSuspendedPlay) return;
       if (el.guide && el.guide.classList.contains('show')) return;
       if (state.phase !== 'play' || state.currentPlayer === 0) return;
       const wait = Number.isFinite(delayMs) ? delayMs : AI_TURN_MS;
       aiTurnTimeoutId = setTimeout(() => {
         aiTurnTimeoutId = null;
+        if (document.hidden) { suspendPlayForBackground(); return; }
         if (focusSuspendedPlay || (el.guide && el.guide.classList.contains('show'))) return;
         if (state.phase !== 'play' || state.currentPlayer === 0) return;
         const player = state.currentPlayer;
@@ -864,7 +866,7 @@
     }
 
     function resumePlayFromBackground() {
-      if (!focusSuspendedPlay) return;
+      if (document.hidden || !focusSuspendedPlay) return;
       focusSuspendedPlay = false;
       if (el.guide && el.guide.classList.contains('show')) return;
       if (state.phase === 'play' && state.currentPlayer !== 0) {
@@ -1507,6 +1509,7 @@
     }
 
     window.addEventListener('blur', suspendPlayForBackground);
+    window.addEventListener('focus', resumePlayFromBackground);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) suspendPlayForBackground();
       else resumePlayFromBackground();
