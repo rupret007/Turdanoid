@@ -2508,40 +2508,55 @@
       }
       const deadwoodCards = base.deadwoodCards.slice().sort((a, b) => cardDeadwoodValue(b) - cardDeadwoodValue(a));
       const tableMelds = cloneMelds(knockerMelds);
+      const layoffMemo = new Map();
 
-      let bestScore = base.deadwoodScore;
-      let bestDeadwood = deadwoodCards.slice();
-      let bestLaidOff = [];
+      function search(remaining, melds) {
+        // Equivalent attachment orders reach the same remaining cards and
+        // table. Cache those states rather than exploring every permutation.
+        const key = JSON.stringify([remaining, melds.map((meld) => [
+          meld.type,
+          meld.cards.slice().sort(sortByRankThenSuit).map((card) => [card.suit, card.rank])
+        ])]);
+        if (layoffMemo.has(key)) return layoffMemo.get(key);
 
-      function search(index, melds, keptCards, laidOffCards, deadwoodScore) {
-        if (index >= deadwoodCards.length) {
-          if (deadwoodScore < bestScore) {
-            bestScore = deadwoodScore;
-            bestDeadwood = keptCards.slice();
-            bestLaidOff = laidOffCards.slice();
+        const keptCards = remaining.map((index) => deadwoodCards[index]);
+        let best = {
+          deadwoodScore: keptCards.reduce((total, card) => total + cardDeadwoodValue(card), 0),
+          deadwoodCards: keptCards,
+          laidOffCards: []
+        };
+
+        // A card that cannot attach yet stays available. For example, a 7 can
+        // join 3-4-5 only after the 6 extends it. Explore each destination too:
+        // placing that 6 on a rank set instead could strand the 7.
+        for (let position = 0; position < remaining.length; position += 1) {
+          const card = deadwoodCards[remaining[position]];
+          for (let i = 0; i < melds.length; i += 1) {
+            if (!canCardAttachToMeld(card, melds[i])) continue;
+            const nextMelds = cloneMelds(melds);
+            attachCardToMeld(card, nextMelds[i]);
+            const nextRemaining = remaining.filter((_index, at) => at !== position);
+            const continuation = search(nextRemaining, nextMelds);
+            if (continuation.deadwoodScore < best.deadwoodScore) {
+              best = {
+                deadwoodScore: continuation.deadwoodScore,
+                deadwoodCards: continuation.deadwoodCards,
+                laidOffCards: [card].concat(continuation.laidOffCards)
+              };
+              // Scores cannot be negative. The receipt retains the legal
+              // attachment order that actually reached this best outcome.
+              if (best.deadwoodScore === 0) {
+                layoffMemo.set(key, best);
+                return best;
+              }
+            }
           }
-          return;
         }
-
-        const card = deadwoodCards[index];
-        const value = cardDeadwoodValue(card);
-
-        keptCards.push(card);
-        search(index + 1, melds, keptCards, laidOffCards, deadwoodScore);
-        keptCards.pop();
-
-        for (let i = 0; i < melds.length; i += 1) {
-          if (!canCardAttachToMeld(card, melds[i])) continue;
-          const nextMelds = cloneMelds(melds);
-          attachCardToMeld(card, nextMelds[i]);
-          laidOffCards.push(card);
-          search(index + 1, nextMelds, keptCards, laidOffCards, deadwoodScore - value);
-          laidOffCards.pop();
-        }
+        layoffMemo.set(key, best);
+        return best;
       }
 
-      search(0, tableMelds, [], [], base.deadwoodScore);
-      return { deadwoodScore: bestScore, deadwoodCards: bestDeadwood, laidOffCards: bestLaidOff };
+      return search(deadwoodCards.map((_card, index) => index), tableMelds);
     }
 
     function finishRound(knocker, isGin, knockerDeadwood, knockerMelds) {
