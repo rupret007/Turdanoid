@@ -730,6 +730,67 @@ async function main() {
       }
     });
 
+    for (const mobile of [false, true]) {
+      const name = `turdrummy-chain-layoff-${mobile ? 'phone' : 'desktop'}`;
+      await runCheck(browser, name, 'turdrummy.html', {
+        mobile,
+        actions: async (page) => {
+          const fixture = await page.evaluate(() => {
+            closeGuide();
+            resetMatch();
+            const deck = createDeck();
+            const hand = (spec) => spec.split(' ').map((value) => deck.find((card) =>
+              card.suit === value[0] && card.rank === Number(value.slice(1))));
+            state.playerHand = hand('H3 H4 H5 C9 D9 S9 C10 D10 H10 D1 C13');
+            state.aiHand = hand('H6 H7 C1 C2 C3 S4 S5 S6 S7 S8');
+            const used = new Set([...state.playerHand, ...state.aiHand].map(card => card.id));
+            state.stock = deck.filter(card => !used.has(card.id));
+            state.discard = [state.stock.pop()];
+            const discard = state.playerHand.at(-1);
+            Object.assign(state, {
+              initialized: true, round: 1, turn: 'player', phase: 'discard',
+              selectedCardId: discard.id, drawnCardId: discard.id, drawnCardSource: 'stock',
+              roundOver: false, matchOver: false, message: 'Fixture: knock with one deadwood.'
+            });
+            renderAll();
+            return {
+              unique: new Set([...state.playerHand, ...state.aiHand, ...state.stock, ...state.discard].map(card => card.id)).size,
+              knocker: analyzeHand(handAfterDiscard(state.playerHand, discard.id)).deadwoodScore,
+              defender: analyzeHand(state.aiHand).deadwoodScore
+            };
+          });
+          if (fixture.unique !== 52 || fixture.knocker !== 1 || fixture.defender !== 13) {
+            fail(name, `invalid deterministic full-deck fixture: ${JSON.stringify(fixture)}`);
+          }
+          await page.locator('#knockBtn').click();
+          const result = await page.evaluate(() => ({
+            player: state.playerScore, ai: state.aiScore, undercuts: state.stats.undercuts,
+            roundOver: state.roundOver, summary: state.roundSummary,
+            receipt: document.getElementById('messageBox').textContent,
+            playerLabel: document.getElementById('playerScoreValue').textContent,
+            aiLabel: document.getElementById('aiScoreValue').textContent
+          }));
+          if (result.player !== 0 || result.ai !== 26 || result.undercuts !== 1 || !result.roundOver) {
+            fail(name, `H6 then H7 must undercut a one-deadwood knock: ${JSON.stringify(result)}`);
+          }
+          if (result.playerLabel !== '0' || result.aiLabel !== '26'
+            || !result.receipt.includes('Undercut!') || !result.receipt.includes('defender deadwood: 0')
+            || !result.summary.includes('6♥') || !result.summary.includes('7♥')) {
+            fail(name, `visible score and layoff receipt must match the awarded round: ${JSON.stringify(result)}`);
+          }
+          await page.locator('#newRoundBtn').click();
+          const next = await page.evaluate(() => {
+            clearAiTurnTimeout();
+            return { round: state.round, player: state.playerScore, ai: state.aiScore,
+              undercuts: state.stats.undercuts, roundOver: state.roundOver };
+          });
+          if (next.round !== 2 || next.player !== 0 || next.ai !== 26 || next.undercuts !== 1 || next.roundOver) {
+            fail(name, `next round must preserve the single correct award: ${JSON.stringify(next)}`);
+          }
+        }
+      });
+    }
+
     await runCheck(browser, 'turdspades-mobile', 'turdspades.html', {
       mobile: true,
       actions: async (page) => {

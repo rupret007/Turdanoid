@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- TurdRummy reconsiders dependent deadwood cards after a layoff extends a run, so a legal chain cannot award the round to the wrong side. Competing run/set placements are searched; human and AI defenders use the same result. Gin still forbids layoffs. See [the scoring handoff](docs/TURDRUMMY_LAYOFF_HANDOFF.md).
 - Returning to a visible window resumes paused TurdSpades, TurdRummy and Crappy Eights turns, including Crappy Eights' pending automatic pass. Hidden tabs and open guides keep the table paused; repeated focus/tab-return events cannot duplicate a turn. Fresh matches and finished rounds do not revive old timers.
 - Made `index.html` the canonical six-game launcher so the root GitHub Pages URL opens the complete suite.
 - Moved the original Neon Arkanoid to `neon-arkanoid.html` and kept `hub.html` as a compatibility redirect.
@@ -132,6 +133,7 @@ Gin Rummy game themed to match the rest of the hub.
 - Real meld/deadwood hand analysis
 - Knock and gin decisions from your selected discard
 - Layoff and undercut scoring logic
+- Order-independent chained layoffs, with the round's visible receipt naming the cards actually laid off
 - AI draw/discard logic tuned for reasonable play
 - Fixed mobile control dock for draw/discard/knock/gin actions
 - Round/match scoring with localStorage persistence

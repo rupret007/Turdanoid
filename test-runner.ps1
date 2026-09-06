@@ -236,7 +236,7 @@ if ($rummy -match 'quickGuideBtn') { Pass("rules guide button") } else { Fail("r
 if ($rummy -match 'localStorage') { Pass("localStorage stats") } else { Fail("localStorage stats") }
 if ($rummy -match 'resolveStockStall') { Pass("stock stall resolution") } else { Fail("stock stall resolution") }
 if ($rummy -match 'state\.discard\.length === 0') { Pass("stock draw fallback message path") } else { Fail("stock draw fallback message path") }
-if ($rummy -match 'function search\(index, melds, keptCards, laidOffCards, deadwoodScore\)') { Pass("layoff backtracking") } else { Fail("layoff backtracking") }
+if ($rummy -match 'function search\(remaining, melds\)' -and $rummy -match 'layoffMemo\.has\(key\)' -and $rummy -match 'search\(nextRemaining, nextMelds\)') { Pass("order-independent memoized layoff search") } else { Fail("order-independent memoized layoff search") }
 if ($rummy -match 'let aiTurnTimeoutId = null;') { Pass("ai timeout state") } else { Fail("ai timeout state") }
 if ($rummy -match 'let focusPausedAiTurn = false;') { Pass("rummy focus suspension state") } else { Fail("rummy focus suspension state") }
 if ($rummy -match 'function clearAiTurnTimeout\(\)') { Pass("ai timeout clear helper") } else { Fail("ai timeout clear helper") }
