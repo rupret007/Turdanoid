@@ -189,6 +189,50 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdanoid-paddle-size-across-walls', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.locator('#btnStart').click();
+        await page.waitForTimeout(180);
+        const result = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          const baseW = g.paddle.baseW;
+          g.applyPower({ t: 'enlarge' });
+          const wide = g.paddle.w;
+          g.newLevel();
+          return {
+            baseW,
+            wide,
+            after: g.paddle.w,
+            big: g.activePowers.big || 0,
+            chip: document.getElementById('powers')?.textContent || '',
+            xOk: g.paddle.x >= g.paddle.w / 2 && g.paddle.x <= g.W - g.paddle.w / 2,
+            waitingLaunch: g.waitingLaunch
+          };
+        });
+        if (!(result.wide > result.baseW)) {
+          fail('turdanoid-paddle-size-across-walls', 'Enlarge should widen the paddle before the wall change');
+        }
+        if (result.after !== result.wide) {
+          fail(
+            'turdanoid-paddle-size-across-walls',
+            `wall clear stripped paddle width ${result.wide} -> ${result.after}`
+          );
+        }
+        if (!(result.big > 0)) {
+          fail('turdanoid-paddle-size-across-walls', 'Enlarge timer should survive the wall');
+        }
+        if (!result.chip.includes('Big')) {
+          fail('turdanoid-paddle-size-across-walls', `HUD should still say Big, saw ${JSON.stringify(result.chip)}`);
+        }
+        if (!result.xOk) {
+          fail('turdanoid-paddle-size-across-walls', 'sized paddle must stay on court after the wall change');
+        }
+        if (!result.waitingLaunch) {
+          fail('turdanoid-paddle-size-across-walls', 'next wall should still wait for launch');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdanoid-blur-pause', 'TurdAnoid.html', {
       actions: async (page) => {
         await page.locator('#btnStart').click();

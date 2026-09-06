@@ -480,6 +480,11 @@ function newPaddle(){
   const w = Math.max(82, Math.min(160, W*0.22));
   return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0, recoil:0 };
 }
+function paddleKeepsTimedSize(){
+  // Enlarge/Shrink chips survive a wall clear the same way Slow/Fire/Ghost do.
+  // Death is the path that clears activePowers and returns to base width.
+  return !!(activePowers.big || activePowers.shrink);
+}
 function computeTimedBallSpeed(baseSpeed){
   let speed = baseSpeed;
   if(activePowers.slow) speed = Math.max(3.5, speed*0.7);
@@ -571,7 +576,8 @@ function newLevel(){
       if(b){ b.hp = Math.min(5, b.hp + 2); b.metal = true; }
     }
   }
-  paddle.w = paddle.baseW;
+  if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW;
+  paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, paddle.x));
   balls = [ newBall(true) ];
   waitingLaunch = true;
   btnLaunch.classList.add('show');

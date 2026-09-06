@@ -199,6 +199,77 @@ describe('TurdAnoid game regressions', () => {
       expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed, 6);
     });
 
+    it('keeps Enlarge paddle width through a real wall clear', async () => {
+      const baseW = g.paddle.baseW;
+      g.applyPower({ t: 'enlarge' });
+      const wide = g.paddle.w;
+      expect(wide).toBeGreaterThan(baseW);
+
+      g.bricks = [];
+      g.step(FRAME);
+      expect(g.levelTransition).toBe(true);
+      expect(g.level).toBe(2);
+
+      await new Promise((resolve) => setTimeout(resolve, 750));
+
+      expect(g.levelTransition).toBe(false);
+      expect(g.level).toBe(2);
+      expect(g.activePowers.big).toBeGreaterThan(0);
+      expect(g.paddle.w).toBeCloseTo(wide, 6);
+      expect(g.paddle.w).toBeGreaterThan(g.paddle.baseW);
+      expect(dom.window.document.getElementById('powers').textContent).toContain('Big');
+      expect(g.paddle.x).toBeGreaterThanOrEqual(g.paddle.w / 2);
+      expect(g.paddle.x).toBeLessThanOrEqual(g.W - g.paddle.w / 2);
+    });
+
+    it('keeps stacked Enlarge and Shrink size across newLevel()', () => {
+      const baseW = g.paddle.baseW;
+      g.applyPower({ t: 'enlarge' });
+      g.applyPower({ t: 'enlarge' });
+      const stacked = g.paddle.w;
+      expect(stacked).toBeGreaterThan(baseW * 1.18);
+
+      g.newLevel();
+      expect(g.paddle.w).toBeCloseTo(stacked, 6);
+      expect(g.activePowers.big).toBeGreaterThan(0);
+
+      g.applyPower({ t: 'shrink', bad: true });
+      const shrunk = g.paddle.w;
+      expect(shrunk).toBeLessThan(stacked);
+
+      g.newLevel();
+      expect(g.paddle.w).toBeCloseTo(shrunk, 6);
+      expect(g.activePowers.shrink).toBeGreaterThan(0);
+      expect(dom.window.document.getElementById('powers').textContent).toContain('Shrunk');
+    });
+
+    it('still resets paddle size when no sizing power is active', () => {
+      g.paddle.w = g.paddle.baseW * 1.5;
+      g.newLevel();
+      expect(g.paddle.w).toBe(g.paddle.baseW);
+    });
+
+    it('still strips paddle size when a life is lost', () => {
+      g.applyPower({ t: 'enlarge' });
+      expect(g.paddle.w).toBeGreaterThan(g.paddle.baseW);
+      const lives = g.lives;
+      g.balls = [];
+      g.step(FRAME);
+      expect(g.lives).toBe(lives - 1);
+      expect(g.activePowers.big).toBeUndefined();
+      expect(g.paddle.w).toBe(g.paddle.baseW);
+    });
+
+    it('returns paddle to base width when Enlarge expires after the wall change', () => {
+      g.applyPower({ t: 'enlarge' });
+      g.activePowers.big = 1;
+      g.newLevel();
+      expect(g.paddle.w).toBeGreaterThan(g.paddle.baseW);
+      g.step(FRAME);
+      expect(g.activePowers.big).toBeUndefined();
+      expect(g.paddle.w).toBe(g.paddle.baseW);
+    });
+
     it('refreshes speed powers without stacking and copies them to multiball', () => {
       const [source] = g.balls;
       const baseSpeed = source.baseSpeed;

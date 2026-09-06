@@ -30,6 +30,18 @@ function numericProperty(source, name) {
 const rules = readRepoFile('RULES.md');
 
 describe('RULES.md follows the shipped games', () => {
+  it('records TurdAnoid timed paddle size across walls', () => {
+    const game = readRepoFile('TurdAnoid.html');
+    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+
+    expect(game).toContain('function paddleKeepsTimedSize()');
+    expect(game).toContain('if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW');
+    expect(documented).toContain(
+      'Enlarge and Shrink last until their timers die, including across a wall clear'
+    );
+    expect(documented).toContain('Losing a life still resets the paddle');
+  });
+
   it('records the real Turdtris cap and bounded lock resets', () => {
     const game = readRepoFile('turdtris.html');
     const documented = section(rules, 'Turdtris (Tetris Clone)');
