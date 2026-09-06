@@ -8,6 +8,7 @@ import {
   selectPowerUpType,
   unlockedPowers,
   computeBrickHitScore,
+  computeBrickBreakScore,
   computeLevelClearBonus,
   POWERS
 } from '../games/turdanoid_logic';
@@ -59,9 +60,25 @@ describe('TurdAnoid Balance Logic', () => {
       expect(POWERS.length).toBe(19);
       const names = POWERS.map((p) => p.t);
       for (const expected of [
-        'enlarge', 'slow', 'catch', 'multi', 'life', 'laser',
-        'paper', 'shield', 'fire', 'bomb', 'plunger', 'flush',
-        'hotdog', 'ghost', 'skunk', 'gold', 'shrink', 'speed', 'reverse'
+        'enlarge',
+        'slow',
+        'catch',
+        'multi',
+        'life',
+        'laser',
+        'paper',
+        'shield',
+        'fire',
+        'bomb',
+        'plunger',
+        'flush',
+        'hotdog',
+        'ghost',
+        'skunk',
+        'gold',
+        'shrink',
+        'speed',
+        'reverse'
       ]) {
         expect(names).toContain(expected);
       }
@@ -69,7 +86,12 @@ describe('TurdAnoid Balance Logic', () => {
 
     it('unlocks progressively by level', () => {
       expect(unlockedPowers(1).map((p) => p.t)).toEqual([
-        'enlarge', 'slow', 'catch', 'multi', 'life', 'laser'
+        'enlarge',
+        'slow',
+        'catch',
+        'multi',
+        'life',
+        'laser'
       ]);
       expect(unlockedPowers(8).length).toBe(19);
     });
@@ -116,6 +138,12 @@ describe('TurdAnoid Balance Logic', () => {
     it('computes level clear bonus', () => {
       expect(computeLevelClearBonus(1)).toBe(250);
       expect(computeLevelClearBonus(30)).toBe(1700);
+    });
+
+    it('computes Gold-aware brick destroy bonus', () => {
+      expect(computeBrickBreakScore(1)).toBe(5);
+      expect(computeBrickBreakScore(4)).toBe(20);
+      expect(computeBrickBreakScore(4, true)).toBe(40);
     });
   });
 });

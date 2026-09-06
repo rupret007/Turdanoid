@@ -340,6 +340,86 @@ describe('TurdAnoid game regressions', () => {
     });
   });
 
+  describe('bomb scoring leftover', () => {
+    function brick(cx, cy, hp) {
+      return {
+        x: cx - 18,
+        y: cy - 8,
+        w: 36,
+        h: 16,
+        hp,
+        c1: '#7af1c4',
+        c2: '#2a6644',
+        glow: false
+      };
+    }
+
+    function inBlast(g, cx, cy) {
+      return Math.hypot(cx - g.W / 2, cy - g.H / 2) < Math.min(g.W, g.H) * 0.45;
+    }
+
+    it('pays the destroy bonus for bricks the blast kills', () => {
+      const nearX = g.W / 2;
+      const nearY = g.H / 2;
+      expect(inBlast(g, nearX, nearY)).toBe(true);
+      expect(inBlast(g, 8, 8)).toBe(false);
+
+      g.bricks = [brick(nearX, nearY, 1), brick(8, 8, 1)];
+      const base = g.score;
+      g.applyPower({ t: 'bomb' });
+
+      expect(g.score).toBe(base + 5 * g.level);
+      expect(g.bricks).toHaveLength(1);
+      expect(g.bricks[0].hp).toBe(1);
+      expect(g.bricks[0].x).toBeCloseTo(-10, 6);
+      expect(g.floats.some((item) => item.text === '+5')).toBe(true);
+      expect(dom.window.document.getElementById('hudScore').textContent).toBe(
+        (base + 5 * g.level).toLocaleString()
+      );
+    });
+
+    it('does not pay for chips that only take splash damage', () => {
+      g.bricks = [brick(g.W / 2, g.H / 2, 3), brick(8, 8, 2)];
+      const base = g.score;
+      g.applyPower({ t: 'bomb' });
+
+      expect(g.score).toBe(base);
+      expect(g.bricks).toHaveLength(2);
+      expect(g.bricks.map((b) => b.hp)).toEqual([1, 2]);
+    });
+
+    it('doubles destroy points while Gold Rush is live', () => {
+      g.activePowers.gold = 60 * 6;
+      g.bricks = [brick(g.W / 2, g.H / 2, 2), brick(g.W / 2 + 12, g.H / 2, 1), brick(8, 8, 1)];
+      const base = g.score;
+      g.applyPower({ t: 'bomb' });
+
+      expect(g.score).toBe(base + 2 * (2 * 5 * g.level));
+      expect(g.bricks).toHaveLength(1);
+      expect(g.bricks[0].x).toBeCloseTo(-10, 6);
+    });
+
+    it('can still drop a pickup from a killed brick', () => {
+      const originalRandom = dom.window.Math.random;
+      dom.window.Math.random = () => 0;
+      g.bricks = [brick(g.W / 2, g.H / 2, 1), brick(8, 8, 1)];
+      g.applyPower({ t: 'bomb' });
+      dom.window.Math.random = originalRandom;
+
+      expect(g.powerups.length).toBeGreaterThan(0);
+      expect(g.powerups[0].x).toBeCloseTo(g.W / 2, 6);
+    });
+
+    it('leaves a survivor so the blast does not fake a wall clear', () => {
+      g.bricks = [brick(g.W / 2, g.H / 2, 1), brick(8, 8, 1)];
+      g.applyPower({ t: 'bomb' });
+      g.step(FRAME);
+      expect(g.levelTransition).toBe(false);
+      expect(g.level).toBe(1);
+      expect(g.bricks).toHaveLength(1);
+    });
+  });
+
   describe('auto-pause on tab blur', () => {
     it('reuses doPause and clears held paddle and fire inputs', () => {
       g.keys.left = true;

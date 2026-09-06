@@ -54,7 +54,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 | 🧻 Toilet Paper | Paddle fires TP rolls |
 | 🛡️ Shield | Bottom barrier saves falling balls |
 | 🔥 Fire | All balls burn through bricks (2 damage) |
-| 💣 Bomb | Instant area blast |
+| 💣 Bomb | Instant area blast. Destroyed bricks pay the destroy bonus, doubled during Gold Rush. Damaged survivors score nothing |
 | 🪠 Plunger | Magnet pulls falling power-ups to paddle |
 | 🚽 Mega Flush | Destroys bottom brick row |
 | 🌭 Hot Dogs | Paddle fires explosive arcing sausages |
