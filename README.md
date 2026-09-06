@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- Crapjack's Hint, Smart and Discipline feedback now keep soft 15/16 in the soft-hand strategy instead of surrendering them under hard-hand rules. The Hit hint names the soft total and explains the flexible ace; manual surrender stays available. See [the guidance handoff](docs/CRAPJACK_SOFT_HAND_HANDOFF.md).
 - TurdRummy reconsiders dependent deadwood cards after a layoff extends a run, so a legal chain cannot award the round to the wrong side. Competing run/set placements are searched; human and AI defenders use the same result. Gin still forbids layoffs. See [the scoring handoff](docs/TURDRUMMY_LAYOFF_HANDOFF.md).
 - Returning to a visible window resumes paused TurdSpades, TurdRummy and Crappy Eights turns, including Crappy Eights' pending automatic pass. Hidden tabs and open guides keep the table paused; repeated focus/tab-return events cannot duplicate a turn. Fresh matches and finished rounds do not revive old timers.
 - Made `index.html` the canonical six-game launcher so the root GitHub Pages URL opens the complete suite.

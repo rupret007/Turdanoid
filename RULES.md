@@ -183,6 +183,12 @@ The game provides basic strategy advice based on:
 - Dealer's up card
 - Table rules (DAS, H17)
 
+The hard-15/16 surrender recommendations do not apply to soft hands, where an
+ace can still count as 11. Hint, Smart (including Enter) and Discipline feedback
+use that same distinction. For example, Ace-five against a dealer nine is a
+Hit, not an automatic surrender; the hint explains that the ace can count as 1.
+Manual surrender remains a legal first decision when the table allows it.
+
 ---
 
 ## Crapeights (Crazy Eights)
