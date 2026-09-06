@@ -233,6 +233,66 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdanoid-bomb-destroy-score', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.locator('#btnStart').click();
+        await page.waitForTimeout(180);
+        const result = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          const near = {
+            x: g.W / 2 - 18,
+            y: g.H / 2 - 8,
+            w: 36,
+            h: 16,
+            hp: 1,
+            c1: '#7af1c4',
+            c2: '#2a6644',
+            glow: false
+          };
+          const far = {
+            x: -10,
+            y: 0,
+            w: 36,
+            h: 16,
+            hp: 1,
+            c1: '#ff9d74',
+            c2: '#8a4020',
+            glow: false
+          };
+          g.bricks = [near, far];
+          const before = g.score;
+          g.applyPower({ t: 'bomb' });
+          return {
+            before,
+            after: g.score,
+            remaining: g.bricks.length,
+            hud: document.getElementById('hudScore')?.textContent || '',
+            float: (g.floats || []).some((item) => item.text === '+5'),
+            level: g.level,
+            transition: g.levelTransition
+          };
+        });
+        if (result.after !== result.before + 5 * result.level) {
+          fail(
+            'turdanoid-bomb-destroy-score',
+            `Bomb should pay the destroy bonus, saw ${result.before} -> ${result.after}`
+          );
+        }
+        if (result.remaining !== 1) {
+          fail('turdanoid-bomb-destroy-score', `far brick should survive, remaining ${result.remaining}`);
+        }
+        if (result.hud !== String(result.after)) {
+          fail('turdanoid-bomb-destroy-score', `HUD should show ${result.after}, saw ${result.hud}`);
+        }
+        if (!result.float) {
+          fail('turdanoid-bomb-destroy-score', 'killed brick should float +5');
+        }
+        if (result.transition) {
+          fail('turdanoid-bomb-destroy-score', 'survivor must prevent a fake wall clear');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdanoid-blur-pause', 'TurdAnoid.html', {
       actions: async (page) => {
         await page.locator('#btnStart').click();

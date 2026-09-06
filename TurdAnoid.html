@@ -959,20 +959,33 @@ function spawnMulti(){
     });
   }
 }
+function brickDestroyPoints(){
+  return (activePowers.gold ? 2 : 1) * 5 * level;
+}
 function detonate(){
   shake = Math.max(shake, 14);
   flash = 1;
   particles.push({x:W/2,y:H/2,r:0,vr:30,life:30,col:'#ffd76a',shock:true});
-  for(const b of bricks){
+  const radius = Math.min(W,H)*0.45;
+  for(let i=bricks.length-1;i>=0;i--){
+    const b = bricks[i];
     const dx = (b.x+b.w/2) - W/2, dy = (b.y+b.h/2) - H/2;
-    if(Math.hypot(dx,dy) < Math.min(W,H)*0.45){
+    if(Math.hypot(dx,dy) < radius){
       b.hp -= 2;
-      if(b.hp <= 0) killBrick(b);
-      else spawnBrickBits(b);
+      if(b.hp <= 0){
+        bricks.splice(i,1);
+        killBrick(b);
+        maybeDrop(b.x+b.w/2, b.y+b.h/2);
+        const earned = brickDestroyPoints();
+        score += earned;
+        floatText('+'+earned, b.x+b.w/2, b.y, '#ffd76a');
+      } else {
+        spawnBrickBits(b);
+      }
     }
   }
-  bricks = bricks.filter(b => b.hp > 0);
   sfx.break();
+  updateHud();
 }
 
 /* ---- Particles & Floats ---- */
@@ -1972,6 +1985,8 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get levelTransition(){ return levelTransition; },
     get waitingLaunch(){ return waitingLaunch; },
     get paddle(){ return paddle; },
+    get powerups(){ return powerups; },
+    get floats(){ return floats; },
     get W(){ return W; },
     get H(){ return H; }
   };

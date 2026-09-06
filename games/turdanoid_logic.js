@@ -164,7 +164,8 @@ export function selectPowerUpType(level, rng = Math.random) {
  */
 export function computeBrickHitScore(level, comboHits, goldActive = false) {
   const s = TURDANOID_BALANCE.scoring;
-  const mult = (1 + Math.floor(comboHits / s.comboHitsPerMultStep) * s.comboMultStep) * (goldActive ? 2 : 1);
+  const mult =
+    (1 + Math.floor(comboHits / s.comboHitsPerMultStep) * s.comboMultStep) * (goldActive ? 2 : 1);
   return Math.round((s.brickHitBase + level * s.brickHitPerLevel) * mult);
 }
 
@@ -174,4 +175,13 @@ export function computeBrickHitScore(level, comboHits, goldActive = false) {
 export function computeLevelClearBonus(level) {
   const l = TURDANOID_BALANCE.levels;
   return l.clearBonusBase + level * l.clearBonusPerLevel;
+}
+
+/**
+ * Destroy bonus for a brick kill. Matches Bomb and other area-kill paths
+ * in TurdAnoid.html (Gold Rush doubles the payout).
+ */
+export function computeBrickBreakScore(level, goldActive = false) {
+  const s = TURDANOID_BALANCE.scoring;
+  return (goldActive ? 2 : 1) * s.brickBreakPerLevel * level;
 }

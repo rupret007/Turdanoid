@@ -42,6 +42,20 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('Losing a life still resets the paddle');
   });
 
+  it('records TurdAnoid Bomb destroy scoring', () => {
+    const game = readRepoFile('TurdAnoid.html');
+    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+
+    expect(game).toContain('function brickDestroyPoints()');
+    expect(game).toContain('function detonate()');
+    expect(game).toContain('const earned = brickDestroyPoints()');
+    expect(game).toContain('maybeDrop(b.x+b.w/2, b.y+b.h/2)');
+    expect(documented).toContain(
+      'Destroyed bricks pay the destroy bonus, doubled during Gold Rush'
+    );
+    expect(documented).toContain('Damaged survivors score nothing');
+  });
+
   it('records the real Turdtris cap and bounded lock resets', () => {
     const game = readRepoFile('turdtris.html');
     const documented = section(rules, 'Turdtris (Tetris Clone)');
