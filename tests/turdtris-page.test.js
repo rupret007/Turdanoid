@@ -1,7 +1,7 @@
 /**
  * Load the real turdtris.html page script in jsdom and prove the leftover
- * after #18: hold/pause stay on the dock, a hitch cannot dump gravity,
- * and Space replays after game over.
+ * after #19: Hold/Next stay on the thumb dock, used Hold cannot swap,
+ * hitch gravity still clamps, and Space still replays after game over.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -68,6 +68,39 @@ describe('Turdtris page leftover after the mobile dock', () => {
     expect(actions).toEqual(['left', 'rotate', 'right', 'drop', 'down', 'hold', 'pause']);
     expect(dock.querySelector('details, .mobile-extra')).toBeNull();
     expect(w.document.body.innerHTML).not.toContain('More Controls');
+  });
+
+  it('keeps Hold and Next previews on the thumb dock', () => {
+    const dock = w.document.getElementById('mobileControls');
+    expect(dock.querySelector('#mobileHold')).not.toBeNull();
+    expect(dock.querySelector('#mobileNext')).not.toBeNull();
+    expect(dock.querySelector('#mobileHoldBox')).not.toBeNull();
+    expect(w.document.getElementById('mobileHold').getAttribute('aria-label')).toBe('Held piece');
+    expect(w.document.getElementById('mobileNext').getAttribute('aria-label')).toBe('Next piece');
+  });
+
+  it('dims Hold after use and refuses a second swap on the same piece', () => {
+    const first = w.eval('tetromino.name');
+    w.holdCurrentPiece();
+    const afterHold = {
+      holdName: w.eval('holdName'),
+      current: w.eval('tetromino.name'),
+      canHold: w.eval('canHold')
+    };
+    expect(afterHold.holdName).toBe(first);
+    expect(afterHold.canHold).toBe(false);
+
+    const holdBtn = w.document.querySelector('#mobileControls [data-action="hold"]');
+    expect(holdBtn.classList.contains('is-used')).toBe(true);
+    expect(holdBtn.getAttribute('aria-disabled')).toBe('true');
+    expect(w.document.getElementById('mobileHoldBox').classList.contains('is-used')).toBe(true);
+
+    const lockedCurrent = afterHold.current;
+    w.holdCurrentPiece();
+    expect(w.eval('holdName')).toBe(first);
+    expect(w.eval('tetromino.name')).toBe(lockedCurrent);
+    expect(w.eval('canHold')).toBe(false);
+    expect(w.eval('statusText')).toBe('Hold already used this piece.');
   });
 
   it('rejects a malformed stored best instead of painting NaN', () => {
