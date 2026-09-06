@@ -36,7 +36,9 @@ describe('RULES.md follows the shipped games', () => {
 
     expect(game).toContain('function paddleKeepsTimedSize()');
     expect(game).toContain('if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW');
-    expect(documented).toContain('Enlarge and Shrink last until their timers die, including across a wall clear');
+    expect(documented).toContain(
+      'Enlarge and Shrink last until their timers die, including across a wall clear'
+    );
     expect(documented).toContain('Losing a life still resets the paddle');
   });
 
