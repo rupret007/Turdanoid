@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- Returning to a visible window resumes paused TurdSpades, TurdRummy and Crappy Eights turns, including Crappy Eights' pending automatic pass. Hidden tabs and open guides keep the table paused; repeated focus/tab-return events cannot duplicate a turn. Fresh matches and finished rounds do not revive old timers.
 - Made `index.html` the canonical six-game launcher so the root GitHub Pages URL opens the complete suite.
 - Moved the original Neon Arkanoid to `neon-arkanoid.html` and kept `hub.html` as a compatibility redirect.
 - Simplified the launcher's opening copy and added routing assertions to the browser smoke pass.
@@ -173,6 +174,14 @@ Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
 ## Mobile Support
 
 All games support touch controls and responsive layouts, with primary actions placed for easier thumb reach.
+
+## Returning to a card table
+
+TurdSpades, TurdRummy and Crappy Eights wait when you switch away during an
+automatic turn. Return to the window or tab to continue that same turn. If the
+guide is open, close it when you are ready; bots wait while you read. Crappy
+Eights also retains a pending automatic pass after an unplayable draw.
+Switching away does not deal a new hand or reset the match.
 
 ## Testing
 

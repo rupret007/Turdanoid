@@ -948,6 +948,70 @@ async function main() {
       }
     });
 
+    for (const game of ['turdspades', 'turdrummy', 'crapeights']) {
+      await runCheck(browser, `${game}-window-return`, `${game}.html`, {
+        actions: async (page) => {
+          const paused = await page.evaluate((game) => {
+            if (game === 'turdspades') {
+              closeGuide();
+              document.getElementById('lockBid').click();
+              scheduleAiIfNeeded(10000);
+            } else if (game === 'turdrummy') {
+              closeGuide();
+              startFirstRoundIfNeeded();
+              state.turn = 'ai';
+              queueAiTurn(10000);
+            } else {
+              hideWelcomeGuide();
+              startFreshMatch();
+              currentPlayer = 1;
+              scheduleTurnIfNeeded();
+            }
+            const armed = aiTurnTimeoutId !== null;
+            window.dispatchEvent(new Event('blur'));
+            return { armed, timerCleared: aiTurnTimeoutId === null, hidden: document.hidden };
+          }, game);
+          if (!paused.armed || !paused.timerCleared || paused.hidden) {
+            fail(`${game}-window-return`, `visible window blur should pause a pending turn: ${JSON.stringify(paused)}`);
+          }
+
+          const resumed = await page.evaluate((game) => {
+            Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+            window.dispatchEvent(new Event('focus'));
+            const hiddenStayedPaused = aiTurnTimeoutId === null;
+            Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+            // A visible window returning from another app need not emit visibilitychange.
+            window.dispatchEvent(new Event('focus'));
+            const timer = aiTurnTimeoutId;
+            window.dispatchEvent(new Event('focus'));
+            document.dispatchEvent(new Event('visibilitychange'));
+            const sameTimer = timer !== null && aiTurnTimeoutId === timer;
+            const cards = game === 'turdspades'
+              ? [state.hands, state.trick, state.currentPlayer]
+              : game === 'turdrummy'
+                ? [state.aiHand, state.stock, state.discard, state.turn]
+                : [players.map((player) => player.hand), deck, discard, currentPlayer];
+            return { hiddenStayedPaused, sameTimer, before: JSON.stringify(cards) };
+          }, game);
+          if (!resumed.hiddenStayedPaused) fail(`${game}-window-return`, 'a focus event while hidden must not restart the bot');
+          if (!resumed.sameTimer) fail(`${game}-window-return`, 'visible focus must arm exactly one timer even with repeated focus/visibility events');
+          await page.waitForFunction(({ game, before }) => {
+            const cards = game === 'turdspades'
+              ? [state.hands, state.trick, state.currentPlayer]
+              : game === 'turdrummy'
+                ? [state.aiHand, state.stock, state.discard, state.turn]
+                : [players.map((player) => player.hand), deck, discard, currentPlayer];
+            return JSON.stringify(cards) !== before;
+          }, { game, before: resumed.before }, { timeout: 3000 });
+          await page.evaluate((game) => {
+            // Stop the fixture after proving an actual bot move, before the next turn.
+            if (game === 'turdrummy') clearAiTurnTimeout();
+            else clearAiTimer();
+          }, game);
+        }
+      });
+    }
+
     await runCheck(browser, 'hub-last-played', 'turdspades.html', {
       actions: async (page) => {
         await page.goto(`${baseUrl}/`, { waitUntil: 'load' });

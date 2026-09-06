@@ -1181,8 +1181,18 @@
 
     function queueHumanAutoPass(delayMs) {
       clearHumanAutoPassTimer();
+      if (document.hidden) suspendRoundForBackground();
+      if (focusSuspendedRound || onboardingOpen) {
+        resumeHumanAutoPassAfterFocus = true;
+        return;
+      }
       humanAutoPassTimeoutId = setTimeout(() => {
         humanAutoPassTimeoutId = null;
+        if (document.hidden) suspendRoundForBackground();
+        if (focusSuspendedRound || onboardingOpen) {
+          resumeHumanAutoPassAfterFocus = true;
+          return;
+        }
         if (roundActive && !onboardingOpen && isHumanTurn()) advanceTurn();
       }, delayMs);
     }
@@ -1190,26 +1200,32 @@
     function suspendRoundForBackground() {
       if (focusSuspendedRound || onboardingOpen || !roundActive) return;
       focusSuspendedRound = true;
-      resumeHumanAutoPassAfterFocus = humanAutoPassTimeoutId !== null;
+      resumeHumanAutoPassAfterFocus = resumeHumanAutoPassAfterFocus || humanAutoPassTimeoutId !== null;
       clearAiTimer();
       clearHumanAutoPassTimer();
       const player = players[currentPlayer];
       if (player) {
         const note = player.human
           ? 'Round paused while you were away. Your move when you get back.'
-          : `${player.name} waited while the tab was hidden.`;
+          : `${player.name} is waiting while you are away.`;
         setStatus(note, true);
       }
       updateAll();
     }
 
     function resumeRoundFromBackground() {
-      if (!focusSuspendedRound) return;
+      if (document.hidden || !focusSuspendedRound) return;
       focusSuspendedRound = false;
-      if (!onboardingOpen) {
-        if (resumeHumanAutoPassAfterFocus && isHumanTurn()) queueHumanAutoPass(220);
-        else scheduleTurnIfNeeded();
+      if (isHumanTurn()) {
+        const prompt = pendingWildCard ? 'Pick a suit for your wild 8.'
+          : resumeHumanAutoPassAfterFocus ? 'Back at the table. Passing your unplayable draw.'
+          : hasDrawnThisTurn ? 'Your turn. Play a legal card or pass.'
+          : 'Your turn. Play a matching card or draw.';
+        setStatus(prompt, true);
       }
+      if (onboardingOpen) return;
+      if (resumeHumanAutoPassAfterFocus && isHumanTurn()) queueHumanAutoPass(220);
+      else scheduleTurnIfNeeded();
       resumeHumanAutoPassAfterFocus = false;
     }
 
@@ -1221,6 +1237,7 @@
       if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'flex';
       onboardingOpen = true;
       clearAiTimer();
+      resumeHumanAutoPassAfterFocus = resumeHumanAutoPassAfterFocus || humanAutoPassTimeoutId !== null;
       clearHumanAutoPassTimer();
     }
 
@@ -1228,7 +1245,10 @@
       if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none';
       onboardingOpen = false;
       if (window.Suite && Suite.guide) Suite.guide.mark('crapeights.html');
-      scheduleTurnIfNeeded();
+      if (resumeHumanAutoPassAfterFocus && isHumanTurn()) {
+        queueHumanAutoPass(220);
+        if (!focusSuspendedRound && !document.hidden) resumeHumanAutoPassAfterFocus = false;
+      } else scheduleTurnIfNeeded();
     }
     function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
     function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
@@ -1302,7 +1322,14 @@
       clearAiTimer();
       updateAll();
       if (!roundActive || onboardingOpen) return;
-      if (!isHumanTurn()) aiTurnTimeoutId = setTimeout(runAiTurn, 760);
+      if (document.hidden) { suspendRoundForBackground(); return; }
+      if (focusSuspendedRound) return;
+      if (!isHumanTurn()) aiTurnTimeoutId = setTimeout(() => {
+        aiTurnTimeoutId = null;
+        if (document.hidden) { suspendRoundForBackground(); return; }
+        if (focusSuspendedRound) return;
+        runAiTurn();
+      }, 760);
     }
 
     function advanceTurn() {
@@ -1575,6 +1602,7 @@
     }
 
     window.addEventListener('blur', suspendRoundForBackground);
+    window.addEventListener('focus', resumeRoundFromBackground);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) suspendRoundForBackground();
       else resumeRoundFromBackground();
