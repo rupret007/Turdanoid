@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- TurdAnoid Mega Flush now pays its existing 15 × level bonus for the bottom-row bricks it actually removes, including a Gold Rush 2×, a `+points` float, HUD bump, and the usual pickup roll. Upper bricks stay on the wall. Bomb scoring, death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
 - TurdAnoid Bomb now pays the destroy bonus for bricks it actually kills, including a Gold Rush 2×, a `+points` float, and the usual pickup roll. Splash-damaged survivors still score nothing. Death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
 - Crapjack's Hint, Smart and Discipline feedback now keep soft 15/16 in the soft-hand strategy instead of surrendering them under hard-hand rules. The Hit hint names the soft total and explains the flexible ace; manual surrender stays available. See [the guidance handoff](docs/CRAPJACK_SOFT_HAND_HANDOFF.md).
 - TurdRummy reconsiders dependent deadwood cards after a layoff extends a run, so a legal chain cannot award the round to the wrong side. Competing run/set placements are searched; human and AI defenders use the same result. Gin still forbids layoffs. See [the scoring handoff](docs/TURDRUMMY_LAYOFF_HANDOFF.md).
@@ -66,6 +67,7 @@ Silly Arkanoid variant (vanilla JavaScript + Canvas) with stink-based effects an
 - Arkanoid-inspired capsules (Enlarge, Slow, Catch, Disruption, Laser, etc.)
 - Distinct level patterns that get more complex over time
 - Bomb pays the destroy bonus (Gold Rush 2×) for bricks it kills; splash-damaged survivors score nothing
+- Mega Flush pays 15 × level (Gold Rush 2×) for the bottom-row bricks it removes, with `+points` floats and the usual pickup roll; upper bricks stay
 - Strongly visible stink/gas progression the longer the ball survives
 - Stacking enlarge behavior (multiple length boosts actually stack)
 - Enlarge and Shrink keep their paddle size when the next wall builds; dying still resets both

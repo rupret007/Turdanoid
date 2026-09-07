@@ -56,7 +56,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 | 🔥 Fire | All balls burn through bricks (2 damage) |
 | 💣 Bomb | Instant area blast. Destroyed bricks pay the destroy bonus, doubled during Gold Rush. Damaged survivors score nothing |
 | 🪠 Plunger | Magnet pulls falling power-ups to paddle |
-| 🚽 Mega Flush | Destroys bottom brick row |
+| 🚽 Mega Flush | Destroys the bottom brick row. Each removed brick pays 15 × level, doubled during Gold Rush, with a `+points` float and the usual pickup roll. Upper bricks stay on the wall |
 | 🌭 Hot Dogs | Paddle fires explosive arcing sausages |
 | 👻 Ghost | Ball phases through bricks, damaging them |
 | 🦨 Skunk | Drops a stink cloud that chews through bricks |

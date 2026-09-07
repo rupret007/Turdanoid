@@ -293,6 +293,84 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdanoid-flush-destroy-score', 'TurdAnoid.html', {
+      actions: async (page) => {
+        await page.locator('#btnStart').click();
+        await page.waitForTimeout(180);
+        const result = await page.evaluate(() => {
+          const g = window.__turdanoid;
+          const bottom = {
+            x: 80,
+            y: 200,
+            w: 36,
+            h: 16,
+            hp: 1,
+            c1: '#7af1c4',
+            c2: '#2a6644',
+            glow: false
+          };
+          const upper = {
+            x: 80,
+            y: 40,
+            w: 36,
+            h: 16,
+            hp: 1,
+            c1: '#ff9d74',
+            c2: '#8a4020',
+            glow: false
+          };
+          g.bricks = [bottom, upper];
+          const before = g.score;
+          g.applyPower({ t: 'flush' });
+          const goldBefore = g.score;
+          g.activePowers.gold = 60 * 6;
+          g.bricks = [
+            { ...bottom, hp: 3 },
+            { ...upper }
+          ];
+          g.applyPower({ t: 'flush' });
+          return {
+            before,
+            after: goldBefore,
+            goldAfter: g.score,
+            remaining: g.bricks.length,
+            hud: document.getElementById('hudScore')?.textContent || '',
+            float: (g.floats || []).some((item) => item.text === '+15'),
+            goldFloat: (g.floats || []).some((item) => item.text === '+30'),
+            level: g.level,
+            transition: g.levelTransition
+          };
+        });
+        if (result.after !== result.before + 15 * result.level) {
+          fail(
+            'turdanoid-flush-destroy-score',
+            `Flush should pay the flush bonus, saw ${result.before} -> ${result.after}`
+          );
+        }
+        if (result.goldAfter !== result.after + 30 * result.level) {
+          fail(
+            'turdanoid-flush-destroy-score',
+            `Gold Rush should double the flush bonus, saw ${result.after} -> ${result.goldAfter}`
+          );
+        }
+        if (result.remaining !== 1) {
+          fail('turdanoid-flush-destroy-score', `upper brick should survive, remaining ${result.remaining}`);
+        }
+        if (result.hud !== String(result.goldAfter)) {
+          fail('turdanoid-flush-destroy-score', `HUD should show ${result.goldAfter}, saw ${result.hud}`);
+        }
+        if (!result.float) {
+          fail('turdanoid-flush-destroy-score', 'flushed brick should float +15');
+        }
+        if (!result.goldFloat) {
+          fail('turdanoid-flush-destroy-score', 'Gold Rush flush should float +30');
+        }
+        if (result.transition) {
+          fail('turdanoid-flush-destroy-score', 'upper brick must prevent a fake wall clear');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdanoid-blur-pause', 'TurdAnoid.html', {
       actions: async (page) => {
         await page.locator('#btnStart').click();

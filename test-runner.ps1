@@ -142,6 +142,7 @@ if ($turd -match 'const SOUND_KEY = ''turdanoid_v2_sound'';') { Pass("sound pers
 if ($turd -match 'id="mobileLaunch"') { Pass("mobile launch button") } else { Fail("mobile launch button") }
 if ($turd -match 'window\.__turdanoid = \{') { Pass("test hook exposed") } else { Fail("test hook exposed") }
 if ($turd -match 'function brickDestroyPoints\(' -and $turd -match 'const earned = brickDestroyPoints\(\);' -and $turd -match 'maybeDrop\(b\.x\+b\.w/2, b\.y\+b\.h/2\)') { Pass("bomb destroy scoring") } else { Fail("bomb destroy scoring") }
+if ($turd -match 'function flushDestroyPoints\(' -and $turd -match 'const earned = flushDestroyPoints\(\);' -and $turd -match 'maybeDrop\(b\.x\+b\.w/2, b\.y\+b\.h/2\)') { Pass("flush destroy scoring") } else { Fail("flush destroy scoring") }
 
 Write-Host "`n=== turdjack.html ===" -ForegroundColor Cyan
 $jack = Get-Content turdjack.html -Raw
