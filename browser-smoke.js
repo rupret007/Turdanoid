@@ -1,4 +1,5 @@
 import { chromium, devices } from 'playwright';
+import { validEightsSnapshot, validJackSnapshot, validRummySnapshot, validSpadesSnapshot } from './tests/continue-fixtures.js';
 
 const baseUrl = process.argv[2] || 'http://127.0.0.1:8123';
 // Default to the Edge channel (Windows dev workflow). Set PLAYWRIGHT_CHANNEL=""
@@ -12,7 +13,7 @@ function fail(name, message) {
 
 async function runCheck(browser, name, path, options = {}) {
   const context = await browser.newContext(
-    options.mobile ? devices['iPhone 12'] : { viewport: { width: 1440, height: 900 } }
+    { ...(options.mobile ? devices['iPhone 12'] : { viewport: { width: 1440, height: 900 } }), ...options.context }
   );
   const page = await context.newPage();
   const consoleErrors = [];
@@ -63,6 +64,45 @@ async function launchBrowser() {
   }
 }
 
+async function checkPhoneHub(page, name, firstScreen = true) {
+  const layout = await page.evaluate(() => ({
+    width: innerWidth,
+    height: innerHeight,
+    scrollWidth: document.documentElement.scrollWidth,
+    cards: [...document.querySelectorAll('.game-card')].map(card => {
+      const box = element => {
+        const { left, right, top, bottom, height } = element.getBoundingClientRect();
+        return { left, right, top, bottom, height };
+      };
+      return {
+        name: card.querySelector('h2').textContent,
+        rect: box(card),
+        title: box(card.querySelector('h2')),
+        description: box(card.querySelector('p')),
+        action: box(card.querySelector('.play'))
+      };
+    })
+  }));
+  if (layout.scrollWidth > layout.width) fail(name, 'hub should not scroll horizontally');
+  if (layout.cards.length !== 6) fail(name, 'phone hub must keep exactly six launch links');
+  for (const card of layout.cards) {
+    if (card.rect.height < 44) fail(name, `${card.name} needs a full-row touch target`);
+    if (firstScreen && (card.rect.top < 0 || card.rect.bottom > layout.height)) {
+      fail(name, `${card.name} escaped the first screen: ${JSON.stringify(card.rect)}`);
+    }
+    for (const part of [card.title, card.description, card.action]) {
+      if (part.left < card.rect.left || part.right > card.rect.right || part.top < card.rect.top || part.bottom > card.rect.bottom) {
+        fail(name, `${card.name} clips its name, genre, or launch action`);
+      }
+    }
+    if ([card.title, card.description].some(part =>
+      part.left < card.action.right && part.right > card.action.left &&
+      part.top < card.action.bottom && part.bottom > card.action.top)) {
+      fail(name, `${card.name} text overlaps the launch action`);
+    }
+  }
+}
+
 async function main() {
   const browser = await launchBrowser();
   try {
@@ -84,6 +124,62 @@ async function main() {
         if ((await page.locator('.game-card.in-progress').count()) !== 0) {
           fail('root-hub', 'a first visit should not mark an in-progress game');
         }
+      }
+    });
+
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+      const name = `hub-phone-${viewport.width}`;
+      await runCheck(browser, name, '', {
+        mobile: true,
+        context: { viewport },
+        actions: async page => {
+          await checkPhoneHub(page, name);
+          const links = await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
+          for (const href of links) {
+            await Promise.all([
+              page.waitForURL(`${baseUrl}/${href}`),
+              page.locator(`.game-card[href="${href}"]`).tap()
+            ]);
+            await page.goto(`${baseUrl}/`);
+          }
+          await page.evaluate(games => {
+            localStorage.setItem('turdsuite_continue_v1', JSON.stringify({ v: 1, games }));
+            localStorage.setItem('turdsuite_last_game', 'TurdAnoid.html');
+          }, {
+            'turdjack.html': { snapshot: validJackSnapshot() },
+            'crapeights.html': { snapshot: validEightsSnapshot() },
+            'turdrummy.html': { snapshot: validRummySnapshot() },
+            'turdspades.html': { snapshot: validSpadesSnapshot() }
+          });
+          await page.reload();
+          await checkPhoneHub(page, `${name}-returning`);
+          if (await page.locator('.game-card.in-progress').count() !== 4) fail(name, 'only the four live card tables should Continue');
+          const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
+          if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
+          await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+          await checkPhoneHub(page, `${name}-large-text`, false);
+        }
+      });
+    }
+
+    await runCheck(browser, 'hub-phone-no-script', '', {
+      mobile: true,
+      context: { viewport: { width: 320, height: 568 }, javaScriptEnabled: false },
+      assert: page => checkPhoneHub(page, 'hub-phone-no-script')
+    });
+
+    await runCheck(browser, 'hub-keyboard-launch', '', {
+      actions: async page => {
+        const links = await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
+        for (const href of links) {
+          await page.keyboard.press('Tab');
+          const focused = await page.evaluate(() => document.activeElement?.getAttribute('href'));
+          if (focused !== href) fail('hub-keyboard-launch', `expected ${href} in keyboard order, saw ${focused}`);
+        }
+        await Promise.all([
+          page.waitForURL(`${baseUrl}/turdspades.html`),
+          page.keyboard.press('Enter')
+        ]);
       }
     });
 

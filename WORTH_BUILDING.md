@@ -1,32 +1,25 @@
-# Worth building: TurdAnoid Mega Flush pays for the row
+# Worth building: six games within reach on a phone
 
-Base: `da07dfa9568de7b2749ec426ec410778a2a7c94d`, main after leftover-squash #25.
+Base: `ceea5ccae5685f7edf08304352f1cdfea4d7ea0c`, main after Mega Flush #26.
 
-TurdAnoid's Mega Flush already deleted the bottom brick row and added
-`15 × level` to `score`, but `megaFlush()` never floated `+points`, never
-rolled a pickup, never refreshed the HUD, and ignored Gold Rush. A player
-who grabbed 🚽 watched the bottom row vanish while the score chip stayed
-still and no capsules fell. Bomb already completes that destroy journey.
-Flush did not.
+On a 390 × 844 phone viewport, the launcher showed two complete game cards.
+TurdSpades began at 1,618 pixels and ended at 1,898 pixels. Most of the
+collection was hidden below large decorative covers. Returning players also
+saw gold Continue/Play again text against a bright action fill.
 
-A live-page regression on unchanged main reproduced the leftover: a 1-HP
-bottom brick scored `15` in memory while the HUD stayed `0`, floated
-nothing, dropped no pickup even with `Math.random = 0`, and Gold Rush still
-paid `15` instead of `30`. An upper brick already survived.
+This slice makes the existing six anchors compact rows at phone widths,
+with each game's name, a short description, and the existing honest action.
+All six choices fit the first screen at 320 × 568 and 390 × 844 in the tested
+fresh and returning states. Each entire row is a touch target. Text at 200%
+can wrap and move its action below it; scrolling remains available. Desktop
+keeps the illustrated collection. All action labels use the dark ink again.
 
-This slice completes one player journey: catch Mega Flush, see `+points` on
-the bottom-row bricks it actually removes, watch the HUD move, and still
-have the usual pickup roll. Gold Rush doubles that existing 15 × level
-flush bonus. Upper bricks score nothing and still prevent a fake wall clear.
-High-HP bottom bricks still die — Flush is an instant row wipe.
+No duplicate navigation, new storage, JavaScript runtime, game mechanics,
+dependencies, workflow, or deployment changes. Existing table validation
+still decides Continue; an arcade visit still means Play again. The root
+index.html door, redirect-only hub.html, and parked #8 remain held.
 
-Validation uses the shipped `TurdAnoid.html` script plus a Chromium pickup
-journey. Existing Bomb scoring, paddle-size carry, blur pause, level-clear
-bonus, and parked arcade mid-run saves remain outside the change. No new
-storage, network, public test hook on Pages, dependency or workflow is
-introduced. The six-game `index.html` door and redirect-only `hub.html`
-remain held, as does parked #8.
-
-One OPEN DRAFT for Karen, local suite and exact-tip hosted CI, then PRE_KAREN
-leftover+security and coordination AFTER/release. No merge, tag, signing,
-deployment, Pages or publication.
+Validation exercises real phone layout, fresh and four-table returning
+states, all six tap destinations, large text, keyboard order/Enter, and a
+script-disabled launcher alongside the existing full suite. One OPEN DRAFT
+PRE_KAREN with hosted checks, AFTER/lease release, then stop for Karen.
