@@ -1256,6 +1256,11 @@ let onboardingOpen = false;
 let guidePausedGame = false;
 let clearHoldIntervalRef = () => {};
 
+function clearHeldInput() {
+  softDrop = false;
+  clearHoldIntervalRef();
+}
+
 function stopLoop() {
   if (rAF) {
     cancelAnimationFrame(rAF);
@@ -1275,6 +1280,7 @@ function ensureLoopRunning() {
 }
 
 function showWelcomeGuide() {
+  clearHeldInput();
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'flex';
   onboardingOpen = true;
@@ -1310,8 +1316,7 @@ function quickStartRun() {
 }
 
 function handleWindowBlur() {
-  softDrop = false;
-  clearHoldIntervalRef();
+  clearHeldInput();
   stopLoop();
   if (!paused && !gameOver && !onboardingOpen) {
     paused = true;
@@ -2474,7 +2479,10 @@ function togglePause() {
   const overlayEl = document.getElementById('pauseOverlay');
   if (overlayEl) overlayEl.style.display = paused ? 'grid' : 'none';
 
-  if (paused) stopLoop();
+  if (paused) {
+    clearHeldInput();
+    stopLoop();
+  }
   else ensureLoopRunning();
 }
 
@@ -2671,6 +2679,7 @@ if (mobileControls) {
     unlockAudio();
 
     const action = target.getAttribute('data-action');
+    if (paused && action !== 'pause') return;
     clearHoldInterval();
     if (action !== 'down') softDrop = false;
     const run = () => {

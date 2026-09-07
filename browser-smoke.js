@@ -634,6 +634,49 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdtris-held-input-pause', 'turdtris.html', {
+      mobile: true,
+      actions: async (page) => {
+        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.keyboard.down('ArrowDown');
+        await page.keyboard.press('p');
+        await page.getByRole('button', { name: 'Resume', exact: true }).click();
+        if (await page.evaluate(() => softDrop)) {
+          fail('turdtris-held-input-pause', 'released soft drop must not accelerate the resumed run');
+        }
+        await page.keyboard.up('ArrowDown');
+
+        const left = await page.locator('[data-action="left"]').boundingBox();
+        await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
+        await page.mouse.down();
+        await page.waitForTimeout(100);
+        if (!(await page.evaluate(() => holdInterval !== null))) {
+          fail('turdtris-held-input-pause', 'held phone movement did not start');
+        }
+        await page.keyboard.press('p');
+        const state = await page.evaluate(() => ({ softDrop, holdInterval, col: tetromino.col }));
+        if (state.softDrop || state.holdInterval !== null) {
+          fail('turdtris-held-input-pause', 'pausing must release held phone movement');
+        }
+        await page.keyboard.press('p');
+        await page.waitForTimeout(180);
+        if ((await page.evaluate(() => tetromino.col)) !== state.col) {
+          fail('turdtris-held-input-pause', 'resume moved sideways without a fresh press');
+        }
+        await page.mouse.up();
+
+        await page.keyboard.press('p');
+        await page.locator('[data-action="down"]').click();
+        if (await page.evaluate(() => softDrop || holdInterval !== null)) {
+          fail('turdtris-held-input-pause', 'paused dock input must not queue a drop');
+        }
+        await page.locator('[data-action="pause"]').click();
+        if (await page.evaluate(() => paused)) {
+          fail('turdtris-held-input-pause', 'phone Pause control must still resume');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdtris-restart-churn', 'turdtris.html', {
       actions: async (page) => {
         await page.getByRole('button', { name: 'Review Then Start' }).click();

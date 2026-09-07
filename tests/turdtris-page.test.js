@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const html = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'turdtris.html'),
@@ -58,6 +58,56 @@ describe('Turdtris page leftover after the mobile dock', () => {
 
   beforeEach(() => {
     w = bootPage('120');
+  });
+
+  afterEach(() => w.close());
+
+  function key(code) {
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code, cancelable: true }));
+  }
+
+  function press(action) {
+    w.document.querySelector(`[data-action="${action}"]`).dispatchEvent(
+      new w.Event('pointerdown', { bubbles: true, cancelable: true })
+    );
+  }
+
+  it('resumes at normal gravity after pausing with keyboard soft drop held', () => {
+    key('ArrowDown');
+    expect(w.eval('softDrop')).toBe(true);
+    key('KeyP');
+    const row = w.eval('tetromino.row');
+    key('KeyP');
+    w.eval('dropAccumulator = 0; lastFrameTime = 1000; loop(1033); loop(1066)');
+    expect(w.eval('tetromino.row')).toBe(row);
+    expect(w.eval('softDrop')).toBe(false);
+    key('ArrowDown');
+    expect(w.eval('tetromino.row')).toBe(row + 1);
+  });
+
+  it.each(['pause', 'guide', 'blur'])('clears a held phone control on %s', (boundary) => {
+    press('down');
+    expect(w.eval('holdInterval')).not.toBeNull();
+    if (boundary === 'pause') { key('KeyP'); }
+    if (boundary === 'guide') { w.showWelcomeGuide(); }
+    if (boundary === 'blur') { w.dispatchEvent(new w.Event('blur')); }
+    expect(w.eval('paused')).toBe(true);
+    expect(w.eval('holdInterval')).toBeNull();
+    expect(w.eval('softDrop')).toBe(false);
+  });
+
+  it('does not queue phone movement behind pause, but the dock can still resume', () => {
+    key('KeyP');
+    press('down');
+    expect(w.eval('softDrop')).toBe(false);
+    expect(w.eval('holdInterval')).toBeNull();
+    press('left');
+    expect(w.eval('holdInterval')).toBeNull();
+    press('pause');
+    expect(w.eval('paused')).toBe(false);
+    const col = w.eval('tetromino.col');
+    press('left');
+    expect(w.eval('tetromino.col')).toBe(col - 1);
   });
 
   it('keeps hold, soft drop, and pause on the live dock', () => {
