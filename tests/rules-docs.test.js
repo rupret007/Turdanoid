@@ -64,8 +64,8 @@ describe('RULES.md follows the shipped games', () => {
     expect(game).toContain('function megaFlush()');
     expect(game).toContain('const earned = flushDestroyPoints()');
     expect(game).toContain('maybeDrop(b.x+b.w/2, b.y+b.h/2)');
-    expect(documented).toContain('Mega Flush pays 15 × level');
-    expect(documented).toContain('Gold Rush doubles that flush bonus');
+    expect(documented).toContain('Each removed brick pays 15 × level');
+    expect(documented).toContain('doubled during Gold Rush');
     expect(documented).toContain('Upper bricks stay on the wall');
   });
 
