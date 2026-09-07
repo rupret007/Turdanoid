@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- The phone launcher shows all six games as compact, direct-launch rows with short game descriptions. Play, Play again, and Continue keep dark, readable text; larger text can move the action below the description. Desktop cover cards stay in place. See [the phone hub handoff](docs/HUB_PHONE_HANDOFF.md).
 - TurdAnoid Mega Flush now pays its existing 15 × level bonus for the bottom-row bricks it actually removes, including a Gold Rush 2×, a `+points` float, HUD bump, and the usual pickup roll. Upper bricks stay on the wall. Bomb scoring, death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
 - TurdAnoid Bomb now pays the destroy bonus for bricks it actually kills, including a Gold Rush 2×, a `+points` float, and the usual pickup roll. Splash-damaged survivors still score nothing. Death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
 - Crapjack's Hint, Smart and Discipline feedback now keep soft 15/16 in the soft-hand strategy instead of surrendering them under hard-hand rules. The Hit hint names the soft total and explains the flexible ace; manual surrender stays available. See [the guidance handoff](docs/CRAPJACK_SOFT_HAND_HANDOFF.md).

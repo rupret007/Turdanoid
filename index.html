@@ -274,9 +274,6 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
-    .game-card.last-played .play,
-    .game-card.in-progress .play { color: var(--gold); }
-
     .game-card.last-played .title-row h2::after,
     .game-card.in-progress .title-row h2::after {
       display: inline-block;
@@ -328,6 +325,13 @@
 
     .body {
       padding: 12px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .game-info {
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -516,21 +520,50 @@
     }
 
     @media (max-width: 600px) {
+      body { align-items: flex-start; }
       .shell {
         width: min(640px, 94vw);
         padding: 14px 10px 12px;
         border-radius: 16px;
       }
-      h1 { font-size: 1.45rem; letter-spacing: 0.06em; }
+      h1 {
+        display: block;
+        font-size: 1.45rem;
+        letter-spacing: 0.03em;
+        overflow-wrap: anywhere;
+        background: none;
+        color: var(--accent);
+      }
       .subtitle { font-size: 0.84rem; margin-bottom: 10px; }
       .hero-badge { font-size: 0.68rem; padding: 6px 10px; }
-      .games { grid-template-columns: 1fr; gap: 12px; }
-      .cover { aspect-ratio: 32 / 13; }
-      .body { padding: 10px 12px 12px; }
-      .emoji { width: 36px; height: 36px; flex-basis: 36px; font-size: 1.2rem; }
-      .game-card h2 { font-size: 1rem; }
-      .game-card p { font-size: 0.8rem; }
-      .game-card::after { max-width: 62%; font-size: 0.6rem; }
+      .masthead { margin-bottom: 12px; }
+      .games { grid-template-columns: 1fr; gap: 8px; }
+      .game-card { border-radius: 12px; }
+      .cover, .emoji, .game-card::after,
+      .game-card.last-played .title-row h2::after,
+      .game-card.in-progress .title-row h2::after { display: none; }
+      .body {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+      }
+      .game-info { flex: 1 1 8.5rem; min-width: 0; gap: 4px; }
+      .game-card h2 { font-size: 1rem; overflow-wrap: anywhere; }
+      .game-card p { font-size: 0.78rem; overflow-wrap: anywhere; }
+      .play {
+        align-self: center;
+        justify-content: center;
+        margin: 0 0 0 auto;
+        min-width: 66px;
+        padding: 8px 10px;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+      .game-card:hover,
+      .game-card:focus-visible { transform: none; }
     }
   </style>
 </head>
@@ -538,7 +571,7 @@
   <div class="shell">
     <header class="masthead">
       <h1><span class="logo">💩</span> Turdanoid</h1>
-      <p class="subtitle">Six complete games. Pick your chaos and play.</p>
+      <p class="subtitle">Six games. Pick your next round.</p>
       <div class="meta-row">
         <p class="hero-badge">No sign-in • works on phone and desktop</p>
       </div>
@@ -587,8 +620,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">🚽</span><h2>TurdAnoid Turbo</h2></div>
-          <p>Fully remastered brick-breaker. 19 power-ups, real screen shake, real combos, iPhone-friendly. Aggressively silly.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">🚽</span><h2>TurdAnoid Turbo</h2></div>
+            <p>Break bricks. Grab boosts.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -621,8 +656,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">🧱</span><h2>Turdtris</h2></div>
-          <p>Tetris-inspired stacker with hold, ghost, SRS kicks, and escalating difficulty.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">🧱</span><h2>Turdtris</h2></div>
+            <p>Stack blocks. Clear lines.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -667,8 +704,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">🃏</span><h2>Crapjack 21</h2></div>
-          <p>Themed blackjack table with betting, double down, bankroll tracking, and toilet dealer vibes.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">🃏</span><h2>Crapjack 21</h2></div>
+            <p>Blackjack vs. the dealer.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -714,8 +753,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">🎴</span><h2>Crappy Eights</h2></div>
-          <p>Uno-style card chaos: match suit/rank, fire action cards, and race to 200 match points.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">🎴</span><h2>Crappy Eights</h2></div>
+            <p>Match cards. Race to 200.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -750,8 +791,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">♣️</span><h2>TurdRummy</h2></div>
-          <p>Gin Rummy showdown with meld/deadwood strategy, knock/gin scoring, and mobile-first controls.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">♣️</span><h2>TurdRummy</h2></div>
+            <p>Gin Rummy: meld and knock.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
@@ -777,8 +820,10 @@
           </svg>
         </div>
         <div class="body">
-          <div class="title-row"><span class="emoji">♠️</span><h2>TurdSpades</h2></div>
-          <p>4-player Spades: bid tricks or Nil, break spades, manage bags, and beat the bot partnership.</p>
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">♠️</span><h2>TurdSpades</h2></div>
+            <p>Spades: bid tricks or Nil.</p>
+          </div>
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
