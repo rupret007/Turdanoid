@@ -1439,6 +1439,7 @@ async function main() {
             cards: document.querySelectorAll('.game-card').length,
             href: card?.getAttribute('href') || '',
             play: card?.querySelector('.play')?.textContent || '',
+            label: card?.getAttribute('aria-label') || '',
             neon: document.querySelectorAll('a[href="neon-arkanoid.html"]').length
           };
         });
@@ -1448,6 +1449,10 @@ async function main() {
         }
         if (!marked.play.includes('Continue')) {
           fail('hub-last-played', `an opened Spades table should say Continue, saw ${marked.play}`);
+        }
+        // The badge is hidden on phones; the label must still carry blurb + action + state.
+        if (!marked.label.includes('bid tricks or Nil') || !marked.label.includes('Continue — in progress')) {
+          fail('hub-last-played', `marked card needs a full accessible name, saw "${marked.label}"`);
         }
         if (marked.neon !== 1) fail('hub-last-played', 'last-played mark must not replace the Neon secondary link');
         const inProgress = await page.locator('.game-card.in-progress').count();
