@@ -542,6 +542,25 @@
       .cover, .emoji, .game-card::after,
       .game-card.last-played .title-row h2::after,
       .game-card.in-progress .title-row h2::after { display: none; }
+
+      /* The "In progress" / "Last played" badge above is hidden on phones, so
+         the only returning-player cue left is the small "Continue" / "Play again"
+         verb. Give the row itself an edge accent a player can scan straight to:
+         gold for last played, live accent for a table still in progress. When a
+         card is both, .in-progress is declared last and wins — the honest call. */
+      .game-card.last-played,
+      .game-card.in-progress {
+        border-left: 4px solid var(--gold);
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--gold) 13%, transparent), transparent 62%),
+          linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
+      }
+      .game-card.in-progress {
+        border-left-color: var(--accent);
+        background:
+          linear-gradient(90deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
+          linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
+      }
       .body {
         flex-direction: row;
         flex-wrap: wrap;
