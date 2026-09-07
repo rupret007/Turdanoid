@@ -71,6 +71,14 @@ describe('six-game hub last-played mark', () => {
     expect(marked).toHaveLength(1);
     expect(marked[0].getAttribute('href')).toBe('turdspades.html');
     expect(marked[0].querySelector('.play')?.textContent).toContain('Play again');
+
+    // The label must not shrink the card's accessible name: game, blurb, action, state.
+    const label = marked[0].getAttribute('aria-label');
+    expect(label).toContain('TurdSpades');
+    expect(label).toContain('bid tricks or Nil');
+    expect(label).toContain('Play again');
+    expect(label).toContain('last played');
+
     expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
   });
 
@@ -116,6 +124,8 @@ describe('six-game hub continue mark', () => {
     expect(continuing).toHaveLength(1);
     expect(continuing[0].getAttribute('href')).toBe('turdspades.html');
     expect(continuing[0].querySelector('.play')?.textContent).toContain('Continue');
+    expect(continuing[0].getAttribute('aria-label')).toContain('bid tricks or Nil');
+    expect(continuing[0].getAttribute('aria-label')).toContain('Continue — in progress');
     expect(last).toHaveLength(1);
     expect(last[0].getAttribute('href')).toBe('turdtris.html');
     expect(last[0].querySelector('.play')?.textContent).toContain('Play again');

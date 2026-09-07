@@ -11,6 +11,7 @@ The repository root is the finished six-game launcher. The original Neon Arkanoi
 
 ## Unreleased
 
+- The hub's "Continue" / "Play again" card now reads its full state to screen readers: game name, one-line blurb, then the action and whether it is in progress or last played. The visual badge is hidden on phones, so this label was the only cue some players got, and it previously dropped the blurb and the action word. See [the hub polish handoff](docs/HUB_CONTINUE_LABEL_HANDOFF.md).
 - The phone launcher shows all six games as compact, direct-launch rows with short game descriptions. Play, Play again, and Continue keep dark, readable text; larger text can move the action below the description. Desktop cover cards stay in place. See [the phone hub handoff](docs/HUB_PHONE_HANDOFF.md).
 - TurdAnoid Mega Flush now pays its existing 15 × level bonus for the bottom-row bricks it actually removes, including a Gold Rush 2×, a `+points` float, HUD bump, and the usual pickup roll. Upper bricks stay on the wall. Bomb scoring, death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
 - TurdAnoid Bomb now pays the destroy bonus for bricks it actually kills, including a Gold Rush 2×, a `+points` float, and the usual pickup roll. Splash-damaged survivors still score nothing. Death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.

@@ -252,7 +252,17 @@
     }
     const title = card.querySelector('h2');
     if (title && (lastPlayed || inProgress) && !card.getAttribute('aria-label')) {
-      card.setAttribute('aria-label', title.textContent.trim() + (inProgress ? ', in progress' : ', last played'));
+      // aria-label replaces the card's whole accessible name, so spell out the
+      // same things a sighted player reads: game, blurb, then action + state.
+      // The badge is a CSS ::after and is hidden on phones, so this label is the
+      // only "Continue" / "Play again" cue some players get.
+      const blurb = (card.querySelector('.game-info p') || {}).textContent || '';
+      const action = inProgress ? 'Continue' : 'Play again';
+      const state = inProgress ? 'in progress' : 'last played';
+      card.setAttribute(
+        'aria-label',
+        [title.textContent.trim(), blurb.trim(), action + ' — ' + state].filter(Boolean).join('. ')
+      );
     }
   }
 
