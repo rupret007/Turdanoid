@@ -56,6 +56,19 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).toContain('Damaged survivors score nothing');
   });
 
+  it('records TurdAnoid Mega Flush scoring', () => {
+    const game = readRepoFile('TurdAnoid.html');
+    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+
+    expect(game).toContain('function flushDestroyPoints()');
+    expect(game).toContain('function megaFlush()');
+    expect(game).toContain('const earned = flushDestroyPoints()');
+    expect(game).toContain('maybeDrop(b.x+b.w/2, b.y+b.h/2)');
+    expect(documented).toContain('Mega Flush pays 15 × level');
+    expect(documented).toContain('Gold Rush doubles that flush bonus');
+    expect(documented).toContain('Upper bricks stay on the wall');
+  });
+
   it('records the real Turdtris cap and bounded lock resets', () => {
     const game = readRepoFile('turdtris.html');
     const documented = section(rules, 'Turdtris (Tetris Clone)');

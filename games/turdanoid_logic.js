@@ -39,6 +39,7 @@ export const TURDANOID_BALANCE = {
     brickHitBase: 10,
     brickHitPerLevel: 2,
     brickBreakPerLevel: 5,
+    flushBreakPerLevel: 15,
     comboWindowFrames: 90,
     comboHitsPerMultStep: 4,
     comboMultStep: 0.5
@@ -184,4 +185,13 @@ export function computeLevelClearBonus(level) {
 export function computeBrickBreakScore(level, goldActive = false) {
   const s = TURDANOID_BALANCE.scoring;
   return (goldActive ? 2 : 1) * s.brickBreakPerLevel * level;
+}
+
+/**
+ * Mega Flush bonus for each bottom-row brick it actually removes.
+ * Matches flushDestroyPoints() in TurdAnoid.html (3× destroy, Gold Rush 2×).
+ */
+export function computeFlushBreakScore(level, goldActive = false) {
+  const s = TURDANOID_BALANCE.scoring;
+  return (goldActive ? 2 : 1) * s.flushBreakPerLevel * level;
 }

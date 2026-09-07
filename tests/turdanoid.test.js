@@ -9,6 +9,7 @@ import {
   unlockedPowers,
   computeBrickHitScore,
   computeBrickBreakScore,
+  computeFlushBreakScore,
   computeLevelClearBonus,
   POWERS
 } from '../games/turdanoid_logic';
@@ -144,6 +145,13 @@ describe('TurdAnoid Balance Logic', () => {
       expect(computeBrickBreakScore(1)).toBe(5);
       expect(computeBrickBreakScore(4)).toBe(20);
       expect(computeBrickBreakScore(4, true)).toBe(40);
+    });
+
+    it('computes Gold-aware Mega Flush bonus as 3× destroy', () => {
+      expect(computeFlushBreakScore(1)).toBe(15);
+      expect(computeFlushBreakScore(4)).toBe(60);
+      expect(computeFlushBreakScore(4, true)).toBe(120);
+      expect(computeFlushBreakScore(4, true)).toBe(computeBrickBreakScore(4, true) * 3);
     });
   });
 });

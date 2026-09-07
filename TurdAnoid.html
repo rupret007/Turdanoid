@@ -906,13 +906,15 @@ function megaFlush(){
   // Destroy the bottom-most row of bricks (and any within 8px of that y).
   if(!bricks.length) return;
   let maxY = 0; for(const b of bricks) if(b.y > maxY) maxY = b.y;
-  const killed = [];
   for(let i=bricks.length-1;i>=0;i--){
     if(bricks[i].y >= maxY - 8){
-      killed.push(bricks[i]);
-      killBrick(bricks[i]);
-      score += 15*level;
+      const b = bricks[i];
       bricks.splice(i,1);
+      killBrick(b);
+      maybeDrop(b.x+b.w/2, b.y+b.h/2);
+      const earned = flushDestroyPoints();
+      score += earned;
+      floatText('+'+earned, b.x+b.w/2, b.y, '#7ae6ff');
     }
   }
   shake = Math.max(shake, 10);
@@ -926,6 +928,7 @@ function megaFlush(){
     });
   }
   sfx.break();
+  updateHud();
 }
 
 function spawnStinkCloud(){
@@ -961,6 +964,10 @@ function spawnMulti(){
 }
 function brickDestroyPoints(){
   return (activePowers.gold ? 2 : 1) * 5 * level;
+}
+function flushDestroyPoints(){
+  // Mega Flush keeps its existing 15×level bonus (3× the destroy bonus).
+  return brickDestroyPoints() * 3;
 }
 function detonate(){
   shake = Math.max(shake, 14);
