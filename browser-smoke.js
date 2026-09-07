@@ -156,6 +156,16 @@ async function main() {
           if (await page.locator('.game-card.in-progress').count() !== 4) fail(name, 'only the four live card tables should Continue');
           const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
           if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
+          // The badge is hidden on phones; the row edge accent must carry the cue.
+          const edges = await page.evaluate(() => {
+            const px = el => parseFloat(getComputedStyle(el).borderLeftWidth) || 0;
+            const plain = document.querySelector('.game-card:not(.in-progress):not(.last-played)');
+            const progress = document.querySelector('.game-card.in-progress');
+            const played = document.querySelector('.game-card[href="TurdAnoid.html"].last-played');
+            return { plain: px(plain), progress: px(progress), played: px(played) };
+          });
+          if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
           await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
           await checkPhoneHub(page, `${name}-large-text`, false);
         }

@@ -62,6 +62,15 @@ describe('six-game hub last-played mark', () => {
     expect(suiteJs).not.toContain('neon-arkanoid.html');
   });
 
+  it('gives returning rows a phone edge accent since the badge is hidden there', () => {
+    const phone = hubHtml.slice(hubHtml.indexOf('@media (max-width: 600px)'));
+    // The badge that marks Continue / Play again is display:none on phones...
+    expect(phone).toMatch(/\.game-card\.in-progress \.title-row h2::after \{ display: none/);
+    // ...so the row itself must carry a visible cue in that same block.
+    expect(phone).toMatch(/\.game-card\.last-played,\s*\.game-card\.in-progress \{\s*border-left:/);
+    expect(phone).toMatch(/\.game-card\.in-progress \{\s*border-left-color: var\(--accent\)/);
+  });
+
   it('marks the last opened live game without adding a seventh card', () => {
     const dom = bootHub('turdspades.html');
     const cards = [...dom.window.document.querySelectorAll('.game-card')];
