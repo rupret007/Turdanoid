@@ -744,6 +744,10 @@ async function main() {
 
         const slamState = await page.evaluate(() => {
           const startRow = tetromino.row;
+          // The render loop keeps folding real wall-clock time into
+          // dropAccumulator between the restart above and this check, so read
+          // the hitch in isolation: zero it, then feed one 5s frame.
+          dropAccumulator = 0;
           lastFrameTime = 1000;
           loop(1000 + 5000);
           return {
