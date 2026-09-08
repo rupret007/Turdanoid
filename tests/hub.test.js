@@ -227,3 +227,56 @@ describe('six-game hub continue mark', () => {
     expect(dom.window.Suite.table.has('turdjack.html')).toBe(true);
   });
 });
+
+describe('six-game hub masthead resume shortcut', () => {
+  it('leaves the reassurance badge alone when nothing is in progress', () => {
+    const dom = bootHub('turdspades.html');
+    const badge = dom.window.document.querySelector('.hero-badge');
+    expect(badge.tagName).toBe('P');
+    expect(badge.textContent).toContain('No sign-in');
+    expect(dom.window.document.querySelector('.hero-resume')).toBeNull();
+  });
+
+  it('promotes the last opened live table into a one-tap masthead link', () => {
+    const dom = bootHub('turdspades.html', 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': { updatedAt: 2, snapshot: validSpadesSnapshot() },
+        'turdjack.html': { updatedAt: 1, snapshot: validJackSnapshot() }
+      }
+    });
+    const link = dom.window.document.querySelector('.hero-badge.hero-resume');
+    expect(link).not.toBeNull();
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('href')).toBe('turdspades.html');
+    expect(link.textContent).toContain('Continue');
+    expect(link.textContent).toContain('TurdSpades');
+    expect(link.getAttribute('aria-label')).toContain('TurdSpades');
+    // The masthead still holds exactly one badge and the grid stays six cards.
+    expect(dom.window.document.querySelectorAll('.hero-badge')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(6);
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+  });
+
+  it('falls back to a waiting table when the last game opened has no save', () => {
+    const dom = bootHub('TurdAnoid.html', 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': { updatedAt: 1, snapshot: validSpadesSnapshot() }
+      }
+    });
+    const link = dom.window.document.querySelector('.hero-badge.hero-resume');
+    expect(link).not.toBeNull();
+    expect(link.getAttribute('href')).toBe('turdspades.html');
+  });
+
+  it('ignores a finished match for the masthead shortcut', () => {
+    const finished = validSpadesSnapshot();
+    finished.phase = 'matchEnd';
+    const dom = bootHub('turdspades.html', 'http://localhost/', {
+      continueGames: {
+        'turdspades.html': { updatedAt: 1, snapshot: finished }
+      }
+    });
+    expect(dom.window.document.querySelector('.hero-resume')).toBeNull();
+    expect(dom.window.document.querySelector('.hero-badge').tagName).toBe('P');
+  });
+});

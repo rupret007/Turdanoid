@@ -179,6 +179,31 @@
       color: #ffe4af;
     }
 
+    /* Returning-player shortcut: the suite runtime swaps the reassurance
+       badge for a link straight to the table waiting to be continued. */
+    a.hero-badge.hero-resume {
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: linear-gradient(180deg, rgba(18, 54, 44, 0.72), rgba(10, 32, 26, 0.72));
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    a.hero-badge.hero-resume:hover,
+    a.hero-badge.hero-resume:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 10px 24px rgba(0, 0, 0, 0.25);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      a.hero-badge.hero-resume { transition: none; }
+      a.hero-badge.hero-resume:hover,
+      a.hero-badge.hero-resume:focus-visible { transform: none; }
+    }
+
     /* ---------- Card grid ---------- */
     .games {
       display: grid;
@@ -851,6 +876,7 @@
     <details class="changelog">
       <summary>Latest Changelog</summary>
       <ul>
+        <li><strong>Hub leftover after the phone resume cue:</strong> when you have a table in progress, the masthead badge turns into a one-tap "Continue &lt;Game&gt;" link — the last game you opened if it is still live, otherwise the first table waiting. First visits keep the "No sign-in" badge. No rules, storage, continue-validation, or layout change.</li>
         <li><strong>Hub leftover after phone rows:</strong> a marked card's <code>aria-label</code> now spells out the game, its blurb, and the action with its state ("Continue — in progress" / "Play again — last played"). The badge is hidden on phones, so this was the only cue some players had and it used to drop the blurb and the verb. No layout, storage, or continue-rule change.</li>
         <li><strong>TurdAnoid leftover after Bomb scoring:</strong> Mega Flush now pays its 15 × level bonus for the bottom-row bricks it removes, including Gold Rush 2×, a <code>+points</code> float, and the usual pickup roll. Upper bricks stay on the wall. Arcade mid-run saves stay parked with PR #8.</li>
         <li><strong>TurdAnoid leftover after #21:</strong> Bomb now pays the destroy bonus for bricks it kills, including Gold Rush 2× and the usual pickup roll. Splash-damaged survivors still score nothing. Arcade mid-run saves stay parked with PR #8.</li>
