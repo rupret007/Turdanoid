@@ -280,6 +280,31 @@
         inProgress: continuing.indexOf(href) !== -1
       });
     }
+    markHubResume(continuing, last);
+  }
+
+  // A returning player lands on the hub with the "Continue" tables marked
+  // mid-grid, behind the masthead. Promote the single best pick-up target
+  // into the masthead itself so it is one tap from the top of the page:
+  // the last game opened when that table is still live, otherwise the first
+  // table waiting. The static "no sign-in" badge reassures first-timers; a
+  // player who already has a live table is better served by the shortcut.
+  // Reads the same validated continue list the cards use; writes no storage.
+  function markHubResume(continuing, last) {
+    const badge = document.querySelector('.hero-badge');
+    if (!badge || badge.classList.contains('hero-resume')) return;
+    if (!continuing || !continuing.length) return;
+    const target = continuing.indexOf(last) !== -1 ? last : continuing[0];
+    const card = document.querySelector('.game-card[href="' + target + '"]');
+    const heading = card && card.querySelector('h2');
+    const name = heading ? heading.textContent.trim() : '';
+    if (!name) return;
+    const link = document.createElement('a');
+    link.className = badge.className + ' hero-resume';
+    link.setAttribute('href', target);
+    link.textContent = '↩ Continue ' + name;
+    link.setAttribute('aria-label', 'Continue your ' + name + ' game in progress');
+    badge.replaceWith(link);
   }
 
   // ---------- Boot ----------

@@ -124,6 +124,9 @@ async function main() {
         if ((await page.locator('.game-card.in-progress').count()) !== 0) {
           fail('root-hub', 'a first visit should not mark an in-progress game');
         }
+        if ((await page.locator('.hero-resume').count()) !== 0) {
+          fail('root-hub', 'a first visit should not show a masthead resume shortcut');
+        }
       }
     });
 
@@ -166,6 +169,15 @@ async function main() {
           });
           if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
           if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          // A returning player with live tables gets a one-tap resume shortcut in the masthead.
+          const resume = await page.evaluate(() => {
+            const el = document.querySelector('.hero-badge.hero-resume');
+            return el ? { tag: el.tagName, href: el.getAttribute('href'), text: el.textContent } : null;
+          });
+          const liveTables = ['turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+          if (!resume || resume.tag !== 'A') fail(name, `returning masthead should carry a resume link, saw ${JSON.stringify(resume)}`);
+          else if (!liveTables.includes(resume.href)) fail(name, `resume shortcut must point at a live table, saw ${JSON.stringify(resume)}`);
+          else if (!resume.text.includes('Continue')) fail(name, `resume shortcut should read Continue, saw ${JSON.stringify(resume)}`);
           await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
           await checkPhoneHub(page, `${name}-large-text`, false);
         }
@@ -1445,12 +1457,17 @@ async function main() {
         await page.waitForTimeout(250);
         const marked = await page.evaluate(() => {
           const card = document.querySelector('.game-card.last-played');
+          const resume = document.querySelector('.hero-badge.hero-resume');
           return {
             cards: document.querySelectorAll('.game-card').length,
             href: card?.getAttribute('href') || '',
             play: card?.querySelector('.play')?.textContent || '',
             label: card?.getAttribute('aria-label') || '',
-            neon: document.querySelectorAll('a[href="neon-arkanoid.html"]').length
+            neon: document.querySelectorAll('a[href="neon-arkanoid.html"]').length,
+            badges: document.querySelectorAll('.hero-badge').length,
+            resumeTag: resume?.tagName || '',
+            resumeHref: resume?.getAttribute('href') || '',
+            resumeText: resume?.textContent || ''
           };
         });
         if (marked.cards !== 6) fail('hub-last-played', `hub should still show six games, saw ${marked.cards}`);
@@ -1465,6 +1482,9 @@ async function main() {
           fail('hub-last-played', `marked card needs a full accessible name, saw "${marked.label}"`);
         }
         if (marked.neon !== 1) fail('hub-last-played', 'last-played mark must not replace the Neon secondary link');
+        if (marked.badges !== 1 || marked.resumeTag !== 'A' || marked.resumeHref !== 'turdspades.html' || !marked.resumeText.includes('TurdSpades')) {
+          fail('hub-last-played', `an opened Spades table should surface a masthead resume link, saw ${JSON.stringify(marked)}`);
+        }
         const inProgress = await page.locator('.game-card.in-progress').count();
         if (inProgress !== 1) fail('hub-last-played', `expected one in-progress table, saw ${inProgress}`);
 
