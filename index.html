@@ -181,7 +181,9 @@
 
     /* Returning-player shortcut: the suite runtime swaps the reassurance
        badge for a link straight to the table waiting to be continued. */
+    /* TODO: Fix TurdSpades escaping 320x568 phone screen due to anchor layout */
     a.hero-badge.hero-resume {
+      display: block;
       border-color: color-mix(in srgb, var(--accent) 55%, transparent);
       background: linear-gradient(180deg, rgba(18, 54, 44, 0.72), rgba(10, 32, 26, 0.72));
       color: var(--accent);
