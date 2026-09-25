@@ -160,15 +160,46 @@ async function main() {
           const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
           if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
           // The badge is hidden on phones; the row edge accent must carry the cue.
-          const edges = await page.evaluate(() => {
-            const px = el => parseFloat(getComputedStyle(el).borderLeftWidth) || 0;
-            const plain = document.querySelector('.game-card:not(.in-progress):not(.last-played)');
-            const progress = document.querySelector('.game-card.in-progress');
-            const played = document.querySelector('.game-card[href="TurdAnoid.html"].last-played');
-            return { plain: px(plain), progress: px(progress), played: px(played) };
-          });
-          if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
-          if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          // The accent is rendered with a ::before pseudo-element to avoid shrinking
+          // the content area and triggering flexbox wrap on tight viewports.
+          const checkEdges = async () => {
+            const edges = await page.evaluate(() => {
+              const edge = el => {
+                const before = getComputedStyle(el, '::before');
+                return {
+                  visible: before.content !== 'none' && before.display !== 'none' &&
+                    before.visibility === 'visible' && Number(before.opacity) === 1 &&
+                    parseFloat(before.width) === 4 && parseFloat(before.height) >= 44,
+                  color: before.backgroundColor,
+                  border: getComputedStyle(el).borderLeftWidth
+                };
+              };
+              // Resolve the theme tokens to computed colors just like the pseudo-element.
+              const probe = document.createElement('span');
+              document.body.append(probe);
+              const color = token => {
+                probe.style.color = `var(${token})`;
+                return getComputedStyle(probe).color;
+              };
+              const gold = color('--gold');
+              const accent = color('--accent');
+              probe.remove();
+              return [...document.querySelectorAll('.game-card')].map(card => ({
+                name: card.querySelector('h2').textContent,
+                marked: card.matches('.in-progress, .last-played'),
+                expectedColor: card.matches('.in-progress') ? accent : gold,
+                ...edge(card)
+              }));
+            });
+            for (const edge of edges) {
+              if (edge.marked && (!edge.visible || edge.color !== edge.expectedColor)) {
+                fail(name, `resume edge must be visible with the correct state color: ${JSON.stringify(edge)}`);
+              }
+              if (!edge.marked && edge.visible) fail(name, `plain row must not have a resume edge: ${JSON.stringify(edge)}`);
+              if (edge.border !== '1px') fail(name, `resume edge must not consume content width: ${JSON.stringify(edge)}`);
+            }
+          };
+          await checkEdges();
           // A returning player with live tables gets a one-tap resume shortcut in the masthead.
           const resume = await page.evaluate(() => {
             const el = document.querySelector('.hero-badge.hero-resume');
@@ -178,6 +209,14 @@ async function main() {
           if (!resume || resume.tag !== 'A') fail(name, `returning masthead should carry a resume link, saw ${JSON.stringify(resume)}`);
           else if (!liveTables.includes(resume.href)) fail(name, `resume shortcut must point at a live table, saw ${JSON.stringify(resume)}`);
           else if (!resume.text.includes('Continue')) fail(name, `resume shortcut should read Continue, saw ${JSON.stringify(resume)}`);
+          // Any game can be last played, including a table already marked in progress.
+          // Check the actual rendered cue without hover/focus and the changing masthead text.
+          for (const href of links) {
+            await page.evaluate(href => localStorage.setItem('turdsuite_last_game', href), href);
+            await page.reload();
+            await checkPhoneHub(page, `${name}-last-${href}`);
+            await checkEdges();
+          }
           await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
           await checkPhoneHub(page, `${name}-large-text`, false);
         }

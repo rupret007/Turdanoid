@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TurdjackEngine, DEFAULT_RULES, MIN_BET, INITIAL_BANKROLL } from '../games/turdjack-engine.js';
+import { TurdjackEngine, DEFAULT_RULES, INITIAL_BANKROLL } from '../games/turdjack-engine.js';
 
 describe('TurdjackEngine', () => {
   describe('Initialization', () => {
