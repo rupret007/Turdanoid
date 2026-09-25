@@ -66,9 +66,10 @@ describe('six-game hub last-played mark', () => {
     const phone = hubHtml.slice(hubHtml.indexOf('@media (max-width: 600px)'));
     // The badge that marks Continue / Play again is display:none on phones...
     expect(phone).toMatch(/\.game-card\.in-progress \.title-row h2::after \{ display: none/);
-    // ...so the row itself must carry a visible cue in that same block.
-    expect(phone).toMatch(/\.game-card\.last-played,\s*\.game-card\.in-progress \{\s*border-left:/);
-    expect(phone).toMatch(/\.game-card\.in-progress \{\s*border-left-color: var\(--accent\)/);
+    // ...so the row itself must carry a visible cue via a ::before pseudo-element
+    // (using a pseudo avoids shrinking the content area and triggering flexbox wrap).
+    expect(phone).toMatch(/\.game-card\.last-played::before,\s*\.game-card\.in-progress::before \{/);
+    expect(phone).toMatch(/\.game-card\.in-progress::before \{\s*background: var\(--accent\)/);
   });
 
   it('marks the last opened live game without adding a seventh card', () => {

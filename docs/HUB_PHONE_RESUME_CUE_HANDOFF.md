@@ -32,16 +32,27 @@ the rule that hides the badge:
 ```css
 .game-card.last-played,
 .game-card.in-progress {
-  border-left: 4px solid var(--gold);
+  position: relative;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--gold) 13%, transparent), transparent 62%),
     linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
 }
+.game-card.last-played::before,
+.game-card.in-progress::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--gold);
+  border-radius: 12px 0 0 12px;
+}
 .game-card.in-progress {
-  border-left-color: var(--accent);
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
     linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
+}
+.game-card.in-progress::before {
+  background: var(--accent);
 }
 ```
 
@@ -49,17 +60,19 @@ the rule that hides the badge:
   in progress, so the two states stay distinguishable without the badge.
 - `.in-progress` is declared last, so a card that is both (the "prefers
   Continue" case) shows the accent edge — matching which action the player gets.
-- `box-sizing: border-box` is global, so the 4px edge sits inside the row and
-  shifts no layout; the smoke `scrollWidth` and touch-target checks are unmoved.
+- The edge is rendered with an absolutely-positioned `::before` pseudo-element
+  instead of `border-left` to avoid shrinking the content area on tight
+  viewports and triggering flexbox wrap.
 - Phone only. Desktop keeps the badge and its own `.last-played` ring.
 
 ## Tests
 
 - `tests/hub.test.js` — a new case asserts the phone block still hides the
-  badge and now also carries the `border-left` edge rules for both states.
-- `browser-smoke.js` — the returning `hub-phone-*` pass now reads the computed
-  `border-left-width` of a plain row, the in-progress row, and the last-played
-  row, and fails unless both marked rows are visibly thicker than a plain one.
+  badge and now also carries the `::before` pseudo-element edge rules for both
+  states.
+- `browser-smoke.js` — the returning `hub-phone-*` pass now checks that the
+  in-progress and last-played rows have a visible `::before` pseudo-element
+  while plain rows do not.
 
 ## Local validation
 

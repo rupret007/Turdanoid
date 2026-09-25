@@ -160,15 +160,24 @@ async function main() {
           const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
           if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
           // The badge is hidden on phones; the row edge accent must carry the cue.
+          // The accent is rendered with a ::before pseudo-element to avoid shrinking
+          // the content area and triggering flexbox wrap on tight viewports.
           const edges = await page.evaluate(() => {
-            const px = el => parseFloat(getComputedStyle(el).borderLeftWidth) || 0;
+            const hasBefore = el => {
+              const before = getComputedStyle(el, '::before');
+              return before.content !== 'none' && parseFloat(before.width) > 0;
+            };
             const plain = document.querySelector('.game-card:not(.in-progress):not(.last-played)');
             const progress = document.querySelector('.game-card.in-progress');
             const played = document.querySelector('.game-card[href="TurdAnoid.html"].last-played');
-            return { plain: px(plain), progress: px(progress), played: px(played) };
+            return {
+              plainHasBefore: hasBefore(plain),
+              progressHasBefore: hasBefore(progress),
+              playedHasBefore: hasBefore(played)
+            };
           });
-          if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
-          if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          if (!edges.progressHasBefore) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          if (!edges.playedHasBefore) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
           // A returning player with live tables gets a one-tap resume shortcut in the masthead.
           const resume = await page.evaluate(() => {
             const el = document.querySelector('.hero-badge.hero-resume');

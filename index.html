@@ -181,9 +181,7 @@
 
     /* Returning-player shortcut: the suite runtime swaps the reassurance
        badge for a link straight to the table waiting to be continued. */
-    /* TODO: Fix TurdSpades escaping 320x568 phone screen due to anchor layout */
     a.hero-badge.hero-resume {
-      display: block;
       border-color: color-mix(in srgb, var(--accent) 55%, transparent);
       background: linear-gradient(180deg, rgba(18, 54, 44, 0.72), rgba(10, 32, 26, 0.72));
       color: var(--accent);
@@ -574,19 +572,32 @@
          the only returning-player cue left is the small "Continue" / "Play again"
          verb. Give the row itself an edge accent a player can scan straight to:
          gold for last played, live accent for a table still in progress. When a
-         card is both, .in-progress is declared last and wins — the honest call. */
+         card is both, .in-progress is declared last and wins — the honest call.
+         Use a pseudo-element positioned outside the border-box to avoid shrinking
+         the content area and triggering flexbox wrap on tight viewports. */
       .game-card.last-played,
       .game-card.in-progress {
-        border-left: 4px solid var(--gold);
+        position: relative;
         background:
           linear-gradient(90deg, color-mix(in srgb, var(--gold) 13%, transparent), transparent 62%),
           linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
       }
+      .game-card.last-played::before,
+      .game-card.in-progress::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        background: var(--gold);
+        border-radius: 12px 0 0 12px;
+      }
       .game-card.in-progress {
-        border-left-color: var(--accent);
         background:
           linear-gradient(90deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
           linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
+      }
+      .game-card.in-progress::before {
+        background: var(--accent);
       }
       .body {
         flex-direction: row;
@@ -597,7 +608,12 @@
       }
       .game-info { flex: 1 1 8.5rem; min-width: 0; gap: 4px; }
       .game-card h2 { font-size: 1rem; overflow-wrap: anywhere; }
-      .game-card p { font-size: 0.78rem; overflow-wrap: anywhere; }
+      .game-card p {
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .play {
         align-self: center;
         justify-content: center;

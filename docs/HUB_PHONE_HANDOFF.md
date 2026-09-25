@@ -13,8 +13,10 @@ Desktop retains its cover-art grid.
 
 Continue and Play again now use the dark text of the normal Play action.
 Phone rows suppress the redundant decorative status badge but keep the
-visible action, border mark, and existing accessible status label. Larger
-text wraps naturally; the action can move below the description.
+visible action, border mark, and existing accessible status label.
+Descriptions truncate with ellipsis instead of wrapping to keep all six rows
+in the first screen even when the wider "Continue" or "Play again" buttons
+are present.
 
 ## Verification
 
