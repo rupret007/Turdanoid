@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CrapeightsEngine, RANKS, SUITS } from '../games/crapeights-engine.js';
+import { CrapeightsEngine } from '../games/crapeights-engine.js';
 
 describe('CrapeightsEngine', () => {
   let game;
