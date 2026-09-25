@@ -10,7 +10,11 @@ import {
   computeBrickHitScore,
   computeBrickBreakScore,
   computeFlushBreakScore,
+  computeCleanLevelBonus,
   computeLevelClearBonus,
+  normalizeCareerStats,
+  parseCareerStats,
+  recordCompletedRun,
   POWERS
 } from '../games/turdanoid_logic';
 
@@ -61,25 +65,9 @@ describe('TurdAnoid Balance Logic', () => {
       expect(POWERS.length).toBe(19);
       const names = POWERS.map((p) => p.t);
       for (const expected of [
-        'enlarge',
-        'slow',
-        'catch',
-        'multi',
-        'life',
-        'laser',
-        'paper',
-        'shield',
-        'fire',
-        'bomb',
-        'plunger',
-        'flush',
-        'hotdog',
-        'ghost',
-        'skunk',
-        'gold',
-        'shrink',
-        'speed',
-        'reverse'
+        'enlarge', 'slow', 'catch', 'multi', 'life', 'laser',
+        'paper', 'shield', 'fire', 'bomb', 'plunger', 'flush',
+        'hotdog', 'ghost', 'skunk', 'gold', 'shrink', 'speed', 'reverse'
       ]) {
         expect(names).toContain(expected);
       }
@@ -87,12 +75,7 @@ describe('TurdAnoid Balance Logic', () => {
 
     it('unlocks progressively by level', () => {
       expect(unlockedPowers(1).map((p) => p.t)).toEqual([
-        'enlarge',
-        'slow',
-        'catch',
-        'multi',
-        'life',
-        'laser'
+        'enlarge', 'slow', 'catch', 'multi', 'life', 'laser'
       ]);
       expect(unlockedPowers(8).length).toBe(19);
     });
@@ -152,6 +135,55 @@ describe('TurdAnoid Balance Logic', () => {
       expect(computeFlushBreakScore(4)).toBe(60);
       expect(computeFlushBreakScore(4, true)).toBe(120);
       expect(computeFlushBreakScore(4, true)).toBe(computeBrickBreakScore(4, true) * 3);
+    });
+
+    it('awards a clean-level bonus only when the player did not miss', () => {
+      expect(computeCleanLevelBonus(1, 0)).toBe(150);
+      expect(computeCleanLevelBonus(10, 0)).toBe(600);
+      expect(computeCleanLevelBonus(10, 1)).toBe(0);
+    });
+  });
+
+  describe('Local career records', () => {
+    it('sanitizes malformed values and migrates the legacy best score', () => {
+      expect(normalizeCareerStats({
+        bestScore: -10,
+        bestLevel: '7.9',
+        bestCombo: 'nope',
+        gamesPlayed: 3
+      }, 1200)).toEqual({
+        bestScore: 1200,
+        bestLevel: 7,
+        bestCombo: 0,
+        gamesPlayed: 3
+      });
+    });
+
+    it('preserves a valid legacy score when newer JSON is malformed', () => {
+      expect(parseCareerStats('{bad json', 1234)).toEqual({
+        bestScore: 1234,
+        bestLevel: 0,
+        bestCombo: 0,
+        gamesPlayed: 0
+      });
+    });
+
+    it('records only honest maxima and increments completed games once', () => {
+      expect(recordCompletedRun({
+        bestScore: 5000,
+        bestLevel: 8,
+        bestCombo: 20,
+        gamesPlayed: 4
+      }, {
+        score: 4200,
+        level: 10,
+        combo: 24
+      })).toEqual({
+        bestScore: 5000,
+        bestLevel: 10,
+        bestCombo: 24,
+        gamesPlayed: 5
+      });
     });
   });
 });
