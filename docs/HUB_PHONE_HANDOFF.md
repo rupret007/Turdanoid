@@ -38,7 +38,7 @@ belong in the PR body and coordination AFTER receipt.
 Only index.html changes product behavior. No game files, shared JavaScript,
 storage/continue validators, physics, rewards, dependencies, or workflows
 change. hub.html remains redirect-only. No network input or dynamic HTML
-rendering is added. Parked OPEN DRAFT #8 at `0fefa012` is untouched.
+rendering is added. Parked OPEN DRAFT #8 at `a3ece5a` is untouched.
 
 No Pages, install, merge, tag, release, signing, spend, send, or live Cisco.
 This draft does not publish the phone layout or claim physical-device Safari
