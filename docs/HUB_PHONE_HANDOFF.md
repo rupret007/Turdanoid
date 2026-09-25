@@ -16,14 +16,17 @@ Phone rows suppress the redundant decorative status badge but keep the
 visible action, border mark, and existing accessible status label.
 Descriptions truncate with ellipsis instead of wrapping to keep all six rows
 in the first screen even when the wider "Continue" or "Play again" buttons
-are present.
+are present. The status edge stays visible without hover or focus, including
+on a table that is both last played and in progress.
 
 ## Verification
 
 The unchanged-main browser baseline at 390 × 844 put TurdSpades between
 1,618px and 1,898px down the page. The new browser regressions require all
 six touch targets in the first screen at 320 × 568 and 390 × 844, both on a
-fresh visit and with four valid card-table saves plus arcade last-played.
+fresh visit and with four valid card-table saves plus each of the six possible
+last-played games. At 200% text size, vertical scrolling is allowed while names
+and launch actions must remain inside their rows without overlap.
 
 The browser pass also taps all six destinations, checks that large text
 does not overlap launch actions, follows keyboard focus through all six
@@ -34,6 +37,22 @@ table actions, and arcade last-played without inventing Continue.
 Run `npm test`, `npm run lint`, and `PLAYWRIGHT_CHANNEL=chrome npm run test:smoke -- 8138`
 locally. Hosted CI uses bundled Chromium. Exact local and hosted results
 belong in the PR body and coordination AFTER receipt.
+
+## PR #32 follow-up verification (2026-09-25)
+
+- Fixed the inherited desktop sheen opacity that made phone resume edges
+  invisible until hover/focus. The edges remain out of flow and always visible.
+- `npm test -- --exclude '.claude/**'`: 15 files, 254 tests passed. The unfiltered
+  command also discovered nested worktree suites and timed out in three of
+  those tests; only this checkout is included in the passing result.
+- `npm run lint`: passed without warnings.
+- `PLAYWRIGHT_CHANNEL=chrome npm run test:smoke -- 8138`: passed, including all
+  six last-played variants at both phone sizes, 200% text, keyboard launch, and
+  no-script layout. Bundled Chromium is absent locally; installed Chrome was used.
+- Returning-player 320 × 568 screenshot: each row is 59.1px tall and TurdSpades
+  ends at 527.6px, leaving 40.4px within the viewport. These are local Chrome
+  measurements, not physical-device Safari acceptance.
+- `node --check browser-smoke.js` and `git diff --check`: passed.
 
 ## Boundaries
 

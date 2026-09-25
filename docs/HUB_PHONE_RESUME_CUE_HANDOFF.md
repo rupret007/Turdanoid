@@ -43,6 +43,8 @@ the rule that hides the badge:
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 4px;
+  opacity: 1;
+  animation: none;
   background: var(--gold);
   border-radius: 12px 0 0 12px;
 }
@@ -63,6 +65,8 @@ the rule that hides the badge:
 - The edge is rendered with an absolutely-positioned `::before` pseudo-element
   instead of `border-left` to avoid shrinking the content area on tight
   viewports and triggering flexbox wrap.
+- Explicit opacity keeps the edge visible without hover or focus; disabling the
+  inherited sheen animation keeps the status edge steady.
 - Phone only. Desktop keeps the badge and its own `.last-played` ring.
 
 ## Tests
@@ -71,8 +75,10 @@ the rule that hides the badge:
   badge and now also carries the `::before` pseudo-element edge rules for both
   states.
 - `browser-smoke.js` — the returning `hub-phone-*` pass now checks that the
-  in-progress and last-played rows have a visible `::before` pseudo-element
-  while plain rows do not.
+  in-progress and last-played rows have an opaque, full-height 4px edge in the
+  correct theme color without consuming content width. Plain rows must not
+  carry that status edge. All six last-played choices are checked, including
+  in-progress tables where the live accent must win over gold.
 
 ## Local validation
 

@@ -573,7 +573,7 @@
          verb. Give the row itself an edge accent a player can scan straight to:
          gold for last played, live accent for a table still in progress. When a
          card is both, .in-progress is declared last and wins — the honest call.
-         Use a pseudo-element positioned outside the border-box to avoid shrinking
+         Use an absolutely positioned pseudo-element to avoid shrinking
          the content area and triggering flexbox wrap on tight viewports. */
       .game-card.last-played,
       .game-card.in-progress {
@@ -588,6 +588,8 @@
         position: absolute;
         left: 0; top: 0; bottom: 0;
         width: 4px;
+        opacity: 1;
+        animation: none;
         background: var(--gold);
         border-radius: 12px 0 0 12px;
       }
