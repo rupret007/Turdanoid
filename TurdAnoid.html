@@ -825,6 +825,7 @@ function startGame(){
   newLevel();
   state='playing'; running=true; paused=false;
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow);
+  exposeGameControls();
   endRunSummary.textContent='';
   updatePauseButton();
   focusWithoutScroll(cv);
@@ -833,8 +834,24 @@ function startGame(){
   audio();
   sfx.launch();
 }
-function showOverlay(el){ el.classList.add('show'); }
+function showOverlay(el){ el.classList.add('show'); isolateGameControls(); }
 function hideOverlay(el){ el.classList.remove('show'); }
+function isolateGameControls(){
+  cv.tabIndex = -1;
+  cv.setAttribute('inert','');
+  const snd = $('btnSound'), pse = $('btnPause');
+  snd.disabled = true; snd.tabIndex = -1;
+  pse.disabled = true; pse.tabIndex = -1;
+  btnLaunch.disabled = true; btnLaunch.tabIndex = -1;
+}
+function exposeGameControls(){
+  cv.tabIndex = 0;
+  cv.removeAttribute('inert');
+  const snd = $('btnSound'), pse = $('btnPause');
+  snd.disabled = false; snd.tabIndex = 0;
+  pse.disabled = false; pse.tabIndex = 0;
+  btnLaunch.disabled = false; btnLaunch.tabIndex = 0;
+}
 function doPause(){ if(state!=='playing') return; state='paused'; paused=true; updatePauseButton(true); showOverlay(tPause); focusWithoutScroll($('btnResume')); announce('Game paused.'); }
 function doResume(){
   if(state!=='paused') return;
@@ -845,6 +862,7 @@ function doResume(){
   // freeze rAF, and the first playing frame must not inherit that gap.
   lastTime = performance.now();
   hideOverlay(tPause);
+  exposeGameControls();
   focusWithoutScroll(cv);
   announce('Game resumed.');
 }
@@ -895,12 +913,28 @@ function gameOver(won){
 function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
 
 $('btnStart').addEventListener('click', startGame);
-$('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow); });
-$('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle); });
+$('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow); focusWithoutScroll($('btnHowBack')); });
+$('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle); focusWithoutScroll($('btnHowTo')); });
 $('btnResume').addEventListener('click', doResume);
 $('btnQuit').addEventListener('click', quitToMenu);
 $('btnRestart').addEventListener('click', restartGame);
 $('btnEndQuit').addEventListener('click', quitToMenu);
+
+/* ---- Focus traps for overlays ---- */
+function trapFocus(overlay){
+  overlay.addEventListener('keydown', e=>{
+    if(e.key !== 'Tab') return;
+    const focusable = overlay.querySelectorAll('button:not([disabled]):not([tabindex="-1"]), [tabindex="0"]');
+    if(!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length-1];
+    if(e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    }else if(!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  });
+}
+trapFocus(tTitle); trapFocus(tPause); trapFocus(tHow); trapFocus(tEnd);
 
 /* ---- Launch ---- */
 function launch(){
@@ -2095,6 +2129,8 @@ paddle = newPaddle();
 buildStars();
 pickTitleQuip();
 updateCareerSummary();
+isolateGameControls();
+focusWithoutScroll($('btnStart'));
 lastTime = performance.now();
 requestAnimationFrame(loop);
 
@@ -2123,6 +2159,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get score(){ return score; },
     set score(v){ score = v; },
     get level(){ return level; },
+    set level(v){ level = wholeNumber(v) || 1; },
     get lives(){ return lives; },
     get balls(){ return balls; },
     set balls(v){ balls = v; },
