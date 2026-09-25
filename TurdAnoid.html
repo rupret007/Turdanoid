@@ -248,11 +248,12 @@ function normalizeCareerStats(raw, legacyBest=0){
   };
 }
 function loadCareerStats(){
+  let legacyBest = 0;
+  try{ legacyBest = wholeNumber(localStorage.getItem(STORAGE_KEY)); }catch(_e){}
   try{
-    const legacyBest = wholeNumber(localStorage.getItem(STORAGE_KEY));
     return normalizeCareerStats(JSON.parse(localStorage.getItem(STATS_KEY)||'{}'), legacyBest);
   }catch(_error){
-    return normalizeCareerStats({});
+    return normalizeCareerStats({}, legacyBest);
   }
 }
 function recordCompletedRun(career, run){
