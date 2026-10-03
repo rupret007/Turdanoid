@@ -7,9 +7,24 @@ export const TURDANOID_FEEL = {
   comboWindowFrames: 105,
   /** Pointer follow smoothing at 60 FPS (frame-rate independent via scaleLerp). */
   pointerLerpPerFrame: 0.4,
+  /** Snappier paddle follow while a touch is active (still lerped, not teleport). */
+  pointerLerpTouchPerFrame: 0.62,
   minBallSpeed: 4.25,
   /** Max radians from vertical for paddle english (wider = more control). */
-  paddleEnglish: 1.12
+  paddleEnglish: 1.12,
+  shakeDecayPerFrame: 0.6,
+  shakeBrickBreak: 7,
+  shakeBrickChip: 2,
+  shakePaddleHit: 4,
+  /** Brief physics freeze on brick pops (60 FPS frames). */
+  hitStopFramesOnBreak: 2,
+  /** Ball center Y / canvas height above which the bottom danger vignette ramps in. */
+  ballDangerStartRatio: 0.68
+};
+
+export const TURDTRIS_FEEL = {
+  /** Stack-height ratio (see turdtris.html getDangerRatio) where HUD danger pulse starts. */
+  dangerHudPulseRatio: 0.55
 };
 
 export const CARD_TABLE_FEEL = {
@@ -38,4 +53,44 @@ export function clampMinBallSpeed(vx, vy, minSpeed = TURDANOID_FEEL.minBallSpeed
   }
   const f = minSpeed / sp;
   return { vx: vx * f, vy: vy * f };
+}
+
+export function decayShake(shake, ts, decayPerFrame = TURDANOID_FEEL.shakeDecayPerFrame) {
+  if (shake <= 0) return 0;
+  return Math.max(0, shake - decayPerFrame * ts);
+}
+
+export function bumpShake(current, amount) {
+  return Math.max(current || 0, amount || 0);
+}
+
+/**
+ * 0–1 urgency when a falling ball is in the lower playfield (TurdAnoid danger vignette).
+ * @param {Array<{vy?: number, y?: number, r?: number, stuck?: boolean}>} balls
+ */
+export function ballDangerRatio(balls, canvasHeight, paddleY, startRatio = TURDANOID_FEEL.ballDangerStartRatio) {
+  if (!balls?.length || !canvasHeight) return 0;
+  const threshold = canvasHeight * startRatio;
+  let max = 0;
+  for (const b of balls) {
+    if (!b || b.stuck) continue;
+    if (typeof b.vy !== 'number' || b.vy <= 0) continue;
+    const y = typeof b.y === 'number' ? b.y : 0;
+    if (y < threshold) continue;
+    const r = typeof b.r === 'number' ? b.r : 0;
+    const t = (y + r - threshold) / Math.max(1, canvasHeight - threshold);
+    max = Math.max(max, Math.min(1, t));
+  }
+  return max;
+}
+
+/** Cosmetic haptics only — no-op when vibration is unavailable. */
+export function tryLightHaptic(pattern = 8) {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    /* ignore */
+  }
 }

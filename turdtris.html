@@ -266,6 +266,15 @@ body::after {
 .card.warn { --tile-accent: var(--danger); }
 .card.good { --tile-accent: var(--accent-2); }
 .card.warn .v { color: var(--danger); text-shadow: 0 0 14px rgba(255, 143, 143, 0.35); }
+.card.warn.stack-danger {
+  border-color: rgba(255, 110, 100, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 90, 80, 0.25), 0 0 22px rgba(255, 80, 70, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: stackDangerPulse 1.15s ease-in-out infinite;
+}
+@keyframes stackDangerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
 .card.good .v { color: var(--accent-2); text-shadow: 0 0 14px rgba(142, 232, 199, 0.35); }
 
 .game-grid {
@@ -1147,7 +1156,10 @@ const maxMoveResets = 12;
 // DAS / ARR — mirrors games/turdtris-input.js
 const DAS_DELAY_MS = 156;
 const ARR_MS = 33;
+// Mirrors games/turdtris-input.js (mobile D-pad repeat).
 const MOBILE_REPEAT_MS = 52;
+const MOBILE_REPEAT_INITIAL_DELAY_MS = 148;
+const FEEL_DANGER_HUD_RATIO = 0.55;
 let dasLeftHeld = false;
 let dasRightHeld = false;
 let dasLeftMs = 0;
@@ -2434,6 +2446,8 @@ function updateScore() {
   if (levelEl) levelEl.textContent = String(level);
   if (linesEl) linesEl.textContent = String(linesCleared);
   if (comboEl) comboEl.textContent = String(combo);
+  const comboCard = comboEl ? comboEl.closest('.card.warn') : null;
+  if (comboCard) comboCard.classList.toggle('stack-danger', getDangerRatio() >= FEEL_DANGER_HUD_RATIO);
   if (b2bEl) b2bEl.textContent = String(b2b);
   const boundedGoal = Math.max(1, Number.isFinite(levelGoal) ? Math.floor(levelGoal) : 1);
   const boundedProgress = Math.max(0, Math.min(boundedGoal, Number.isFinite(levelLines) ? Math.floor(levelLines) : 0));
@@ -2730,11 +2744,16 @@ document.addEventListener('keyup', (e) => {
 
 const mobileControls = document.getElementById('mobileControls');
 let holdInterval = null;
+let holdDelayTimeout = null;
 if (mobileControls) {
   const clearHoldInterval = () => {
     if (holdInterval) {
       clearInterval(holdInterval);
       holdInterval = null;
+    }
+    if (holdDelayTimeout) {
+      clearTimeout(holdDelayTimeout);
+      holdDelayTimeout = null;
     }
   };
   clearHoldIntervalRef = clearHoldInterval;
@@ -2765,7 +2784,10 @@ if (mobileControls) {
 
     run();
     if (action === 'left' || action === 'right' || action === 'down') {
-      holdInterval = setInterval(run, MOBILE_REPEAT_MS);
+      holdDelayTimeout = setTimeout(() => {
+        holdDelayTimeout = null;
+        holdInterval = setInterval(run, MOBILE_REPEAT_MS);
+      }, MOBILE_REPEAT_INITIAL_DELAY_MS);
     }
   });
 

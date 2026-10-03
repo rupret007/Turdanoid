@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { DasTracker, DAS_DELAY_MS, ARR_MS, MOBILE_REPEAT_MS } from '../games/turdtris-input.js';
+import {
+  DasTracker,
+  DAS_DELAY_MS,
+  ARR_MS,
+  MOBILE_REPEAT_MS,
+  MOBILE_REPEAT_INITIAL_DELAY_MS
+} from '../games/turdtris-input.js';
 
 describe('Turdtris DAS', () => {
   it('fires one step immediately on press', () => {
@@ -33,5 +39,7 @@ describe('Turdtris DAS', () => {
 
   it('mobile repeat interval is snappier than legacy 90ms', () => {
     expect(MOBILE_REPEAT_MS).toBeLessThan(90);
+    expect(MOBILE_REPEAT_INITIAL_DELAY_MS).toBeGreaterThan(MOBILE_REPEAT_MS);
+    expect(MOBILE_REPEAT_INITIAL_DELAY_MS).toBeLessThan(DAS_DELAY_MS + 20);
   });
 });

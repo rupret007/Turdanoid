@@ -87,12 +87,13 @@ describe('Turdtris page leftover after the mobile dock', () => {
 
   it.each(['pause', 'guide', 'blur'])('clears a held phone control on %s', (boundary) => {
     press('down');
-    expect(w.eval('holdInterval')).not.toBeNull();
+    expect(w.eval('holdInterval || holdDelayTimeout')).not.toBeNull();
     if (boundary === 'pause') { key('KeyP'); }
     if (boundary === 'guide') { w.showWelcomeGuide(); }
     if (boundary === 'blur') { w.dispatchEvent(new w.Event('blur')); }
     expect(w.eval('paused')).toBe(true);
     expect(w.eval('holdInterval')).toBeNull();
+    expect(w.eval('holdDelayTimeout')).toBeNull();
     expect(w.eval('softDrop')).toBe(false);
   });
 
@@ -101,8 +102,10 @@ describe('Turdtris page leftover after the mobile dock', () => {
     press('down');
     expect(w.eval('softDrop')).toBe(false);
     expect(w.eval('holdInterval')).toBeNull();
+    expect(w.eval('holdDelayTimeout')).toBeNull();
     press('left');
     expect(w.eval('holdInterval')).toBeNull();
+    expect(w.eval('holdDelayTimeout')).toBeNull();
     press('pause');
     expect(w.eval('paused')).toBe(false);
     const col = w.eval('tetromino.col');

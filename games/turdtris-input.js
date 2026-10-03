@@ -5,6 +5,8 @@
 export const DAS_DELAY_MS = 156;
 export const ARR_MS = 33;
 export const MOBILE_REPEAT_MS = 52;
+/** Delay before held mobile D-pad keys start repeating (matches keyboard DAS feel). */
+export const MOBILE_REPEAT_INITIAL_DELAY_MS = 148;
 
 export class DasTracker {
   constructor() {

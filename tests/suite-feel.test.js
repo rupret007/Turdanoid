@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   TURDANOID_FEEL,
+  TURDTRIS_FEEL,
   CARD_TABLE_FEEL,
   scaleLerp,
   lerpToward,
-  clampMinBallSpeed
+  clampMinBallSpeed,
+  decayShake,
+  bumpShake,
+  ballDangerRatio
 } from '../games/suite-feel.js';
 
 describe('suite-feel', () => {
@@ -31,5 +35,24 @@ describe('suite-feel', () => {
     expect(CARD_TABLE_FEEL.crapeightsAiMs).toBeLessThan(800);
     expect(CARD_TABLE_FEEL.turdrummyQuickAiMs).toBeLessThan(CARD_TABLE_FEEL.turdrummyAiMs);
     expect(CARD_TABLE_FEEL.turdspadesAiMs).toBeGreaterThan(300);
+  });
+
+  it('decayShake and bumpShake behave like TurdAnoid screen shake', () => {
+    expect(decayShake(10, 1)).toBeCloseTo(9.4);
+    expect(bumpShake(2, 7)).toBe(7);
+    expect(bumpShake(9, 4)).toBe(9);
+  });
+
+  it('ballDangerRatio peaks for fast balls near the paddle zone', () => {
+    const H = 600;
+    const low = ballDangerRatio([{ vy: 5, y: 200, r: 10, stuck: false }], H, 550);
+    const high = ballDangerRatio([{ vy: 5, y: 520, r: 10, stuck: false }], H, 550);
+    expect(low).toBe(0);
+    expect(high).toBeGreaterThan(0.5);
+  });
+
+  it('documents Turdtris danger HUD pulse threshold', () => {
+    expect(TURDTRIS_FEEL.dangerHudPulseRatio).toBeGreaterThan(0.4);
+    expect(TURDTRIS_FEEL.dangerHudPulseRatio).toBeLessThan(0.75);
   });
 });
