@@ -40,7 +40,7 @@ export const TURDANOID_BALANCE = {
     brickHitPerLevel: 2,
     brickBreakPerLevel: 5,
     flushBreakPerLevel: 15,
-    comboWindowFrames: 90,
+    comboWindowFrames: 105,
     comboHitsPerMultStep: 4,
     comboMultStep: 0.5
   }

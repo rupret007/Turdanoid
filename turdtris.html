@@ -735,7 +735,13 @@ body::after {
     width: min(380px, 92vw, 42dvh);
   }
   .card .v {
-    font-size: 1rem;
+    font-size: 1.08rem;
+    font-weight: 800;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+  }
+  .card .k {
+    letter-spacing: 0.12em;
+    opacity: 0.82;
   }
   .btn {
     padding: 8px 11px;
@@ -1138,6 +1144,40 @@ const cols = 10;
 const MAX_LEVEL = 69;
 const lockDelayMs = 500;
 const maxMoveResets = 12;
+// DAS / ARR — mirrors games/turdtris-input.js
+const DAS_DELAY_MS = 156;
+const ARR_MS = 33;
+const MOBILE_REPEAT_MS = 52;
+let dasLeftHeld = false;
+let dasRightHeld = false;
+let dasLeftMs = 0;
+let dasRightMs = 0;
+let arrLeftMs = 0;
+let arrRightMs = 0;
+
+function tickDasRepeat(delta) {
+  if (!tetromino || gameOver || paused) return;
+  if (dasLeftHeld) {
+    dasLeftMs += delta;
+    if (dasLeftMs >= DAS_DELAY_MS) {
+      arrLeftMs += delta;
+      while (arrLeftMs >= ARR_MS) {
+        arrLeftMs -= ARR_MS;
+        movePiece(-1);
+      }
+    }
+  }
+  if (dasRightHeld) {
+    dasRightMs += delta;
+    if (dasRightMs >= DAS_DELAY_MS) {
+      arrRightMs += delta;
+      while (arrRightMs >= ARR_MS) {
+        arrRightMs -= ARR_MS;
+        movePiece(1);
+      }
+    }
+  }
+}
 
 const themes = [
   { name: 'Amber Brick', bgA: '#140f0c', bgB: '#2d1f17', grid: 'rgba(255,225,190,0.08)', ghost: 'rgba(255,219,175,0.2)' },
@@ -1259,6 +1299,12 @@ let clearHoldIntervalRef = () => {};
 function clearHeldInput() {
   softDrop = false;
   clearHoldIntervalRef();
+  dasLeftHeld = false;
+  dasRightHeld = false;
+  dasLeftMs = 0;
+  dasRightMs = 0;
+  arrLeftMs = 0;
+  arrRightMs = 0;
 }
 
 function stopLoop() {
@@ -2580,6 +2626,8 @@ function loop(timestamp) {
       lockAccumulator = 0;
       lockResets = 0;
     }
+
+    tickDasRepeat(delta);
   }
 
   updateSceneFx();
@@ -2622,11 +2670,21 @@ document.addEventListener('keydown', (e) => {
   switch (e.code) {
     case 'ArrowLeft':
       e.preventDefault();
-      movePiece(-1);
+      if (!e.repeat) {
+        movePiece(-1);
+        dasLeftHeld = true;
+        dasLeftMs = 0;
+        arrLeftMs = 0;
+      }
       break;
     case 'ArrowRight':
       e.preventDefault();
-      movePiece(1);
+      if (!e.repeat) {
+        movePiece(1);
+        dasRightHeld = true;
+        dasRightMs = 0;
+        arrRightMs = 0;
+      }
       break;
     case 'ArrowUp':
     case 'KeyX':
@@ -2658,6 +2716,16 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('keyup', (e) => {
   if (e.code === 'ArrowDown') softDrop = false;
+  if (e.code === 'ArrowLeft') {
+    dasLeftHeld = false;
+    dasLeftMs = 0;
+    arrLeftMs = 0;
+  }
+  if (e.code === 'ArrowRight') {
+    dasRightHeld = false;
+    dasRightMs = 0;
+    arrRightMs = 0;
+  }
 });
 
 const mobileControls = document.getElementById('mobileControls');
@@ -2697,7 +2765,7 @@ if (mobileControls) {
 
     run();
     if (action === 'left' || action === 'right' || action === 'down') {
-      holdInterval = setInterval(run, 90);
+      holdInterval = setInterval(run, MOBILE_REPEAT_MS);
     }
   });
 

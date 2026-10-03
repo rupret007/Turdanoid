@@ -1020,7 +1020,7 @@
       hand.forEach((card) => {
         const btn = document.createElement('button');
         const styleMeta = cardStyleMeta(card);
-        btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${isPlayable(card) ? ' playable' : ''}${card.id === selectedCardId ? ' selected' : ''}`;
+        btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${isPlayable(card) ? ' playable suite-playable-pulse' : ''}${card.id === selectedCardId ? ' selected' : ''}`;
         btn.dataset.face = styleMeta.face;
         btn.dataset.badge = styleMeta.badge;
         btn.dataset.suit = card.suit;
@@ -1329,7 +1329,7 @@
         if (document.hidden) { suspendRoundForBackground(); return; }
         if (focusSuspendedRound) return;
         runAiTurn();
-      }, 760);
+      }, 600);
     }
 
     function advanceTurn() {

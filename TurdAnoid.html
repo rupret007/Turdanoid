@@ -111,7 +111,9 @@
     .hud .col{padding:4px 9px 5px;min-width:0}
   }
   @media (max-width:420px){
-    .hud .col{padding:4px 8px 5px;min-width:0}
+    .hud{font-size:clamp(12px,3.1vw,14px)}
+    .hud .col{padding:6px 10px 7px;min-width:0;border-color:rgba(158,255,200,.28)}
+    .hud .val{font-size:1.55em}
     .hud .right{margin-right:80px}
   }
   @media (prefers-reduced-motion:reduce){
@@ -370,6 +372,7 @@ function resize(){
   if(paddle){
     paddle.y = H - paddle.h - 36;
     paddle.x = Math.min(Math.max(paddle.x, paddle.w/2), W - paddle.w/2);
+    if(paddle.aimX != null) paddle.aimX = paddle.x;
   }
   buildStars();
   buildBgLayers();
@@ -476,9 +479,26 @@ function buildWallPattern(){
 }
 
 /* ---- Game objects ---- */
+// Feel tuning mirrors games/suite-feel.js (combo window, pointer lerp, min ball speed).
+const FEEL_COMBO_FRAMES = 105;
+const FEEL_POINTER_LERP = 0.4;
+const FEEL_MIN_BALL_SPEED = 4.25;
+const FEEL_PADDLE_ENGLISH = 1.12;
+
 function newPaddle(){
   const w = Math.max(82, Math.min(160, W*0.22));
-  return { x: W/2, y: H - 56, w, h: 18, baseW:w, vx:0, recoil:0 };
+  const cx = W/2;
+  return { x: cx, aimX: cx, y: H - 56, w, h: 18, baseW:w, vx:0, recoil:0 };
+}
+function clampMinBallSpeed(b){
+  const sp = Math.hypot(b.vx, b.vy);
+  if(sp > 0 && sp < FEEL_MIN_BALL_SPEED){
+    const f = FEEL_MIN_BALL_SPEED / sp;
+    b.vx *= f; b.vy *= f;
+  }
+}
+function scalePointerLerp(ts){
+  return 1 - Math.pow(1 - FEEL_POINTER_LERP, Math.max(0, ts));
 }
 function paddleKeepsTimedSize(){
   // Enlarge/Shrink chips survive a wall clear the same way Slow/Fire/Ghost do.
@@ -614,7 +634,7 @@ function pointerMove(x,y){
   if(state==='playing' && paddle){
     // Reverse controls power-up: mirror across center.
     const target = activePowers.reverse ? (W - x) : x;
-    paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, target));
+    paddle.aimX = Math.max(paddle.w/2, Math.min(W - paddle.w/2, target));
   }
 }
 function pointerUp(){ pointerActive=false; }
@@ -1086,6 +1106,12 @@ function step(dt){
   if(left)  paddle.x -= speed*ts;
   if(right) paddle.x += speed*ts;
   paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, paddle.x));
+  if(left || right){
+    paddle.aimX = paddle.x;
+  } else if(paddle.aimX != null){
+    const t = scalePointerLerp(ts);
+    paddle.x += (paddle.aimX - paddle.x) * t;
+  }
   if(paddle.recoil > 0) paddle.recoil = Math.max(0, paddle.recoil - 0.8*ts);
   // Auto-fire while held: easier on phones than tap-spamming.
   if(pointerActive) fireAll();
@@ -1122,18 +1148,19 @@ function step(dt){
     if(b.fire>0) b.fire -= ts;
     if(b.squash > 0) b.squash = Math.max(0, b.squash - 0.12*ts);
 
-    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
 
     if(b.vy>0 && b.y+b.r >= paddle.y && b.y - b.r <= paddle.y + paddle.h && Math.abs(b.x - paddle.x) < paddle.w/2 + b.r){
       const rel = (b.x - paddle.x)/(paddle.w/2);
-      const ang = -Math.PI/2 + Math.max(-1, Math.min(1, rel)) * 1.05;
+      const ang = -Math.PI/2 + Math.max(-1, Math.min(1, rel)) * FEEL_PADDLE_ENGLISH;
       const sp = Math.hypot(b.vx,b.vy);
       b.vx = Math.cos(ang)*sp; b.vy = Math.sin(ang)*sp;
+      clampMinBallSpeed(b);
       b.y = paddle.y - b.r - 1;
       b.squash = 1; b.squashAng = Math.PI/2;
-      paddle.recoil = Math.min(6, (paddle.recoil||0) + 4);
+      paddle.recoil = Math.min(8, (paddle.recoil||0) + 5);
       if(activePowers.sticky){ b.stuck = true; waitingLaunch = true; btnLaunch.classList.add('show'); }
       sfx.hit(); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
       shake = Math.max(shake, 4);
@@ -1166,7 +1193,7 @@ function step(dt){
           b.squashAng = px < py ? 0 : Math.PI/2;
         }
         if(scoreEvent){
-          comboHits++; comboTimer = 90;
+          comboHits++; comboTimer = FEEL_COMBO_FRAMES;
           const mult = (1 + Math.floor(comboHits/4)*0.5) * (activePowers.gold ? 2 : 1);
           const earned = Math.round((10 + level*2)*mult);
           score += earned;
@@ -1180,7 +1207,7 @@ function step(dt){
           bricks.splice(i,1);
           killBrick(br);
           sfx.break();
-          shake = Math.max(shake, 5);
+          shake = Math.max(shake, 7);
           maybeDrop(br.x+br.w/2, br.y+br.h/2);
           score += 5*level;
         } else {
@@ -1657,10 +1684,13 @@ function drawBrick(b){
   // Bottom shadow line
   ctx.fillStyle = 'rgba(0,0,0,.35)';
   ctx.fillRect(px+2, py+ph-2, pw-4, 1.5);
-  // Inner highlight stroke
-  ctx.strokeStyle = 'rgba(255,255,255,.18)';
-  ctx.lineWidth = 1;
+  // Inner highlight stroke + dark rim for phone readability
+  ctx.strokeStyle = 'rgba(0,0,0,.32)';
+  ctx.lineWidth = 1.25;
   roundRect(ctx, px+0.5, py+0.5, pw-1, ph-1, 4.5); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, px+1, py+1, pw-2, ph-2, 4); ctx.stroke();
   // Remaining-HP pips (bottom-right) so tough bricks read at a glance
   if(b.maxHp > 1){
     const pips = Math.max(1, Math.min(5, Math.ceil(b.hp)));
@@ -1975,7 +2005,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
   } catch (e) { return; }
   window.__turdanoid = {
     startGame, step, newLevel, quitToMenu, doPause, doResume,
-    applyPower, spawnMulti, handleWindowBlur,
+    applyPower, spawnMulti, handleWindowBlur, pointerMove,
     get state(){ return state; },
     get score(){ return score; },
     set score(v){ score = v; },
