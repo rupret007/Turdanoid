@@ -56,7 +56,9 @@ export function clampMinBallSpeed(vx, vy, minSpeed = TURDANOID_FEEL.minBallSpeed
 }
 
 export function decayShake(shake, ts, decayPerFrame = TURDANOID_FEEL.shakeDecayPerFrame) {
-  if (shake <= 0) return 0;
+  if (shake <= 0) {
+    return 0;
+  }
   return Math.max(0, shake - decayPerFrame * ts);
 }
 
@@ -69,14 +71,22 @@ export function bumpShake(current, amount) {
  * @param {Array<{vy?: number, y?: number, r?: number, stuck?: boolean}>} balls
  */
 export function ballDangerRatio(balls, canvasHeight, paddleY, startRatio = TURDANOID_FEEL.ballDangerStartRatio) {
-  if (!balls?.length || !canvasHeight) return 0;
+  if (!balls?.length || !canvasHeight) {
+    return 0;
+  }
   const threshold = canvasHeight * startRatio;
   let max = 0;
   for (const b of balls) {
-    if (!b || b.stuck) continue;
-    if (typeof b.vy !== 'number' || b.vy <= 0) continue;
+    if (!b || b.stuck) {
+      continue;
+    }
+    if (typeof b.vy !== 'number' || b.vy <= 0) {
+      continue;
+    }
     const y = typeof b.y === 'number' ? b.y : 0;
-    if (y < threshold) continue;
+    if (y < threshold) {
+      continue;
+    }
     const r = typeof b.r === 'number' ? b.r : 0;
     const t = (y + r - threshold) / Math.max(1, canvasHeight - threshold);
     max = Math.max(max, Math.min(1, t));
@@ -87,8 +97,9 @@ export function ballDangerRatio(balls, canvasHeight, paddleY, startRatio = TURDA
 /** Cosmetic haptics only — no-op when vibration is unavailable. */
 export function tryLightHaptic(pattern = 8) {
   try {
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(pattern);
+    const browserNavigator = globalThis.navigator;
+    if (typeof browserNavigator?.vibrate === 'function') {
+      browserNavigator.vibrate(pattern);
     }
   } catch {
     /* ignore */
