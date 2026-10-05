@@ -1,6 +1,12 @@
 /** Board dimensions preserve room for the phone HUD, previews, and thumb dock. */
 export const MOBILE_BOARD_FOCUS_MAX_WIDTH = 980;
 
+/** Side columns + gap reserved beside the well on desktop cabinets. */
+export const DESKTOP_CABINET_HORIZONTAL_RESERVE = 360;
+
+/** Top chrome (title row + padding) on desktop play viewports. */
+export const DESKTOP_CABINET_VERTICAL_CHROME = 108;
+
 export function shouldUseBoardFocusLayout(viewportWidth) {
   const w = Number(viewportWidth);
   if (!Number.isFinite(w)) {return false;}
@@ -23,13 +29,22 @@ export function boardCanvasCssWidth(viewportWidth, viewportHeight, safeAreaBotto
   const inset = Number.isFinite(Number(safeAreaBottom)) ? Math.max(0, Number(safeAreaBottom)) : 0;
   const mobile = shouldUseBoardFocusLayout(w);
   if (!mobile) {
-    const boardWidth = Math.max(0, Math.min(380, w * 0.6, (h - 300) / 2));
+    const chrome = DESKTOP_CABINET_VERTICAL_CHROME;
+    const boardWidth = Math.max(
+      0,
+      Math.min(
+        420,
+        Math.floor((h - chrome - inset) / 2),
+        Math.floor((w - DESKTOP_CABINET_HORIZONTAL_RESERVE) / 2)
+      )
+    );
+    const cssWidth = `min(420px, calc((100dvh - ${chrome}px - env(safe-area-inset-bottom)) / 2), calc((100vw - ${DESKTOP_CABINET_HORIZONTAL_RESERVE}px) / 2))`;
     return {
-      width: 'min(380px, 60vw, calc((100dvh - 300px) / 2))',
+      width: cssWidth,
       boardWidth,
       boardHeight: boardWidth * 2,
-      horizontalReservation: 0,
-      verticalReservation: 300,
+      horizontalReservation: DESKTOP_CABINET_HORIZONTAL_RESERVE,
+      verticalReservation: chrome,
       safeAreaBottom: inset,
       mobile
     };

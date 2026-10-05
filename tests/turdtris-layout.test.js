@@ -43,13 +43,18 @@ describe('turdtris-layout', () => {
     expect(layout.boardHeight + layout.verticalReservation).toBeLessThan(1400);
   });
 
-  it('reserves desktop room for the title, menu and HUD', () => {
-    const layout = boardCanvasCssWidth(1280, 900);
+  it('sizes a tall centered desktop well with side-rail reservation', () => {
+    const layout = boardCanvasCssWidth(1280, 800);
     expect(layout.mobile).toBe(false);
-    expect(layout.width).toBe('min(380px, 60vw, calc((100dvh - 300px) / 2))');
-    expect(layout.boardWidth).toBe(300);
-    expect(layout.boardHeight).toBe(600);
-    expect(boardCanvasCssWidth(1920, 1080).boardWidth).toBe(380);
+    expect(layout.horizontalReservation).toBe(360);
+    expect(layout.verticalReservation).toBe(108);
+    expect(layout.boardWidth).toBe(346);
+    expect(layout.boardHeight).toBe(692);
+    expect(layout.boardHeight + layout.verticalReservation).toBeLessThanOrEqual(800);
+    expect(layout.width).toContain('420px');
+    expect(boardCanvasCssWidth(1440, 900).boardWidth).toBe(396);
+    expect(boardCanvasCssWidth(1024, 768).boardWidth).toBe(330);
+    expect(boardCanvasCssWidth(1920, 1080).boardWidth).toBe(420);
   });
 
   it('handles missing dimensions and unusably short viewports without negative geometry', () => {
