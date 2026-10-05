@@ -29,7 +29,7 @@ export const TURDTRIS_FEEL = {
   maxClearSparksReduced: 8,
   shakeDecayPerFrame: 0.86,
   shakeEpsilon: 0.2,
-  shakeCapReduced: 2.5,
+  shakeCapReduced: 0,
   levelFlashFrames: 28
 };
 

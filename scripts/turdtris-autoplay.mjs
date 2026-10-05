@@ -353,6 +353,8 @@ async function playRun(browser, variant) {
   page.on('dialog', async dialog => { result.issues.push(`Unexpected ${dialog.type()}: ${dialog.message()}`); await dialog.dismiss(); });
   const capture = async label => {
     const file = `${label}.png`;
+    // Receipt fixtures are outside FPS measurement; let their reveal finish.
+    if (label.startsWith('forced-')) await page.waitForTimeout(800);
     await page.screenshot({ path: resolve(directory, file) });
     result.screenshots.push(file);
   };

@@ -15,7 +15,7 @@ describe('turdtris-fx', () => {
 
   it('respects reduced motion for shake and sparks', () => {
     expect(prefersReducedMotion(reduced)).toBe(true);
-    expect(effectiveShake(10, reduced)).toBe(TURDTRIS_FEEL.shakeCapReduced);
+    expect(effectiveShake(10, reduced)).toBe(0);
     expect(effectiveShake(10, full)).toBe(10);
     expect(sparkCountForClear(26, reduced)).toBe(TURDTRIS_FEEL.maxClearSparksReduced);
     expect(sparkCountForClear(26, full)).toBe(26);
