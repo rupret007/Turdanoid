@@ -50,6 +50,7 @@ function boot(options) {
       window.cancelAnimationFrame = () => {};
       window.Math.random = () => 0.42;
       window.localStorage.setItem('turdjackSoundOn_v1', '0');
+      window.__TURDJACK_SKIP_KIT__ = true;
     }
   });
   openPages.push({ dom, timers });
