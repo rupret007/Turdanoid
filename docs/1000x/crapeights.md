@@ -132,13 +132,13 @@ Re-read the round-0 audit, current live page, local presentation/AI/save modules
 
 ## Round 3 targets
 
-- [ ] Extend foreground real-UI autoplay to 390×844, 320×640, 1280×800, reduced motion and a keyboard-only complete round; mix legal-card taps, Smart and Draw/Pass.
-- [ ] Detect console errors, 10-second stalled turns, overlays that fail to dismiss, horizontal scroll, inaccessible cards; capture screenshots every few turns.
-- [ ] Exercise Hub/Continue mid-round and verify exact restored table plus an accepted action.
-- [ ] Inspect fresh screenshots and fix cramped, clipped, misaligned or low-contrast presentation.
-- [ ] Confirm exact b3821b4 fixture fidelity through the live page, continued action and unchanged legacy/new stats key formats.
-- [ ] Tighten flights and input feedback, retain readable bot pacing, and make reduced-motion effects instant.
-- [ ] Verify full-round keyboard play, visible focus, bot announcements and non-inert round-result announcements.
+- [x] Extend foreground real-UI autoplay to 390×844, 320×640, 1280×800, reduced motion and a keyboard-only complete round; mix legal-card taps, Smart and Draw/Pass.
+- [x] Detect console errors, 10-second stalled turns, overlays that fail to dismiss, horizontal scroll, inaccessible cards; capture screenshots every few turns.
+- [x] Exercise Hub/Continue mid-round and verify exact restored table plus an accepted action.
+- [x] Inspect fresh screenshots and fix cramped, clipped, misaligned or low-contrast presentation.
+- [x] Confirm exact b3821b4 fixture fidelity through the live page, continued action and unchanged legacy/new stats key formats.
+- [x] Tighten flights and input feedback, retain readable bot pacing, and make reduced-motion effects instant.
+- [x] Verify full-round keyboard play, visible focus, bot announcements and non-inert round-result announcements.
 - [ ] Run required full Vitest, lint and Chromium smoke at 8154; record final evidence and commit locally after each logical chunk.
 
 ## Round 3 scope / Needs shared change
@@ -157,3 +157,15 @@ This explicitly requested lane document and autoplay script are authorized excep
 ### Additional Needs shared change
 
 The shared zoom guard should exempt native interactive controls using `touch-action: manipulation`; its present document-level `preventDefault()` cancels legitimate rapid activation across the suite. Crappy Eights now contains a tested local workaround. The shared fixed Hub pill still covers some lower-left content on short screens; its placement remains the shared lane's responsibility.
+
+### Round 3 final autoplay evidence
+
+- **PASS — real UI, four scenarios:** `PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs --port 8154`. Two complete rounds each at 390×844 touch, 320×640 touch, 1280×800 keyboard-only, and 390×844 with `page.emulateMedia({ reducedMotion: 'reduce' })`. Eight rounds total; zero console/page errors, stuck turns, horizontal overflow, out-of-bounds or under-44px hand boxes. Every run tested guide/details/result dismissal, exact mid-round Hub → Continue restoration, and an accepted resumed action. Eights has no bidding phase.
+- **PASS — full match:** `PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs --port 8154 --scenario phone --rounds 2 --matches 1 --output docs/1000x/crapeights-autoplay-r3/match`. Eight more rounds, final scores 142 / 125 / 167 / 201, all eight receipt totals checked against actual leftover cards, trophy captured, New Match dismissed into a fresh live deal. Zero errors or layout issues.
+- **PASS — keyboard and reduced motion:** the desktop rounds used 104 Tabs, 23 Enter activations, nine arrow moves and five selected-card play shortcuts, with 28 visible-focus checks. Live bot/result status changes were recorded. Both reduced-motion rounds had zero running animations; unit coverage additionally verifies immediate tally settlement when the preference changes during a receipt.
+- **PASS — screenshot inspection:** reviewed opening tables, guide, in-play action states, 320px hand rows, keyboard focus, wild picker, scoring receipts and full-match trophy. Phone fans now clear pile headings; result receipts have no lingering table stamps; desktop remains table-first at 1280×800. The 320×640 hand and controls are vertically reachable, with no horizontal scrolling. Cosmetic action stamps intentionally overlay character faces briefly; the fixed shared Hub pill remains the known placement issue below.
+- **PASS — save/stat contract:** exact unmodified `validEightsSnapshot()` from the b3821b4 fixture is compared against every live/restored field, then played and reloaded. Draw/skip penalties, pending wild, selection, history and finished overlays are covered. Both `crapeightsStats` and `crapeights_stats_v1` retain their existing field formats; continued wins increment once and restored finished rounds write neither stats key. No scoring, existing storage key or snapshot format changed.
+
+Representative artifacts: [390px table](crapeights-autoplay-r3/phone-390-opening.png), [320px table](crapeights-autoplay-r3/small-320-opening.png), [desktop table](crapeights-autoplay-r3/keyboard-1280-opening.png), [wild picker](crapeights-autoplay-r3/match/phone-390-wild-suit-picker.png), [match trophy](crapeights-autoplay-r3/match/phone-390-match-1-trophy.png), [four-scenario report](crapeights-autoplay-r3/report.json), [full-match report](crapeights-autoplay-r3/match/report.json).
+
+- **NOT RUN — physical phone, listening, screen-reader hardware and measured phone frame rate:** browser checks verify native touch/keyboard behavior, visible focus, announcement semantics, overflow and motion/audio gates. Hardware review remains separate.
