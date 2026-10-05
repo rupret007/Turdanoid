@@ -29,3 +29,26 @@ export function useCompactSeatTitles(viewportWidth) {
   const w = Number.isFinite(viewportWidth) ? viewportWidth : 1280;
   return w <= 680;
 }
+
+/**
+ * Short/narrow phones: collapse chrome and keep the felt in view during a live hand.
+ * @param {number} viewportWidth
+ * @param {number} viewportHeight
+ * @param {boolean} roundActive
+ */
+export function useTableFirstPlayLayout(viewportWidth, viewportHeight, roundActive) {
+  if (!roundActive) {return false;}
+  const w = Number.isFinite(viewportWidth) ? viewportWidth : 1280;
+  const h = Number.isFinite(viewportHeight) ? viewportHeight : 900;
+  if (w <= 390) {return true;}
+  if (w <= 680 && h <= 740) {return true;}
+  return false;
+}
+
+/**
+ * @param {boolean} reducedMotion
+ * @returns {'instant' | 'auto'}
+ */
+export function playFocusScrollBehavior(reducedMotion) {
+  return reducedMotion ? 'instant' : 'auto';
+}

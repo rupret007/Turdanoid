@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   showFeltBetCircle,
   showHandScorePill,
-  useCompactSeatTitles
+  useCompactSeatTitles,
+  useTableFirstPlayLayout,
+  playFocusScrollBehavior
 } from '../games/turdjack-layout.js';
 
 describe('turdjack-layout', () => {
@@ -20,5 +22,11 @@ describe('turdjack-layout', () => {
   it('uses compact seat titles at 680 and below', () => {
     expect(useCompactSeatTitles(320)).toBe(true);
     expect(useCompactSeatTitles(681)).toBe(false);
+  });
+
+  it('enables table-first chrome on phones during play', () => {
+    expect(useTableFirstPlayLayout(390, 844, true)).toBe(true);
+    expect(useTableFirstPlayLayout(900, 900, true)).toBe(false);
+    expect(playFocusScrollBehavior(true)).toBe('instant');
   });
 });
