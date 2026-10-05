@@ -8,7 +8,7 @@
      <body data-suite-no-back="1"> or window.SUITE_NO_BACK = true)
    - auto: ambient sewer backdrop (.suite-bg — tiles, wisps, bubbles;
      suppress with <body data-suite-no-bg="1">)
-   - auto: iPhone double-tap-zoom prevention
+   - auto: iPhone double-tap-zoom prevention (CSS touch-action; no touchend guard)
    ============================================================ */
 (function () {
   'use strict';
@@ -248,20 +248,13 @@
     } catch (e) {}
   }
 
-  // ---------- iPhone niceties ----------
+  // ---------- iPhone niceties (CSS touch-action; see suite-touch.js) ----------
   function preventDoubleTapZoom() {
-    let last = 0;
-    document.addEventListener('touchend', function (e) {
-      const now = Date.now();
-      if (now - last <= 350) {
-        // Don't prevent default on form controls — typing/scrolling needs to work
-        const t = e.target;
-        if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA' && t.tagName !== 'SELECT')) {
-          e.preventDefault();
-        }
+    suiteImport('./suite-touch.js').then(function (m) {
+      if (m && typeof m.installSuiteTouchPolicy === 'function') {
+        m.installSuiteTouchPolicy(document);
       }
-      last = now;
-    }, { passive: false });
+    }).catch(function () {});
   }
 
   // ---------- Last-played + honest table continue ----------
