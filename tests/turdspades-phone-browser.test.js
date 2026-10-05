@@ -9,8 +9,13 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const artifactDirectory = resolve(root, 'conductor/reviews/turdanoid-1000x/r4/turdspades');
-const viewports = [{ width: 390, height: 844 }, { width: 320, height: 640 }, { width: 1280, height: 800 }];
+const artifactDirectory = resolve(root, 'conductor/reviews/turdanoid-1000x/r5/turdspades');
+const viewports = [
+  { width: 390, height: 844 },
+  { width: 360, height: 780 },
+  { width: 320, height: 640 },
+  { width: 1280, height: 800 }
+];
 let server;
 let browser;
 let baseUrl;
@@ -114,6 +119,76 @@ async function verifyGeometry(page, viewport, phase) {
   }
 }
 
+async function verifyHandIndexRegions(page, phase, selectedId = null) {
+  const result = await page.evaluate(({ selected, phase }) => {
+    const IW = 18;
+    const IH = 28;
+    const LIFT = 6;
+    const cards = [...document.querySelectorAll('#youCards .card')];
+    const rects = cards.map((card, index) => {
+      const box = card.getBoundingClientRect();
+      const parent = document.getElementById('youCards').getBoundingClientRect();
+      return {
+        id: card.dataset.id,
+        index,
+        left: box.left - parent.left,
+        top: box.top - parent.top,
+        width: box.width,
+        height: box.height,
+        z: parseInt(card.style.zIndex, 10) || index + 1,
+        selected: card.classList.contains('selected')
+      };
+    });
+    const selectedIndex = selected
+      ? rects.findIndex((card) => card.id === selected)
+      : rects.findIndex((card) => card.selected);
+    const liftFor = (index) => (selectedIndex === index ? LIFT : 0);
+    for (let i = 0; i < rects.length; i++) {
+      const card = rects[i];
+      const idx = {
+        left: card.left,
+        top: card.top - liftFor(i),
+        right: card.left + IW,
+        bottom: card.top - liftFor(i) + IH
+      };
+      for (let j = 0; j < rects.length; j++) {
+        if (i === j) { continue; }
+        const other = rects[j];
+        if (other.z <= card.z) { continue; }
+        const body = {
+          left: other.left,
+          top: other.top - liftFor(j),
+          right: other.left + other.width,
+          bottom: other.top - liftFor(j) + other.height
+        };
+        const overlapX = Math.min(idx.right, body.right) - Math.max(idx.left, body.left);
+        const overlapY = Math.min(idx.bottom, body.bottom) - Math.max(idx.top, body.top);
+        if (overlapX > 0.5 && overlapY > 0.5) {
+          return { ok: false, card: card.id, by: other.id, phase };
+        }
+      }
+      if (selectedIndex < 0) {
+        const screen = cards[i].getBoundingClientRect();
+        for (let dx = 4; dx < IW - 2; dx += 5) {
+          for (let dy = 4; dy < IH - 2; dy += 5) {
+            const hit = document.elementFromPoint(screen.left + dx, screen.top + dy)?.closest('#youCards .card');
+            if (hit && hit !== cards[i]) {
+              return { ok: false, card: card.id, by: hit.dataset.id, phase, via: 'elementFromPoint' };
+            }
+          }
+        }
+      }
+    }
+    const dock = document.querySelector('.dock').getBoundingClientRect();
+    const handBottom = Math.max(...cards.map((card) => card.getBoundingClientRect().bottom));
+    if (handBottom > dock.top - 2) {
+      return { ok: false, phase, dockOverlap: handBottom - dock.top };
+    }
+    return { ok: true };
+  }, { selected: selectedId, phase });
+  expect(result.ok, `${phase}: hand index layout ${JSON.stringify(result)}`).toBe(true);
+}
+
 async function handHitStrips(page) {
   return page.evaluate(() => [...document.querySelectorAll('#youCards .card:not(:disabled)')].map((card) => {
     const rect = card.getBoundingClientRect();
@@ -178,6 +253,7 @@ describe.sequential('TurdSpades table browser geometry', () => {
         await verifyGeometry(page, viewport, 'bidding');
         expect(await page.locator('#youCards .card').count()).toBe(13);
         if (viewport.width <= 920) {
+          await verifyHandIndexRegions(page, 'bidding');
           const initialStrips = await handHitStrips(page);
           expect(initialStrips).toHaveLength(13);
           for (const strip of initialStrips) {
@@ -200,6 +276,7 @@ describe.sequential('TurdSpades table browser geometry', () => {
         await verifyGeometry(page, viewport, 'mid-trick');
         expect(await page.locator('#trickPile .entry[data-seat]').count()).toBe(4);
         if (viewport.width <= 920) {
+          await verifyHandIndexRegions(page, 'mid-trick');
           const legalStrips = await handHitStrips(page);
           expect(legalStrips.length).toBeGreaterThan(0);
           for (const strip of legalStrips) {
@@ -212,6 +289,7 @@ describe.sequential('TurdSpades table browser geometry', () => {
           const selected = page.locator('#youCards .card.selected');
           expect(await selected.getAttribute('data-id')).toBe(target.id);
           expect((await selected.boundingBox()).y, 'selection should lift the tapped card').toBeLessThan(target.top);
+          await verifyHandIndexRegions(page, 'selected card', target.id);
           expect(await page.locator('#playBtn').isEnabled()).toBe(true);
         } else {
           await page.locator('#youCards .card:not([disabled])').first().click();

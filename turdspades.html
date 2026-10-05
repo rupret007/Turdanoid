@@ -908,8 +908,13 @@
     .seat-you .head { height:24px; }
     .seat-you .ts-avatar { display:none; }
     .seat-you .meta { font-size:.65rem; border:0; background:none; padding:0; }
-    .hand-guidance { font-size:.68rem; color:#c7dece; line-height:18px; height:18px; }
-    .cards { min-height:108px; padding:14px 4px 4px; }
+    .hand-guidance { font-size:.68rem; color:#c7dece; line-height:18px; height:18px; margin:0 0 2px; flex:none; pointer-events:none; }
+    .seat-you { display:flex; flex-direction:column; flex-shrink:0; min-height:0; overflow:visible; }
+    .cards { min-height:108px; padding:0; }
+    #youCards { position:relative; display:block; flex:none; isolation:isolate; overflow:visible; }
+    #youCards .card { position:absolute; margin:0; transform:none!important; }
+    body[data-turn="you"] #youCards .card:not(.illegal):not(.selected) { transform:none!important; box-shadow:0 0 0 1.5px rgba(158,255,200,.55), var(--suite-card-shadow), var(--suite-paper-edge); }
+    #youCards .card.selected, body[data-turn="you"] #youCards .card.selected { transform:translateY(-6px) scale(1.02)!important; z-index:30!important; }
     .dock, body[data-turn="bid"] .dock { flex:none; position:relative; inset:auto; padding:6px 10px calc(6px + env(safe-area-inset-bottom)); border-radius:0; border:0; border-top:1px solid #9effc833; gap:4px; z-index:5; }
     .dock-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
     body[data-phase="bidding"] .dock-grid { display:none; }
@@ -961,11 +966,13 @@
       .seat-you { padding:4px 2px 0; }
       .seat-you .name { font-size:.64rem; }
       .seat-you .meta { font-size:.58rem; white-space:nowrap; }
-      .hand-guidance { font-size:.6rem; height:16px; line-height:16px; }
-      #youCards { position:relative; display:block; min-height:0; height:var(--hand-height,150px); padding:0; perspective:none; }
-      #youCards .card { position:absolute; left:var(--hand-x,0); top:var(--hand-y,8px); width:var(--hand-card-width,54px); height:var(--hand-card-height,76px); margin:0; transform:none; z-index:var(--hand-z,0)!important; transition:transform .12s ease,box-shadow .12s ease; will-change:auto; }
-      #youCards .card.selected, body[data-turn="you"] #youCards .card.selected { transform:translateY(-8px); }
-      #youCards .card.illegal { transform:none; opacity:.42; }
+      .hand-guidance { font-size:.6rem; height:16px; line-height:16px; margin:0 0 2px; flex:none; pointer-events:none; z-index:0; }
+      .seat-you { display:flex; flex-direction:column; flex-shrink:0; min-height:0; overflow:visible; }
+      #youCards { position:relative; display:block; flex:none; min-height:0; height:var(--hand-height,150px); padding:0; margin:0; perspective:none; isolation:isolate; overflow:visible; z-index:1; }
+      #youCards .card { position:absolute; left:var(--hand-x,0); top:var(--hand-y,8px); width:var(--hand-card-width,54px); height:var(--hand-card-height,76px); margin:0; transform:none; z-index:var(--hand-z,1); transition:transform .12s ease,box-shadow .12s ease; will-change:auto; }
+      body[data-turn="you"] #youCards .card:not(.illegal):not(.selected) { transform:none; }
+      #youCards .card.selected, body[data-turn="you"] #youCards .card.selected { transform:translateY(-6px) scale(1.02); z-index:30; }
+      #youCards .card.illegal { transform:none; opacity:.42; z-index:1; }
       #youCards .card .r { padding:5px 0 0 6px; font-size:.85rem; }
       #youCards .card .r::after { font-size:.8em; }
       #youCards .card .s { font-size:1.4rem; }
@@ -1646,7 +1653,9 @@
         const deal = dealAnimClass(`${state.round}:${c.id}`, 'deal-in');
         const safeId = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(c.id) : String(c.id).replace(/[<>"]/g, '');
         const suitName = { C: 'clubs', D: 'diamonds', H: 'hearts', S: 'spades' }[c.suit];
-        return `<button type="button" class="card ${red} ${illegal} ${sel} ${deal}" data-id="${safeId}" data-suit="${c.suit}" aria-label="${rankLabel(c.rank)} of ${suitName}${illegal ? ', cannot follow suit' : ''}" aria-pressed="${!!sel}" ${legal ? '' : 'disabled'} tabindex="${legal ? '0' : '-1'}"${faceAttrs} style="animation-delay:${i * 26}ms">
+        const phoneZ = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 920px)').matches
+          ? `;--hand-z:${i + 1};z-index:${i + 1}` : '';
+        return `<button type="button" class="card ${red} ${illegal} ${sel} ${deal}" data-id="${safeId}" data-suit="${c.suit}" aria-label="${rankLabel(c.rank)} of ${suitName}${illegal ? ', cannot follow suit' : ''}" aria-pressed="${!!sel}" ${legal ? '' : 'disabled'} tabindex="${legal ? '0' : '-1'}"${faceAttrs} style="animation-delay:${i * 26}ms${phoneZ}">
           <div class="r">${rankLabel(c.rank)}</div><div class="s">${SUIT_SYMBOL[c.suit]}</div><div class="r">${rankLabel(c.rank)}</div></button>`;
       }).join('');
       layoutPhoneCards();
@@ -1664,7 +1673,8 @@
         const pos = layout.positions[i];
         card.style.setProperty('--hand-x', `${pos.x}px`);
         card.style.setProperty('--hand-y', `${pos.y}px`);
-        card.style.setProperty('--hand-z', pos.z);
+        card.style.setProperty('--hand-z', String(pos.z));
+        card.style.zIndex = String(pos.z);
       });
     }
 
