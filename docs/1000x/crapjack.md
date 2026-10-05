@@ -1,76 +1,75 @@
 # Crapjack 21 — Turdanoid 1000x (lane: crapjack)
 
-Round 1 implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
+Round 2 implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
 
-## Honest audit (round 1)
+## Honest audit (round 2)
 
 ### Gameplay
-- **Strong:** Full blackjack feature set (split, double, surrender, insurance, even money), Hi-Lo count with hidden-hole discipline, basic-strategy hints and Smart/Enter, configurable rules, continue snapshots, bankroll/stats persistence.
-- **Weak:** Table still shares vertical space with a dense sidebar on desktop; streak bonus payouts are flavour (not core BJ EV) but add casino chaos.
+- **Strong:** Full blackjack feature set unchanged; practice mode adds mistake callouts without altering legacy stat keys.
+- **Weak:** Payout chip sweep from dealer is stylized (bet circle + HUD) rather than full physics sim.
 
 ### Feel
-- **Strong:** Status tones/badges, toilet boss quips, hot/cold streak banners, chip toss CSS, deal/flip card motion.
-- **Weak:** Win/blackjack moments lacked a unified “table celebration” layer before this pass.
+- **Strong:** Deal-from-shoe flight, dealer reveal drumroll beat, CRAPJACK banner, bust crumble, split slide, coach button pulse.
+- **Weak:** Insurance win moment relies on status text heuristics.
 
 ### Graphics / art
-- **Strong:** Felt table, sewer card backs, procedural felt inlay SVG, chip stacks, shoe lane visual.
-- **Weak:** Shared card CSS still caps polish vs a dedicated art pass (shared lane).
+- **Strong:** Table-first 1280 layout, discard tray, bet circle, felt chip stacks, edge streak readout.
+- **Weak:** Shared card CSS still caps face art (shared lane).
 
 ### Animation
-- **Strong:** `suiteDealIn` / hole flip, chip toss, boss mascot animations.
-- **Added (R1):** Canvas confetti bursts + subtle table shake on bust/blackjack (gated by `prefers-reduced-motion`).
+- **Strong:** Arc deal flight, 3D hole flip, chip fly to circle, bankroll tween, meter danger pulse.
+- **Reduced motion:** Instant deal, no fly/chip/banner motion, no crumble.
 
 ### Audio
-- **Strong:** Per-action WebAudio profiles in page.
-- **Added (R1):** `games/turdjack-audio.js` — layered blackjack/win/chip tones; honours `turdjackSoundOn_v1` **and** `turdsuite_muted`.
+- **Strong:** Drumroll + fanfare profiles in `turdjack-audio.js`; existing action bank retained.
 
 ### HUD / UI
-- **Strong:** 10-stat HUD, mobile pit dock, bet chip tray.
-- **Added (R1):** Bust-risk hand meter (21 pips), shoe lane readout, chip stack on bet pill via module, collapsible “Strategy, history & rules” drawer on narrow viewports.
+- **Strong:** Total badges, bet circle, desktop pit rail, intel slide-out (default closed until opened once).
+- **Weak:** HUD stat grid still dense on 320px (scroll in shell only).
 
 ### Mobile / touch
-- **Strong:** Bottom pit, bet tools in details, table-first layout under 980px.
-- **Weak:** Long scroll on very small phones if intel drawer opened; pit remains primary play surface.
+- **Strong:** Mobile pit unchanged for smoke; table stage compacts under 980px; intel via menu.
+- **Weak:** Bet circle hidden on narrow viewports (mobile pit chips only).
 
 ### Accessibility
-- **Added (R1):** `aria-live` announcer for status line; hand meter marked `aria-hidden` (decorative); reduced-motion cuts shake/particles/boss motion.
-- **Weak:** No skip-link (shared lane target); limited aria on controls (pre-existing).
+- **Strong:** aria-live status, intel toggle `aria-expanded`, practice labeled checkbox.
+- **Weak:** Coach pulse is visual only.
 
 ### Performance
-- **Strong:** No per-frame DOM in main loop; FX canvas capped particles (36 → 8 reduced).
-- **Watch:** MutationObservers on HUD stats (cosmetic flash only).
+- **Strong:** FX canvas particle cap; no per-frame DOM loop; deal flags cleared each round.
 
 ### Onboarding
-- **Strong:** Welcome guide, Quick Start, keyboard cheats in sidebar.
+- **Strong:** Welcome guide + Quick Start; intel drawer holds rules.
 
-### AI
-- N/A (dealer follows rules; “AI” is basic-strategy coach — already solid).
+### AI / coach
+- **Strong:** Smart + hint tap highlight optimal action with one-line why; practice flags deviations.
 
-## Checklist
+## Checklist (round 2)
 
 | Target | Status |
 |--------|--------|
 | [x] Document audit + checklist in `docs/1000x/crapjack.md` |
-| [x] Extract chip stack logic → `games/turdjack-chips.js` + tests |
-| [x] Extract felt inlay SVG → `games/turdjack-felt.js` + tests |
-| [x] WebAudio module with suite mute gate → `games/turdjack-audio.js` + tests |
-| [x] Table canvas FX (win/BJ/bust/push) + reduced motion → `games/turdjack-fx.js` + tests |
-| [x] Hand bust-risk meter → `games/turdjack-hand-meter.js` + tests |
-| [x] Page kit wiring → `games/turdjack-page-kit.js` |
-| [x] `aria-live` status announcer |
-| [x] Shoe lane HUD (cards remaining / cut card) |
-| [x] Mobile intel drawer (strategy/history/rules collapsed by default ≤980px) |
-| [x] Table shake + particle celebrations (motion-safe) |
-| [ ] Shared `SuiteAudio` / `SuiteFX` modules (shared lane) |
+| [x] Table-first desktop (felt hero, discard/shoe/bet circle/pit rail) |
+| [x] Intel slide-out on desktop (default closed; `turdjack_intel_seen_v1`) |
+| [x] Deal-from-shoe flight (`turdjack-deal-anim.js` + CSS) |
+| [x] Dealer reveal suspense + drumroll SFX |
+| [x] Hole flip + split slide (motion-gated) |
+| [x] Chip fly to bet circle + felt stack (`turdjack-table-chips.js`) |
+| [x] CRAPJACK / bust / push moments + edge streaks (`turdjack-moments.js`) |
+| [x] Big total badges + meter pulse (`turdjack-totals.js`, hand meter) |
+| [x] Coach pulse + practice mode (`turdjack-coach.js`, `turdjack_practice_v1`) |
+| [x] Bankroll count tween |
+| [x] Unit tests for new modules |
+| [x] Lint cleanup in owned turdjack modules |
+| [ ] Shared `SuiteAudio` / `SuiteFX` (shared lane) |
 | [ ] Shared card face art upgrade (shared CSS) |
-| [ ] Drag-to-bet / chip flight to felt (future) |
-| [ ] Deal-from-shoe positional animation (future) |
+| [ ] Full dealer-to-player payout chip sweep (future polish) |
 
 ## Needs shared change
 
-- **SuiteAudio / SuiteFX:** Central mixer and particle helpers referenced in conductor audit (`assets/turdsuite.js` or new `games/suite-*.js`).
-- **Card art / deal keyframes:** Bigger indices and shared flip paths in `assets/turdsuite.css` without breaking smoke DOM contracts.
+- **SuiteAudio / SuiteFX:** Central mixer and particle helpers (`assets/turdsuite.js` or new `games/suite-*.js`).
+- **Card art / shared flip paths:** Bigger indices in `assets/turdsuite.css` without breaking smoke DOM contracts.
 
 ## Save compatibility
 
-No changes to `turdjackBankroll`, `turdjackStats`, `turdjackRules`, `turdjackLastBet`, `turdjackSoundOn_v1`, or continue snapshot `kind: turdjack v:1` fields.
+No changes to `turdjackBankroll`, `turdjackStats`, `turdjackRules`, `turdjackLastBet`, `turdjackSoundOn_v1`, or continue snapshot `kind: turdjack v:1` fields. New optional keys: `turdjack_practice_v1`, `turdjack_intel_seen_v1`.

@@ -178,10 +178,14 @@ Single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, an
 
 ### Table feedback
 
-- **Hand meter:** Pips under your hand show total toward 21; gold/red zone is 17–21 (bust risk).
-- **Shoe lane:** Cards remaining and cut-card distance above the dealer.
+- **Table layout:** Felt-first desktop view with discard tray (left), shoe (right), bet circle, and chip rack on the felt; round actions sit in the pit rail under the table.
+- **Table Intel:** `📋 Table Intel` opens the slide-out drawer (strategy hint, history, rules, practice mode). Tap the hint line during a hand to pulse the recommended action.
+- **Hand totals:** Large badges beside each score show hard/soft totals; the pip meter under your hand animates in the 17–21 bust-risk zone.
+- **Moments:** Blackjack shows a **CRAPJACK!** banner with fanfare; busts crumble with flush SFX; hot/cold streaks appear on the table edge.
+- **Shoe lane:** Cards remaining and cut-card distance by the shoe.
+- **Practice mode:** Optional toggle in Table Intel flags basic-strategy mistakes without changing saved `turdjackStats` shape (optional fields only).
 - **Sound:** `M` toggles `turdjackSoundOn_v1`; hub mute (`turdsuite_muted`) silences table SFX too.
-- **Motion:** `prefers-reduced-motion` disables table shake, particle bursts, and most mascot animations.
+- **Motion:** `prefers-reduced-motion` disables deal flight, chip fly, table shake, particle bursts, and most mascot animations.
 
 ### Strategy Hint
 

@@ -10,6 +10,8 @@ import { jackDeck } from './continue-fixtures.js';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'turdjack.html'), 'utf8');
 const openPages = [];
+/** R2 turdjack.html is large; first JSDOM parse can exceed the default 5s hook. */
+const PAGE_BOOT_TIMEOUT = 30000;
 
 function makeFixture({ ranks = ['A', '5'], upcard = '9', dealerHitsSoft17 = false } = {}) {
   const shoe = jackDeck(1);
@@ -128,7 +130,7 @@ const softCases = [false, true].flatMap((dealerHitsSoft17) =>
 );
 
 describe('Crapjack live-page soft-hand guidance', () => {
-  it.each(softCases)('recommends Hit for $name', (fixture) => {
+  it.each(softCases)('recommends Hit for $name', { timeout: PAGE_BOOT_TIMEOUT }, (fixture) => {
     const w = boot(fixture);
 
     expect(w.strategyDecision()).toMatchObject({ action: 'hit' });

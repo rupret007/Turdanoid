@@ -6,11 +6,32 @@ import { buildFeltInlay } from './turdjack-felt.js';
 import { createTurdjackAudio } from './turdjack-audio.js';
 import { createTableFx } from './turdjack-fx.js';
 import { handMeterState, renderHandMeterHtml } from './turdjack-hand-meter.js';
+import {
+  coachButtonIdForAction,
+  coachWhyLine
+} from './turdjack-coach.js';
+import {
+  dealFlightDurationMs,
+  flightDelta,
+  dealerRevealPauseMs,
+  useDealFlight
+} from './turdjack-deal-anim.js';
+import { buildFeltChipStackHtml, feltBetLabel } from './turdjack-table-chips.js';
+import {
+  momentKindFromStatus,
+  momentBannerCopy,
+  bankrollTweenSteps,
+  tableEdgeStreakLabel
+} from './turdjack-moments.js';
+import { formatHandTotalBadge, renderTotalBadgeHtml } from './turdjack-totals.js';
+
+const PRACTICE_KEY = 'turdjack_practice_v1';
+const INTEL_SEEN_KEY = 'turdjack_intel_seen_v1';
 
 function suiteMuted() {
   try {
     return localStorage.getItem('turdsuite_muted') === '1';
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -18,8 +39,24 @@ function suiteMuted() {
 function prefersReducedMotion() {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch (e) {
+  } catch {
     return false;
+  }
+}
+
+function readPracticeMode() {
+  try {
+    return localStorage.getItem(PRACTICE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writePracticeMode(on) {
+  try {
+    localStorage.setItem(PRACTICE_KEY, on ? '1' : '0');
+  } catch {
+    /* ignore */
   }
 }
 
@@ -31,6 +68,7 @@ export function installTurdjackKit(win) {
   const table = doc.querySelector('.table');
   const canvas = doc.getElementById('tableFxCanvas');
   const ruleSummary = doc.getElementById('ruleSummary');
+  let reducedMotion = prefersReducedMotion();
 
   const audio = createTurdjackAudio({
     getSoundEnabled: () => !!win.__turdjackSoundEnabled,
@@ -38,19 +76,26 @@ export function installTurdjackKit(win) {
   });
 
   win.__turdjackAudio = audio;
+  win.__turdjackPracticeMode = readPracticeMode();
 
   let fx = null;
   if (canvas && table) {
-    fx = createTableFx(canvas, { reducedMotion: prefersReducedMotion() });
+    fx = createTableFx(canvas, { reducedMotion });
     win.addEventListener('resize', () => fx.resize());
     try {
       win.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+        reducedMotion = e.matches;
         fx.setReducedMotion(e.matches);
       });
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   }
+
+  let displayedBankroll = null;
+  let bankrollTweenTimer = null;
+  let lastCardCounts = { dealer: 0, player: 0, split: 0 };
+  let coachPulseTimer = null;
 
   function paintFeltInlay() {
     if (!table) {return;}
@@ -69,15 +114,252 @@ export function installTurdjackKit(win) {
     });
   }
 
+  function flyChipToBet(btn) {
+    if (reducedMotion || !btn) {return;}
+    const betZone = doc.getElementById('betCircle');
+    if (!betZone) {return;}
+    const chip = doc.createElement('span');
+    chip.className = 'flying-chip';
+    const denom = btn.dataset.chip || '10';
+    chip.dataset.denom = denom;
+    const from = btn.getBoundingClientRect();
+    const to = betZone.getBoundingClientRect();
+    const dx = from.left - to.left;
+    const dy = from.top - to.top;
+    chip.style.setProperty('--fly-dx', `${dx}px`);
+    chip.style.setProperty('--fly-dy', `${dy}px`);
+    betZone.appendChild(chip);
+    chip.addEventListener('animationend', () => chip.remove(), { once: true });
+  }
+
   doc.querySelectorAll('[data-chip]').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.disabled) {return;}
+      flyChipToBet(btn);
       btn.classList.remove('tossed');
       void btn.offsetWidth;
       btn.classList.add('tossed');
     });
     btn.addEventListener('animationend', () => btn.classList.remove('tossed'));
   });
+
+  function animateDealCards() {
+    if (!useDealFlight(reducedMotion)) {return;}
+    const shoe = doc.getElementById('shoeLane');
+    if (!shoe || !table) {return;}
+    const shoeRect = shoe.getBoundingClientRect();
+    doc.querySelectorAll('.cards .playing-card').forEach((card) => {
+      if (card.dataset.flew === '1') {return;}
+      card.dataset.flew = '1';
+      const to = card.getBoundingClientRect();
+      const { dx, dy, dist } = flightDelta(shoeRect, to);
+      const ms = dealFlightDurationMs(dist, reducedMotion);
+      card.style.setProperty('--deal-dx', `${dx}px`);
+      card.style.setProperty('--deal-dy', `${dy}px`);
+      card.style.setProperty('--deal-ms', `${ms}ms`);
+      card.classList.add('deal-from-shoe');
+    });
+  }
+
+  function clearDealFlags() {
+    doc.querySelectorAll('.playing-card.deal-from-shoe').forEach((el) => {
+      el.classList.remove('deal-from-shoe');
+      delete el.dataset.flew;
+    });
+  }
+
+  function updateBetCircle(amount) {
+    const zone = doc.getElementById('betCircle');
+    const stack = doc.getElementById('betCircleStack');
+    const label = doc.getElementById('betCircleLabel');
+    if (!zone) {return;}
+    const n = Number.isFinite(amount) ? amount : 0;
+    if (label) {label.textContent = feltBetLabel(n);}
+    if (stack) {stack.innerHTML = buildFeltChipStackHtml(n);}
+    zone.classList.toggle('has-bet', n >= 10);
+  }
+
+  function updateTotalBadges(state) {
+    if (!state || typeof state.handValue !== 'function') {return;}
+    const dealerEl = doc.getElementById('dealerTotalBadge');
+    const playerEl = doc.getElementById('playerTotalBadge');
+    const splitEl = doc.getElementById('splitTotalBadge');
+    const dealerHidden = !!state.dealerHoleHidden;
+    const dTotal = dealerHidden
+      ? (state.dealerHand && state.dealerHand[0] ? state.handValue([state.dealerHand[0]]) : 0)
+      : state.handValue(state.dealerHand || []);
+    const dSoft = !dealerHidden && typeof state.isSoftHand === 'function' && state.isSoftHand(state.dealerHand || []);
+    if (dealerEl) {
+      dealerEl.innerHTML = renderTotalBadgeHtml(formatHandTotalBadge(dTotal, dSoft, dealerHidden));
+    }
+    if (playerEl) {
+      const pTotal = state.handValue(state.playerHand || []);
+      const pSoft = typeof state.isSoftHand === 'function' && state.isSoftHand(state.playerHand || []);
+      playerEl.innerHTML = renderTotalBadgeHtml(formatHandTotalBadge(pTotal, pSoft, false));
+    }
+    if (splitEl) {
+      const show = state.splitRound || (state.splitHand && state.splitHand.length);
+      splitEl.hidden = !show;
+      if (show) {
+        const sTotal = state.handValue(state.splitHand || []);
+        const sSoft = typeof state.isSoftHand === 'function' && state.isSoftHand(state.splitHand || []);
+        splitEl.innerHTML = renderTotalBadgeHtml(formatHandTotalBadge(sTotal, sSoft, false));
+      }
+    }
+  }
+
+  function updateTableEdgeStreak(hot, cold) {
+    const edge = doc.getElementById('tableEdgeStreak');
+    if (!edge) {return;}
+    const label = tableEdgeStreakLabel(hot || 0, cold || 0);
+    edge.textContent = label;
+    edge.hidden = !label;
+    edge.classList.toggle('hot', hot >= 3);
+    edge.classList.toggle('cold', cold >= 3);
+  }
+
+  function tweenBankroll(toValue, snap) {
+    const el = doc.getElementById('bankrollText');
+    if (!el || reducedMotion || snap) {
+      if (el) {el.textContent = `$${toValue.toLocaleString()}`;}
+      if (bankrollTweenTimer) {
+        globalThis.clearInterval(bankrollTweenTimer);
+        bankrollTweenTimer = null;
+      }
+      displayedBankroll = toValue;
+      return;
+    }
+    const from = displayedBankroll === null || displayedBankroll === undefined ? toValue : displayedBankroll;
+    if (from === toValue) {
+      displayedBankroll = toValue;
+      return;
+    }
+    if (bankrollTweenTimer) {globalThis.clearInterval(bankrollTweenTimer);}
+    const steps = bankrollTweenSteps(from, toValue, 14);
+    let i = 0;
+    bankrollTweenTimer = globalThis.setInterval(() => {
+      if (i >= steps.length) {
+        globalThis.clearInterval(bankrollTweenTimer);
+        bankrollTweenTimer = null;
+        displayedBankroll = toValue;
+        return;
+      }
+      el.textContent = `$${steps[i].toLocaleString()}`;
+      el.classList.add('bankroll-tween');
+      i++;
+    }, 40);
+    setTimeout(() => el.classList.remove('bankroll-tween'), steps.length * 40 + 80);
+    displayedBankroll = toValue;
+  }
+
+  function showMomentBanner(kind) {
+    const banner = doc.getElementById('momentBanner');
+    if (!banner || !kind) {return;}
+    const copy = momentBannerCopy(kind);
+    if (!copy) {return;}
+    banner.textContent = copy;
+    banner.dataset.kind = kind;
+    banner.classList.remove('show');
+    void banner.offsetWidth;
+    banner.classList.add('show');
+    if (kind === 'blackjack') {audio.play('fanfare');}
+    if (kind === 'bust') {audio.play('bust');}
+    setTimeout(() => banner.classList.remove('show'), reducedMotion ? 1200 : 2400);
+  }
+
+  function highlightCoachAction(action) {
+    doc.querySelectorAll('.coach-pulse').forEach((b) => b.classList.remove('coach-pulse'));
+    const id = coachButtonIdForAction(action);
+    if (!id) {return;}
+    const btn = doc.getElementById(id);
+    if (!btn || btn.disabled) {return;}
+    btn.classList.add('coach-pulse');
+    if (coachPulseTimer) {clearTimeout(coachPulseTimer);}
+    coachPulseTimer = setTimeout(() => btn.classList.remove('coach-pulse'), reducedMotion ? 800 : 2200);
+  }
+
+  function setCoachWhy(advice) {
+    const line = doc.getElementById('coachWhyLine');
+    if (!line) {return;}
+    const text = coachWhyLine(advice);
+    if (!text) {
+      line.hidden = true;
+      line.textContent = '';
+      return;
+    }
+    line.hidden = false;
+    line.textContent = text;
+  }
+
+  function dealerRevealBeat(done) {
+    const pause = dealerRevealPauseMs(reducedMotion);
+    if (!pause) {
+      done();
+      return;
+    }
+    audio.play('drumroll');
+    const hole = doc.querySelector('#dealerCards .playing-card:nth-child(2)');
+    if (hole) {hole.classList.add('hole-suspense');}
+    setTimeout(() => {
+      if (hole) {hole.classList.remove('hole-suspense');}
+      done();
+    }, pause);
+  }
+
+  function bustCrumble(handKey) {
+    if (reducedMotion) {return;}
+    const id = handKey === 'split' ? 'splitCards' : 'playerCards';
+    const wrap = doc.getElementById(id);
+    if (!wrap) {return;}
+    wrap.classList.add('hand-bust-crumble');
+    setTimeout(() => wrap.classList.remove('hand-bust-crumble'), 700);
+  }
+
+  function wireIntelDrawer() {
+    const panel = doc.getElementById('intelSlide');
+    const toggle = doc.getElementById('intelToggleBtn');
+    const backdrop = doc.getElementById('intelBackdrop');
+    const practice = doc.getElementById('practiceModeToggle');
+
+    function setOpen(open) {
+      if (!panel) {return;}
+      panel.classList.toggle('open', open);
+      panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if (toggle) {toggle.setAttribute('aria-expanded', open ? 'true' : 'false');}
+      if (backdrop) {
+        backdrop.classList.toggle('show', open);
+        backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+      }
+      if (open) {
+        try {localStorage.setItem(INTEL_SEEN_KEY, '1');} catch { /* ignore */ }
+      }
+    }
+
+    if (toggle) {
+      toggle.addEventListener('click', () => setOpen(!panel?.classList.contains('open')));
+    }
+    if (backdrop) {
+      backdrop.addEventListener('click', () => setOpen(false));
+    }
+    if (practice) {
+      practice.checked = readPracticeMode();
+      practice.addEventListener('change', () => {
+        win.__turdjackPracticeMode = practice.checked;
+        writePracticeMode(practice.checked);
+      });
+    }
+
+    try {
+      const seen = localStorage.getItem(INTEL_SEEN_KEY) === '1';
+      if (!seen && panel && win.matchMedia('(min-width: 981px)').matches) {
+        setOpen(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  wireIntelDrawer();
 
   function afterHud(state) {
     try {
@@ -87,9 +369,25 @@ export function installTurdjackKit(win) {
           ? (state.currentBet || 0) + (state.splitBet || 0)
           : (state.currentBet || 0);
         betEl.innerHTML = '$' + amount.toLocaleString() + buildChipStackHtml(amount);
+        updateBetCircle(amount);
+      }
+      if (state && Number.isFinite(state.bankroll)) {
+        tweenBankroll(state.bankroll, !!state.roundActive);
       }
       updateHandMeters(doc, state);
-    } catch (e) {
+      updateTotalBadges(state);
+      if (state) {
+        updateTableEdgeStreak(state.hotStreak, state.coldStreak);
+      }
+
+      const d = state?.dealerHand?.length || 0;
+      const p = state?.playerHand?.length || 0;
+      const s = state?.splitHand?.length || 0;
+      if (d > lastCardCounts.dealer || p > lastCardCounts.player || s > lastCardCounts.split) {
+        globalThis.setTimeout(() => animateDealCards(), 0);
+      }
+      lastCardCounts = { dealer: d, player: p, split: s };
+    } catch {
       /* ignore */
     }
   }
@@ -104,12 +402,48 @@ export function installTurdjackKit(win) {
       }
       const live = doc.getElementById('jackLiveRegion');
       if (live) {live.textContent = String(text || '');}
-    } catch (e) {
+      const moment = momentKindFromStatus(text);
+      if (moment) {showMomentBanner(moment);}
+      if (note.includes('bust') && !note.includes('dealer bust')) {
+        bustCrumble(note.includes('hand 2') ? 'split' : 'player');
+      }
+    } catch {
       /* ignore */
     }
   }
 
-  return { audio, fx, paintFeltInlay, afterHud, afterStatus };
+  function coachHint(advice) {
+    if (!advice) {return;}
+    setCoachWhy(advice);
+    highlightCoachAction(advice.action);
+  }
+
+  function onNewRound() {
+    clearDealFlags();
+    lastCardCounts = { dealer: 0, player: 0, split: 0 };
+    setCoachWhy(null);
+    doc.querySelectorAll('.coach-pulse').forEach((b) => b.classList.remove('coach-pulse'));
+  }
+
+  function onSplit() {
+    const splitWrap = doc.getElementById('splitHandWrap');
+    if (splitWrap && !reducedMotion) {
+      splitWrap.classList.add('split-slide-in');
+      setTimeout(() => splitWrap.classList.remove('split-slide-in'), 500);
+    }
+  }
+
+  win.__turdjackKit = {
+    audio,
+    fx,
+    coachHint,
+    dealerRevealBeat,
+    onNewRound,
+    onSplit,
+    isPracticeMode: () => !!win.__turdjackPracticeMode
+  };
+
+  return { audio, fx, paintFeltInlay, afterHud, afterStatus, coachHint, dealerRevealBeat, onNewRound, onSplit };
 }
 
 function updateHandMeters(doc, state) {
@@ -120,7 +454,9 @@ function updateHandMeters(doc, state) {
 
   const pTotal = state.handValue(state.playerHand || []);
   const pSoft = typeof state.isSoftHand === 'function' && state.isSoftHand(state.playerHand || []);
-  playerMeter.innerHTML = renderHandMeterHtml(handMeterState(pTotal, pSoft));
+  const pMeter = handMeterState(pTotal, pSoft);
+  playerMeter.innerHTML = renderHandMeterHtml(pMeter);
+  playerMeter.classList.toggle('meter-danger-pulse', pMeter.danger && pMeter.filled < 21);
 
   if (splitMeter) {
     const show = state.splitRound || (state.splitHand && state.splitHand.length);
@@ -128,7 +464,9 @@ function updateHandMeters(doc, state) {
     if (show) {
       const sTotal = state.handValue(state.splitHand || []);
       const sSoft = typeof state.isSoftHand === 'function' && state.isSoftHand(state.splitHand || []);
-      splitMeter.innerHTML = renderHandMeterHtml(handMeterState(sTotal, sSoft));
+      const sMeter = handMeterState(sTotal, sSoft);
+      splitMeter.innerHTML = renderHandMeterHtml(sMeter);
+      splitMeter.classList.toggle('meter-danger-pulse', sMeter.danger && sMeter.filled < 21);
     }
   }
 }

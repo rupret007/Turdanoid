@@ -93,7 +93,7 @@
 
     /* ---------- Shell ---------- */
     .shell {
-      width: min(1160px, 96vw);
+      width: min(1280px, 98vw);
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 30%),
         var(--panel);
@@ -369,22 +369,23 @@
     /* ---------- Layout / table ---------- */
     .layout {
       display: grid;
-      grid-template-columns: 1fr 290px;
-      gap: 6px;
-      align-items: start;
+      grid-template-columns: 1fr;
+      gap: 0;
+      align-items: stretch;
+      position: relative;
     }
 
     .table {
       border: 0;
       border-radius: 18px;
-      padding: 14px 14px 64px;
-      margin: 10px 4px 14px 10px;
+      padding: 12px 12px 10px;
+      margin: 0;
       background:
         var(--suite-felt-light),
         var(--suite-felt-noise),
         radial-gradient(ellipse 80% 60% at 50% 10%, rgba(120, 235, 170, 0.14), transparent 70%),
         linear-gradient(165deg, #1b5643 0%, var(--felt) 42%, var(--felt-2) 100%);
-      min-height: 560px;
+      min-height: min(72vh, 640px);
       box-shadow:
         var(--suite-rail),
         inset 0 0 0 1px rgba(255, 255, 255, 0.05),
@@ -414,6 +415,405 @@
       40% { transform: translate3d(4px, -2px, 0); }
       60% { transform: translate3d(-3px, 0, 0); }
       80% { transform: translate3d(3px, 1px, 0); }
+    }
+
+    .table-stage {
+      display: grid;
+      grid-template-columns: minmax(72px, 0.9fr) minmax(0, 3fr) minmax(72px, 0.9fr);
+      grid-template-rows: auto auto auto auto auto;
+      grid-template-areas:
+        "discard dealer shoe"
+        ". inlay ."
+        "player player player"
+        "split split split"
+        "bet bet bet";
+      gap: 6px 10px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+
+    .table-stage .zone-discard { grid-area: discard; }
+    .table-stage .zone-dealer { grid-area: dealer; }
+    .table-stage .zone-shoe { grid-area: shoe; }
+    .table-stage .felt-inlay { grid-area: inlay; }
+    .table-stage #playerHandWrap { grid-area: player; }
+    .table-stage #splitHandWrap { grid-area: split; }
+    .table-bet-zone { grid-area: bet; }
+
+    .discard-tray {
+      width: 64px;
+      min-height: 72px;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.08));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 6px;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(236, 255, 245, 0.55);
+      gap: 4px;
+    }
+
+    .discard-tray::before {
+      content: "";
+      width: 34px;
+      height: 44px;
+      border-radius: 5px;
+      background: repeating-linear-gradient(180deg, #1f4336 0 3px, #163228 3px 6px);
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+      opacity: 0.75;
+    }
+
+    .zone-dealer .hand {
+      text-align: center;
+    }
+
+    .zone-dealer .cards {
+      justify-content: center;
+    }
+
+    #playerHandWrap .cards,
+    #splitHandWrap .cards {
+      justify-content: center;
+    }
+
+    .table-bet-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .bet-circle {
+      position: relative;
+      width: min(168px, 42vw);
+      height: min(168px, 42vw);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 215, 106, 0.35);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 215, 106, 0.12), transparent 62%),
+        radial-gradient(circle, rgba(0, 0, 0, 0.18) 0 68%, transparent 69%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    .bet-circle.has-bet {
+      border-color: rgba(142, 255, 194, 0.55);
+      box-shadow: inset 0 0 28px rgba(142, 255, 194, 0.12), 0 0 18px rgba(142, 255, 194, 0.18);
+    }
+
+    .bet-circle-label {
+      font-weight: 900;
+      font-size: clamp(0.9rem, 2.4vw, 1.1rem);
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+      z-index: 2;
+    }
+
+    .bet-circle-stack {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .felt-chip {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      transform: translateY(calc(var(--stack-i, 0) * -3px)) rotate(calc(var(--stack-i, 0) * 4deg));
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 3px 6px rgba(0, 0, 0, 0.4);
+      background: radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.55), transparent 45%), radial-gradient(circle, var(--c1, #a6e4ff) 0 42%, var(--c2, #2b7cb0) 46% 100%);
+    }
+
+    .felt-chip.c10 { --c1: #a6e4ff; --c2: #2b7cb0; }
+    .felt-chip.c25 { --c1: #ffb9c9; --c2: #c93257; }
+    .felt-chip.c100 { --c1: #ffe9a8; --c2: #c78e28; }
+    .felt-chip.c500 { --c1: #d8c6ff; --c2: #6a45c9; }
+    .felt-chip.c1000 { --c1: #4a4f57; --c2: #111418; }
+
+    .flying-chip {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 22px;
+      height: 22px;
+      margin: -11px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 28%, #fff, transparent 40%), radial-gradient(circle, #a6e4ff, #2b7cb0);
+      animation: chipFlyBet 0.42s cubic-bezier(0.2, 1.2, 0.35, 1) forwards;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    @keyframes chipFlyBet {
+      from { transform: translate(var(--fly-dx, 0), var(--fly-dy, 0)) scale(1.1); opacity: 1; }
+      to { transform: translate(0, 0) scale(1); opacity: 0.95; }
+    }
+
+    .chip-rack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+      padding: 6px 4px 2px;
+    }
+
+    .table-pit-rail {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(142, 255, 194, 0.22);
+      background: rgba(6, 18, 14, 0.55);
+      display: grid;
+      gap: 10px;
+    }
+
+    .table-pit-rail .bet-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .coach-why {
+      margin: 6px 0 0;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 215, 106, 0.35);
+      background: rgba(40, 28, 8, 0.55);
+      color: #ffe9a8;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .coach-pulse {
+      animation: coachPulse 0.9s ease infinite;
+      box-shadow: 0 0 0 2px rgba(255, 215, 106, 0.65), 0 0 22px rgba(255, 215, 106, 0.45) !important;
+    }
+
+    @keyframes coachPulse {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+
+    .total-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      border: 2px solid rgba(142, 255, 194, 0.45);
+      background: rgba(6, 20, 15, 0.88);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .total-badge.mode-soft::after {
+      content: "soft";
+      margin-left: 6px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: 0.75;
+      letter-spacing: 0.12em;
+    }
+
+    .total-badge.mode-hard::after {
+      content: "hard";
+      margin-left: 6px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: 0.55;
+      letter-spacing: 0.12em;
+    }
+
+    .total-badge.mode-bust {
+      border-color: rgba(255, 120, 120, 0.7);
+      color: #ff9f9f;
+    }
+
+    .total-badge.mode-made {
+      border-color: rgba(255, 215, 106, 0.75);
+      color: var(--gold);
+    }
+
+    .hand-total-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-edge-streak {
+      position: absolute;
+      left: 10px;
+      top: 52px;
+      z-index: 5;
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 215, 106, 0.35);
+      color: #ffd76a;
+      pointer-events: none;
+    }
+
+    .table-edge-streak.cold {
+      border-color: rgba(122, 230, 255, 0.4);
+      color: #b8e8ff;
+    }
+
+    .moment-banner {
+      position: absolute;
+      left: 50%;
+      top: 38%;
+      transform: translate(-50%, -50%) scale(0.6);
+      z-index: 8;
+      font: 900 clamp(1.4rem, 4.5vw, 2.2rem) 'Trebuchet MS', sans-serif;
+      letter-spacing: 0.14em;
+      color: #ffe566;
+      text-shadow: 0 0 30px rgba(255, 215, 106, 0.95), 0 4px 16px rgba(0, 0, 0, 0.65);
+      padding: 10px 22px;
+      border-radius: 14px;
+      border: 2px solid rgba(255, 215, 106, 0.55);
+      background: linear-gradient(180deg, rgba(50, 35, 8, 0.92), rgba(20, 12, 4, 0.88));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.35s cubic-bezier(0.2, 1.5, 0.35, 1);
+    }
+
+    .moment-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .moment-banner[data-kind="bust"] {
+      color: #ff9b9b;
+      border-color: rgba(255, 120, 120, 0.55);
+    }
+
+    .playing-card.deal-from-shoe {
+      animation: dealFromShoe var(--deal-ms, 380ms) cubic-bezier(0.15, 1.15, 0.35, 1) backwards;
+    }
+
+    @keyframes dealFromShoe {
+      from {
+        transform: translate(var(--deal-dx, 0), var(--deal-dy, 0)) rotate(-18deg) scale(0.82);
+        opacity: 0.2;
+      }
+      to {
+        transform: translate(0, 0) rotate(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    #dealerCards .playing-card:nth-child(2):not(.back) {
+      animation-name: suiteFlipIn;
+      animation-duration: 0.45s;
+      transform-style: preserve-3d;
+      animation-timing-function: ease-out;
+    }
+
+    #dealerCards .playing-card.hole-suspense {
+      animation: holeWiggle 0.45s ease infinite;
+    }
+
+    @keyframes holeWiggle {
+      0%, 100% { transform: rotateY(0deg); }
+      50% { transform: rotateY(8deg); }
+    }
+
+    .hand-bust-crumble .playing-card {
+      animation: cardCrumble 0.65s ease forwards !important;
+    }
+
+    @keyframes cardCrumble {
+      to {
+        transform: translateY(28px) rotate(12deg) scale(0.85);
+        opacity: 0.15;
+        filter: grayscale(0.6);
+      }
+    }
+
+    #splitHandWrap.split-slide-in {
+      animation: splitSlide 0.48s cubic-bezier(0.2, 1.2, 0.4, 1);
+    }
+
+    @keyframes splitSlide {
+      from { transform: translateX(-12px); opacity: 0.4; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .hand-meter-host.meter-danger-pulse .hand-meter .pip.danger {
+      animation: pipPulse 0.8s ease infinite;
+    }
+
+    @keyframes pipPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    .card-stat .v.bankroll-tween {
+      color: var(--gold);
+    }
+
+    .intel-slide {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(340px, 92vw);
+      height: 100%;
+      z-index: 12000;
+      transform: translateX(104%);
+      transition: transform 0.28s ease;
+      pointer-events: none;
+    }
+
+    .intel-slide.open {
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .intel-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 11990;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .intel-backdrop.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .intel-slide .sidebar {
+      height: 100%;
+      overflow-y: auto;
+      border-radius: 16px 0 0 16px;
+      margin: 0;
     }
 
     .shoe-lane {
@@ -788,15 +1188,6 @@
     .cards .playing-card:nth-child(4) { animation-delay: 0.14s; }
     .cards .playing-card:nth-child(5) { animation-delay: 0.18s; }
     .cards .playing-card:nth-child(n+6) { animation-delay: 0.22s; }
-
-    /* dealer hole card flips over when revealed */
-    #dealerCards .playing-card:nth-child(2):not(.back) {
-      animation-name: suiteFlipIn;
-      animation-duration: 0.4s;
-      animation-timing-function: ease-out;
-      animation-delay: 0s;
-      transform-origin: 50% 50%;
-    }
 
     .playing-card:hover {
       transform: translateY(-4px);
@@ -1462,7 +1853,8 @@
       .playing-card .center { font-size: 1.8rem; }
       .playing-card[data-face="ace"] .center { font-size: 2rem; }
       .playing-card[data-face="court"] .center::before { font-size: 1.5rem; }
-      .sidebar .desktop-controls { display: none; }
+      .table-pit-rail.desktop-controls,
+      .table-bet-zone .chip-rack.desktop-controls { display: none; }
       .intel-drawer:not([open]) .intel-drawer-body {
         display: none;
       }
@@ -1579,6 +1971,17 @@
       .streak-banner.show {
         transform: translate(-50%, -50%) scale(1);
       }
+      .moment-banner,
+      .moment-banner.show,
+      .playing-card.deal-from-shoe,
+      .flying-chip,
+      .hand-bust-crumble .playing-card,
+      #splitHandWrap.split-slide-in,
+      .coach-pulse,
+      .hand-meter-host.meter-danger-pulse .hand-meter .pip.danger {
+        animation: none;
+        transition: none;
+      }
       .playing-card,
       .btn,
       .chip-btn,
@@ -1589,11 +1992,17 @@
     }
 
     @media (min-width: 981px) {
+      .mobile-pit {
+        display: none;
+      }
       .intel-drawer summary {
         display: none;
       }
       .intel-drawer .intel-drawer-body {
         display: block;
+      }
+      .table {
+        min-height: 620px;
       }
     }
 
@@ -1664,6 +2073,7 @@
       </div>
       <div class="actions">
         <button class="btn subtle" onclick="location.href='./'">🏠 Hub</button>
+        <button class="btn" id="intelToggleBtn" type="button" aria-expanded="false">📋 Table Intel</button>
         <button class="btn" id="helpBtn">❓ How To Play</button>
         <button class="btn" id="newShoeBtn">🃏 New Shoe</button>
         <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
@@ -1674,6 +2084,7 @@
           <summary>Table Menu</summary>
           <div class="mobile-menu-actions">
             <button class="btn subtle" onclick="location.href='./'">🏠 Hub</button>
+            <button class="btn" type="button" onclick="document.getElementById('intelToggleBtn')?.click()">📋 Intel</button>
             <button class="btn" onclick="showWelcomeGuide()">❓ Guide</button>
             <button class="btn" onclick="newShoe()">🃏 New Shoe</button>
             <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
@@ -1699,39 +2110,86 @@
     <div class="layout">
       <section class="table" data-motto="Pit Boss Memo: no clean wins after midnight">
         <canvas class="table-fx-canvas" id="tableFxCanvas" aria-hidden="true"></canvas>
+        <div class="table-edge-streak" id="tableEdgeStreak" hidden></div>
+        <div class="moment-banner" id="momentBanner" aria-hidden="true"></div>
         <div class="status" id="statusText">Place a bet, click Deal, and try not to get hustled by the toilet boss.</div>
 
-        <div class="shoe-lane" id="shoeLane" aria-hidden="true">
-          <span class="shoe-stack"></span>
-          <span id="shoeLaneText">Shoe ready</span>
+        <div class="table-stage">
+          <div class="discard-tray zone-discard" aria-hidden="true">Discard</div>
+
+          <div class="hand zone-dealer">
+            <div class="hand-title">
+              <strong data-icon="🚽">Dealer (Toilet Boss)</strong>
+              <div class="hand-total-wrap">
+                <span id="dealerTotalBadge"></span>
+                <span class="score-pill" id="dealerScoreText">Score: ?</span>
+              </div>
+            </div>
+            <div class="cards" id="dealerCards"></div>
+          </div>
+
+          <div class="shoe-lane zone-shoe" id="shoeLane" aria-hidden="true">
+            <span class="shoe-stack"></span>
+            <span id="shoeLaneText">Shoe ready</span>
+          </div>
+
+          <div class="felt-inlay" aria-hidden="true"></div>
+
+          <div class="hand" id="playerHandWrap">
+            <div class="hand-title">
+              <strong data-icon="💩">Player (You + Poop Luck)</strong>
+              <div class="hand-total-wrap">
+                <span id="playerTotalBadge"></span>
+                <span class="score-pill" id="playerScoreText">Score: 0</span>
+              </div>
+            </div>
+            <div class="cards" id="playerCards"></div>
+            <div id="playerHandMeter" class="hand-meter-host" aria-hidden="true"></div>
+          </div>
+
+          <div class="hand" id="splitHandWrap" hidden>
+            <div class="hand-title">
+              <strong data-icon="🧻">Split Hand (Backup Turd Luck)</strong>
+              <div class="hand-total-wrap">
+                <span id="splitTotalBadge" hidden></span>
+                <span class="score-pill" id="splitScoreText">Score: 0</span>
+              </div>
+            </div>
+            <div class="cards" id="splitCards"></div>
+            <div id="splitHandMeter" class="hand-meter-host" hidden aria-hidden="true"></div>
+          </div>
+
+          <div class="table-bet-zone">
+            <div class="bet-circle" id="betCircle">
+              <span class="bet-circle-label" id="betCircleLabel">Bet</span>
+              <div class="bet-circle-stack" id="betCircleStack"></div>
+            </div>
+            <div class="chip-rack desktop-controls">
+              <button class="chip-btn" data-chip="10">+$10</button>
+              <button class="chip-btn" data-chip="25">+$25</button>
+              <button class="chip-btn" data-chip="50">+$50</button>
+              <button class="chip-btn" data-chip="100">+$100</button>
+            </div>
+          </div>
         </div>
 
-        <div class="hand">
-          <div class="hand-title">
-            <strong data-icon="🚽">Dealer (Toilet Boss)</strong>
-            <span class="score-pill" id="dealerScoreText">Score: ?</span>
-          </div>
-          <div class="cards" id="dealerCards"></div>
-        </div>
+        <div id="coachWhyLine" class="coach-why" hidden></div>
 
-        <div class="felt-inlay" aria-hidden="true"></div>
-
-        <div class="hand" id="playerHandWrap">
-          <div class="hand-title">
-            <strong data-icon="💩">Player (You + Poop Luck)</strong>
-            <span class="score-pill" id="playerScoreText">Score: 0</span>
+        <div class="table-pit-rail desktop-controls">
+          <h3 data-icon="🃏">Round Actions</h3>
+          <div class="action-row">
+            <button class="btn hot" id="dealBtn">Deal</button>
+            <button class="btn" id="hitBtn">Hit</button>
+            <button class="btn" id="standBtn">Stand</button>
+            <button class="btn" id="doubleBtn">Double</button>
+            <button class="btn" id="splitBtn">Split</button>
+            <button class="btn danger" id="surrenderBtn">Surrender</button>
           </div>
-          <div class="cards" id="playerCards"></div>
-          <div id="playerHandMeter" class="hand-meter-host" aria-hidden="true"></div>
-        </div>
-
-        <div class="hand" id="splitHandWrap" hidden>
-          <div class="hand-title">
-            <strong data-icon="🧻">Split Hand (Backup Turd Luck)</strong>
-            <span class="score-pill" id="splitScoreText">Score: 0</span>
+          <div class="action-row" style="margin-top:4px;">
+            <button class="btn" id="clearBetBtn">Clear Bet</button>
+            <button class="btn" id="maxBetBtn">Max Bet</button>
+            <button class="btn" id="rebetBtn">Rebet</button>
           </div>
-          <div class="cards" id="splitCards"></div>
-          <div id="splitHandMeter" class="hand-meter-host" hidden aria-hidden="true"></div>
         </div>
 
         <div class="mobile-pit" id="mobilePit">
@@ -1758,38 +2216,18 @@
           </details>
         </div>
       </section>
+    </div>
 
+    <div class="intel-backdrop" id="intelBackdrop" aria-hidden="true"></div>
+    <div class="intel-slide" id="intelSlide" aria-hidden="true">
       <aside class="sidebar">
-        <div class="desktop-controls">
-          <h3 data-icon="🪙">Bet Chips</h3>
-          <div class="bet-grid">
-            <button class="chip-btn" data-chip="10">+$10</button>
-            <button class="chip-btn" data-chip="25">+$25</button>
-            <button class="chip-btn" data-chip="50">+$50</button>
-            <button class="chip-btn" data-chip="100">+$100</button>
-          </div>
-          <div class="action-row" style="margin-top:8px;">
-            <button class="btn" id="clearBetBtn">Clear Bet</button>
-            <button class="btn" id="maxBetBtn">Max Bet</button>
-            <button class="btn" id="rebetBtn">Rebet</button>
-          </div>
-        </div>
-
-        <div class="desktop-controls">
-          <h3 data-icon="🃏">Round Actions</h3>
-          <div class="action-row">
-            <button class="btn hot" id="dealBtn">Deal</button>
-            <button class="btn" id="hitBtn">Hit</button>
-            <button class="btn" id="standBtn">Stand</button>
-            <button class="btn" id="doubleBtn">Double</button>
-            <button class="btn" id="splitBtn">Split</button>
-            <button class="btn danger" id="surrenderBtn">Surrender</button>
-          </div>
-        </div>
-
-        <details class="intel-drawer" id="intelDrawer">
+        <details class="intel-drawer" id="intelDrawer" open>
           <summary>Strategy, history &amp; rules</summary>
           <div class="intel-drawer-body">
+        <label class="rule-row" style="margin-bottom:10px;">
+          <span>Practice mode (flag strategy mistakes)</span>
+          <input type="checkbox" id="practiceModeToggle">
+        </label>
         <div>
           <h3 data-icon="🧠">Strategy Hint</h3>
           <div class="status" id="hintText">Hint: Place a bet to begin.</div>
@@ -2910,6 +3348,12 @@
           splitRound,
           playerHand,
           splitHand,
+          dealerHand,
+          dealerHoleHidden,
+          bankroll,
+          roundActive,
+          hotStreak,
+          coldStreak,
           handValue,
           isSoftHand
         });
@@ -2964,6 +3408,10 @@
         stats.bestDecisionStreak = Math.max(stats.bestDecisionStreak || 0, decisionStreak);
       } else {
         decisionStreak = 0;
+        if (window.__turdjackKit && window.__turdjackKit.isPracticeMode && window.__turdjackKit.isPracticeMode()) {
+          if (turdjackKit && turdjackKit.coachHint) {turdjackKit.coachHint(advice);}
+          setStatus(`Practice: ${actionLabel(advice.action)} was optimal. ${advice.reason}`);
+        }
       }
     }
 
@@ -3046,6 +3494,8 @@
       playSfx('deal');
 
       stats.hands = (stats.hands || 0) + 1;
+
+      if (turdjackKit && turdjackKit.onNewRound) {turdjackKit.onNewRound();}
 
       renderCards();
 
@@ -3252,6 +3702,7 @@
         return;
       }
 
+      if (turdjackKit && turdjackKit.onSplit) {turdjackKit.onSplit();}
       setStatus(`Pair split. Play Hand 1, then Hand 2. $${currentBet + splitBet} total in action.`);
       updateHud();
     }
@@ -3298,6 +3749,7 @@
         playerHit();
         return;
       }
+      if (turdjackKit && turdjackKit.coachHint) {turdjackKit.coachHint(advice);}
       if (advice.action === 'split') {
         playerSplit();
         return;
@@ -3319,7 +3771,9 @@
 
     function dealerTurnAndResolve() {
       firstDecisionOpen = false;
+      const runAfterReveal = () => {
       revealDealerHole();
+      renderCards();
       const hands = [
         { cards: playerHand, bet: currentBet, label: splitRound ? 'Hand 1' : 'Main hand' }
       ];
@@ -3402,6 +3856,12 @@
       else playSfx('push');
       renderCards();
       updateHud();
+      };
+      if (turdjackKit && turdjackKit.dealerRevealBeat) {
+        turdjackKit.dealerRevealBeat(runAfterReveal);
+      } else {
+        runAfterReveal();
+      }
     }
 
     function newShoe() {
@@ -3529,6 +3989,12 @@
       ui.splitBtn.addEventListener('click', playerSplit);
       ui.surrenderBtn.addEventListener('click', playerSurrender);
       ui.applyRulesBtn.addEventListener('click', applyRulesFromUi);
+      if (ui.hintText) {
+        ui.hintText.addEventListener('click', () => {
+          const advice = strategyDecision();
+          if (advice && turdjackKit && turdjackKit.coachHint) {turdjackKit.coachHint(advice);}
+        });
+      }
       const helpBtn = document.getElementById('helpBtn');
       const closeGuideBtn = document.getElementById('closeGuideBtn');
       const quickGuideBtn = document.getElementById('quickGuideBtn');
@@ -3618,7 +4084,7 @@
         if (drawer && window.matchMedia('(max-width: 980px)').matches) {
           drawer.removeAttribute('open');
         }
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
       if (!window.__TURDJACK_SKIP_KIT__) {
         import('./games/turdjack-page-kit.js')
           .then((m) => {

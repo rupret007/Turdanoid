@@ -13,7 +13,9 @@ export const SFX_PROFILES = {
   lose: { f: 150, dur: 0.16, wave: 'sawtooth', vol: 0.05 },
   push: { f: 360, dur: 0.08, wave: 'triangle', vol: 0.035 },
   blackjack: { f: 1060, dur: 0.2, wave: 'triangle', vol: 0.06 },
-  bust: { f: 130, dur: 0.14, wave: 'sawtooth', vol: 0.05 }
+  bust: { f: 130, dur: 0.14, wave: 'sawtooth', vol: 0.05 },
+  drumroll: { f: 88, dur: 0.55, wave: 'square', vol: 0.028 },
+  fanfare: { f: 880, dur: 0.22, wave: 'triangle', vol: 0.055 }
 };
 
 /**
@@ -32,7 +34,7 @@ export function createTurdjackAudio(opts) {
     if (!Ctx) {return null;}
     try {
       audioCtx = new Ctx();
-    } catch (err) {
+    } catch {
       audioCtx = null;
     }
     return audioCtx;
@@ -86,8 +88,21 @@ export function createTurdjackAudio(opts) {
         tone(ctx, { ...p, dur: 0.04, vol: p.vol * 0.6 }, now + 0.03, 1.45);
         return;
       }
+      if (type === 'drumroll') {
+        const steps = 6;
+        for (let i = 0; i < steps; i++) {
+          tone(ctx, p, now + i * 0.08, 1 + i * 0.04);
+        }
+        return;
+      }
+      if (type === 'fanfare') {
+        tone(ctx, p, now, 1);
+        tone(ctx, { ...p, dur: 0.18, vol: p.vol * 0.8 }, now + 0.12, 1.35);
+        tone(ctx, { ...p, dur: 0.2, vol: p.vol * 0.65 }, now + 0.22, 1.62);
+        return;
+      }
       tone(ctx, p, now, 1);
-    } catch (err) {
+    } catch {
       /* ignore */
     }
   }
