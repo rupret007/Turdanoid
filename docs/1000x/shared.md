@@ -1,20 +1,20 @@
-# Turdanoid 1000x — shared lane audit (round 3)
+# Turdanoid 1000x — shared lane audit (round 4)
 
 Base: round-0 audit `TURDANOID-1000X-AUDIT-1005.md`, tree `b3821b4` save contract.
 
 ## Honest audit (deeper)
 
-| Area | Round 2 | Round 3 gap / action |
+| Area | Round 3 | Round 4 gap / action |
 |------|---------|----------------------|
 | Gameplay | Hub launcher + continue honest | No change to continue rules |
-| Feel | Hub idle + ambient | **Back pill overlapped thumb docks** on 390/320 — fixed via top-left compact pill |
-| Graphics | Card/felt tokens | Hub spacing/contrast pass at 320/390 |
-| Animation | Idle covers + critters | Pause hub idle + logo glow when tab hidden |
+| Feel | Back pill top-left on phones | **`preventDoubleTapZoom` touchend guard dropped quick second taps** — fixed via CSS-only zoom policy (`suite-touch.js`) |
+| Graphics | Card/felt tokens | Hide duplicate in-page Hub links when suite pill is present (≤520px) |
+| Animation | Idle covers + critters | Unchanged |
 | Audio | Preset bank | Unchanged |
-| HUD | Stat chips (desktop) | **Boss best** + optional **Spades stats** keys |
-| Mobile/touch | 320px phone rows | Back pill 44×44 top-left; docks unobstructed |
-| a11y | Skip, announcer | Back pill keeps `aria-label="Back to game hub"` |
-| Perf | FX cap | Vitest **30s** test/hook timeout under load (assertions unchanged) |
+| HUD | Stat chips (desktop) | Unchanged |
+| Mobile/touch | Back pill cleared thumb docks | Pill safe-area **top ~8px** on narrow; overlap re-checked on 6 games + hub |
+| a11y | Skip, announcer | Pinch-zoom not blocked (no `user-scalable=no`; manipulation only) |
+| Perf | FX cap | Unchanged |
 | Onboarding | Continue hero | Unchanged |
 | AI | N/A | N/A |
 
@@ -39,11 +39,18 @@ audio.playPreset('ding');    // two-tone OK
 
 Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 in the runtime wrapper; games may use `playTone` for custom beeps.
 
+## Mobile touch / double-tap zoom
+
+- **Do not** call `preventDefault()` on rapid `touchend` — it cancels the synthesized `click` on the second quick tap.
+- **Do** use `touch-action: manipulation` on `html` (`.suite-touch-manipulation`), `body.suite-no-zoom`, and interactive controls (`turdsuite.css`).
+- Runtime: `assets/suite-touch.js` (`installSuiteTouchPolicy`) — unit tests in `tests/suite-touch.test.js`.
+
 ## Back pill placement
 
-- **Default:** bottom-left on wide viewports; **top-left 44×44 icon** at ≤520px, inset below the safe-area (`~58px` top) so header toolbars stay clear without per-page edits.
+- **Default:** bottom-left on wide viewports; **top-left 44×44 icon** at ≤520px, **~8px below safe-area** so header toolbars and Rules buttons stay tappable.
 - **Override:** `body data-suite-back="bottom"` keeps bottom dock; `data-suite-back="top"` forces top on all widths.
-- Helpers: `assets/suite-back-pill.js` (`resolveBackPillPlacement`, overlap math) for unit tests and Playwright overlap scripts.
+- Duplicate header Hub links (`header` / `.topbar`) are hidden on narrow when `.suite-back-pill` is present.
+- Helpers: `assets/suite-back-pill.js` (`resolveBackPillPlacement`, overlap math) for unit tests and Playwright overlap checks.
 
 ## Checklist (testable)
 
@@ -64,7 +71,7 @@ Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 i
 - [x] Suite audio: snap, shuffle, tick, richer win/lose; tests updated
 - [x] Unit tests: `suite-ambient`, `suite-hub-attract`
 
-### Round 3
+### Round 3 (done)
 - [x] Floating hub pill: top-left compact control ≤520px; `data-suite-back` opt-in; `suite-back-pill.js` + tests
 - [x] Hub badges: `turdanoid_boss_best_v1`, `turdrummy_stats_v1` (malformed-safe), optional `turdspades_stats_v1`
 - [x] `vitest.config.ts`: `testTimeout` / `hookTimeout` 30000 ms
@@ -72,6 +79,12 @@ Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 i
 - [ ] Per-game adoption of new audio presets (other lanes)
 - [ ] Table layouts opt into `.suite-table-felt` on felt panels (card-game lanes)
 
+### Round 4
+- [x] Remove touchend `preventDefault` double-tap guard; `assets/suite-touch.js` + `tests/suite-touch.test.js` (two quick button taps → two clicks)
+- [x] CSS `touch-action: manipulation` on root + interactive controls; `html.suite-touch-manipulation`
+- [x] Back-pill overlap pass: hub 320/390/1280 + six game pages 320/390 (Playwright bbox check)
+- [x] Narrow pill top inset + hide duplicate header Hub links when suite pill present
+
 ## Needs shared change (other lanes)
 
-_None — opt into `.suite-table-felt`, `.suite-chip`, and `Suite.audio()` presets from game pages._
+_None — card-game lanes may remove redundant header Hub markup later; shared CSS already hides duplicates on phones._

@@ -327,6 +327,7 @@ Partnership Spades trick-taking game against two CPU opponents.
 ### Suite modules (hub + opt-in games)
 
 - **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill (bottom on wide; **top-left icon ≤520px** unless `body data-suite-back="bottom"`), continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
+- **`assets/suite-touch.js`** — mobile touch policy: CSS `touch-action` only (no touchend `preventDefault` double-tap guard).
 - **`assets/suite-back-pill.js`** — placement + overlap helpers for tests/tools.
 - **`assets/suite-audio.js`** — WebAudio presets (`snap`, `chip`, `shuffle`, `tick`, `win`, `lose`, …); honours mute; see `docs/1000x/shared.md`.
 - **`assets/suite-fx.js`** — screen shake, flash, confetti; respects `prefers-reduced-motion`.
