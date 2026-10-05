@@ -54,7 +54,7 @@ and game-specific suites (e.g. `tests/turdrummy-layoff.test.js`, `tests/turdanoi
 
 Record the **exact commit SHA** for this handoff in the PR body after push.
 
-Branch tip for lab handoff: `44763e1` (`74877e3` — parity tests + doc; `44763e1` — SHA line).
+Branch tip for lab handoff: `cfc3b0d0866ceeb6424525e7fd7f5454793caee6` (parity tests in `74877e3`).
 
 ### Browser smoke (`npm run test:smoke`)
 
