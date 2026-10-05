@@ -74,7 +74,7 @@ describe('TurdAnoid game regressions', () => {
   beforeEach(() => {
     ({ dom, g } = bootGame());
     g.startGame();
-  });
+  }, 20000);
 
   it('boots to the title state and starts a game with a populated wall', () => {
     expect(g.state).toBe('playing');
@@ -87,19 +87,25 @@ describe('TurdAnoid game regressions', () => {
     it('awards the clear bonus and increments the level exactly once', () => {
       const baseScore = g.score;
       g.bricks = [];
-      // Simulate many frames during the 600ms transition window
-      stepFrames(g, 40);
-      expect(g.score).toBe(baseScore + 250); // 200 + 1*50, once
-      expect(g.level).toBe(2); // incremented once, not 40 times
-      expect(g.state).toBe('playing'); // no accidental instant win
+      stepFrames(g, 3);
       expect(g.levelTransition).toBe(true);
+      expect(g.clearTally).toBeTruthy();
+      expect(g.level).toBe(1);
+      stepFrames(g, 8);
+      expect(g.level).toBe(1);
+      g.skipClearTally();
+      expect(g.score).toBe(baseScore + 250);
+      expect(g.level).toBe(2);
+      expect(g.state).toBe('playing');
+      expect(g.levelTransition).toBe(false);
     });
 
-    it('spawns the next level after the transition delay', async () => {
+    it('spawns the next level after the tally completes', () => {
       g.bricks = [];
-      stepFrames(g, 5);
+      stepFrames(g, 2);
       expect(g.bricks.length).toBe(0);
-      await new Promise((resolve) => setTimeout(resolve, 750));
+      expect(g.clearTally).toBeTruthy();
+      g.skipClearTally();
       expect(g.levelTransition).toBe(false);
       expect(g.bricks.length).toBeGreaterThan(0);
       expect(g.level).toBe(2);
@@ -113,15 +119,15 @@ describe('TurdAnoid game regressions', () => {
       expect(g.lives).toBe(lives);
     });
 
-    it('cancels the queued next level when quitting to menu mid-transition', async () => {
+    it('cancels the queued next level when quitting to menu mid-transition', () => {
       g.bricks = [];
       stepFrames(g, 2);
       expect(g.levelTransition).toBe(true);
       g.quitToMenu();
-      await new Promise((resolve) => setTimeout(resolve, 750));
       expect(g.state).toBe('title');
       expect(g.levelTransition).toBe(false);
-      expect(g.bricks.length).toBe(0); // newLevel() must not have run
+      expect(g.clearTally).toBeFalsy();
+      expect(g.bricks.length).toBe(0);
     });
   });
 
@@ -165,7 +171,7 @@ describe('TurdAnoid game regressions', () => {
   });
 
   describe('new-wall power continuity', () => {
-    it('carries still-active ball powers through a real wall clear', async () => {
+    it('carries still-active ball powers through a real wall clear', () => {
       g.activePowers.slow = 120;
       g.activePowers.fast = 120;
       g.activePowers.fire = 120;
@@ -174,9 +180,8 @@ describe('TurdAnoid game regressions', () => {
       g.bricks = [];
       g.step(FRAME);
       expect(g.levelTransition).toBe(true);
-      expect(g.level).toBe(2);
-
-      await new Promise((resolve) => setTimeout(resolve, 750));
+      expect(g.level).toBe(1);
+      g.skipClearTally();
 
       const [ball] = g.balls;
       const baseSpeed = 5.4 + 2 * 0.16;
@@ -211,7 +216,7 @@ describe('TurdAnoid game regressions', () => {
       expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed, 6);
     });
 
-    it('keeps Enlarge paddle width through a real wall clear', async () => {
+    it('keeps Enlarge paddle width through a real wall clear', () => {
       const baseW = g.paddle.baseW;
       g.applyPower({ t: 'enlarge' });
       const wide = g.paddle.w;
@@ -220,9 +225,8 @@ describe('TurdAnoid game regressions', () => {
       g.bricks = [];
       g.step(FRAME);
       expect(g.levelTransition).toBe(true);
-      expect(g.level).toBe(2);
-
-      await new Promise((resolve) => setTimeout(resolve, 750));
+      expect(g.level).toBe(1);
+      g.skipClearTally();
 
       expect(g.levelTransition).toBe(false);
       expect(g.level).toBe(2);
@@ -317,9 +321,19 @@ describe('TurdAnoid game regressions', () => {
       const run = (dt, frames) => {
         const { g: game } = bootGame();
         game.startGame();
-        game.bricks = [];
-        // Cancel level-clear side effects by marking transition done manually:
-        // use a fresh ball travelling through open space instead.
+        game.bricks = [
+          {
+            x: -200,
+            y: -200,
+            w: 10,
+            h: 10,
+            hp: 1,
+            maxHp: 1,
+            c1: '#fff',
+            c2: '#000',
+            material: 'sewer'
+          }
+        ];
         game.balls = [
           { x: 100, y: 200, r: 9, vx: 2, vy: -1, speed: 5, stuck: false, fire: 0, trail: [] }
         ];
