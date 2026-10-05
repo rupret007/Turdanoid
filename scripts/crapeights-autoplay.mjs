@@ -1,8 +1,9 @@
 /**
  * Foreground real-input Crappy Eights playtest. No game-state or timer mutation.
  * PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs
- * Options: --port 8154 --rounds 2 --seed 8042 --timeout 180000
+ * Options: --port 8154 --rounds 2 --matches 0 --seed 8042 --timeout 180000
  *          --scenario all|phone|small|keyboard|reduced --output <checkout directory>
+ * --rounds is a minimum; --matches optionally continues until full matches finish.
  * Four runs cover touch, 320px, keyboard-only and reduced motion. RNG is seeded;
  * dealing, bots, card selection, scoring, storage and pacing use the live page.
  * Artifacts stay in this worktree; the conductor may copy them into its reviews.
@@ -14,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const options = { port: 8154, rounds: 2, seed: 8042, timeout: 180000, scenario: 'all',
+const options = { port: 8154, rounds: 2, matches: 0, seed: 8042, timeout: 180000, scenario: 'all',
   output: resolve(root, 'docs/1000x/crapeights-autoplay-r3') };
 for (let index = 2; index < process.argv.length; index += 2) {
   const name = process.argv[index].replace(/^--/, '');
@@ -25,6 +26,7 @@ for (let index = 2; index < process.argv.length; index += 2) {
 for (const name of ['port', 'rounds', 'seed', 'timeout']) {
   if (!Number.isSafeInteger(options[name]) || options[name] < 1) throw new Error(`--${name} must be a positive integer`);
 }
+if (!Number.isSafeInteger(options.matches) || options.matches < 0) throw new Error('--matches must be a nonnegative integer');
 if (options.port > 65535) throw new Error('--port must be at most 65535');
 const outputRelative = relative(root, options.output);
 if (outputRelative.startsWith('..') || isAbsolute(outputRelative)) throw new Error('--output must stay inside this worktree');
@@ -250,7 +252,7 @@ async function runScenario(scenario) {
   const result = { scenario: scenario.name, viewport: scenario.viewport, reducedMotion: !!scenario.reduced,
     roundsCompleted: 0, matchesCompleted: 0, actions: { Card: 0, Smart: 0, Draw: 0, Pass: 0, Suit: 0 },
     keyboard: { tabs: 0, enters: 0, arrows: 0, plays: 0, focusChecks: 0 },
-    continue: { exactSnapshot: false, acceptedAction: false }, modalChecks: [], announcements: [],
+    continue: { exactSnapshot: false, acceptedAction: false }, modalChecks: [], announcements: [], receipts: [],
     errors: [], layoutIssues: [], timeline: [], screenshots: [] };
   report.results.push(result);
   page.on('console', message => { if (message.type() === 'error') result.errors.push(`console: ${message.text()}`); });
@@ -271,6 +273,7 @@ async function runScenario(scenario) {
   let changes = 0;
   let humanTurns = 0;
   let continueKey = null;
+  let suitScreenshotTaken = false;
   const layoutIssues = new Set();
   try {
     await page.goto(`http://127.0.0.1:${options.port}/crapeights.html`, { waitUntil: 'networkidle' });
@@ -289,7 +292,7 @@ async function runScenario(scenario) {
     await waitDismissed(page, '#tableDrawer');
     result.modalChecks.push('Table details opens and dismisses');
     roundStartedAt = lastChangedAt = Date.now();
-    while (result.roundsCompleted < options.rounds) {
+    while (result.roundsCompleted < options.rounds || result.matchesCompleted < options.matches) {
       const snapshot = await inspect(page);
       const now = Date.now();
       await collectAnnouncements();
@@ -318,9 +321,18 @@ async function runScenario(scenario) {
         await checkModalLayout(page, '#roundOverlay', result);
         await page.waitForTimeout(scenario.reduced ? 20 : 350);
         result.roundsCompleted += 1;
-        if (snapshot.state.scores.some(score => score >= 200)) result.matchesCompleted += 1;
+        const matchFinished = snapshot.state.scores.some(score => score >= 200);
+        if (matchFinished) result.matchesCompleted += 1;
         await screenshot(`round-${result.roundsCompleted}-receipt`);
-        console.log(`[${scenario.name}] round ${result.roundsCompleted}/${options.rounds}; scores ${snapshot.state.scores.join('/')}`);
+        const expectedReceiptTotal = await page.evaluate(() => players.reduce((total, player) => total + player.hand.reduce((sum, card) => sum + cardPoints(card), 0), 0));
+        await page.waitForFunction(expected => {
+          const counter = document.querySelector('#roundReceipt .ce-receipt-total strong');
+          return counter && Number(counter.textContent.replace(/[+,\s]/g, '')) === expected;
+        }, expectedReceiptTotal, { timeout: 6500 });
+        result.receipts.push({ round: result.roundsCompleted, total: expectedReceiptTotal, settled: true });
+        await screenshot(`round-${result.roundsCompleted}-receipt-settled`);
+        if (matchFinished) await screenshot(`match-${result.matchesCompleted}-trophy`);
+        console.log(`[${scenario.name}] round ${result.roundsCompleted} (minimum ${options.rounds}), matches ${result.matchesCompleted}/${options.matches}; scores ${snapshot.state.scores.join('/')}`);
         // Dismiss every result, including the final one, to prove the next deal accepts input.
         const next = await activate(page, '#nextRoundBtn', scenario, result);
         if (!next && !await activate(page, '#newMatchOverlayBtn', scenario, result)) throw new Error('Finished round has no available Next Round or New Match');
@@ -340,6 +352,11 @@ async function runScenario(scenario) {
       if (snapshot.overlays.some(overlay => overlay !== expectedOverlay)) throw new Error(`Unexpected blocking overlay: ${snapshot.overlays.join(', ')}`);
       if (snapshot.state.pendingWild) {
         await checkModalLayout(page, '#suitChooser', result);
+        if (!suitScreenshotTaken) {
+          await page.waitForTimeout(scenario.reduced ? 20 : 420);
+          await screenshot('wild-suit-picker');
+          suitScreenshotTaken = true;
+        }
         if (await activate(page, `.suit-btn[data-suit="${snapshot.suitChoice}"]`, scenario, result)) {
           result.actions.Suit += 1;
           await waitDismissed(page, '#suitChooser');
@@ -378,9 +395,10 @@ async function runScenario(scenario) {
     if (!result.announcements.some(text => /wins round|Match complete/.test(text))) throw new Error('No round result was announced through the live status region');
     if (scenario.keyboard && (!result.keyboard.arrows || !result.keyboard.plays || !result.keyboard.tabs)) throw new Error('Keyboard round did not exercise Tab, arrows and playing a selected card');
     result.layoutIssues = [...layoutIssues];
-    result.pass = result.roundsCompleted === options.rounds && result.errors.length === 0 && result.layoutIssues.length === 0;
+    result.pass = result.roundsCompleted >= options.rounds && result.matchesCompleted >= options.matches
+      && result.errors.length === 0 && result.layoutIssues.length === 0;
     if (result.pass) await unlink(resolve(options.output, `${scenario.name}-${scenario.viewport.width}-failure.png`)).catch(() => {});
-    console.log(`[${scenario.name}] ${result.pass ? 'PASS' : 'FAIL'}: ${result.roundsCompleted} rounds, ${JSON.stringify(result.actions)}, continue=${result.continue.acceptedAction}, errors=${result.errors.length}, layout=${result.layoutIssues.length}`);
+    console.log(`[${scenario.name}] ${result.pass ? 'PASS' : 'FAIL'}: ${result.roundsCompleted} rounds, ${result.matchesCompleted} matches, ${JSON.stringify(result.actions)}, continue=${result.continue.acceptedAction}, errors=${result.errors.length}, layout=${result.layoutIssues.length}`);
   } catch (error) {
     result.errors.push(error.stack || error.message);
     result.layoutIssues = [...layoutIssues];
