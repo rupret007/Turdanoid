@@ -63,7 +63,7 @@
       box-shadow: 0 30px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto auto 1fr auto;
+      grid-template-rows: auto auto auto auto 1fr auto;
       position: relative;
       isolation: isolate;
     }
@@ -148,6 +148,21 @@
     }
     #newMatchBtn:hover:not(:disabled) { border-color: rgba(255,140,140,.85); box-shadow: 0 0 0 1px rgba(255,120,120,.22), 0 10px 20px rgba(0,0,0,.3); }
 
+    .ts-score-strip{
+      display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+      padding:8px 12px;border-bottom:1px solid rgba(158,255,200,.16);
+      background:linear-gradient(90deg,rgba(158,255,200,.08),transparent 40%,rgba(255,215,106,.06)),rgba(5,14,10,.88);
+      font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    }
+    .ts-score-strip .us strong,.ts-score-strip .them strong{font-size:1.05rem;color:var(--gold-2);margin:0 4px}
+    .ts-score-strip .us em,.ts-score-strip .them em{font-style:normal;font-weight:600;color:var(--muted);font-size:.68rem;display:block;margin-top:2px}
+    .ts-score-strip .vs{opacity:.55;font-size:.7rem;text-transform:uppercase}
+    .ts-drawer-toggle{margin:0 12px 0;justify-self:start;min-height:40px;font-size:.72rem}
+    .stats.ts-details-drawer{
+      max-height:0;overflow:hidden;opacity:0;padding-top:0;padding-bottom:0;
+      border-bottom-width:0;transition:max-height .28s ease,opacity .2s ease,padding .2s ease;
+    }
+    .stats.ts-details-drawer.open{max-height:220px;opacity:1;padding:8px 12px;border-bottom-width:1px}
     /* ---------- HUD stat tiles (glass) ---------- */
     .stats {
       padding: 8px 12px;
@@ -225,6 +240,10 @@
     }
 
     /* ---------- the felt table + wooden rail ---------- */
+    .table.table-arena {
+      min-height: clamp(280px, 52vh, 520px);
+      overflow: hidden;
+    }
     .table {
       overflow: auto;
       padding: 10px;
@@ -262,6 +281,48 @@
       position: relative;
       transition: box-shadow .25s ease, border-color .25s ease;
     }
+    .ts-seat-ring{
+      position:absolute;inset:-3px;border-radius:16px;pointer-events:none;opacity:0;
+      box-shadow:0 0 0 2px rgba(255,215,106,.55),0 0 28px rgba(255,215,106,.35);
+      transition:opacity .2s ease;
+    }
+    body[data-turn="you"] .seat-you .ts-seat-ring,
+    body[data-turn="bid"] .seat-you .ts-seat-ring{opacity:1;box-shadow:0 0 0 2px rgba(158,255,200,.65),0 0 30px rgba(158,255,200,.4)}
+    body[data-turn="west"] .seat-west .ts-seat-ring,
+    body[data-turn="north"] .seat-north .ts-seat-ring,
+    body[data-turn="east"] .seat-east .ts-seat-ring{opacity:1}
+    .ts-avatar{width:42px;height:42px;flex:0 0 auto;border-radius:50%;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.12)}
+    .ts-avatar svg{display:block;width:100%;height:100%}
+    .head .seat-head{display:flex;align-items:center;gap:8px;min-width:0}
+    .ts-trick-stack{
+      position:absolute;top:6px;right:8px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;
+      background:linear-gradient(180deg,#ffe9b5,#ffc857);color:#3a2a06;font-size:.68rem;font-weight:900;
+      display:grid;place-items:center;opacity:0;transform:scale(.6);transition:opacity .2s ease,transform .2s ease;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+    }
+    .ts-trick-stack.show{opacity:1;transform:scale(1)}
+    .partner-bid-bubble{
+      grid-column:1/-1;font-size:.72rem;color:#ffe9bf;padding:4px 8px;border-radius:10px;
+      background:rgba(0,0,0,.25);border:1px solid rgba(255,215,106,.25);display:none;
+    }
+    .partner-bid-bubble.show{display:block}
+    #bidExpectedHint{grid-column:1/-1;font-size:.7rem;color:var(--muted);text-align:center}
+    .bid-chips{
+      grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-height:88px;overflow:auto;padding:4px 0;
+    }
+    .ts-bid-chip{
+      min-width:36px;min-height:36px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,215,106,.35);
+      background:rgba(20,14,6,.85);color:var(--gold-2);font-size:.72rem;font-weight:800;cursor:pointer;
+    }
+    .ts-bid-chip.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,215,106,.25),0 0 16px rgba(255,215,106,.2)}
+    .ts-bid-chip.nil-chip.active{border-color:#ff5c93;color:#ffdce8}
+    .ts-ai-select{font-size:.72rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(158,255,200,.35);background:rgba(8,22,18,.9);color:var(--ink)}
+    .ts-contract-banner{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);z-index:5;padding:10px 18px;border-radius:14px;
+      font-weight:900;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:#ffe9bf;
+      background:rgba(8,22,18,.92);border:1px solid rgba(255,215,106,.45);pointer-events:none;opacity:0;transition:opacity .25s ease,transform .3s ease;
+    }
+    .ts-contract-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
     .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
     .name { color: var(--accent); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; display: flex; align-items: center; gap: 6px; }
     .name::before { font-size: .95rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
@@ -286,12 +347,18 @@
       grid-template-columns: minmax(150px,1.05fr) minmax(240px,1.3fr) minmax(150px,1.05fr);
       gap: 10px;
     }
-    .backs { display: flex; flex-wrap: wrap; gap: 0; padding: 4px 2px 2px 2px; min-height: 46px; align-content: center; position: relative; z-index: 1; }
-    .backs .back + .back { margin-left: -11px; }
+    .backs { display: flex; flex-wrap: nowrap; gap: 0; padding: 8px 2px 2px 2px; min-height: 52px; align-content: center; justify-content: center; position: relative; z-index: 1; perspective: 600px; }
+    .backs .back { transform: rotate(var(--fan-r,0deg)) translateY(var(--fan-y,0)); transform-origin: center bottom; }
+    .backs .back + .back { margin-left: -14px; }
     .seat-north .backs { justify-content: center; }
     .seat-west .backs { justify-content: flex-start; }
     .seat-east .backs { justify-content: flex-end; }
-    .cards { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px 2px; }
+    .cards { display: flex; flex-wrap: nowrap; justify-content: center; gap: 0; padding: 14px 4px 6px 4px; perspective: 800px; min-height: 100px; }
+    .cards .card{
+      transform: rotate(var(--fan-r,0deg)) translateY(var(--fan-y,0));
+      transform-origin: center bottom;margin-left:-10px;
+    }
+    .cards .card:first-child{margin-left:0}
 
     /* seat glow for whose turn it is */
     body[data-turn="you"] .seat-you, body[data-turn="bid"] .seat-you {
@@ -445,16 +512,15 @@
       font-size:.78rem;font-weight:900;letter-spacing:.5em;color:rgba(255,255,255,.07);pointer-events:none;white-space:nowrap;
     }
     .trick-pile {
-      min-height: 104px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px 12px;
-      justify-content: center;
-      align-content: center;
-      align-items: center;
+      min-height: 140px;
       padding: 12px 4px 8px;
       position: relative;
     }
+    .trick-pile.layout-seat .entry{position:absolute;margin:0}
+    .trick-pile.layout-seat .entry[data-seat="You"]{bottom:4%;left:50%;transform:translateX(-50%)}
+    .trick-pile.layout-seat .entry[data-seat="North"]{top:4%;left:50%;transform:translateX(-50%)}
+    .trick-pile.layout-seat .entry[data-seat="West"]{top:42%;left:6%;transform:translateY(-50%)}
+    .trick-pile.layout-seat .entry[data-seat="East"]{top:42%;right:6%;left:auto;transform:translateY(-50%)}
     .entry {
       border: 1px dashed rgba(255,215,106,.34);
       border-radius: 999px;
@@ -536,9 +602,9 @@
         rgba(46,34,10,.74);
       padding: 8px 16px;
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: 1fr;
       align-items: center;
-      gap: 8px 16px;
+      gap: 6px;
       position: relative;
       overflow: hidden;
       isolation: isolate;
@@ -719,6 +785,25 @@
     .ts-bot-hint.show{opacity:1;transform:translateX(-50%) translateY(0)}
     .bid-contract{grid-column:1/-1;justify-self:center;font-size:.68rem;color:#ffe9bf;letter-spacing:.06em;text-transform:uppercase;padding:2px 0 0}
     .bid-contract strong{color:var(--gold-2)}
+    .ts-receipt-overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:rgba(3,10,7,.72);opacity:0;pointer-events:none;transition:opacity .25s ease}
+    .ts-receipt-overlay.show{opacity:1;pointer-events:auto}
+    .ts-receipt-card{max-width:min(92%,420px);padding:16px 18px;border-radius:16px;border:1px solid rgba(255,215,106,.45);background:rgba(8,22,18,.95);box-shadow:0 20px 50px rgba(0,0,0,.55)}
+    .ts-receipt-card h3{margin:0 0 10px;font-size:.9rem;color:var(--gold-2);text-transform:uppercase;letter-spacing:.08em}
+    .ts-receipt-lines{margin:0 0 12px 18px;color:var(--muted);font-size:.78rem;line-height:1.45}
+    .ts-receipt-total{font-size:1.1rem;font-weight:900;color:var(--mint)}
+    .ts-trophy{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s ease}
+    .ts-trophy.show{opacity:1}
+    .ts-trophy span{font-size:5rem;filter:drop-shadow(0 8px 24px rgba(255,215,106,.6))}
+    .ts-trophy p{margin-top:8px;font-size:1.2rem;font-weight:900;color:var(--gold-2);text-transform:uppercase;letter-spacing:.1em}
+    .ts-deal-ghost{font-size:1rem;opacity:.9}
+    @media (max-width:640px){
+      .app{grid-template-rows:auto auto auto auto minmax(0,1fr) auto}
+      .table.table-arena{min-height:0;margin:6px;padding:6px}
+      .cards .card{width:clamp(40px,10.5vw,56px);height:clamp(58px,14.8vw,82px);margin-left:-12px}
+      .bid-chips{max-height:64px}
+      .ts-score-strip{font-size:.7rem;padding:6px 8px}
+      .topbar .title p{display:none}
+    }
     @media (prefers-reduced-motion:reduce){.table.ts-spades-flash{animation:none}.ts-sweep-card{transition:none!important}}
 
   </style>
@@ -755,10 +840,14 @@
         <button class="btn" id="helpBtn">&#x2753; Guide</button>
         <button class="btn" id="nextRoundTop">&#x1F0CF; Next Round</button>
         <button class="btn" id="newMatchBtn">&#x21BB; New Match</button>
+        <span id="tsAiDifficulty" title="Bot difficulty"></span>
       </div>
     </div>
 
-    <div class="stats">
+    <div class="ts-score-strip" id="tsScoreStrip" aria-live="polite">Us vs Them</div>
+    <button type="button" class="btn ts-drawer-toggle" id="tsDrawerToggle" aria-expanded="false" aria-controls="tsDetailsDrawer">Score details</button>
+
+    <div class="stats ts-details-drawer" id="tsDetailsDrawer">
       <div class="stat"><div class="k">Round</div><div class="v" id="roundV">1</div></div>
       <div class="stat"><div class="k">Turn</div><div class="v" id="turnV">-</div></div>
       <div class="stat"><div class="k">Spades</div><div class="v" id="spadeV">Unbroken</div></div>
@@ -769,32 +858,41 @@
 
     <div class="message" id="msg" role="status" aria-live="polite">Set your bid to start the hand.</div>
 
-    <div class="table" data-motto="Bag Patrol is watching, unfortunately">
+    <div class="table table-arena" data-motto="Bag Patrol is watching, unfortunately">
+      <div class="ts-contract-banner" id="tsContractBanner" aria-hidden="true"></div>
       <div class="zone seat-north">
-        <div class="head"><div class="name">North (Partner)</div><div class="meta" id="northMeta"></div></div>
-        <div class="backs" id="northBack"></div>
+        <div class="ts-seat-ring" aria-hidden="true"></div>
+        <span class="ts-trick-stack" id="stackNorth" aria-hidden="true"></span>
+        <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarNorth"></div><div class="name">North (Partner)</div></div><div class="meta" id="northMeta"></div></div>
+        <div class="backs fan-north" id="northBack"></div>
       </div>
 
       <div class="mid">
         <div class="zone seat-west">
-          <div class="head"><div class="name">West Bot</div><div class="meta" id="westMeta"></div></div>
-          <div class="backs" id="westBack"></div>
+          <div class="ts-seat-ring" aria-hidden="true"></div>
+          <span class="ts-trick-stack" id="stackWest" aria-hidden="true"></span>
+          <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarWest"></div><div class="name">West Bot</div></div><div class="meta" id="westMeta"></div></div>
+          <div class="backs fan-west" id="westBack"></div>
         </div>
 
         <div class="zone trick">
           <div class="head"><div class="name">Current Trick</div><div class="meta" id="trickMeta">No cards</div></div>
-          <div class="trick-pile" id="trickPile"></div>
+          <div class="trick-pile layout-seat" id="trickPile"></div>
         </div>
 
         <div class="zone seat-east">
-          <div class="head"><div class="name">East Bot</div><div class="meta" id="eastMeta"></div></div>
-          <div class="backs" id="eastBack"></div>
+          <div class="ts-seat-ring" aria-hidden="true"></div>
+          <span class="ts-trick-stack" id="stackEast" aria-hidden="true"></span>
+          <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarEast"></div><div class="name">East Bot</div></div><div class="meta" id="eastMeta"></div></div>
+          <div class="backs fan-east" id="eastBack"></div>
         </div>
       </div>
 
       <div class="zone seat-you">
-        <div class="head"><div class="name">Your Hand</div><div class="meta" id="youMeta"></div></div>
-        <div class="cards" id="youCards"></div>
+        <div class="ts-seat-ring" aria-hidden="true"></div>
+        <span class="ts-trick-stack" id="stackYou" aria-hidden="true"></span>
+        <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarYou"></div><div class="name">Your Hand</div></div><div class="meta" id="youMeta"></div></div>
+        <div class="cards fan-you" id="youCards"></div>
       </div>
     </div>
 
@@ -802,6 +900,9 @@
       <div class="bid-box" id="bidBox">
         <div class="name">Your Bid</div>
         <div class="bid-contract" id="bidContractPreview" aria-hidden="true"></div>
+        <div id="bidExpectedHint" aria-live="polite"></div>
+        <div class="partner-bid-bubble" id="partnerBidBubble" role="status"></div>
+        <div class="bid-chips" id="bidChips" aria-label="Bid amount chips"></div>
         <div class="bid-controls">
           <button class="btn" id="bidDown">-</button>
           <div class="bid-v" id="bidV">4</div>
@@ -832,7 +933,8 @@
       phase: 'bidding', scores: [0, 0], bags: [0, 0], bids: [null, null, null, null],
       tricks: [0, 0, 0, 0], hands: [[], [], [], []], trick: [],
       spadesBroken: false, selected: null, bidChoice: 4, sortMode: 'suit',
-      msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral'
+      msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral',
+      playedThisRound: []
     };
 
     let aiTurnTimeoutId = null;
@@ -1075,6 +1177,7 @@
       state.selected = null;
       state.summary = '';
       state.lastRoundTone = 'neutral';
+      state.playedThisRound = [];
     }
 
     function startMatch() {
@@ -1114,6 +1217,7 @@
       setMessage(`${NAMES[state.bidTurn]} bids first.`, '');
       runBidFlow();
       render();
+      tsEvent('round-dealt', { round: state.round });
     }
 
     function aiBid(hand) {
@@ -1135,6 +1239,9 @@
         if (state.bids.every((b) => b !== null)) {
           state.phase = 'play';
           state.currentPlayer = state.leader;
+          const usContract = (state.bids[0] === 0 ? 0 : state.bids[0] || 0) + (state.bids[2] === 0 ? 0 : state.bids[2] || 0);
+          const themContract = (state.bids[1] === 0 ? 0 : state.bids[1] || 0) + (state.bids[3] === 0 ? 0 : state.bids[3] || 0);
+          tsEvent('contract-locked', { text: `Us need ${usContract} · Them need ${themContract}` });
           setMessage(`${NAMES[state.currentPlayer]} leads the first trick.`, `Race to ${TARGET}.`);
           break;
         }
@@ -1191,6 +1298,10 @@
     }
 
     function aiCard(player) {
+      if (typeof window.__tsPickAiCard === 'function') {
+        const picked = window.__tsPickAiCard(player);
+        if (picked) return picked;
+      }
       const legal = legalCards(player), partner = partnerOf(player);
       const need = (state.bids[player] + state.bids[partner]) - (state.tricks[player] + state.tricks[partner]);
       if (state.bids[player] === 0) {
@@ -1237,6 +1348,8 @@
         else if (!state.hands[player].some((c) => c.id !== card.id && c.suit !== 'S')) state.spadesBroken = true;
       }
       state.trick.push({ player, card });
+      if (!Array.isArray(state.playedThisRound)) state.playedThisRound = [];
+      state.playedThisRound.push({ id: card.id, suit: card.suit, rank: card.rank });
       tsEvent('card-played', { player, card });
       if (state.spadesBroken && !wasBroken) tsEvent('spades-broken', {});
       if (state.trick.length < 4) { state.currentPlayer = (player + 1) % 4; return; }
@@ -1297,6 +1410,12 @@
         ? `Match complete. ${winner}`
         : (tiedAtOrAboveTarget ? 'Scores tied above target. Play a tiebreaker round.' : 'Round complete. Press Next Round.');
       setMessage(status, `${line.join(' ')} Last trick: ${lastTrick}`);
+      tsEvent('round-scored', {
+        lines: line,
+        deltaUs: deltas[0],
+        matchEnd: state.phase === 'matchEnd',
+        won: state.scores[0] > state.scores[1]
+      });
     }
 
     function runAiTurns() {
@@ -1441,7 +1560,8 @@
         sortMode: state.sortMode,
         msg: String(state.msg || ''),
         summary: String(state.summary || ''),
-        lastRoundTone: state.lastRoundTone
+        lastRoundTone: state.lastRoundTone,
+        playedThisRound: (state.playedThisRound || []).map((c) => ({ id: c.id, suit: c.suit, rank: c.rank }))
       });
     }
 
@@ -1474,6 +1594,9 @@
       state.msg = String(snap.msg || '');
       state.summary = String(snap.summary || '');
       state.lastRoundTone = snap.lastRoundTone || 'neutral';
+      state.playedThisRound = Array.isArray(snap.playedThisRound)
+        ? snap.playedThisRound.map((c) => ({ id: c.id, suit: c.suit, rank: c.rank }))
+        : [];
       return true;
     }
 
@@ -1501,6 +1624,7 @@
       renderStats();
       renderControls();
       persistTable();
+      try { if (typeof window.__tsAfterRender === 'function') window.__tsAfterRender(); } catch (e) {}
     }
 
     function openGuide() {
@@ -1571,6 +1695,14 @@
       if (document.hidden) suspendPlayForBackground();
       else resumePlayFromBackground();
     });
+
+    window.legalCards = legalCards;
+    window.beats = beats;
+    window.winnerEntry = winnerEntry;
+    window.pickNilCoverCard = pickNilCoverCard;
+    window.low = low;
+    window.high = high;
+    window.render = render;
 
     bind();
     const restoredTable = tryRestoreTable();
@@ -1651,7 +1783,11 @@
       }
     } catch (e) {}
   }
-  setInterval(updateBags, 900);
+  if (!/jsdom/i.test(navigator.userAgent)) {
+    setInterval(updateBags, 900);
+  } else {
+    updateBags();
+  }
 
   const QUIPS = {
     bid_low:    ["Soft bid. Coward.", "Bid bigger, wuss.", "Playing safe? Boring."],

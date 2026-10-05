@@ -85,6 +85,100 @@ export function pulseSpadesBroken(tableEl, reduced) {
   }
 }
 
+const SEAT_ANCHORS_PCT = {
+  You: { x: 0.5, y: 0.88 },
+  West: { x: 0.1, y: 0.42 },
+  North: { x: 0.5, y: 0.1 },
+  East: { x: 0.9, y: 0.42 }
+};
+
+export function dealAnimationDurationMs(reduced) {
+  return reduced ? 0 : 680;
+}
+
+/**
+ * Deal burst from table center to seat anchors (DOM overlay).
+ */
+export function runDealAnimation(layer, seatCounts, options = {}) {
+  if (!layer || !seatCounts) {
+    return Promise.resolve();
+  }
+  const reduced = options.reduced ?? prefersReducedMotion();
+  const duration = dealAnimationDurationMs(reduced);
+  if (!duration) {
+    return Promise.resolve();
+  }
+  const rect = layer.getBoundingClientRect();
+  const seats = [
+    { name: 'North', count: seatCounts.north || 0 },
+    { name: 'West', count: seatCounts.west || 0 },
+    { name: 'East', count: seatCounts.east || 0 },
+    { name: 'You', count: seatCounts.you || 0 }
+  ];
+  const ghosts = [];
+  for (const seat of seats) {
+    const anchor = SEAT_ANCHORS_PCT[seat.name] || SEAT_ANCHORS_PCT.You;
+    const tx = rect.width * anchor.x;
+    const ty = rect.height * anchor.y;
+    const n = Math.min(seat.count, 6);
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.className = 'ts-sweep-card ts-deal-ghost';
+      el.textContent = '\u2660';
+      el.style.left = `${rect.width * 0.5}px`;
+      el.style.top = `${rect.height * 0.45}px`;
+      layer.appendChild(el);
+      ghosts.push(el);
+      const delay = i * 28 + seats.indexOf(seat) * 40;
+      setTimeout(() => {
+        el.style.transition = `transform ${duration}ms cubic-bezier(.2,.9,.3,1), opacity ${duration}ms ease`;
+        el.style.transform = `translate(${tx - rect.width * 0.5}px, ${ty - rect.height * 0.45}px) scale(0.4)`;
+        el.style.opacity = '0.15';
+      }, delay);
+    }
+  }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      ghosts.forEach((g) => g.remove());
+      resolve();
+    }, duration + 520);
+  });
+}
+
+/**
+ * Fly a played card label from seat to trick well.
+ */
+export function flyCardToTrick(layer, fromSeat, label, options = {}) {
+  if (!layer) {
+    return Promise.resolve();
+  }
+  const reduced = options.reduced ?? prefersReducedMotion();
+  const duration = reduced ? 0 : 340;
+  if (!duration) {
+    return Promise.resolve();
+  }
+  const rect = layer.getBoundingClientRect();
+  const from = SEAT_ANCHORS_PCT[fromSeat] || SEAT_ANCHORS_PCT.You;
+  const el = document.createElement('div');
+  el.className = 'ts-sweep-card';
+  el.textContent = label || '?';
+  el.style.left = `${rect.width * from.x}px`;
+  el.style.top = `${rect.height * from.y}px`;
+  layer.appendChild(el);
+  const cx = rect.width * 0.5;
+  const cy = rect.height * 0.42;
+  requestAnimationFrame(() => {
+    el.style.transition = `transform ${duration}ms cubic-bezier(.25,.9,.3,1)`;
+    el.style.transform = `translate(${cx - rect.width * from.x}px, ${cy - rect.height * from.y}px) scale(1.05)`;
+  });
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      el.remove();
+      resolve();
+    }, duration + 30);
+  });
+}
+
 export function spawnSpadeShards(canvas, reduced) {
   const motionReduced = reduced ?? prefersReducedMotion();
   if (!canvas || motionReduced) {

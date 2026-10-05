@@ -319,6 +319,13 @@ Partnership Spades trick-taking game against two CPU opponents.
 3. A Nil bidder sheds the highest card that can safely lose; its partner overtakes that Nil winner when a cheaper cover exists and still plays for the team contract
 4. Use the lowest winning card when the team still needs tricks
 5. Shed low cards when the contract is safe and trump when void if a trick is needed
+6. **Difficulty** (top bar, stored as `turdspades_ai_difficulty_v1`): **Easy** mirrors classic heuristics; **Normal** (default) tracks played spades and avoids overtrumping a set partner; **Hard** is more conservative with trump when bags/contract are safe
+
+### Table UI (1000x)
+
+- Compact **Us vs Them** strip always visible; **Score details** expands the full stat tiles
+- Bid with the dial, **0–13 chips**, or **N** for Nil; hand hint suggests expected tricks
+- Seat avatars, trick stacks, deal/sweep motion (disabled with reduced motion)
 
 ### Presentation (1000x lane)
 

@@ -58,3 +58,55 @@ export function teamContractNeed(bids, tricks, player, partner) {
   const taken = (tricks[player] || 0) + (tricks[partner] || 0);
   return Math.max(0, bidSum - taken);
 }
+
+/** Heuristic expected tricks from a 13-card hand (bid hint dial). */
+export function estimateExpectedTricks(hand) {
+  if (!Array.isArray(hand) || !hand.length) {
+    return 0;
+  }
+  let v = 0;
+  let s = 0;
+  for (const c of hand) {
+    const rank = typeof c.rank === 'number' ? c.rank : 0;
+    if (c.suit === 'S') {
+      s++;
+      if (rank >= 14) {
+        v += 1;
+      } else if (rank >= 13) {
+        v += 0.8;
+      } else if (rank >= 11) {
+        v += 0.5;
+      }
+    } else if (rank === 14) {
+      v += 0.75;
+    } else if (rank === 13) {
+      v += 0.45;
+    } else if (rank === 12) {
+      v += 0.25;
+    }
+  }
+  if (s >= 5) {
+    v += 0.9;
+  }
+  if (s >= 6) {
+    v += 0.7;
+  }
+  return Math.max(0, Math.min(13, Math.round(v)));
+}
+
+export const AI_DIFFICULTY_KEY = 'turdspades_ai_difficulty_v1';
+
+export function normalizeAiDifficulty(raw) {
+  if (raw === 'easy' || raw === 'normal' || raw === 'hard') {
+    return raw;
+  }
+  return 'normal';
+}
+
+export function loadAiDifficulty(storage = globalThis.localStorage) {
+  try {
+    return normalizeAiDifficulty(storage?.getItem(AI_DIFFICULTY_KEY));
+  } catch {
+    return 'normal';
+  }
+}

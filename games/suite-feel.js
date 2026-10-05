@@ -31,6 +31,7 @@ export const CARD_TABLE_FEEL = {
   crapeightsAiMs: 600,
   turdrummyQuickAiMs: 180,
   turdrummyAiMs: 540,
+  /** Bot turn pacing (turdspades.html AI_TURN_MS); keep in sync. */
   turdspadesAiMs: 400
 };
 

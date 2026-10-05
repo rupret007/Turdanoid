@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   prefersReducedMotion,
   trickSweepDurationMs,
-  spadesBrokenParticleCount
+  spadesBrokenParticleCount,
+  dealAnimationDurationMs
 } from '../games/turdspades-fx.js';
 
 describe('turdspades-fx', () => {
@@ -18,5 +19,10 @@ describe('turdspades-fx', () => {
 
   it('prefersReducedMotion is boolean', () => {
     expect(typeof prefersReducedMotion()).toBe('boolean');
+  });
+
+  it('skips deal animation when reduced motion', () => {
+    expect(dealAnimationDurationMs(true)).toBe(0);
+    expect(dealAnimationDurationMs(false)).toBeGreaterThan(0);
   });
 });

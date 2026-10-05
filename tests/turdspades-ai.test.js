@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { explainAiPlay, formatCardLabel, teamContractNeed } from '../games/turdspades-ai.js';
+import {
+  explainAiPlay,
+  formatCardLabel,
+  teamContractNeed,
+  estimateExpectedTricks,
+  loadAiDifficulty,
+  normalizeAiDifficulty
+} from '../games/turdspades-ai.js';
 
 describe('turdspades-ai hints', () => {
   it('formats card labels for hints', () => {
@@ -24,5 +31,20 @@ describe('turdspades-ai hints', () => {
   it('computes partnership trick need', () => {
     expect(teamContractNeed([4, 3, 3, 2], [1, 0, 1, 0], 0, 2)).toBe(5);
     expect(teamContractNeed([0, 3, 4, 3], [0, 0, 0, 0], 0, 2)).toBe(4);
+  });
+
+  it('estimates tricks from hand shape', () => {
+    const hand = Array.from({ length: 13 }, (_, i) => ({
+      suit: i < 6 ? 'S' : 'H',
+      rank: i < 2 ? 14 : 8
+    }));
+    expect(estimateExpectedTricks(hand)).toBeGreaterThan(3);
+  });
+
+  it('normalizes AI difficulty storage', () => {
+    expect(normalizeAiDifficulty('hard')).toBe('hard');
+    expect(normalizeAiDifficulty('bogus')).toBe('normal');
+    const mem = { getItem: () => 'easy' };
+    expect(loadAiDifficulty(mem)).toBe('easy');
   });
 });
