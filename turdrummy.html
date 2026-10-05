@@ -1759,6 +1759,112 @@
       .table { margin: 8px 6px; padding: 6px; }
       #playerHand { padding: 22px 0 10px; }
     }
+
+    /* === Round 3: table-first fit pass ===================================================
+       Floating widgets (mascot, bubble, deadwood meter) now sit inside their zone headers.
+       Phones trade chrome for felt so the player's hand is in the first screen; desktop
+       trims the frame so the whole hand clears the action dock at 1280x800. */
+    .zone--opponent .zone-header,
+    .zone--hand .zone-header { position: relative; flex-wrap: wrap; }
+    .tr-boss {
+      position: static;
+      width: auto;
+      height: auto;
+      font-size: 1.45rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      background: none;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+    }
+    .tr-bubble {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 4px;
+      bottom: auto;
+      left: auto;
+      z-index: 30;
+      max-width: min(240px, 78vw);
+      transform-origin: top right;
+      transform: translateY(-6px) scale(0.94);
+    }
+    .tr-bubble.show { transform: translateY(0) scale(1); }
+    .tr-bubble::after { top: -8px; bottom: auto; right: 24px; transform: rotate(45deg); }
+    .tr-deadwood {
+      position: static;
+      min-width: 0;
+      flex-direction: row;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      margin-left: auto;
+    }
+    .tr-deadwood .bar { width: 84px; height: 7px; }
+    .tr-deadwood #trDeadwoodValue { font-size: 11px; white-space: nowrap; }
+    .tr-deadwood #trDeadwoodValue::after { content: none; }
+    .tr-deadwood .label { white-space: nowrap; }
+
+    @media (max-width: 640px) {
+      .title-group p { display: none; }
+      .topbar { padding: 5px 8px; gap: 5px; }
+      .title-group h1 { font-size: 1.05rem; }
+      .top-links { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+      .top-links .btn,
+      .top-links a { min-height: 30px; padding: 4px 4px; font-size: 0.68rem; }
+      .status { padding: 4px 8px; gap: 4px 5px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .stat { padding: 3px 7px 4px 9px; }
+      .stat-label { font-size: 0.54rem; line-height: 1.1; }
+      .stat-value { font-size: 0.92rem; line-height: 1.15; }
+      .zone--hand .zone-meta { display: none; }
+      .message { margin-top: 5px; }
+      .zone--hand { padding-top: 2px; }
+      #playerHand { padding: 12px 2px 6px; }
+      .table { margin: 4px; padding: 4px; gap: 3px; }
+      .zone--center { padding: 4px 6px 4px; }
+      .zone--center .zone-title { display: none; }
+      .zone--center .zone-header { margin-bottom: 0; }
+      .zone-header { margin-bottom: 2px; }
+      .piles { padding: 0; }
+      .pile h3 { margin-bottom: 4px; }
+      .action-dock { padding: 5px 8px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+      .footer-note { min-height: 26px; }
+      .zone--hand { padding: 4px 2px 0; }
+      .message { padding: 6px 10px; font-size: 0.78rem; }
+      .tr-deadwood .bar { width: 64px; }
+      .tr-boss { font-size: 1.25rem; }
+      .tr-bubble { font-size: 12px; }
+    }
+
+    /* The first-round coach is a two-column strip on phones and short screens, not a 145px card. */
+    @media (max-width: 640px), (max-height: 860px) {
+      .coach {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 8px;
+        margin-top: 4px;
+        padding: 5px 8px 5px 12px;
+      }
+      .coach-step { grid-column: 1 / -1; font-size: 0.55rem; line-height: 1.2; }
+      .coach h2 { font-size: 0.85rem; line-height: 1.2; }
+      .coach p { font-size: 0.72rem; line-height: 1.25; }
+      .coach-actions { grid-column: 2; grid-row: 2 / span 2; flex-direction: column; justify-content: center; }
+      .coach-actions .btn { min-height: 32px; padding: 4px 9px; font-size: 0.7rem; }
+    }
+
+    @media (min-width: 921px) and (max-height: 860px) {
+      .topbar { padding: 8px 12px; }
+      .title-group p { display: none; }
+      .status { padding: 6px 12px; }
+      .stat { padding: 5px 10px 5px 12px; }
+      .table { margin: 8px 12px 6px; padding: 8px 10px; gap: 6px; }
+      .zone--center { padding: 8px 10px 6px; }
+      .zone--center .pile { padding: 0 4px; }
+      .zone--hand .zone-header { margin-bottom: 2px; }
+      #playerHand { padding-top: 14px; padding-bottom: 6px; }
+      .action-dock { padding: 6px 10px; }
+      .footer-note { display: none; }
+    }
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
@@ -1896,6 +2002,11 @@
   </div>
 
   <script>
+    // The shared double-tap guard (assets/turdsuite.js) cancels the click of any tap that follows
+    // another within 350 ms, so a quick select-then-discard silently lost its second tap. The body
+    // already uses touch-action: manipulation, which stops double-tap zoom, so the guard is not needed here.
+    window.addEventListener("touchend", (event) => event.stopImmediatePropagation(), { capture: true, passive: true });
+
     const TURDRUMMY_BALANCE = {
       knockLimit: 10,
       ginBonus: 25,
@@ -3849,10 +3960,13 @@
   _boss.className = 'tr-boss';
   _boss.textContent = '🚽';
   _boss.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(_boss);
+  // Round 3: the mascot lives in the bot's zone header and the meter in the hand header, so
+  // neither floats over the cards or the status line on a phone.
+  const _bossHost = document.querySelector('.zone--opponent .zone-header') || document.body;
+  _bossHost.appendChild(_boss);
   const _bubble = document.createElement('div');
   _bubble.className = 'tr-bubble';
-  document.body.appendChild(_bubble);
+  _bossHost.appendChild(_bubble);
   let _bubbleT = null;
   function bossSay(text, dur) {
     if (!text) return;
@@ -3881,7 +3995,7 @@
   const _meter = document.createElement('div');
   _meter.className = 'tr-deadwood';
   _meter.innerHTML = '<div class="label">Your deadwood</div><div class="bar"><div class="fill" id="trDeadwoodFill" style="width:0%"></div></div><div id="trDeadwoodValue">—</div>';
-  document.body.appendChild(_meter);
+  (document.querySelector('.zone--hand .zone-header') || document.body).appendChild(_meter);
 
   function updateDeadwood() {
     try {
