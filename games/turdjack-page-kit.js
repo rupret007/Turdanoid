@@ -23,6 +23,11 @@ import {
   bankrollTweenSteps,
   tableEdgeStreakLabel
 } from './turdjack-moments.js';
+import {
+  dismissMomentBanner,
+  showMomentBannerUi,
+  wireMomentBannerSkip
+} from './turdjack-moment-ui.js';
 import { formatHandTotalBadge, renderTotalBadgeHtml } from './turdjack-totals.js';
 import {
   chipSettlementKind,
@@ -278,19 +283,22 @@ export function installTurdjackKit(win) {
     displayedBankroll = toValue;
   }
 
+  const momentBannerEl = doc.getElementById('momentBanner');
+  if (momentBannerEl) {
+    wireMomentBannerSkip(momentBannerEl);
+  }
+
   function showMomentBanner(kind) {
     const banner = doc.getElementById('momentBanner');
     if (!banner || !kind) {return;}
-    const copy = momentBannerCopy(kind);
-    if (!copy) {return;}
-    banner.textContent = copy;
-    banner.dataset.kind = kind;
-    banner.classList.remove('show');
-    void banner.offsetWidth;
-    banner.classList.add('show');
+    showMomentBannerUi(banner, momentBannerCopy, kind, reducedMotion);
     if (kind === 'blackjack') {audio.play('fanfare');}
     if (kind === 'bust') {audio.play('bust');}
-    setTimeout(() => banner.classList.remove('show'), reducedMotion ? 1200 : 2400);
+    if (kind === 'split' || kind === 'double') {audio.play('chip');}
+  }
+
+  function flashActionMoment(kind) {
+    showMomentBanner(kind);
   }
 
   function highlightCoachAction(action) {
@@ -489,6 +497,8 @@ export function installTurdjackKit(win) {
     onNewRound,
     onSplit,
     markHoleFlipOnCard,
+    flashActionMoment,
+    dismissMoment: () => dismissMomentBanner(momentBannerEl, momentBannerEl?.__momentTimer || null),
     isPracticeMode: () => !!win.__turdjackPracticeMode,
     announceLive: (message) => announceLive(doc, message),
     dealerHitDelayMs: () => dealerHitDelayMs(reducedMotion),

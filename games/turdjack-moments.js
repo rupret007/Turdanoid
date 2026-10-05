@@ -30,6 +30,8 @@ export function momentBannerCopy(kind) {
   if (kind === 'push') {return 'STINKY PUSH'; }
   if (kind === 'insurance') {return 'INSURANCE PAID'; }
   if (kind === 'win') {return 'CHIPS INCOMING'; }
+  if (kind === 'split') {return 'SPLIT THE PAIR'; }
+  if (kind === 'double') {return 'DOUBLE DOWN'; }
   return '';
 }
 
