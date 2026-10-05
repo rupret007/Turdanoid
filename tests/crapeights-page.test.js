@@ -7,7 +7,7 @@ import { validEightsSnapshot } from './continue-fixtures.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const openPages = [];
-const sources = ['table-continue-core', 'crapeights-ai', 'crapeights-presentation', 'crapeights-table']
+const sources = ['table-continue-core', 'crapeights-ai', 'crapeights-presentation', 'crapeights-table', 'crapeights-hand', 'crapeights-effects']
   .map((name) => readFileSync(join(root, 'games', `${name}.js`), 'utf8'));
 
 function pendingWildSnapshot() {
@@ -176,6 +176,19 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(game.state().activeSuit).toBe('D');
   });
 
+  it('opening the wild wheel cancels an automatic pass without advancing the turn', () => {
+    const snapshot = pendingWildSnapshot();
+    const game = boot(snapshot);
+    game.w.hideSuitChooser();
+    game.w.eval('hasDrawnThisTurn = true; queueHumanAutoPass(460);');
+    const timer = game.w.eval('humanAutoPassTimeoutId');
+    game.w.showSuitChooser(game.w.eval('players[0].hand[0]'));
+    expect(game.timers.has(timer)).toBe(false);
+    expect(game.state().currentPlayer).toBe(0);
+    game.w.handleSuitChoice('D');
+    expect(game.state().discard.at(-1)).toEqual(snapshot.pendingWildCard);
+  });
+
   it('cancels a pending wild with Escape without losing or playing the card', () => {
     const game = boot(pendingWildSnapshot());
     const before = game.state();
@@ -199,6 +212,63 @@ describe('Crappy Eights live-page save and input regressions', () => {
     // JSDOM does not synthesize the native click; only the shortcut handler runs.
     expect(event.defaultPrevented).toBe(false);
     expect(game.state()).toEqual(before);
+  });
+
+  it('pauses the drawer, persists difficulty separately and resumes without snapshot changes', () => {
+    const game = boot();
+    const before = game.state();
+    game.w.document.getElementById('tableDrawerBtn').focus();
+    game.w.document.getElementById('tableDrawerBtn').click();
+    expect(game.w.document.getElementById('tableDrawer').style.display).toBe('flex');
+    expect(game.w.document.querySelector('.shell').inert).toBe(true);
+    game.w.drawForHuman(); game.w.smartMove();
+    expect(game.state()).toEqual(before);
+    const selector = game.w.document.getElementById('aiDifficulty');
+    selector.value = 'sharp';
+    selector.dispatchEvent(new game.w.Event('change', { bubbles: true }));
+    expect(game.w.localStorage.getItem('crapeights_difficulty_v1')).toBe('sharp');
+    expect(game.stored()).toEqual(validEightsSnapshot());
+    selector.dispatchEvent(new game.w.KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true }));
+    expect(game.w.document.getElementById('tableDrawer').style.display).toBe('none');
+    expect(game.w.document.activeElement.id).toBe('tableDrawerBtn');
+    game.w.drawForHuman();
+    expect(game.state().hasDrawnThisTurn).toBe(true);
+  });
+
+  it('keeps a pending automatic pass paused across focus return with the drawer open', () => {
+    const game = boot();
+    game.w.drawForHuman();
+    game.w.openTableDrawer();
+    const before = game.state();
+    game.w.dispatchEvent(new game.w.Event('blur'));
+    game.w.dispatchEvent(new game.w.Event('focus'));
+    expect(game.state()).toEqual(before);
+    expect(game.w.eval('humanAutoPassTimeoutId')).toBeNull();
+    game.w.closeTableDrawer();
+    expect(game.w.eval('humanAutoPassTimeoutId')).not.toBeNull();
+  });
+
+  it('lets Smart pass after an unplayable draw instead of cancelling and stalling', () => {
+    const game = boot();
+    game.w.eval("players[0].hand = [{id: 999, rank: '4', suit: 'D'}]; hasDrawnThisTurn = true; updateAll(); queueHumanAutoPass(460);");
+    expect(game.w.eval('getPlayableCards(players[0].hand).length')).toBe(0);
+    game.w.smartMove();
+    expect(game.state().currentPlayer).not.toBe(0);
+    expect(game.w.eval('humanAutoPassTimeoutId')).toBeNull();
+  });
+
+  it('reveals a receipt from the old finished shape without counting another round', () => {
+    const snapshot = validEightsSnapshot();
+    snapshot.roundActive = false;
+    snapshot.deck.push(...snapshot.players[1].hand);
+    snapshot.players[1].hand = [];
+    snapshot.overlay = { title: 'Bot wins', summary: 'Round complete', matchFinished: false, tone: 'defeat', flavor: 'Dirty tricks.', kicker: 'Round Over' };
+    const game = boot(snapshot);
+    expect(game.w.document.querySelector('.ce-receipt-total').textContent).toContain('TOTAL FLUSHED');
+    const expected = game.w.CrapeightsEffects.scoringReceipt(snapshot.players, 1).total;
+    expect(game.w.document.querySelector('.ce-receipt-total strong').textContent).toBe(`+${expected}`);
+    expect(game.w.localStorage.getItem('crapeights_stats_v1')).toBeNull();
+    expect(game.stored()).toEqual(snapshot);
   });
 
   it('keeps finished saves finished after focus events and repeated input', () => {

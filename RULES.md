@@ -227,6 +227,8 @@ The first player to reach 200 points wins the match.
 - **Arrow keys / Home / End**: Browse your focused hand; Enter/Space selects the focused card
 - **Sort: Suit / Rank**: Reorder the display without changing your cards
 - **Wild wheel**: Choose a suit, with remaining card counts and a recommendation; Escape / Back to hand cancels before playing
+- **Table details**: Open the paused rules, log, standings and bot difficulty drawer; Back to table / Escape resumes
+- **Hand fan**: Every card stays on the table; large hands use additional rows to preserve touch targets. A selected card lifts above the fan
 - **Points at risk**: Shows the value opponents collect from your hand if they go out
 - **P**: Play selected card
 - **D**: Draw
@@ -241,7 +243,9 @@ The first player to reach 200 points wins the match.
 4. Infer weak suits from public draws/passes; these clues fade as more cards are played
 5. Choose a wild suit using remaining cards and public clues; draw and pass when no legal play exists
 
-AI observations reset on round start or continue; existing saved tables load unchanged. The same strategy powers `Smart`. Scoring and the 200-point target are unchanged.
+Choose **Easy**, **Normal** (default), or **Sharp** in Table details. Easy plays simple matches. Normal retains the original fair strategy above. Sharp searches future suit/rank routes, saves bridging 8s, and plans consecutive Draw Two plays on future turns. Penalties still resolve immediately: Draw Twos cannot be stacked in response.
+
+AI observations reset on round start or continue; existing saved tables load unchanged. `Smart` always uses Normal. Difficulty and new display-only personal stats are stored separately from the unchanged v1 match save. Scoring and the 200-point target are unchanged. The end-of-round receipt reveals and totals the opponents' leftovers; a match winner receives the Sewer Crown.
 
 ---
 
