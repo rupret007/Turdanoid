@@ -20,7 +20,11 @@ const SEAT_ANCHORS = {
 };
 
 export function trickSweepDurationMs(reduced) {
-  return reduced ? 0 : 520;
+  return reduced ? 0 : 480;
+}
+
+export function cardFlightDurationMs(reduced) {
+  return reduced ? 0 : 280;
 }
 
 export function spadesBrokenParticleCount(reduced) {
@@ -93,7 +97,7 @@ const SEAT_ANCHORS_PCT = {
 };
 
 export function dealAnimationDurationMs(reduced) {
-  return reduced ? 0 : 680;
+  return reduced ? 0 : 600;
 }
 
 /**
@@ -153,7 +157,7 @@ export function flyCardToTrick(layer, fromSeat, label, options = {}) {
     return Promise.resolve();
   }
   const reduced = options.reduced ?? prefersReducedMotion();
-  const duration = reduced ? 0 : 340;
+  const duration = cardFlightDurationMs(reduced);
   if (!duration) {
     return Promise.resolve();
   }

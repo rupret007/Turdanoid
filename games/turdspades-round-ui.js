@@ -43,7 +43,12 @@ export function showScoringReceipt(root, payload, options = {}) {
   const target = payload.total ?? 0;
   if (duration === 0) {
     totalEl.textContent = `Round total: ${target >= 0 ? '+' : ''}${target}`;
-    return Promise.resolve();
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        root.classList.remove('show');
+        resolve();
+      }, 120);
+    });
   }
   const start = performance.now();
   return new Promise((resolve) => {
