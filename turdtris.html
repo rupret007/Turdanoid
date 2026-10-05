@@ -1019,13 +1019,15 @@ body::after {
   body.board-focus .topbar h1 { font-size: .78rem; letter-spacing: .04em; margin-left: 50px; }
   body.board-focus .mobile-menu details { padding: 2px 8px; }
   body.board-focus .mobile-menu summary { font-size: .69rem; min-height: 32px; }
-  body.board-focus .hud { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-bottom: 4px; }
+  body.board-focus .hud { grid-template-columns: 1.3fr 1.3fr .85fr .85fr .85fr .85fr; gap: 3px; margin-bottom: 4px; }
+  body.board-focus .hud[data-mode="sprint"] { grid-template-columns: 1.1fr 1.4fr 1.4fr 1fr .65fr .65fr; }
   body.board-focus .card { padding: 5px 2px; border-radius: 7px; text-align: center; }
   body.board-focus .card .k { font-size: .51rem; letter-spacing: .025em; }
-  body.board-focus .card .v { font-size: .84rem; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+  body.board-focus .card .v { font-size: clamp(.7rem, 3.2vw, .84rem); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
   body.board-focus .board-wrap { margin: 3px auto; padding: 4px; border-radius: 9px; }
   body.board-focus .game-grid { position: relative; }
   body.board-focus .board-wrap { position: static; }
+  body.board-focus .board-wrap::before { content: none; }
   body.board-focus .overlay { border-radius: 12px; }
   body.board-focus .overlay-card { width: min(320px, 100%); }
   body.board-focus .well-caption { padding-bottom: 4px; font-size: .53rem; }
@@ -1262,6 +1264,7 @@ let runBestAtStart = highScore;
 let runMode = 'classic';
 let modeBest = 0;
 let modeClockTick = -1;
+let challengeClockTime = 0;
 const modeClockEl = document.getElementById('level');
 let level = 1;
 let linesCleared = 0;
@@ -1520,10 +1523,12 @@ function clampFrameDelta(delta) {
 function ensureLoopRunning() {
   if (rAF || gameOver || paused) return;
   lastFrameTime = performance.now();
+  challengeClockTime = lastFrameTime;
   rAF = requestAnimationFrame(loop);
 }
 
 function showWelcomeGuide() {
+  syncChallengeClock();
   clearHeldInput();
   const guide = document.getElementById('welcomeGuide');
   if (guide) guide.style.display = 'flex';
@@ -1560,6 +1565,7 @@ function quickStartRun() {
 }
 
 function handleWindowBlur() {
+  syncChallengeClock();
   clearHeldInput();
   stopLoop();
   if (!paused && !gameOver && !onboardingOpen) {
@@ -2016,6 +2022,7 @@ function movePiece(offset) {
 
 function softDropStep() {
   if (!tetromino || gameOver || paused) return;
+  if (syncChallengeClock()) return;
 
   const nextRow = tetromino.row + 1;
   if (isValidMove(tetromino.matrix, nextRow, tetromino.col)) {
@@ -2030,6 +2037,7 @@ function softDropStep() {
 
 function hardDrop() {
   if (!tetromino || gameOver || paused) return;
+  if (syncChallengeClock()) return;
   const startRow = tetromino.row;
   let distance = 0;
   while (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) {
@@ -2184,7 +2192,8 @@ function applyLevelModifier(newLevel) {
 }
 
 function lockPiece() {
-  if (!tetromino) return;
+  if (!tetromino || gameOver || paused) return;
+  if (syncChallengeClock()) return;
 
   for (let row = 0; row < tetromino.matrix.length; row++) {
     for (let col = 0; col < tetromino.matrix[row].length; col++) {
@@ -2907,6 +2916,7 @@ function showGameOver(won) {
 
 function togglePause() {
   if (gameOver) return;
+  if (syncChallengeClock()) return;
   paused = !paused;
   if (!paused) {
     const menu = document.querySelector('.mobile-menu details');
@@ -2931,6 +2941,7 @@ function restartGame() {
   if (window.__turdtrisAudio) window.__turdtrisAudio.stop();
   runStats = { pieces: 0, elapsedMs: 0, maxCombo: 0, tetrises: 0, tSpins: 0, perfectClears: 0 };
   modeClockTick = -1;
+  challengeClockTime = performance.now();
   effectTime = 0;
   spawnAge = 0;
   dropTrails = [];
@@ -2992,7 +3003,9 @@ function startSelectedMode() {
   if (!window.TurdtrisModes) return;
   const definition = window.TurdtrisModes.modeDefinition(document.getElementById('modeSetting').value);
   runMode = definition.id;
-  modeBest = window.TurdtrisModes.readModeBest(localStorage, runMode);
+  modeBest = 0;
+  try { modeBest = window.TurdtrisModes.readModeBest(localStorage, runMode); } catch (e) {}
+  document.querySelector('.hud').dataset.mode = runMode;
   document.getElementById('levelLabel').textContent = runMode === 'classic' ? 'Level' : runMode === 'sprint' ? 'Sprint' : 'Ultra';
   document.getElementById('highLabel').textContent = runMode === 'sprint' ? 'Best time' : 'High';
   document.getElementById('modeBadge').textContent = `● ${definition.name.toUpperCase()}`;
@@ -3009,6 +3022,22 @@ function updateModeClock() {
   if (tick === modeClockTick) return;
   modeClockTick = tick;
   if (modeClockEl) modeClockEl.textContent = window.TurdtrisModes.formatRunTime(runMode === 'ultra' ? tick * 1000 : remaining, runMode === 'sprint');
+}
+
+// Challenges use real active time independently of the clamped gravity clock.
+// Check scoring inputs too: a delayed rAF must never grant overtime drop points.
+function syncChallengeClock(now = performance.now()) {
+  if (runMode === 'classic' || paused || gameOver || onboardingOpen || !rAF) return false;
+  runStats.elapsedMs += Math.max(0, now - challengeClockTime);
+  challengeClockTime = Math.max(challengeClockTime, now);
+  if (runMode === 'ultra' && runStats.elapsedMs >= 120000) {
+    runStats.elapsedMs = 120000;
+    updateModeClock();
+    showGameOver(true);
+    return true;
+  }
+  updateModeClock();
+  return false;
 }
 
 function shadeColor(hex, percent) {
@@ -3030,14 +3059,8 @@ function loop(timestamp) {
   lastFrameTime = timestamp;
 
   if (!paused && tetromino) {
-    runStats.elapsedMs += wallDelta;
-    if (runMode === 'ultra' && runStats.elapsedMs >= 120000) {
-      runStats.elapsedMs = 120000;
-      updateModeClock();
-      showGameOver(true);
-      return;
-    }
-    updateModeClock();
+    if (runMode === 'classic') runStats.elapsedMs += wallDelta;
+    else if (syncChallengeClock(timestamp)) return;
     effectTime += delta;
     let visible = false;
     for (let row = 0; row < tetromino.matrix.length && !visible; row++) {

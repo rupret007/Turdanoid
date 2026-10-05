@@ -109,6 +109,7 @@ async function readState(page, withBoard = false) {
         ({ action: button.dataset.action, ...rect(button) })) : undefined,
       sceneShake, sparks: clearSparks.length, trails: dropTrails.length,
       canvasesCreated: window.__autoplayMetrics.canvasesCreated,
+      truncatedHud: Array.from(document.querySelectorAll('.hud .v')).filter(element => element.scrollWidth > element.clientWidth).map(element => element.id),
       soundEnabled, suiteMuted: suiteMuted(), reduced: !!reducedMotion?.matches,
       piece: tetromino ? { name: tetromino.name, row: tetromino.row, col: tetromino.col,
         rotation: tetromino.rotation, matrix: tetromino.matrix } : null,
@@ -243,7 +244,8 @@ async function fixtureProbes(page, mobile, result, capture) {
     overlay: getComputedStyle(document.getElementById('gameOverOverlay')).display,
     classicBest: localStorage.getItem('turdtrisHighScore'),
     sprintBest: localStorage.getItem('turdtrisSprint40BestMs_v1'),
-    ultraBest: localStorage.getItem('turdtrisUltra120Best_v1')
+    ultraBest: localStorage.getItem('turdtrisUltra120Best_v1'),
+    truncatedHud: Array.from(document.querySelectorAll('.hud .v')).filter(element => element.scrollWidth > element.clientWidth).map(element => element.id)
   }));
   const replay = async () => {
     await page.getByRole('button', { name: 'Play Again', exact: true }).click();
@@ -294,6 +296,7 @@ async function fixtureProbes(page, mobile, result, capture) {
   const sprint = await receipt();
   if (!sprint.gameOver || sprint.lines !== 40 || sprint.title !== '40 lines. Flushed!' || Number(sprint.sprintBest) !== 65432) fail(`Sprint completion/record mismatch: ${JSON.stringify(sprint)}`);
   if (sprint.classicBest !== originalKeys.classicBest || sprint.ultraBest !== originalKeys.ultraBest) fail('Sprint changed another mode’s record.');
+  if (sprint.truncatedHud.length) fail(`Sprint HUD truncates ${sprint.truncatedHud.join(', ')}.`);
   await capture('forced-sprint-40l-receipt');
   result.fixtures.cases.push({ fixture: 'forced-sprint-39-lines-plus-clear', ...sprint });
   await replay();
@@ -305,6 +308,7 @@ async function fixtureProbes(page, mobile, result, capture) {
   const ultra = await receipt();
   if (!ultra.gameOver || ultra.elapsedMs !== 120000 || ultra.title !== 'Time’s up!' || Number(ultra.ultraBest) !== 12345) fail(`Ultra completion/record mismatch: ${JSON.stringify(ultra)}`);
   if (ultra.classicBest !== originalKeys.classicBest || ultra.sprintBest !== sprint.sprintBest) fail('Ultra changed another mode’s record.');
+  if (ultra.truncatedHud.length) fail(`Ultra HUD truncates ${ultra.truncatedHud.join(', ')}.`);
   await capture('forced-ultra-timeout-receipt');
   result.fixtures.cases.push({ fixture: 'forced-ultra-119990ms-plus-real-clock', ...ultra });
   await replay();
@@ -376,6 +380,7 @@ async function playRun(browser, variant) {
         console.log(`${variant.name} ${Math.floor(elapsed)}s: ${state.pieces} pieces, ${state.lines} lines, L${state.level}, ${state.score} points`);
       }
       if (state.scrollWidth > state.viewportWidth) result.issues.push(`Horizontal overflow ${state.scrollWidth} > ${state.viewportWidth} at ${elapsed.toFixed(1)}s.`);
+      if (state.truncatedHud.length) result.issues.push(`HUD truncates ${state.truncatedHud.join(', ')}.`);
       if (state.boardRect.x < 0 || state.boardRect.right > state.viewportWidth || state.boardRect.y < 0 || state.boardRect.bottom > state.viewportHeight) result.issues.push('Playfield escaped the viewport.');
       if (mobile) {
         if (state.dockRect.x < 0 || state.dockRect.right > state.viewportWidth || state.dockRect.bottom > state.viewportHeight || state.boardRect.bottom > state.dockRect.y) result.issues.push('Touch dock escaped the viewport or overlapped the board.');
@@ -411,6 +416,7 @@ async function playRun(browser, variant) {
     }
     result.durationActualSeconds = (Date.now() - started) / 1000;
     result.final = await readState(page);
+    if (result.final.canvasesCreated !== result.timeline[0].canvasesCreated) result.issues.push('Artwork canvases were allocated during measured gameplay.');
     await capture('final');
     const measurements = await page.evaluate(() => window.__autoplayMetrics);
     const deltas = measurements.deltas.slice(measurementStart.frame).filter(delta => delta > 0);

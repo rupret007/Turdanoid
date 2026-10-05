@@ -6,7 +6,7 @@ export const MODES = Object.freeze({
 });
 
 export function modeDefinition(id) {
-  return MODES[id] || MODES.classic;
+  return Object.hasOwn(MODES, id) ? MODES[id] : MODES.classic;
 }
 
 export function readModeBest(storage, id) {

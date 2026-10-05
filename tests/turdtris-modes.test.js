@@ -76,12 +76,15 @@ function canvasContext() {
 
 describe('Turdtris challenge page integration', () => {
   let w;
+  let clock;
 
   beforeEach(() => {
+    clock = 1000;
     const dom = new JSDOM(html, {
       runScripts: 'dangerously',
       url: 'http://localhost/turdtris.html',
       beforeParse(window) {
+        window.performance.now = () => clock;
         window.TurdtrisModes = modes;
         window.TurdtrisPresentation = presentation;
         window.HTMLCanvasElement.prototype.getContext = canvasContext;
@@ -159,9 +162,10 @@ describe('Turdtris challenge page integration', () => {
   it('ends Ultra exactly at two active minutes before gravity can lock or award points', () => {
     start('ultra');
     prepareSingle();
+    clock = 1033;
     w.eval(`
       score = 600; runStats.elapsedMs = 119990;
-      lockAccumulator = 499; lastFrameTime = 1000; loop(1033);
+      lockAccumulator = 499; lastFrameTime = 1000; challengeClockTime = 1000; loop(1033);
     `);
     expect(w.eval('gameOver')).toBe(true);
     expect(w.eval('runStats.elapsedMs')).toBe(120000);
@@ -181,18 +185,75 @@ describe('Turdtris challenge page integration', () => {
 
   it.each(['sprint', 'ultra'])('excludes pause time from the %s clock, including the first resumed frame', mode => {
     start(mode);
-    let clock = 1000;
-    w.performance.now = () => clock;
-    w.eval('lastFrameTime = 1000; loop(1033)');
+    clock = 1033;
+    w.eval('lastFrameTime = 1000; challengeClockTime = 1000; loop(1033)');
     expect(w.eval('runStats.elapsedMs')).toBe(33);
     w.togglePause();
+    clock = 31033;
     w.loop(31033);
     expect(w.eval('runStats.elapsedMs')).toBe(33);
-    clock = 31033;
     w.togglePause();
+    clock = 31066;
     w.loop(31066);
     expect(w.eval('runStats.elapsedMs')).toBe(66);
   });
+
+  it.each(['hardDrop', 'softDropStep'])(
+    'rejects %s arriving after the Ultra deadline but before the next animation frame', action => {
+      start('ultra');
+      prepareSingle();
+      w.eval('score = 600; runStats.elapsedMs = 119990; lastFrameTime = 1000; challengeClockTime = 1000');
+      clock = 1015;
+      w[action]();
+      expect(w.eval('gameOver')).toBe(true);
+      expect(w.eval('runStats.elapsedMs')).toBe(120000);
+      expect(w.eval('score')).toBe(600);
+      expect(w.eval('linesCleared')).toBe(0);
+      expect(w.eval('runStats.pieces')).toBe(0);
+      expect(w.localStorage.getItem('turdtrisUltra120Best_v1')).toBe('600');
+      expect(w.document.getElementById('endTitle').textContent).toBe('Time’s up!');
+    }
+  );
+
+  it('counts the final partial frame once when a hard drop completes Sprint', () => {
+    start('sprint');
+    prepareSingle();
+    w.eval(`
+      score = 1000; linesCleared = 39; runStats.elapsedMs = 61200;
+      lastFrameTime = 62200; challengeClockTime = 62200;
+    `);
+    clock = 62237.25;
+    w.hardDrop();
+    expect(w.eval('gameOver')).toBe(true);
+    expect(w.eval('linesCleared')).toBe(40);
+    expect(w.eval('score')).toBe(1100);
+    expect(w.eval('runStats.elapsedMs')).toBe(61237.25);
+    expect(w.localStorage.getItem('turdtrisSprint40BestMs_v1')).toBe('61238');
+  });
+
+  it.each(['pause', 'blur', 'guide'])(
+    'counts the partial frame before %s and excludes the entire paused interval', boundary => {
+      start('ultra');
+      clock = 1033;
+      w.loop(clock);
+      expect(w.eval('runStats.elapsedMs')).toBe(33);
+      clock = 1049;
+      if (boundary === 'pause') { w.togglePause(); }
+      if (boundary === 'blur') { w.dispatchEvent(new w.Event('blur')); }
+      if (boundary === 'guide') { w.showWelcomeGuide(); }
+      expect(w.eval('paused')).toBe(true);
+      expect(w.eval('runStats.elapsedMs')).toBe(49);
+      clock = 31049;
+      w.loop(clock);
+      expect(w.eval('runStats.elapsedMs')).toBe(49);
+      if (boundary === 'guide') { w.hideWelcomeGuide(); }
+      else { w.togglePause(); }
+      clock = 31066;
+      w.loop(clock);
+      expect(w.eval('runStats.elapsedMs')).toBe(66);
+      expect(w.eval('gameOver')).toBe(false);
+    }
+  );
 
   it.each(['sprint', 'ultra'])('increases %s speed without adding Classic garbage', mode => {
     start(mode);
