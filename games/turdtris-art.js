@@ -149,8 +149,9 @@ function paintSprite(ctx, name, ghost) {
   if (ghost) {
     roundPath(ctx, 4, 4, 56, 56, 12);
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.075; ctx.fill(); ctx.globalAlpha = 0.75;
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([7, 5]); ctx.stroke();
+    ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 0.95;
+    // A 4px cached stroke remains ~1 CSS pixel on the smallest phone board.
+    ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.setLineDash([7, 5]); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha = 0.25;
     ctx.strokeRect(27, 30, 10, 4);
     ctx.globalAlpha = 1;
