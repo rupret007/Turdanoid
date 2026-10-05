@@ -27,7 +27,7 @@ TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 le
 - **Space**: Start / Launch / Fire
 - **A/D or Arrow Keys**: Move paddle
 - **R**: Restart
-- **P / Esc**: Pause/Resume
+- **P / Esc**: Pause/Resume (pause overlay shows control reminders)
 
 ### Scoring
 
@@ -67,7 +67,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 ### Level Progression
 
-- **30 total levels**, 13 rotating wall patterns
+- **30 total levels**, 18 rotating wall patterns (13 classics + 5 new: Fortress, Ring, Columns, Plunger X, Drip Wall)
 - Brick HP ramps up from level 3; metal bricks appear at level 6+
 - Ball and paddle speed scale with level (capped)
 - Enlarge and Shrink last until their timers die, including across a wall clear. Losing a life still resets the paddle
