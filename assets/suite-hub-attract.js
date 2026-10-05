@@ -38,8 +38,14 @@ export function wireHubCoverIdleMotion(doc, selector = '.game-card .cover') {
   } else {
     covers.forEach((c) => c.classList.add('cover-in-view'));
   }
+  const pauseHidden = () => {
+    doc.body.classList.toggle('hub-attract-paused', !!doc.hidden);
+  };
+  doc.addEventListener('visibilitychange', pauseHidden);
+  pauseHidden();
   return () => {
     if (io) io.disconnect();
+    doc.removeEventListener('visibilitychange', pauseHidden);
   };
 }
 
@@ -50,4 +56,9 @@ export function wireHubAttractHeader(doc) {
   const masthead = doc.querySelector('.masthead');
   if (!masthead || prefersReducedMotion(doc)) return;
   masthead.classList.add('hub-attract-on');
+  const pauseHidden = () => {
+    masthead.classList.toggle('hub-attract-paused', !!doc.hidden);
+  };
+  doc.addEventListener('visibilitychange', pauseHidden);
+  pauseHidden();
 }

@@ -20,6 +20,26 @@ describe('suite-hub-stats', () => {
     expect(readHubStatBadge(getItem, 'turdspades.html')).toBeNull();
   });
 
+  it('reads TurdAnoid boss best alongside arcade best', () => {
+    const getItem = (k) => {
+      if (k === 'turdanoid_v2_best') { return '1000'; }
+      if (k === 'turdanoid_boss_best_v1') { return '2500'; }
+      return null;
+    };
+    expect(readHubStatBadge(getItem, 'TurdAnoid.html')?.text).toBe('Best 1,000 · Boss 2,500');
+  });
+
+  it('tolerates malformed turdrummy_stats_v1', () => {
+    const getItem = (k) => (k === 'turdrummy_stats_v1' ? '{not json' : null);
+    expect(readHubStatBadge(getItem, 'turdrummy.html')).toBeNull();
+  });
+
+  it('reads optional turdspades_stats_v1', () => {
+    const getItem = (k) =>
+      (k === 'turdspades_stats_v1' ? JSON.stringify({ matchesWon: 1, matchesPlayed: 3 }) : null);
+    expect(readHubStatBadge(getItem, 'turdspades.html')?.text).toBe('1 match win');
+  });
+
   it('reads Crapjack bankroll and Eights wins', () => {
     const store = {
       turdjackBankroll: '250',

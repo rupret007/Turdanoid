@@ -614,6 +614,21 @@
       .game-card:hover,
       .game-card:focus-visible { transform: none; }
     }
+
+    @media (max-width: 390px) {
+      .shell { width: min(100%, 96vw); padding: 12px 10px 10px; }
+      .meta-row { gap: 6px; }
+      .hero-badge { max-width: 100%; }
+    }
+
+    @media (max-width: 320px) {
+      body { padding: 6px; }
+      .shell { padding: 10px 8px 8px; border-radius: 14px; }
+      .game-card h2 { font-size: 0.92rem; }
+      .game-card p { font-size: 0.74rem; }
+      .play { min-width: 58px; padding: 7px 8px; font-size: 0.6rem; }
+      .changelog { font-size: 0.78rem; padding: 8px 10px; }
+    }
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
@@ -882,6 +897,7 @@
     <details class="changelog">
       <summary>Latest Changelog</summary>
       <ul>
+        <li><strong>1000x shared (round 3):</strong> hub back pill moves to a top-left icon on phones (no dock overlap); boss-best + Spades stat chips; vitest 30s timeouts; hub polish + pause idle motion when tab hidden.</li>
         <li><strong>1000x shared (round 2):</strong> premium card paper &amp; toilet-crest backs, felt/chip utilities, hub idle cover motion, Continue hero banner, parallax sewer critters, richer <code>Suite.audio()</code> presets (snap, shuffle, fanfare). Save keys unchanged.</li>
         <li><strong>1000x shared (round 1):</strong> hub skip link, suite mute toggle, read-only stat chips, opt-in <code>Suite.audio()</code> / <code>Suite.fx()</code>.</li>
         <li><strong>Hub leftover after the phone resume cue:</strong> when you have a table in progress, the masthead badge turns into a one-tap "Continue &lt;Game&gt;" link — the last game you opened if it is still live, otherwise the first table waiting. First visits keep the "No sign-in" badge. No rules, storage, continue-validation, or layout change.</li>

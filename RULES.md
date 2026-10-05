@@ -326,13 +326,14 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 ### Suite modules (hub + opt-in games)
 
-- **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill, continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
+- **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill (bottom on wide; **top-left icon ≤520px** unless `body data-suite-back="bottom"`), continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
+- **`assets/suite-back-pill.js`** — placement + overlap helpers for tests/tools.
 - **`assets/suite-audio.js`** — WebAudio presets (`snap`, `chip`, `shuffle`, `tick`, `win`, `lose`, …); honours mute; see `docs/1000x/shared.md`.
 - **`assets/suite-fx.js`** — screen shake, flash, confetti; respects `prefers-reduced-motion`.
 - **`assets/suite-a11y.js`** — skip link + `aria-live` announcer.
-- **`assets/suite-hub-stats.js`** — read-only stat chips on hub cards from existing score/bankroll keys.
+- **`assets/suite-hub-stats.js`** — read-only stat chips (`turdanoid_v2_best`, `turdanoid_boss_best_v1`, `turdtrisHighScore`, bankroll/stats keys, `turdrummy_stats_v1`, optional `turdspades_stats_v1`).
 - **`assets/suite-ambient.js`** — parallax sewer backdrop depth + critters; pauses when tab hidden or reduced motion.
-- **`assets/suite-hub-attract.js`** — hub cover idle SVG motion (off-screen pause).
+- **`assets/suite-hub-attract.js`** — hub cover idle SVG motion (off-screen + hidden-tab pause).
 - **`assets/turdsuite.css`** — shared card paper/back tokens, `.suite-table-felt`, `.suite-chip`, deal/slide motion classes.
 
 ### Card Representations

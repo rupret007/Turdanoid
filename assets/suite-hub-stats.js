@@ -36,7 +36,11 @@ export function readHubStatBadge(getItem, href) {
   switch (href) {
     case 'TurdAnoid.html': {
       const best = parseSafeInt(getItem('turdanoid_v2_best'));
-      return best > 0 ? { text: `Best ${best.toLocaleString('en-US')}` } : null;
+      const boss = parseSafeInt(getItem('turdanoid_boss_best_v1'));
+      const parts = [];
+      if (best > 0) parts.push(`Best ${best.toLocaleString('en-US')}`);
+      if (boss > 0) parts.push(`Boss ${boss.toLocaleString('en-US')}`);
+      return parts.length ? { text: parts.join(' · ') } : null;
     }
     case 'turdtris.html': {
       const best = parseSafeInt(getItem('turdtrisHighScore'));
@@ -68,8 +72,14 @@ export function readHubStatBadge(getItem, href) {
       if (gins > 0) return { text: `${gins} gin${gins === 1 ? '' : 's'}` };
       return rounds > 0 ? { text: `${rounds} rounds` } : null;
     }
-    case 'turdspades.html':
-      return null;
+    case 'turdspades.html': {
+      const stats = readJsonObject(getItem, 'turdspades_stats_v1');
+      if (!stats) return null;
+      const won = parseSafeInt(stats.matchesWon ?? stats.wins);
+      const played = parseSafeInt(stats.matchesPlayed ?? stats.gamesPlayed);
+      if (won > 0) return { text: `${won} match win${won === 1 ? '' : 's'}` };
+      return played > 0 ? { text: `${played} played` } : null;
+    }
     default:
       return null;
   }
