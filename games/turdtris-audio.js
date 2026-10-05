@@ -114,16 +114,26 @@ export function createTurdtrisAudioPlayer(deps) {
   let activeLastUpdate = false;
   const lastEffects = new Map();
 
+  function pruneVoices(voices, now) {
+    let retained = 0;
+    for (let i = 0; i < voices.length; i++) {
+      if (voices[i].end > now) { voices[retained++] = voices[i]; }
+    }
+    voices.length = retained;
+  }
+
   function silence(voices) {
-    if (!lastContext) {return [];}
+    if (!lastContext) { voices.length = 0; return voices; }
     const now = lastContext.currentTime;
-    voices.forEach(({ osc, gain, end }) => {
-      if (end <= now) {return;}
+    for (let i = 0; i < voices.length; i++) {
+      const { osc, gain, end } = voices[i];
+      if (end <= now) {continue;}
       gain.gain.cancelScheduledValues?.(now);
       gain.gain.setValueAtTime(0.001, now);
       try {osc.stop(now + 0.005);} catch { /* Already ended on another audio quantum. */ }
-    });
-    return [];
+    }
+    voices.length = 0;
+    return voices;
   }
 
   function stop() {
@@ -135,7 +145,7 @@ export function createTurdtrisAudioPlayer(deps) {
   }
 
   function soundBlocked() {
-    if (!armed || isSoundBlocked({ soundEnabled: getSoundEnabled(), suiteMuted: getSuiteMuted() })) {
+    if (!armed || !getSoundEnabled() || getSuiteMuted()) {
       stop();
       sfxVoices = silence(sfxVoices);
       return true;
@@ -155,7 +165,7 @@ export function createTurdtrisAudioPlayer(deps) {
       const minimumInterval = type === 'move' ? 0.038 : type === 'soft' ? 0.07 : 0;
       if (minimumInterval && ctx.currentTime - (lastEffects.get(type) ?? -1) < minimumInterval) {return;}
       lastEffects.set(type, ctx.currentTime);
-      sfxVoices = sfxVoices.filter(voice => voice.end > ctx.currentTime);
+      pruneVoices(sfxVoices, ctx.currentTime);
       if (sfxVoices.length < 32) {
         sfxVoices.push(...playTurdtrisSfx(ctx, type, opts));
       }
@@ -173,16 +183,14 @@ export function createTurdtrisAudioPlayer(deps) {
       }
       lastContext = ctx;
       const now = ctx.currentTime;
-      musicVoices = musicVoices.filter(voice => voice.end > now);
-      sfxVoices = sfxVoices.filter(voice => voice.end > now);
+      pruneVoices(musicVoices, now);
+      pruneVoices(sfxVoices, now);
       if (danger && now >= nextHeartbeat) {
         musicVoices.push(...playTurdtrisSfx(ctx, 'heartbeat'));
         nextHeartbeat = now + 1.1;
       }
       if (!danger) {nextHeartbeat = 0;}
-      if (!canPlayTurdtrisMusic({
-        armed, active, soundEnabled: getSoundEnabled(), suiteMuted: getSuiteMuted(), musicEnabled: getMusicEnabled()
-      })) {
+      if (!getMusicEnabled()) {
         // Heartbeats obey sound settings, independently of the music preference.
         if (activeLastUpdate) {musicVoices = silence(musicVoices);}
         activeLastUpdate = false;

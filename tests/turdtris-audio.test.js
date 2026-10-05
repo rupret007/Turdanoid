@@ -115,6 +115,24 @@ describe('turdtris-audio', () => {
     expect(ctx.voices).toHaveLength(after);
   });
 
+  it('releases expired voice capacity throughout a sustained run', () => {
+    const { player, ctx } = playerFixture();
+    player.arm();
+    for (let round = 0; round < 60; round++) {
+      ctx.currentTime = round;
+      const before = ctx.voices.length;
+      player.play('clear4');
+      expect(ctx.voices.length - before).toBe(6);
+      player.update({ active: true, danger: round % 2 === 0 });
+    }
+    const activeVoices = ctx.voices.filter(voice => voice.stop.mock.calls[0][0] > ctx.currentTime);
+    ctx.currentTime += 0.01;
+    player.stop();
+    // Ended voices must not be stopped again when pruning compacted the queues.
+    expect(ctx.voices[0].stop).toHaveBeenCalledTimes(1);
+    expect(activeVoices.some(voice => voice.stop.mock.calls.length === 2)).toBe(true);
+  });
+
   it('throttles repeating movement/drop audio and honors muted SFX', () => {
     const { player, ctx, prefs } = playerFixture();
     player.arm();
