@@ -95,7 +95,7 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 - [x] Tested gestures: tap rotate, horizontal swipe, slow down soft drop, fast vertical flick hard drop; guide updated.
 - [x] Game-over receipt: max combo, tetrises, active time, PPS, personal-best celebration; old high-score key unchanged.
 - [x] Reduced-motion policies and unit tests for every new effect family; legacy score/settings compatibility tests.
-- [ ] Full Vitest suite, lint, and Chromium smoke (including held-input-pause) pass.
+- [x] Full Vitest suite, lint, and Chromium smoke (including held-input-pause) pass; see the shared lint warnings and host-load test invocation below.
 - [ ] Optional separate Sprint 40L / Ultra 2-minute modes (stretch; classic compatibility takes priority).
 
 
@@ -116,5 +116,7 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 - In-memory Chromium visual/geometry checks: PASS at 320×640, 390×844 and 1280×900; four-row flush/perfect-clear receipt and settings pause/restart checked. No screenshot assets added to the repository.
 - Full Vitest: PASS — 22 files / 351 tests, using `VITEST_MAX_WORKERS=1 npx vitest run --testTimeout=30000`. The initial plain `npx vitest run` and two-worker retry hit only 5-second timeouts in unchanged hub/card suites under heavy host load (load average rose above 60); assertions and repository configuration were not changed. The serial full run passed in 333.5 seconds.
 - `npm run lint`: PASS exit 0, zero errors. Six pre-existing warnings in other lanes remain listed under Needs shared change; all Turdtris modules/tests are clean.
-- `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8152`: first run caught the hidden phone Hub escape plus a held-repeat timing check under host load. Hub escape restored visibly in the header; repeat timing remains the original 148ms / 52ms. In the permitted Turdtris-only smoke block, the press and 70ms observation now execute in one browser evaluation: host round trips were stretching the intended 70ms sample beyond 148ms. All immediate-move, pending-repeat, active-repeat, release and pause assertions remain. Final rerun pending.
+- `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8152`: first run caught the hidden phone Hub escape plus a held-repeat timing check under host load. Hub escape restored visibly in the header; repeat timing remains the original 148ms / 52ms. In the permitted Turdtris-only smoke block, the press and 70ms observation now execute in one browser evaluation: host round trips were stretching the intended 70ms sample beyond 148ms. All immediate-move, pending-repeat, active-repeat, release and pause assertions remain. Final rerun: PASS — `Browser smoke checks passed`, including phone Hub navigation and `turdtris-held-input-pause`.
 - Physical-phone audio, haptics and frame-rate profiling: NOT RUN.
+
+Round 2 complete: 13 / 14 targets done; only the optional Sprint/Ultra stretch target remains. All changes are committed locally on the lane branch.
