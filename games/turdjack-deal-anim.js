@@ -29,12 +29,12 @@ export function flightDelta(from, to) {
  */
 export function dealFlightDurationMs(dist, reducedMotion) {
   if (reducedMotion) {return 0;}
-  return Math.min(520, Math.max(280, 220 + dist * 0.35));
+  return Math.min(320, Math.max(180, 160 + dist * 0.22));
 }
 
 /**
  * @param {number} reducedMotion
  */
 export function dealerRevealPauseMs(reducedMotion) {
-  return reducedMotion ? 0 : 650;
+  return reducedMotion ? 0 : 520;
 }

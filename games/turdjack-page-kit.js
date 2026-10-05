@@ -28,6 +28,13 @@ import {
   chipSettlementKind,
   shouldAnimateChipSettlement
 } from './turdjack-chip-motion.js';
+import {
+  announceLive,
+  dealerHitDelayMs,
+  dealerHitAnnouncement,
+  dealerRevealAnnouncement,
+  roundResultAnnouncement
+} from './turdjack-a11y.js';
 
 const PRACTICE_KEY = 'turdjack_practice_v1';
 const INTEL_SEEN_KEY = 'turdjack_intel_seen_v1';
@@ -312,6 +319,7 @@ export function installTurdjackKit(win) {
 
   function dealerRevealBeat(done) {
     const pause = dealerRevealPauseMs(reducedMotion);
+    announceLive(doc, 'Dealer reveals the hole card.');
     if (!pause) {
       done();
       return;
@@ -422,19 +430,27 @@ export function installTurdjackKit(win) {
   }
 
   function afterStatus(text) {
-    if (!fx) {return;}
     try {
+      const raw = String(text || '');
+      const lower = raw.toLowerCase();
+      const liveMsg = lower.includes('hand') && (
+        lower.includes('wins')
+        || lower.includes('loses')
+        || lower.includes('push')
+        || lower.includes('bust')
+      )
+        ? roundResultAnnouncement(raw)
+        : raw;
+      announceLive(doc, liveMsg);
+      if (!fx) {return;}
       fx.burstFromStatus(text);
-      const note = String(text || '').toLowerCase();
-      if (note.includes('bust') || (note.includes('blackjack') && !note.includes('dealer'))) {
+      if (lower.includes('bust') || (lower.includes('blackjack') && !lower.includes('dealer'))) {
         fx.shakeTable(table);
       }
-      const live = doc.getElementById('jackLiveRegion');
-      if (live) {live.textContent = String(text || '');}
       const moment = momentKindFromStatus(text);
       if (moment) {showMomentBanner(moment);}
-      if (note.includes('bust') && !note.includes('dealer bust')) {
-        bustCrumble(note.includes('hand 2') ? 'split' : 'player');
+      if (lower.includes('bust') && !lower.includes('dealer bust')) {
+        bustCrumble(lower.includes('hand 2') ? 'split' : 'player');
       }
       if (moment || chipSettlementKind(text)) {
         animateChipSettlement(text);
@@ -473,7 +489,11 @@ export function installTurdjackKit(win) {
     onNewRound,
     onSplit,
     markHoleFlipOnCard,
-    isPracticeMode: () => !!win.__turdjackPracticeMode
+    isPracticeMode: () => !!win.__turdjackPracticeMode,
+    announceLive: (message) => announceLive(doc, message),
+    dealerHitDelayMs: () => dealerHitDelayMs(reducedMotion),
+    dealerRevealAnnouncement,
+    dealerHitAnnouncement
   };
 
   return {
