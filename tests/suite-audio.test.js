@@ -35,7 +35,34 @@ describe('suite-audio', () => {
   });
 
   it('exposes named presets', () => {
-    expect(AUDIO_PRESETS.chip.slide).toBeGreaterThan(0);
-    expect(AUDIO_PRESETS.card.slide).toBeLessThan(0);
+    expect(AUDIO_PRESETS.chip.kind).toBe('chip');
+    expect(AUDIO_PRESETS.shuffle.kind).toBe('shuffle');
+    expect(AUDIO_PRESETS.snap.kind).toBe('snap');
+  });
+
+  it('plays chip preset without throwing when unmuted', () => {
+    const start = vi.fn();
+    const ctx = {
+      createOscillator: () => ({
+        type: 'square',
+        frequency: { value: 0, linearRampToValueAtTime: vi.fn() },
+        connect: () => ({ connect: () => ({}) }),
+        start,
+        stop: vi.fn()
+      }),
+      createGain: () => ({
+        gain: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: () => ({})
+      }),
+      createBuffer: () => ({ getChannelData: () => new Float32Array(8) }),
+      createBufferSource: () => ({ connect: () => ({ connect: () => ({}) }), start: vi.fn(), stop: vi.fn(), buffer: null }),
+      createBiquadFilter: () => ({ type: 'bandpass', frequency: { value: 0 }, Q: { value: 0 }, connect: () => ({}) }),
+      sampleRate: 44100,
+      currentTime: 0,
+      destination: {}
+    };
+    const audio = createSuiteAudio({ isMuted: () => false, getContext: () => ctx });
+    audio.playPreset('chip');
+    expect(start).toHaveBeenCalled();
   });
 });
