@@ -66,3 +66,33 @@
 
 - Hub should read `turdtrisHighScore` for cover badges (shared lane).
 - Optional global `SuiteAudio` module to dedupe oscillator code across games (shared lane).
+
+## Round 2: deeper audit and implementation targets
+
+Read the conductor's round-0 audit and the live inline engine. The engine in `turdtris.html` is authoritative; `turdtris-engine.js` is a simplified test engine, so changing that alone would not upgrade gameplay.
+
+- **Gameplay:** The live game already awards T-spins, perfect clears, combo and B2B; those amounts and the decimal-string `turdtrisHighScore` contract must remain intact. The old single-line callout incorrectly says MINI for every single. Rotation detection needs direct compatibility coverage. No AI applies to this single-player game.
+- **Feel / animation:** Existing tile gradients are rebuilt every frame. Ghost is static, hard drop teleports, and locks only flash. Clear rows collapse in logic immediately (keep this responsiveness), but their visual snapshots share a shifted row index and lack a convincing flush. Spawn feedback is mostly invisible above the board.
+- **Art:** Color palettes and a tiled gradient are present, but no recognizable environments or piece personalities. Cached procedural materials and four illustrated environments will provide the largest visible change.
+- **Audio:** Existing SFX have some layers but no movement/soft-drop identity, heartbeat, or music. Audio context creation can be reached from automatic events; explicitly gate all new audio on a gesture and stop music at every pause boundary.
+- **HUD / meta:** Live score fields are readable but occupy too much vertical space on phones. Existing game-over receipt lacks time, pieces per second, peak combo and tetrises. No separate challenge mode exists; classic stays default.
+- **Mobile:** Board width currently depends on viewport width without reserving the fixed dock's height. At short phone heights its bottom can sit behind the dock. Hold/Next already live in the dock and all smoke-tested labels must stay. Slow down-swipes currently slam unintentionally; distinguish deliberate flicks from soft drops.
+- **Accessibility / onboarding:** Motion preferences are partly observed, but float text, overlay pops and shrinking rows still move. Settings need visible labels, keyboard access, and safe focus handling; screen-reader announcements should change only on gameplay events. Teach ghost, lock meter and gesture differences concisely.
+- **Performance:** Retain one RAF, pre-render art, cap all particle/effect queues, avoid frame-by-frame DOM updates. Use clamped game delta for gravity and measured active time for the run receipt. No runtime network assets or added dependencies.
+
+### Round 2 checklist
+
+- [ ] Cached per-piece jelly / porcelain / slime sprites, highlights, texture, faces, and garbage material.
+- [ ] Animated ghost shimmer, visible spawn pop, lock squash, hard-drop streaks and bounded impact dust.
+- [ ] Distinct drain-flush row animation, line-scaled bursts and readable TURDTRIS takeover.
+- [ ] Tested live-compatible T-spin and perfect-clear detection; accurate callouts, unchanged scoring.
+- [ ] Bathroom → sewer → lagoon → space toilet environments, restrained ambient animation, danger pulse and heartbeat.
+- [ ] Gesture-gated synth music with level tempo, new opt-out key, immediate mute/pause/visibility shutdown; distinct action SFX.
+- [ ] Run-menu DAS / ARR / soft-drop settings with existing defaults, validated new settings key.
+- [ ] Lock-delay meter and one-shot short rotate-on-spawn buffer; pause clears pending input.
+- [ ] 390×844 board + Hold/Next + dock fit; 320×640 usable board; ≥44px thumb controls, press feedback and reduced-motion-aware haptics.
+- [ ] Tested gestures: tap rotate, horizontal swipe, slow down soft drop, fast vertical flick hard drop; guide updated.
+- [ ] Game-over receipt: max combo, tetrises, active time, PPS, personal-best celebration; old high-score key unchanged.
+- [ ] Reduced-motion policies and unit tests for every new effect family; legacy score/settings compatibility tests.
+- [ ] Full Vitest suite, lint, and Chromium smoke (including held-input-pause) pass.
+- [ ] Optional separate Sprint 40L / Ultra 2-minute modes (stretch; classic compatibility takes priority).
