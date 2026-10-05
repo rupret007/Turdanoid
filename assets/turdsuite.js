@@ -234,8 +234,17 @@
       for (let i = 0; i < 3; i++) html += '<div class="suite-bg-wisp"></div>';
       for (let i = 0; i < 12; i++) html += '<i class="suite-bg-bubble"></i>';
       html += '<div class="suite-bg-vignette"></div>';
+      html += '<div class="suite-bg-parallax-far" aria-hidden="true"></div>';
+      html += '<div class="suite-bg-parallax-near" aria-hidden="true"></div>';
+      html += '<span class="suite-bg-critter" data-critter="rat" aria-hidden="true" style="--critter-delay:-8s;--critter-lane:22%"></span>';
+      html += '<span class="suite-bg-critter" data-critter="duck" aria-hidden="true" style="--critter-delay:-31s;--critter-lane:68%"></span>';
       bg.innerHTML = html;
       document.body.insertBefore(bg, document.body.firstChild);
+      suiteImport('./suite-ambient.js').then(function (m) {
+        if (m && typeof m.enhanceAmbientBackground === 'function') {
+          m.enhanceAmbientBackground(document);
+        }
+      }).catch(function () {});
     } catch (e) {}
   }
 
@@ -404,7 +413,7 @@
     const name = heading ? heading.textContent.trim() : '';
     if (!name) return;
     const link = document.createElement('a');
-    link.className = badge.className + ' hero-resume';
+    link.className = badge.className + ' hero-resume hero-continue-banner';
     link.setAttribute('href', target);
     link.textContent = '↩ Continue ' + name;
     link.setAttribute('aria-label', 'Continue your ' + name + ' game in progress');
