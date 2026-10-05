@@ -45,7 +45,7 @@ export function buildClearCallouts(evt) {
     out.push({ text: 'PERFECT CLEAR', color: '#8ee8c7', priority: 100 });
   }
   if (evt.tSpin && lines > 0) {
-    const label = lines === 1 ? 'T-SPIN MINI' : `T-SPIN ${lines}`;
+    const label = `T-SPIN ${['', 'SINGLE', 'DOUBLE', 'TRIPLE'][lines] || lines}`;
     out.push({ text: label, color: '#d6a2ff', priority: 90 });
   } else if (lines === 4) {
     out.push({ text: 'TURDTRIS!', color: '#72dbff', priority: 85 });

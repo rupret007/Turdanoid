@@ -36,4 +36,10 @@ describe('turdtris-fx', () => {
   it('exposes level flash frame budget', () => {
     expect(levelUpFlashDurationFrames()).toBe(TURDTRIS_FEEL.levelFlashFrames);
   });
+
+  it('labels the existing full T-spin single without incorrectly calling it a mini', () => {
+    expect(buildClearCallouts({ lines: 1, tSpin: true })[0].text).toBe('T-SPIN SINGLE');
+    expect(buildClearCallouts({ lines: 2, tSpin: true })[0].text).toBe('T-SPIN DOUBLE');
+    expect(buildClearCallouts({ lines: 3, tSpin: true })[0].text).toBe('T-SPIN TRIPLE');
+  });
 });
