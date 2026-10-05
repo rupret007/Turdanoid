@@ -81,13 +81,15 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS kicks, combo system) across a 69-level run.
 
+Classic is the default on every page load. In Run Menu, choose a challenge and press **Start selected mode** to begin a fresh run. **Sprint 40L** measures active time to clear 40 lines; only completed runs set a best time (`turdtrisSprint40BestMs_v1`). **Ultra 2:00** gives two minutes of active play to score; it saves a separate best (`turdtrisUltra120Best_v1`). Pausing stops either clock. Both challenges keep Classic scoring and speed progression but omit garbage. Challenge records never change `turdtrisHighScore`; Play Again repeats the current mode.
+
 ### Controls
 
-- **←/→ or A/D**: Move piece
-- **↑ or W**: Rotate clockwise
-- **↓ or S**: Soft drop
+- **←/→**: Move piece
+- **↑ or X**: Rotate clockwise
+- **↓**: Soft drop
 - **Space**: Hard drop
-- **Shift or Z**: Rotate counter-clockwise
+- **Z**: Rotate counter-clockwise
 - **C**: Hold piece
 - **P**: Pause/Resume
 - **M**: Toggle sound
@@ -103,7 +105,8 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 | Tetris (4 lines) | 800 × level |
 | Back-to-Back Tetris | 1.5× bonus |
 | Combo | 50 × combo × level |
-| Perfect clear | 1200 × level |
+| T-spin (0 / 1 / 2 / 3 lines) | 100 / 400 / 800 / 1200 × level |
+| Perfect clear | 1200 × level added to the clear |
 
 ### Mechanics
 
@@ -116,7 +119,18 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Mobile play dock**: Move, rotate, hard drop, soft drop, hold, and pause stay on the thumb dock — none of them hide behind More Controls
 - **Mobile Hold / Next**: The held piece and next piece stay on the thumb dock so a phone run can see the queue without scrolling. Hold dims after it is used this piece, and a second tap does not swap
 - **Frame hitch clamp**: A stalled frame cannot dump extra gravity; motion stays capped to one 33ms step
-- **End-run receipt**: Game over shows the run score against this device's best, marks a new best, and Space or Enter starts the next run
+- **End-run receipt**: Score, lines, max combo, Turdtrises, active time and pieces per second. Personal bests keep the existing `turdtrisHighScore` format. Space or Enter starts the next run
+- **Board-first mobile**: At phone widths the side panel hides, the HUD compacts, and the playfield gets priority above the thumb dock
+- **Level-up flash**: Clearing a level goal triggers a brief well flash and on-board level banner
+- **Clear spectacle**: Rows swirl down a drain, larger clears produce more particles, and four lines take over the board with TURDTRIS! T-spin and perfect-clear scoring is unchanged; a single-line T-spin is correctly labeled SINGLE
+- **Board gestures**: Tap to rotate; swipe horizontally up to five columns; slow down-swipes soft drop; quick up/down flicks hard drop. Ambiguous diagonal swipes do nothing. Toggle in Run Menu (`turdtrisGestures_v1`)
+- **Audio**: Distinct synthesized actions, line-count arpeggios, danger heartbeat and a light music loop. Everything waits for a user gesture and respects `turdtrisSoundOn_v1` and `turdsuite_muted`. Music can be disabled separately (`turdtrisMusic_v1`); the loop stops during pause, guide, game over and tab blur
+- **Movement tuning**: Run Menu pauses the game and offers keyboard DAS/ARR and soft-drop speed (`turdtrisInputFeel_v1`). Defaults preserve 156ms DAS, 33ms ARR and classic gravity/15 (minimum 20ms) soft drop. Thumb repeat keeps its existing timing
+- **Desktop cabinet (≥981px)**: Centered tall well, Hold on the left, up to five upcoming pieces on the right, score/level/lines/combo/B2B in a side column, next-flush progress and status beneath, controls collapsed under a **?** drawer. Phone layout is unchanged
+- **Attract screen**: First visit (or **How To Play**) shows a logo, classic best, mode picker, and reduced-motion-safe falling-piece backdrop; **Play** starts the selected mode, **Quick Start** / **Review Then Start** behave as before
+- **Landing feedback**: Ghost shimmer shows the landing position; a small meter shows the existing 500ms lock delay. A blocked rotation can carry into the next spawn for 120ms, once; pause, guide, blur and restart clear it
+- **Art chapters**: Porcelain Palace (1–4), Midnight Sewer (5–8), Biolume Lagoon (9–12), Cosmic Commode (13–69), with cached glossy face tiles, spawn pop, lock squash and hard-drop streaks
+- **Reduced motion**: No shaking, flashing, particles, haptics, background drift, ghost shimmer, tile transforms or sliding text. Static ghost, danger tint, lock meter and clear labels remain readable
 
 ### Levels
 

@@ -26,7 +26,13 @@ export const TURDANOID_FEEL = {
 
 export const TURDTRIS_FEEL = {
   /** Stack-height ratio (see turdtris.html getDangerRatio) where HUD danger pulse starts. */
-  dangerHudPulseRatio: 0.55
+  dangerHudPulseRatio: 0.55,
+  maxClearSparks: 26,
+  maxClearSparksReduced: 8,
+  shakeDecayPerFrame: 0.86,
+  shakeEpsilon: 0.2,
+  shakeCapReduced: 0,
+  levelFlashFrames: 28
 };
 
 export const CARD_TABLE_FEEL = {

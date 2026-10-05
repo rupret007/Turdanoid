@@ -681,16 +681,23 @@ async function main() {
         await page.evaluate(() => { stopLoop(); tetromino.col = 4; });
         const left = await page.locator('[data-action="left"]').boundingBox();
         await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
-        await page.mouse.down();
-        const firstCol = await page.evaluate(() => tetromino.col);
+        // Measure the 70ms window inside the browser: automation round trips
+        // under CPU contention can otherwise exceed the unchanged 148ms DAS.
+        const waiting = await page.evaluate(async () => {
+          document.querySelector('[data-action="left"]').dispatchEvent(new PointerEvent('pointerdown', {
+            bubbles: true, cancelable: true, pointerType: 'touch', pointerId: 1
+          }));
+          const firstCol = tetromino.col;
+          await new Promise(resolve => setTimeout(resolve, 70));
+          return { firstCol, col: tetromino.col, pending: holdDelayTimeout !== null, repeating: holdInterval !== null };
+        });
+        const firstCol = waiting.firstCol;
         if (firstCol !== 3) fail('turdtris-held-input-pause', 'press must move exactly once immediately');
-        await page.waitForTimeout(70);
-        const waiting = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout !== null, repeating: holdInterval !== null }));
         if (waiting.col !== firstCol || !waiting.pending || waiting.repeating) {
           fail('turdtris-held-input-pause', `hold must wait before repeating: ${JSON.stringify(waiting)}`);
         }
         await page.waitForFunction(col => holdInterval !== null && tetromino.col < col, firstCol);
-        await page.mouse.up();
+        await page.dispatchEvent('#mobileControls', 'pointerup', { pointerType: 'touch', pointerId: 1 });
         const released = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout, repeating: holdInterval }));
         await page.waitForTimeout(220);
         if (released.pending !== null || released.repeating !== null || await page.evaluate(() => tetromino.col) !== released.col) {
