@@ -213,7 +213,7 @@
       const a = document.createElement('a');
       a.className = 'suite-back-pill';
       a.href = './';
-      a.innerHTML = '<span class="arrow">←</span> Hub';
+      a.innerHTML = '<span class="arrow" aria-hidden="true">←</span><span class="suite-back-pill-label"> Hub</span>';
       a.setAttribute('aria-label', 'Back to game hub');
       document.body.appendChild(a);
     } catch (e) {}

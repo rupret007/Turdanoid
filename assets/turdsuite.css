@@ -57,16 +57,21 @@
   --suite-tiles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='48' viewBox='0 0 96 48'%3E%3Crect width='96' height='48' fill='%23000' fill-opacity='0.22'/%3E%3Cg fill='%23fff' fill-opacity='0.045'%3E%3Crect x='1' y='1' width='46' height='22' rx='2'/%3E%3Crect x='49' y='1' width='46' height='22' rx='2'/%3E%3Crect x='-23' y='25' width='46' height='22' rx='2'/%3E%3Crect x='25' y='25' width='46' height='22' rx='2'/%3E%3Crect x='73' y='25' width='46' height='22' rx='2'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-/* ---------- Back-to-Hub pill ---------- */
+/* ---------- Back-to-Hub pill ----------
+   Default wide: bottom-left. Narrow (≤520px): top-left compact icon so
+   thumb docks / Sort buttons stay clear. Opt out with body data-suite-back="bottom".
+   Force top on all widths with data-suite-back="top". */
 .suite-back-pill {
   position: fixed;
   left: max(10px, calc(var(--suite-safe-left) + 8px));
   bottom: max(10px, calc(var(--suite-safe-bot) + 8px));
+  top: auto;
   z-index: 10000;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
+  min-height: 44px;
   font: 700 12px/1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -82,9 +87,40 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
+body[data-suite-back="top"] .suite-back-pill {
+  top: max(58px, calc(var(--suite-safe-top) + 52px));
+  bottom: auto !important;
+  left: max(8px, calc(var(--suite-safe-left) + 6px));
+}
+@media (max-width: 520px) {
+  body:not([data-suite-back="bottom"]) .suite-back-pill {
+    top: max(58px, calc(var(--suite-safe-top) + 52px));
+    bottom: auto !important;
+    left: max(8px, calc(var(--suite-safe-left) + 6px));
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    letter-spacing: 0;
+    font-size: 0;
+  }
+  body:not([data-suite-back="bottom"]) .suite-back-pill .arrow {
+    font-size: 18px;
+    line-height: 1;
+    opacity: 1;
+  }
+  body:not([data-suite-back="bottom"]) .suite-back-pill .suite-back-pill-label {
+    display: none;
+  }
+}
 .suite-back-pill:hover { background: rgba(20, 50, 40, 0.85); transform: translateY(-1px); border-color: rgba(158, 255, 200, 0.6); }
 .suite-back-pill:active { transform: scale(0.95); }
 .suite-back-pill .arrow { font-size: 13px; opacity: 0.85; }
+@media (prefers-reduced-motion: reduce) {
+  .suite-back-pill { transition: none; }
+  .suite-back-pill:hover,
+  .suite-back-pill:active { transform: none; }
+}
 
 /* ---------- Toast (small floating message) ---------- */
 .suite-toast {
@@ -704,6 +740,10 @@ button.card.selected,
 }
 .masthead.hub-attract-on h1 .logo {
   animation: logoBob 3.4s ease-in-out infinite, hubLogoGlow 4s ease-in-out infinite;
+}
+body.hub-attract-paused .cover.cover-motion-on,
+.masthead.hub-attract-paused h1 .logo {
+  animation-play-state: paused !important;
 }
 @keyframes hubLogoGlow {
   0%, 100% { filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 8px rgba(158, 255, 200, 0.2)); }
