@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, it, expect } from 'vitest';
 import {
   TURDANOID_FEEL,
@@ -10,6 +14,18 @@ import {
   bumpShake,
   ballDangerRatio
 } from '../games/suite-feel.js';
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+function readPage(name) {
+  return readFileSync(join(repoRoot, name), 'utf8');
+}
+
+function htmlNumericConst(source, name) {
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
+  expect(match, `${name} in shipped HTML`).not.toBeNull();
+  return Number(match[1]);
+}
 
 describe('suite-feel', () => {
   it('documents TurdAnoid combo window used in TurdAnoid.html step()', () => {
@@ -54,5 +70,50 @@ describe('suite-feel', () => {
   it('documents Turdtris danger HUD pulse threshold', () => {
     expect(TURDTRIS_FEEL.dangerHudPulseRatio).toBeGreaterThan(0.4);
     expect(TURDTRIS_FEEL.dangerHudPulseRatio).toBeLessThan(0.75);
+  });
+
+  it('keeps TurdAnoid.html FEEL_* constants aligned with games/suite-feel.js', () => {
+    const page = readPage('TurdAnoid.html');
+    expect(htmlNumericConst(page, 'FEEL_COMBO_FRAMES')).toBe(TURDANOID_FEEL.comboWindowFrames);
+    expect(htmlNumericConst(page, 'FEEL_POINTER_LERP')).toBe(TURDANOID_FEEL.pointerLerpPerFrame);
+    expect(htmlNumericConst(page, 'FEEL_POINTER_LERP_TOUCH')).toBe(TURDANOID_FEEL.pointerLerpTouchPerFrame);
+    expect(htmlNumericConst(page, 'FEEL_MIN_BALL_SPEED')).toBe(TURDANOID_FEEL.minBallSpeed);
+    expect(htmlNumericConst(page, 'FEEL_PADDLE_ENGLISH')).toBe(TURDANOID_FEEL.paddleEnglish);
+    expect(htmlNumericConst(page, 'FEEL_SHAKE_DECAY')).toBe(TURDANOID_FEEL.shakeDecayPerFrame);
+    expect(htmlNumericConst(page, 'FEEL_HIT_STOP_BREAK')).toBe(TURDANOID_FEEL.hitStopFramesOnBreak);
+    expect(htmlNumericConst(page, 'FEEL_BALL_DANGER_START')).toBe(TURDANOID_FEEL.ballDangerStartRatio);
+  });
+
+  it('keeps turdtris.html danger HUD threshold aligned with games/suite-feel.js', () => {
+    const page = readPage('turdtris.html');
+    expect(htmlNumericConst(page, 'FEEL_DANGER_HUD_RATIO')).toBe(TURDTRIS_FEEL.dangerHudPulseRatio);
+  });
+
+  it('keeps card-table bot pacing aligned with CARD_TABLE_FEEL', () => {
+    const eights = readPage('crapeights.html');
+    const rummy = readPage('turdrummy.html');
+    const spades = readPage('turdspades.html');
+    expect(eights).toContain(`}, ${CARD_TABLE_FEEL.crapeightsAiMs});`);
+    expect(rummy).toContain(`queueAiTurn(${CARD_TABLE_FEEL.turdrummyQuickAiMs})`);
+    expect(rummy).toContain(`queueAiTurn(${CARD_TABLE_FEEL.turdrummyAiMs})`);
+    expect(spades).toContain(`const AI_TURN_MS = ${CARD_TABLE_FEEL.turdspadesAiMs}`);
+  });
+
+  it('documents unchanged localStorage keys for the six-game suite', () => {
+    const pages = {
+      'assets/turdsuite.js': ['turdsuite_muted', 'turdsuite_continue_v1', 'turdsuite_last_game'],
+      'games/table-continue-core.js': ['turdsuite_guides_seen_v1'],
+      'TurdAnoid.html': ['turdanoid_v2_best', 'turdanoid_v2_sound'],
+      'turdtris.html': ['turdtrisHighScore', 'turdtrisSoundOn_v1'],
+      'turdjack.html': ['turdjackBankroll', 'turdjackStats', 'turdjackSoundOn_v1'],
+      'crapeights.html': ['crapeightsStats', 'crapeightsSoundOn_v1'],
+      'turdrummy.html': ['turdrummy_stats_v1']
+    };
+    for (const [file, keys] of Object.entries(pages)) {
+      const src = readPage(file);
+      for (const key of keys) {
+        expect(src, `${file} still references ${key}`).toContain(key);
+      }
+    }
   });
 });
