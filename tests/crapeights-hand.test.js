@@ -21,7 +21,7 @@ describe('fitted Crappy Eights fan', () => {
   });
   it('makes short desktop fans shallower while retaining large targets', () => {
     const compact = layout(7, 900, true);
-    expect(compact.cardWidth).toBe(88);
+    expect(compact.cardWidth).toBe(92);
     expect(compact.height).toBeLessThan(layout(7, 900).height);
     expect(compact.cards.every(card => card.y + compact.cardHeight < compact.height)).toBe(true);
   });

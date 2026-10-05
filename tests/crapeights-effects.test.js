@@ -71,6 +71,18 @@ describe('Crappy Eights action and scoring decisions', () => {
     }
   });
 
+  it('anchors action stamps below avatars inside the seat label band', () => {
+    const seat = {
+      getBoundingClientRect: () => ({ left: 8, top: 18, width: 92, height: 108, bottom: 126 }),
+      querySelector: () => ({ getBoundingClientRect: () => ({ left: 26, top: 22, width: 43, height: 43, bottom: 65 }) })
+    };
+    const anchor = Effects.stampAnchor(seat, 320);
+    expect(anchor.top).toBeGreaterThan(65);
+    expect(anchor.top).toBeLessThan(118);
+    expect(anchor.left).toBeGreaterThan(40);
+    expect(anchor.left).toBeLessThan(280);
+  });
+
   it('receipts every remaining card using the existing scoring rules without changing hands', () => {
     const players = [{ name: 'You', hand: [] }, { name: 'Pip', hand: ['8', 'A', 'J', 'Q', 'K', '10', '2'].map(rank => ({ rank, suit: 'S' })) }, { name: 'Flo', hand: [{ rank: '9', suit: 'H' }] }];
     const before = JSON.stringify(players);

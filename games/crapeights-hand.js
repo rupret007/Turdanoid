@@ -8,7 +8,7 @@
     const capacity = Math.max(1, Math.floor((width - inset * 2 - 78) / 48) + 1);
     const rows = Math.max(1, Math.ceil(total / capacity));
     const perRow = Math.ceil(total / rows);
-    const cardWidth = Math.min(width > 650 ? (compact ? 88 : 100) : 84, width - inset * 2 - Math.max(0, perRow - 1) * 48);
+    const cardWidth = Math.min(width > 650 ? (compact ? 92 : 108) : 84, width - inset * 2 - Math.max(0, perRow - 1) * 48);
     const cardHeight = Math.round(cardWidth * 1.42);
     const stride = cardHeight - 44;
     const cards = Array.from({ length: total }, (_, index) => {

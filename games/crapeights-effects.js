@@ -33,6 +33,21 @@
     };
   }
 
+  function stampAnchor(target, viewportWidth = root.innerWidth || 390) {
+    const rect = target?.getBoundingClientRect?.();
+    if (!rect?.width) { return null; }
+    const avatar = target.querySelector?.('.ce-avatar');
+    const avatarRect = avatar?.getBoundingClientRect?.();
+    const bandTop = avatarRect ? avatarRect.bottom + 6 : rect.top + rect.height * 0.38;
+    const bandBottom = rect.bottom - 8;
+    const clampX = (value) => Math.max(58, Math.min(Number(viewportWidth) - 58, value));
+    if (bandBottom <= bandTop) {
+      return { left: clampX(rect.left + rect.width / 2), top: rect.top + rect.height * 0.72 };
+    }
+    const top = Math.min(bandBottom - 12, Math.max(bandTop + 12, rect.top + rect.height * 0.58));
+    return { left: clampX(rect.left + rect.width / 2), top };
+  }
+
   function actionPlan({ type, playerIndex = 0, targetIndex = playerIndex, count = 2, suit = 'C', direction = 1 } = {}, reducedMotion = false) {
     const policy = motionPolicy(reducedMotion);
     const target = type === 'skip' || type === 'drawtwo' ? targetIndex : playerIndex;
@@ -195,13 +210,12 @@
     }
 
     function stamp(plan, target) {
-      const rect = target?.getBoundingClientRect?.();
-      if (!rect || !doc || !rect.width) { return; }
+      const anchor = stampAnchor(target, root.innerWidth || 390);
+      if (!anchor || !doc) { return; }
       const node = doc.createElement('strong');
       node.className = `ce-action-stamp ce-action-${plan.type}`;
       node.textContent = plan.label;
-      const left = Math.max(77, Math.min((root.innerWidth || 390) - 77, rect.left + rect.width / 2));
-      const top = Math.max(30, rect.top + Math.min(62, rect.height / 2));
+      const { left, top } = anchor;
       node.style.cssText = `position:absolute;left:${left}px;top:${top}px;max-width:150px;text-align:center;transform:translate(-50%,-50%);font:900 ${plan.type === 'skip' ? 30 : 19}px/1.1 'Trebuchet MS',sans-serif;letter-spacing:.06em;color:${plan.color};text-shadow:0 3px 0 #13291f,0 0 18px #000;background:#17382fed;border:2px solid currentColor;border-radius:8px;padding:8px 12px;box-shadow:0 8px 25px #0005;`;
       if (!transient(node, isReduced() ? 1800 : 1300)) { return; }
       animate(node, [
@@ -373,5 +387,5 @@
     return { action, setThinking, bubble, renderReceipt, clear, destroy };
   }
 
-  root.CrapeightsEffects = Object.freeze({ STATS_KEY, speechFor, motionPolicy, actionPlan, scoringReceipt, sanitizeStats, readStats, saveStats, recordRound, createController });
+  root.CrapeightsEffects = Object.freeze({ STATS_KEY, speechFor, motionPolicy, actionPlan, stampAnchor, scoringReceipt, sanitizeStats, readStats, saveStats, recordRound, createController });
 })(globalThis);
