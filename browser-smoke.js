@@ -1069,6 +1069,99 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdjack-confirm-modals', 'turdjack.html', {
+      actions: async (page, getDialogCount) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+        const dialogBaseline = getDialogCount();
+
+        await page.evaluate(() => {
+          rules = normalizeRules({ ...rules, decks: 1, allowInsurance: true });
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const p2 = pull('9', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('10', 'C');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 1000;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmNo').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterInsurance = await page.evaluate(() => ({
+          bankroll,
+          insuranceBets: stats.insuranceBets,
+          losses: stats.losses
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `insurance must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterInsurance.bankroll !== 900 || afterInsurance.insuranceBets !== 0 || afterInsurance.losses !== 1) {
+          fail('turdjack-confirm-modals', `declined insurance should lose to dealer BJ, saw ${JSON.stringify(afterInsurance)}`);
+        }
+
+        await page.evaluate(() => {
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('7', 'C');
+          const p2 = pull('K', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('A', 'S');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 900;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterEvenMoney = await page.evaluate(() => ({
+          bankroll,
+          wins: stats.wins,
+          blackjacks: stats.blackjacks,
+          status: ui.statusText.textContent
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `even money must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterEvenMoney.bankroll !== 1000 || afterEvenMoney.wins !== 1 || afterEvenMoney.blackjacks !== 1
+          || !afterEvenMoney.status.includes('Even money')) {
+          fail('turdjack-confirm-modals', `even money accept payout wrong: ${JSON.stringify(afterEvenMoney)}`);
+        }
+
+        await page.locator('#resetStatsBtn').click();
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForTimeout(300);
+        const afterReset = await page.evaluate(() => ({
+          bankroll,
+          hands: stats.hands,
+          wins: stats.wins
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `reset must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterReset.bankroll !== 1000 || afterReset.hands !== 0 || afterReset.wins !== 0) {
+          fail('turdjack-confirm-modals', `reset accept should zero stats, saw ${JSON.stringify(afterReset)}`);
+        }
+      }
+    });
+
     await runCheck(browser, 'crapeights-mobile', 'crapeights.html', {
       mobile: true,
       actions: async (page, getDialogCount) => {
