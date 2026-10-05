@@ -127,6 +127,79 @@ body[data-suite-back="top"] .suite-back-pill {
   .suite-back-pill:active { transform: none; }
 }
 
+/* ---------- Back pill layout reserve (integration / xfix) ----------
+   Top-left pill must not cover titles or HUD chips. Reserve horizontal space
+   in page chrome when the pill is pinned top (≤520px or data-suite-back=top). */
+@media (max-width: 520px) {
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill) {
+    --suite-back-reserve-x: calc(max(8px, calc(var(--suite-safe-left) + 6px)) + 44px + 10px);
+  }
+  body[data-suite-no-bg="1"]:not([data-suite-back="bottom"]):has(.suite-back-pill) #playShell .hud {
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.brand-kicker) .topbar > div:first-child {
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.title-group) .topbar {
+    padding-top: calc(max(8px, calc(var(--suite-safe-top) + 4px)) + 44px + 4px);
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.title-group) .status {
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.title-group) .table {
+    padding-left: max(4px, calc(var(--suite-back-reserve-x) - 12px));
+  }
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.hud .card-stat) .topbar > div:first-child,
+  body:not([data-suite-back="bottom"]):has(.suite-back-pill):has(.hud .card-stat) .hud {
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body.board-focus:not([data-suite-back="bottom"]):has(.suite-back-pill) .topbar {
+    padding-left: var(--suite-back-reserve-x);
+  }
+  body.board-focus:not([data-suite-back="bottom"]):has(.suite-back-pill) .topbar h1 {
+    margin-left: 0;
+  }
+}
+body[data-suite-back="top"]:has(.suite-back-pill) {
+  --suite-back-reserve-x: calc(max(8px, calc(var(--suite-safe-left) + 6px)) + 44px + 10px);
+}
+
+@media (min-width: 521px) {
+  body:not([data-suite-back="top"]):has(.suite-back-pill):has(.hud .card-stat) .table-pit-rail.desktop-controls {
+    margin-left: calc(max(10px, calc(var(--suite-safe-left) + 8px)) + 44px + 8px);
+  }
+}
+
+@media (max-width: 920px) {
+  /* TurdSpades pins the pill top on narrow felt layout (before shared 520px rule). */
+  body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .topbar .title .club-label,
+  body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .topbar .title h1 {
+    margin-left: calc(max(6px, calc(var(--suite-safe-left) + 4px)) + 44px + 10px);
+  }
+  body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill {
+    top: max(6px, calc(var(--suite-safe-top) + 4px));
+    bottom: auto !important;
+    left: max(6px, calc(var(--suite-safe-left) + 4px));
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
+    letter-spacing: 0;
+  }
+  body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .suite-back-pill-label {
+    display: none;
+  }
+  body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .arrow {
+    font-size: 18px;
+    line-height: 1;
+    opacity: 1;
+  }
+}
+
 /* ---------- Toast (small floating message) ---------- */
 .suite-toast {
   position: fixed;
