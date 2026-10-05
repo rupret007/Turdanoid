@@ -709,6 +709,18 @@
     .ts-bagwarn.alarm{border-color:rgba(255,90,90,.8);background:linear-gradient(180deg,rgba(255,90,90,.25),rgba(255,90,90,.08)),rgba(50,12,12,.92);color:#ffe2e2;box-shadow:0 0 0 1px rgba(255,80,80,.3),0 0 24px rgba(255,80,80,.38),0 8px 22px rgba(0,0,0,.45);animation:tsBlink 1s infinite}
     @keyframes tsBlink{0%,100%{opacity:1}50%{opacity:.55}}
 
+    .ts-sweep-layer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+    .ts-sweep-card{position:absolute;padding:6px 10px;border-radius:8px;font:800 .72rem 'Trebuchet MS',sans-serif;color:#06281a;background:linear-gradient(180deg,#fff,#e8f5ec);box-shadow:0 8px 18px rgba(0,0,0,.45);transform:translate(0,0) scale(1);opacity:1;will-change:transform,opacity}
+    .ts-fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+    .table.ts-spades-flash{animation:tsSpadesFlash .85s ease-out}
+    .table.ts-spades-lit{box-shadow:var(--suite-rail),inset 0 0 0 2px rgba(150,190,255,.55),inset 0 0 70px rgba(0,0,0,.35)}
+    @keyframes tsSpadesFlash{0%{filter:brightness(1)}35%{filter:brightness(1.35)}100%{filter:brightness(1)}}
+    .ts-bot-hint{position:fixed;left:50%;bottom:max(118px,env(safe-area-inset-bottom) + 108px);transform:translateX(-50%) translateY(8px);z-index:9996;max-width:min(92vw,420px);padding:10px 14px;border-radius:12px;font:600 .78rem/1.4 'Trebuchet MS',sans-serif;color:#eff9f1;background:rgba(8,22,18,.92);border:1px solid rgba(158,255,200,.45);box-shadow:0 12px 28px rgba(0,0,0,.45);opacity:0;transition:opacity .2s ease,transform .22s ease;pointer-events:none;text-align:center}
+    .ts-bot-hint.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .bid-contract{grid-column:1/-1;justify-self:center;font-size:.68rem;color:#ffe9bf;letter-spacing:.06em;text-transform:uppercase;padding:2px 0 0}
+    .bid-contract strong{color:var(--gold-2)}
+    @media (prefers-reduced-motion:reduce){.table.ts-spades-flash{animation:none}.ts-sweep-card{transition:none!important}}
+
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
@@ -755,7 +767,7 @@
       <div class="stat"><div class="k">Bids/Tricks</div><div class="v" id="bidTrickV">-</div></div>
     </div>
 
-    <div class="message" id="msg">Set your bid to start the hand.</div>
+    <div class="message" id="msg" role="status" aria-live="polite">Set your bid to start the hand.</div>
 
     <div class="table" data-motto="Bag Patrol is watching, unfortunately">
       <div class="zone seat-north">
@@ -789,6 +801,7 @@
     <div class="dock">
       <div class="bid-box" id="bidBox">
         <div class="name">Your Bid</div>
+        <div class="bid-contract" id="bidContractPreview" aria-hidden="true"></div>
         <div class="bid-controls">
           <button class="btn" id="bidDown">-</button>
           <div class="bid-v" id="bidV">4</div>
@@ -826,6 +839,10 @@
     let focusSuspendedPlay = false;
     const AI_TURN_MS = 400;
 
+    function tsEvent(name, detail) {
+      try { window.dispatchEvent(new CustomEvent('turdspades:' + name, { detail: detail || {} })); } catch (e) {}
+    }
+
     function clearAiTimer() {
       if (aiTurnTimeoutId !== null) {
         clearTimeout(aiTurnTimeoutId);
@@ -848,6 +865,16 @@
         const player = state.currentPlayer;
         const card = aiCard(player);
         if (!card) { render(); return; }
+        let nilCover = false;
+        try {
+          const partner = partnerOf(player);
+          const cover = pickNilCoverCard(legalCards(player), partner);
+          nilCover = cover && cover.id === card.id;
+        } catch (e) {}
+        try {
+          const hint = window.__tsExplainAi ? window.__tsExplainAi(player, card, { nilCover }) : '';
+          if (hint) tsEvent('bot-hint', { text: hint });
+        } catch (e) {}
         removeCard(player, card.id);
         playCard(player, card);
         render();
@@ -887,6 +914,7 @@
       bidV: document.getElementById('bidV'), bidDown: document.getElementById('bidDown'),
       bidUp: document.getElementById('bidUp'), bidNil: document.getElementById('bidNil'),
       lockBid: document.getElementById('lockBid'),
+      bidContractPreview: document.getElementById('bidContractPreview'),
       playBtn: document.getElementById('playBtn'), sortSuit: document.getElementById('sortSuit'),
       sortRank: document.getElementById('sortRank'), nextRoundTop: document.getElementById('nextRoundTop'),
       nextRoundDock: document.getElementById('nextRoundDock'), newMatchBtn: document.getElementById('newMatchBtn'),
@@ -1203,13 +1231,22 @@
 
     function playCard(player, card) {
       const lead = state.trick.length ? state.trick[0].card.suit : null;
+      const wasBroken = state.spadesBroken;
       if (!state.spadesBroken && card.suit === 'S') {
         if (lead) state.spadesBroken = true;
         else if (!state.hands[player].some((c) => c.id !== card.id && c.suit !== 'S')) state.spadesBroken = true;
       }
       state.trick.push({ player, card });
+      tsEvent('card-played', { player, card });
+      if (state.spadesBroken && !wasBroken) tsEvent('spades-broken', {});
       if (state.trick.length < 4) { state.currentPlayer = (player + 1) % 4; return; }
       const win = winnerEntry(state.trick);
+      const completedTrick = state.trick.map((e) => ({
+        player: e.player,
+        playerName: NAMES[e.player],
+        card: e.card
+      }));
+      tsEvent('trick-complete', { winner: win.player, trick: completedTrick });
       state.tricks[win.player] += 1;
       const trickText = state.trick.map((e) => `${NAMES[e.player]} ${cardText(e.card)}`).join(' | ');
       state.trick = [];
@@ -1240,7 +1277,10 @@
             ? `${NAMES[nil.player]} made NIL (+100)`
             : `${NAMES[nil.player]} missed NIL with ${nil.tricks} trick${nil.tricks === 1 ? '' : 's'} (-100)`);
         }
-        if (result.bagPenalties) details.push(`${result.bagPenalties * 10}-bag penalty (-${result.bagPenalties * 100})`);
+        if (result.bagPenalties) {
+          details.push(`${result.bagPenalties * 10}-bag penalty (-${result.bagPenalties * 100})`);
+          if (t === 0) tsEvent('bag-penalty', { team: t, penalties: result.bagPenalties });
+        }
         details.push(`round total ${result.delta >= 0 ? '+' : ''}${result.delta}`);
         line.push(`${details.join('; ')}.`);
       }
@@ -1249,6 +1289,9 @@
       const teamBReached = state.scores[1] >= TARGET;
       const tiedAtOrAboveTarget = teamAReached && teamBReached && state.scores[0] === state.scores[1];
       state.phase = (teamAReached || teamBReached) && !tiedAtOrAboveTarget ? 'matchEnd' : 'roundEnd';
+      if (state.phase === 'matchEnd') {
+        tsEvent('match-end', { won: state.scores[0] > state.scores[1] });
+      }
       const winner = state.scores[0] > state.scores[1] ? 'You + North win the match.' : 'West + East win the match.';
       const status = state.phase === 'matchEnd'
         ? `Match complete. ${winner}`
@@ -1352,6 +1395,19 @@
       el.bidNil.disabled = !bidMode;
       el.bidNil.setAttribute('aria-pressed', String(bidMode && state.bidChoice === 0));
       el.lockBid.disabled = !bidMode;
+      if (el.bidContractPreview) {
+        if (bidMode) {
+          const northBid = state.bids[2];
+          const preview = northBid === null
+            ? 'Partner bid pending'
+            : `Team contract preview: <strong>${(state.bidChoice === 0 ? 0 : state.bidChoice) + (northBid === 0 ? 0 : northBid || 0)}</strong> tricks + bags drama`;
+          el.bidContractPreview.innerHTML = preview;
+          el.bidContractPreview.setAttribute('aria-hidden', 'false');
+        } else {
+          el.bidContractPreview.textContent = '';
+          el.bidContractPreview.setAttribute('aria-hidden', 'true');
+        }
+      }
       el.playBtn.disabled = !playMode || !state.selected;
       el.nextRoundTop.disabled = !nextMode;
       el.nextRoundDock.disabled = !nextMode;
@@ -1465,8 +1521,8 @@
         state.selected = (state.selected === btn.dataset.id) ? null : btn.dataset.id;
         render();
       });
-      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); render(); });
-      el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); render(); });
+      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); tsEvent('bid-tick'); render(); });
+      el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); tsEvent('bid-tick'); render(); });
       el.bidNil.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
         state.bidChoice = 0;
@@ -1476,6 +1532,7 @@
       el.lockBid.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
         state.bids[0] = state.bidChoice;
+        tsEvent('bid-locked', { nil: state.bidChoice === 0, bid: state.bidChoice });
         state.bidTurn = (state.bidTurn + 1) % 4;
         runBidFlow();
         render();
@@ -1520,7 +1577,10 @@
     if (!restoredTable) startMatch();
     const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('turdspades.html'));
     if (!skipGuide) openGuide();
-  
+
+    if (!/jsdom/i.test(navigator.userAgent)) {
+      import('./games/turdspades-client.js').catch(function () {});
+    }
 
 // ============================================================
 // === TurdSpades partner mascot + bag warning ================
@@ -1571,8 +1631,8 @@
     try {
       // Pull team bags from state if available
       if (typeof state === 'undefined') return;
-      const us = state.bagsUs ?? state.bags ?? state.usBags ?? null;
-      const them = state.bagsThem ?? state.themBags ?? null;
+      const us = Array.isArray(state.bags) ? state.bags[0] : null;
+      const them = Array.isArray(state.bags) ? state.bags[1] : null;
       let html = '';
       let alarm = false;
       const tier = (n) => n >= 9 ? '🚨' : n >= 7 ? '⚠️' : null;

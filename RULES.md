@@ -320,6 +320,12 @@ Partnership Spades trick-taking game against two CPU opponents.
 4. Use the lowest winning card when the team still needs tricks
 5. Shed low cards when the contract is safe and trump when void if a trick is needed
 
+### Presentation (1000x lane)
+
+- WebAudio synth for card play, trick wins, spades broken, bids, bag penalties, and match end (respects `turdsuite_muted`; unlocks after first tap/key)
+- Trick cards sweep toward the winner; spades broken triggers a felt pulse (animations respect `prefers-reduced-motion`)
+- Bots briefly explain their line (Nil duck, cover, chase, slough) in an on-table hint bar
+
 ---
 
 ## Shared Utilities
