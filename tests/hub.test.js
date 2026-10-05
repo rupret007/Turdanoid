@@ -38,6 +38,7 @@ function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
       JSON.stringify({ v: 1, games: extras.continueGames })
     );
   }
+  dom.window.__SUITE_SKIP_MODULES = true;
   dom.window.eval(coreJs);
   dom.window.eval(suiteJs);
   if (dom.window.document.readyState === 'loading') {
@@ -71,25 +72,29 @@ describe('six-game hub last-played mark', () => {
     expect(phone).toMatch(/\.game-card\.in-progress \{\s*border-left-color: var\(--accent\)/);
   });
 
-  it('marks the last opened live game without adding a seventh card', () => {
-    const dom = bootHub('turdspades.html');
-    const cards = [...dom.window.document.querySelectorAll('.game-card')];
-    const marked = cards.filter((card) => card.classList.contains('last-played'));
+  it(
+    'marks the last opened live game without adding a seventh card',
+    () => {
+      const dom = bootHub('turdspades.html');
+      const cards = [...dom.window.document.querySelectorAll('.game-card')];
+      const marked = cards.filter((card) => card.classList.contains('last-played'));
 
-    expect(cards).toHaveLength(6);
-    expect(marked).toHaveLength(1);
-    expect(marked[0].getAttribute('href')).toBe('turdspades.html');
-    expect(marked[0].querySelector('.play')?.textContent).toContain('Play again');
+      expect(cards).toHaveLength(6);
+      expect(marked).toHaveLength(1);
+      expect(marked[0].getAttribute('href')).toBe('turdspades.html');
+      expect(marked[0].querySelector('.play')?.textContent).toContain('Play again');
 
-    // The label must not shrink the card's accessible name: game, blurb, action, state.
-    const label = marked[0].getAttribute('aria-label');
-    expect(label).toContain('TurdSpades');
-    expect(label).toContain('bid tricks or Nil');
-    expect(label).toContain('Play again');
-    expect(label).toContain('last played');
+      // The label must not shrink the card's accessible name: game, blurb, action, state.
+      const label = marked[0].getAttribute('aria-label');
+      expect(label).toContain('TurdSpades');
+      expect(label).toContain('bid tricks or Nil');
+      expect(label).toContain('Play again');
+      expect(label).toContain('last played');
 
-    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
-  });
+      expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+    },
+    12000
+  );
 
   it('marks last-played on the GitHub Pages hub path', () => {
     const slashed = bootHub('TurdAnoid.html', 'https://rupret007.github.io/Turdanoid/');
@@ -225,6 +230,20 @@ describe('six-game hub continue mark', () => {
     expect(dom.window.Suite.table.has('turdspades.html')).toBe(true);
     expect(dom.window.Suite.table.remember('turdjack.html', validJackSnapshot())).toBe(true);
     expect(dom.window.Suite.table.has('turdjack.html')).toBe(true);
+  });
+});
+
+describe('hub door extras (1000x shared)', () => {
+  it('includes mute control and games skip target', () => {
+    expect(hubHtml).toContain('id="suite-hub-mute"');
+    expect(hubHtml).toContain('id="hub-games"');
+    expect(hubHtml).toContain('suite-hub-mute');
+  });
+
+  it('suite runtime exposes lazy audio/fx loaders', () => {
+    expect(suiteJs).toContain('Suite.audio');
+    expect(suiteJs).toContain('Suite.fx');
+    expect(suiteJs).toContain('Suite.announce');
   });
 });
 

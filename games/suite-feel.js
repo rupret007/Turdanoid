@@ -105,3 +105,13 @@ export function tryLightHaptic(pattern = 8) {
     /* ignore */
   }
 }
+
+/** @param {(query: string) => { matches: boolean } | null | undefined} matchMedia */
+export function prefersReducedMotion(matchMedia) {
+  try {
+    const mq = matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+    return !!(mq && mq.matches);
+  } catch {
+    return false;
+  }
+}
