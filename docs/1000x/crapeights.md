@@ -123,3 +123,24 @@ The fixed shared Hub pill can cover a small part of the lower-left hand/control 
 - [390px opening](crapeights-autoplay/390-opening.png) and [desktop opening](crapeights-autoplay/1280-opening.png)
 - [320px final table](crapeights-autoplay/spot-final-320.png) and [800px-high desktop](crapeights-autoplay/spot-final-1280.png)
 - [Round scoring receipt](crapeights-autoplay/390-round-2-receipt.png) and [full autoplay report](crapeights-autoplay/report.json)
+
+# Round 3 — quality, playtest and finish
+
+## Honest finishing audit
+
+Re-read the round-0 audit, current live page, local presentation/AI/save modules, existing autoplay, fixtures and smoke contracts. Gameplay, the seated table, opponents, receipts, difficulty levels and old-save coverage are in place. The remaining risk is interaction quality across complete real rounds, especially the short 320px phone: the previous harness only ran 390px and a taller desktop, used Smart almost exclusively, and took few screenshots. Continue was tested separately rather than during endurance play. Keyboard controls exist but a complete keyboard-only round needs proof. Card selection, passing and utility actions lack distinct immediate audio feedback. The current 320ms flights are within target but can be tighter; live switching to reduced motion also needs to finish the receipt counter immediately. The results announcement currently lives behind the modal's inert background. Desktop composition and small-phone card/overlay spacing require fresh screenshot inspection. No scoring, AI fairness, existing stats format or snapshot changes are warranted.
+
+## Round 3 targets
+
+- [ ] Extend foreground real-UI autoplay to 390×844, 320×640, 1280×800, reduced motion and a keyboard-only complete round; mix legal-card taps, Smart and Draw/Pass.
+- [ ] Detect console errors, 10-second stalled turns, overlays that fail to dismiss, horizontal scroll, inaccessible cards; capture screenshots every few turns.
+- [ ] Exercise Hub/Continue mid-round and verify exact restored table plus an accepted action.
+- [ ] Inspect fresh screenshots and fix cramped, clipped, misaligned or low-contrast presentation.
+- [ ] Confirm exact b3821b4 fixture fidelity through the live page, continued action and unchanged legacy/new stats key formats.
+- [ ] Tighten flights and input feedback, retain readable bot pacing, and make reduced-motion effects instant.
+- [ ] Verify full-round keyboard play, visible focus, bot announcements and non-inert round-result announcements.
+- [ ] Run required full Vitest, lint and Chromium smoke at 8154; record final evidence and commit locally after each logical chunk.
+
+## Round 3 scope / Needs shared change
+
+This explicitly requested lane document and autoplay script are authorized exceptions to the initial owned-file list. The absolute hard rule to work only in this checkout takes precedence over the requested external artifact directory: round-3 evidence goes in `docs/1000x/crapeights-autoplay-r3/`. The conductor must copy it to `/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/r3/crapeights-autoplay/`. The required external audit was read only. Existing shared Hub-pill overlap and out-of-lane lint warnings will be rechecked, not changed in this lane.
