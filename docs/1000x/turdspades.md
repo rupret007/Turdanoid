@@ -21,6 +21,28 @@ Round-0 audit baseline: partnership Spades with Nil/bags, table continue, paced 
 
 ## Checklist
 
+### Round 4 audit and targets
+
+The round 3 horizontal-scroll checks were insufficient: overflow clipping hid the rightmost cards, and the phone table remained a long stack of panels. The 390 screenshot also shows the mascot covering the hand and the Hub pill covering a dock control. Desktop art is usable, but the phone composition needs rebuilding rather than more overflow clamps.
+
+| Area | Round 4 starting assessment |
+|------|----------------------------|
+| Gameplay / AI / saves | Preserve the shipped bidding, trick resolution, scoring, bot decisions and v:1 continue contract. The optional client currently reads an unexported global state; enabling that globally would also change AI behavior, outside this round's scope. |
+| Feel / graphics | Seat panels dominate the phone; consolidate them into one felt surface with small avatars and a directional trick. |
+| Animation / audio | Existing gesture-unlocked, mute-aware synthesized audio and reduced-motion FX remain; hand selection must lift without clipping. |
+| HUD / onboarding | Full-width header controls and duplicate status consume the play area. Put secondary actions in a table menu; keep score, turn, legal-play guidance visible. |
+| Mobile / touch | Fixed card overlap fails with 13 cards. Compute a bounded fan with readable indices and two staggered rows as needed. Reserve actual layout space for the dock. |
+| Accessibility | Preserve keyboard/button contracts, label cards and expose selection. Keep touch surfaces at least 44px high; show legal and illegal cards distinctly. |
+| Performance | Compute geometry on render/resize only. No animation loop, runtime network assets or new dependencies. |
+
+- [ ] One compact four-seat felt at 390×844 and 320×640; play page fits the viewport.
+- [ ] Width-aware 13-card hand; selected lift, legal glow, dimmed illegal cards, reachable exposed hit areas.
+- [ ] Phone mascot and floating Hub cannot cover cards or buttons.
+- [ ] Compact bid controls and round receipt fit both phone widths.
+- [ ] Preserve smoke selectors, scoring, AI behavior and continue snapshots.
+- [ ] Playwright screenshots for bidding, mid-trick and receipt at 390×844, 320×640 and 1280×800; geometry and hit-testing assertions.
+- [ ] Full unit/browser tests, lint and required smoke pass; local commits only.
+
 ### Round 1 (done)
 - [x] WebAudio SFX module (card, trick, spades broken, bid, bag, match) + mute + gesture unlock
 - [x] Trick sweep animation to trick winner (skip when `prefers-reduced-motion`)
