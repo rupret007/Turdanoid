@@ -324,6 +324,14 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 ## Shared Utilities
 
+### Suite modules (hub + opt-in games)
+
+- **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill, continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
+- **`assets/suite-audio.js`** — WebAudio preset bank; honours mute; no new storage keys.
+- **`assets/suite-fx.js`** — screen shake, flash, confetti; respects `prefers-reduced-motion`.
+- **`assets/suite-a11y.js`** — skip link + `aria-live` announcer.
+- **`assets/suite-hub-stats.js`** — read-only stat chips on hub cards from existing score/bankroll keys.
+
 ### Card Representations
 
 - **Ranks**: A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K

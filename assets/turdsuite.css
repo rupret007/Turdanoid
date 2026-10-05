@@ -324,3 +324,149 @@ html.suite-locked, html.suite-locked body {
 @media (prefers-reduced-motion: reduce) {
   .suite-playable-pulse { animation: none; }
 }
+
+/* ---------- Accessibility: skip link + live region ---------- */
+.suite-skip-link {
+  position: absolute;
+  left: max(12px, var(--suite-safe-left));
+  top: max(8px, var(--suite-safe-top));
+  z-index: 10003;
+  padding: 10px 14px;
+  font: 700 13px/1.2 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  color: #08221a;
+  background: var(--suite-accent);
+  border-radius: 8px;
+  text-decoration: none;
+  transform: translateY(-140%);
+  transition: transform 0.2s ease;
+}
+.suite-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.suite-live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Hub door controls ---------- */
+.suite-hub-mute {
+  margin: 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font: 700 0.76rem/1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  color: var(--suite-ink);
+  background: rgba(8, 22, 18, 0.72);
+  border: 1px solid var(--suite-edge);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  -webkit-tap-highlight-color: transparent;
+}
+.suite-hub-mute:hover,
+.suite-hub-mute:focus-visible {
+  border-color: rgba(158, 255, 200, 0.65);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(158, 255, 200, 0.25);
+}
+.suite-hub-stat {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffe4af;
+  background: rgba(8, 16, 30, 0.78);
+  border: 1px solid rgba(255, 223, 151, 0.35);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- FX layer (Suite.fx) ---------- */
+@keyframes suiteShake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(calc(var(--suite-shake-px, 4px) * -1), 0, 0); }
+  40% { transform: translate3d(var(--suite-shake-px, 4px), 0, 0); }
+  60% { transform: translate3d(calc(var(--suite-shake-px, 4px) * -0.6), 0, 0); }
+  80% { transform: translate3d(calc(var(--suite-shake-px, 4px) * 0.6), 0, 0); }
+}
+.suite-shake { animation: suiteShake 0.28s ease-out; }
+.suite-fx-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease-out;
+}
+.suite-fx-flash.show { opacity: 1; }
+.suite-fx-confetti-host {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  overflow: hidden;
+}
+@keyframes suiteConfettiPop {
+  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 1; }
+  100% { transform: translate3d(var(--dx, 0), var(--dy, -40px), 0) scale(1); opacity: 0; }
+}
+.suite-fx-confetti-bit {
+  position: absolute;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: suiteConfettiPop 0.75s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .suite-shake { animation: none; }
+  .suite-fx-confetti-bit { animation: none; opacity: 0; }
+}
+
+/* ---------- Playing cards (shared across table games) ---------- */
+button.card,
+.playing-card {
+  outline: none;
+}
+button.card:focus-visible,
+.playing-card:focus-visible {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 0 4px rgba(158, 255, 200, 0.55),
+    var(--suite-card-shadow, 0 10px 18px rgba(0, 0, 0, 0.36));
+}
+button.card .card-index-rank,
+button.card .card-index-suit {
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+button.card.red .card-index-rank,
+button.card.red .card-index-suit {
+  color: var(--suite-card-red, #c8252c);
+}
+button.card:not(.red) .card-index-rank,
+button.card:not(.red) .card-index-suit {
+  color: var(--suite-card-black, #1f2528);
+}
+@media (max-width: 680px) {
+  button.card .card-index-rank {
+    font-size: 1.05em;
+  }
+  button.card .card-index-suit {
+    font-size: 1.08em;
+  }
+}

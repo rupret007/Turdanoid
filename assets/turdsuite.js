@@ -125,6 +125,64 @@
     return arr[Math.floor(Math.random() * arr.length)];
   };
 
+  let announcer = null;
+  function suiteImport(spec) {
+    try {
+      if (typeof window !== 'undefined' && window.__SUITE_SKIP_MODULES) {
+        return Promise.resolve(null);
+      }
+      return import(spec);
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+  }
+
+  Suite.announce = function (msg, politeness) {
+    try {
+      if (!announcer) {
+        suiteImport('./suite-a11y.js').then(function (m) {
+          if (!m) return;
+          announcer = m.createAnnouncer(document);
+          announcer.announce(msg, politeness);
+        }).catch(function () {});
+        return;
+      }
+      announcer.announce(msg, politeness);
+    } catch (e) {}
+  };
+
+  let audioEngine = null;
+  let audioPromise = null;
+  Suite.audio = function () {
+    if (audioEngine) return Promise.resolve(audioEngine);
+    if (!audioPromise) {
+      audioPromise = suiteImport('./suite-audio.js').then(function (m) {
+        if (!m) return null;
+        audioEngine = m.createSuiteAudio({
+          isMuted: function () { return muted; },
+          getContext: ctx,
+          masterVolume: 1
+        });
+        return audioEngine;
+      }).catch(function () { return null; });
+    }
+    return audioPromise;
+  };
+
+  let fxEngine = null;
+  let fxPromise = null;
+  Suite.fx = function () {
+    if (fxEngine) return Promise.resolve(fxEngine);
+    if (!fxPromise) {
+      fxPromise = suiteImport('./suite-fx.js').then(function (m) {
+        if (!m) return null;
+        fxEngine = m.createSuiteFX(document.body);
+        return fxEngine;
+      }).catch(function () { return null; });
+    }
+    return fxPromise;
+  };
+
   /** Quick pop on a stat tile or score chip after a score change. */
   Suite.bump = function (el) {
     if (!el || !el.classList) return;
@@ -307,6 +365,35 @@
   // table waiting. The static "no sign-in" badge reassures first-timers; a
   // player who already has a live table is better served by the shortcut.
   // Reads the same validated continue list the cards use; writes no storage.
+  function wireHubMuteToggle() {
+    try {
+      const btn = document.getElementById('suite-hub-mute');
+      if (!btn) return;
+      function sync() {
+        const on = muted;
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.setAttribute('aria-label', on ? 'Unmute suite sounds' : 'Mute suite sounds');
+        btn.textContent = on ? '🔇 Sound off' : '🔊 Sound on';
+      }
+      sync();
+      btn.addEventListener('click', function () {
+        Suite.setMuted(!muted);
+        sync();
+        if (!muted) {
+          ctx();
+          Suite.beep(520, 0.05, 'triangle', 0.04);
+        }
+      });
+    } catch (e) {}
+  }
+
+  function enhanceHubDoor() {
+    if (!isSuiteHubPage(currentPageName())) return;
+    try {
+      wireHubMuteToggle();
+    } catch (e) {}
+  }
+
   function markHubResume(continuing, last) {
     const badge = document.querySelector('.hero-badge');
     if (!badge || badge.classList.contains('hero-resume')) return;
@@ -332,6 +419,7 @@
     preventDoubleTapZoom();
     recordLastGame();
     markHubProgress();
+    enhanceHubDoor();
     // unlock audio context on first interaction
     const unlock = function () {
       ctx();
