@@ -1,9 +1,17 @@
+/**
+ * @vitest-environment node
+ *
+ * Every case boots the live page in its own JSDOM window (see boot()). The suite's global jsdom
+ * environment is not used, and the per-test timeout covers the JSDOM boot under parallel load.
+ */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 30000 });
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'turdrummy.html'), 'utf8');

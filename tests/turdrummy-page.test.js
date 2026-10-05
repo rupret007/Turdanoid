@@ -1,9 +1,18 @@
+/**
+ * @vitest-environment node
+ *
+ * Boots the live page in its own JSDOM window per case, so it does not need vitest's
+ * global jsdom environment (that setup costs time on every file in the suite).
+ */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// Each case boots the whole page in JSDOM; under the parallel full-suite run that can exceed vitest's 5s default.
+vi.setConfig({ testTimeout: 30000 });
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'turdrummy.html'), 'utf8');
