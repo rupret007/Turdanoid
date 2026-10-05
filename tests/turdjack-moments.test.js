@@ -21,4 +21,9 @@ describe('turdjack-moments', () => {
     expect(tableEdgeStreakLabel(3, 0)).toContain('Heater');
     expect(tableEdgeStreakLabel(0, 4)).toContain('Cold');
   });
+
+  it('covers split and double banners', () => {
+    expect(momentBannerCopy('split')).toContain('SPLIT');
+    expect(momentBannerCopy('double')).toContain('DOUBLE');
+  });
 });

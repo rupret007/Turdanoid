@@ -91,11 +91,7 @@ async function tapLegalAction(page, viewportId) {
   if (!state.roundActive) {
     if ((state.currentBet || 0) < 10) {
       if (mobile) {
-        await page.evaluate(() => {
-          const extra = document.querySelector('.mobile-pit-extra');
-          if (extra) extra.open = true;
-        });
-        const chip = page.locator('#mobilePit [data-chip="10"]');
+        const chip = page.locator('#mobileFeltChipRack [data-chip="10"], #mobilePit [data-chip="10"]').first();
         await chip.click({ timeout: 5000 }).catch(async () => {
           await page.evaluate(() => {
             if (typeof addBet === 'function') addBet(10);

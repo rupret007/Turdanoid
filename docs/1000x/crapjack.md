@@ -1,70 +1,69 @@
 # Crapjack 21 — Turdanoid 1000x (lane: crapjack)
 
-Round 3 implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
+Round 4 (final) implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
 
-## Honest audit (round 3)
+## Honest audit (round 4)
 
 ### Gameplay
-- **Strong:** Full blackjack + coach/Smart unchanged; dealer now draws with paced steps instead of an instant batch.
-- **Weak:** Streak bonus wrapper in the page enhancement layer still keys off status heuristics.
+- **Strong:** Full blackjack, coach/Smart, continue snapshots, dev scenarios for QA moments unchanged in rules/scoring.
+- **Weak:** Insurance still uses native `confirm` (acceptable; dev hook bypasses for localhost QA only).
 
 ### Feel
-- **Strong:** Deal flights tightened to ~180–320ms; dealer reveal ~520ms; per-hit delay ~340ms (0 under reduced motion).
-- **Weak:** Very long dealer shoes can still feel slow when the dealer hits many times.
+- **Strong:** Dealer one-card pacing (~340ms/hit, instant under reduced motion); celebration banners capped at 1.2s and tap-to-skip.
+- **Weak:** Long dealer hit sequences on soft-17 tables still take wall-clock time (by design).
 
 ### Graphics / art
-- **Strong:** Table-first desktop; mobile pit boss mascot hidden ≤980px so action buttons stay clear.
-- **Weak:** Shared Hub pill overlap at 320px (shared lane); shared card face caps.
+- **Strong:** Desktop short-viewport layout locks table + chip rack + compact pit bar in one screen; mobile felt chip rack above pit between hands.
+- **Weak:** Shared card face caps (shared lane); hub pill at 320px (shared lane).
 
 ### Animation
-- **Strong:** Hole suspense, chip settlement, moments unchanged; reduced motion instant paths preserved.
+- **Strong:** Split/double action banners; moment UI module with dismiss; reduced-motion paths preserved.
 
 ### Audio
-- **Strong:** Drumroll/fanfare + per-hit card SFX on dealer draws.
+- **Strong:** Existing WebAudio bank; fanfare/bust/chip on moments.
 
 ### HUD / UI
-- **Strong:** Focus-visible rings on pit controls; intel drawer unchanged.
-- **Weak:** HUD stat grid still dense at 320px (vertical scroll only).
+- **Strong:** Desktop pit toolbar (Deal–Surrender) + overflow for Clear/Max/Rebet; `data-phase` toggles mobile felt chips.
+- **Weak:** HUD still scrolls vertically on very short phones (320×640) — acceptable per prior rounds.
 
 ### Mobile / touch
-- **Strong:** Autoplay harness opens **Bet Tools** before chip taps; Smart/Deal grid unobstructed.
-- **Weak:** Bet chips live inside `<details>` on mobile (extra tap).
+- **Strong:** `#mobileFeltChipRack` (4 chips) visible when betting; Bet Tools keeps Rebet/Max without duplicate chips.
+- **Weak:** Chip labels hidden on felt rack (aria-labels present).
 
 ### Accessibility
-- **Strong:** `jackLiveRegion` announces dealer reveal/hits and round results; keyboard shortcuts documented in guide.
-- **Weak:** No dedicated vitest for a full keyboard-only round (covered by browser-smoke + manual key map).
+- **Strong:** Moment banner is focusable and dismissible; live region + focus-visible on pit controls unchanged.
+- **Weak:** No dedicated keyboard-only vitest round (smoke + manual map).
 
 ### Performance
-- **Strong:** No new per-frame DOM loops; dealer pacing uses bounded timeouts.
+- **Strong:** No new per-frame DOM loops; viewport-fit uses flex, not JS layout.
 
 ### Onboarding
-- **Strong:** Welcome guide + Quick Start unchanged.
+- **Strong:** Welcome guide unchanged; dev hook dismisses guide on localhost.
 
 ### AI / coach
 - **Strong:** Smart + hint unchanged.
 
-## Checklist (round 3)
+## Checklist (round 4)
 
 | Target | Status |
 |--------|--------|
-| [x] Round 3 audit + checklist in `docs/1000x/crapjack.md` |
-| [x] `scripts/crapjack-autoplay.mjs` (390×844, 320×640, 1280×800 + reduced motion, Continue) |
-| [x] Autoplay screenshots under `conductor/reviews/turdanoid-1000x/r3/crapjack-autoplay/` |
-| [x] Hide pit-boss mascot/bubble on ≤980px (no overlap with mobile pit) |
-| [x] `tests/turdjack-continue-compat.test.js` (b3821b4 `validJackSnapshot` shape) |
-| [x] `games/turdjack-a11y.js` + dealer live announcements |
-| [x] Snappier deal/reveal timings (`turdjack-deal-anim.js`) |
-| [x] Focus-visible on pit buttons |
-| [x] Unit tests for a11y / continue / deal timing |
-| [ ] Shared Hub pill position at 320px (shared lane) |
+| [x] Round 4 audit + checklist in `docs/1000x/crapjack.md` |
+| [x] Desktop 1280×800 (also 1024×768 / 1440×900 via `max-height: 920px`): table + chips + compact pit, no page scroll mid-hand |
+| [x] Mobile felt chip rack above `#mobilePit` when betting (390 / 320) |
+| [x] `__turdjackDev` localhost hook + `scripts/crapjack-moments-capture.mjs` → `conductor/reviews/turdanoid-1000x/r4/crapjack-moments/` |
+| [x] Moment banners ≤1.2s, skippable by tap; split/double action moments |
+| [x] Dealer paced hits (340ms); reduced motion instant |
+| [x] Unit tests: shoe seed, moment UI, dev scenarios |
+| [x] `npx vitest run` / `npm run lint` / smoke 8153 |
+| [ ] Shared Hub pill at 320px (shared lane) |
 | [ ] Shared `SuiteAudio` / `SuiteFX` (shared lane) |
 | [ ] Shared card face art upgrade (shared CSS) |
 
-## Autoplay findings (round 3)
+## Round 4 QA notes
 
-- **PASS** all six runs (three viewports × motion on/off): 0 console errors, 0 horizontal scroll, Continue restore + post-continue action OK.
-- **Fixed during R3:** Mobile harness must open **Bet Tools** before `[data-chip]` clicks (desktop chips were hidden in the mobile layout).
-- **Visual (320):** Hub back-pill still overlaps the player lane — tracked under shared lane, not modified here.
+- Viewport check (1280×800, active hand): `scrollHeight === clientHeight`, `scrollY === 0`.
+- Moment screenshots: `conductor/reviews/turdanoid-1000x/r4/crapjack-moments/{scenario}-{390|1280}.png`.
+- Autoplay harness uses `#mobileFeltChipRack` first (no Bet Tools open required for chips).
 
 ## Needs shared change
 
@@ -74,4 +73,4 @@ Round 3 implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
 
 ## Save compatibility
 
-No changes to `turdjackBankroll`, `turdjackStats`, `turdjackRules`, `turdjackLastBet`, `turdjackSoundOn_v1`, or continue snapshot `kind: turdjack v:1` fields. New module keys unchanged (`turdjack_practice_v1`, `turdjack_intel_seen_v1`).
+No changes to `turdjackBankroll`, `turdjackStats`, `turdjackRules`, `turdjackLastBet`, `turdjackSoundOn_v1`, or continue snapshot `kind: turdjack v:1` fields. Optional keys unchanged (`turdjack_practice_v1`, `turdjack_intel_seen_v1`).
