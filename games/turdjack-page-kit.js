@@ -24,6 +24,10 @@ import {
   tableEdgeStreakLabel
 } from './turdjack-moments.js';
 import { formatHandTotalBadge, renderTotalBadgeHtml } from './turdjack-totals.js';
+import {
+  chipSettlementKind,
+  shouldAnimateChipSettlement
+} from './turdjack-chip-motion.js';
 
 const PRACTICE_KEY = 'turdjack_practice_v1';
 const INTEL_SEEN_KEY = 'turdjack_intel_seen_v1';
@@ -130,6 +134,21 @@ export function installTurdjackKit(win) {
     chip.style.setProperty('--fly-dy', `${dy}px`);
     betZone.appendChild(chip);
     chip.addEventListener('animationend', () => chip.remove(), { once: true });
+    audio.play('chip');
+  }
+
+  function animateChipSettlement(statusText) {
+    const kind = chipSettlementKind(statusText);
+    if (!shouldAnimateChipSettlement(reducedMotion, kind)) {return;}
+    const zone = doc.getElementById('betCircle');
+    if (!zone) {return;}
+    zone.classList.remove('chips-pay-player', 'chips-sweep-away');
+    void zone.offsetWidth;
+    zone.classList.add(kind === 'pay' ? 'chips-pay-player' : 'chips-sweep-away');
+    if (kind === 'pay') {audio.play('chip');}
+    globalThis.setTimeout(() => {
+      zone.classList.remove('chips-pay-player', 'chips-sweep-away');
+    }, reducedMotion ? 0 : 720);
   }
 
   doc.querySelectorAll('[data-chip]').forEach((btn) => {
@@ -315,6 +334,16 @@ export function installTurdjackKit(win) {
     setTimeout(() => wrap.classList.remove('hand-bust-crumble'), 700);
   }
 
+  function markHoleFlipOnCard(cardEl) {
+    if (reducedMotion || !cardEl) {return;}
+    cardEl.classList.add('hole-flip-reveal');
+    cardEl.addEventListener(
+      'animationend',
+      () => cardEl.classList.remove('hole-flip-reveal'),
+      { once: true }
+    );
+  }
+
   function wireIntelDrawer() {
     const panel = doc.getElementById('intelSlide');
     const toggle = doc.getElementById('intelToggleBtn');
@@ -407,6 +436,9 @@ export function installTurdjackKit(win) {
       if (note.includes('bust') && !note.includes('dealer bust')) {
         bustCrumble(note.includes('hand 2') ? 'split' : 'player');
       }
+      if (moment || chipSettlementKind(text)) {
+        animateChipSettlement(text);
+      }
     } catch {
       /* ignore */
     }
@@ -440,10 +472,22 @@ export function installTurdjackKit(win) {
     dealerRevealBeat,
     onNewRound,
     onSplit,
+    markHoleFlipOnCard,
     isPracticeMode: () => !!win.__turdjackPracticeMode
   };
 
-  return { audio, fx, paintFeltInlay, afterHud, afterStatus, coachHint, dealerRevealBeat, onNewRound, onSplit };
+  return {
+    audio,
+    fx,
+    paintFeltInlay,
+    afterHud,
+    afterStatus,
+    coachHint,
+    dealerRevealBeat,
+    onNewRound,
+    onSplit,
+    markHoleFlipOnCard
+  };
 }
 
 function updateHandMeters(doc, state) {

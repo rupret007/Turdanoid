@@ -63,7 +63,7 @@ Round 2 implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
 | [x] Lint cleanup in owned turdjack modules |
 | [ ] Shared `SuiteAudio` / `SuiteFX` (shared lane) |
 | [ ] Shared card face art upgrade (shared CSS) |
-| [ ] Full dealer-to-player payout chip sweep (future polish) |
+| [x] Chip payout / loss sweep on bet circle (`turdjack-chip-motion.js`) |
 
 ## Needs shared change
 

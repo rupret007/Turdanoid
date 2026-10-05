@@ -10,7 +10,9 @@ export function momentKindFromStatus(statusText) {
   if (t.includes('even money') || (t.includes('blackjack') && !t.includes('dealer'))) {
     return 'blackjack';
   }
-  if (t.includes('insurance') && t.includes('win')) {return 'insurance';}
+  if (t.includes('insurance hit') || (t.includes('insurance') && t.includes('win'))) {
+    return 'insurance';
+  }
   if (t.includes('bust') && !t.includes('dealer bust')) {return 'bust';}
   if (t.includes('push') || t.includes('stalemate')) {return 'push';}
   if (t.includes('beats dealer') || t.includes('dealer bust') || t.includes('paid')) {

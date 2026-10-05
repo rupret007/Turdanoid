@@ -734,6 +734,46 @@
       animation-timing-function: ease-out;
     }
 
+    #dealerCards .playing-card.hole-flip-reveal {
+      animation: holeFlipReveal 0.58s ease-out;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+
+    @keyframes holeFlipReveal {
+      from {
+        transform: perspective(520px) rotateY(92deg) scale(0.88);
+        opacity: 0.25;
+      }
+      to {
+        transform: perspective(520px) rotateY(0deg) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .bet-circle.chips-pay-player .felt-chip {
+      animation: chipsPayPlayer 0.68s cubic-bezier(0.2, 1.1, 0.35, 1) forwards;
+    }
+
+    .bet-circle.chips-sweep-away .felt-chip {
+      animation: chipsSweepAway 0.58s ease-in forwards;
+    }
+
+    @keyframes chipsPayPlayer {
+      to {
+        transform: translateY(calc(var(--stack-i, 0) * -3px - 52px)) translateX(18px) scale(0.55);
+        opacity: 0;
+      }
+    }
+
+    @keyframes chipsSweepAway {
+      to {
+        transform: translateY(calc(var(--stack-i, 0) * -3px + 36px)) scale(0.35);
+        opacity: 0;
+        filter: grayscale(0.85);
+      }
+    }
+
     #dealerCards .playing-card.hole-suspense {
       animation: holeWiggle 0.45s ease infinite;
     }
@@ -1867,6 +1907,52 @@
       }
     }
 
+    @media (max-width: 420px) and (max-height: 900px) {
+      body {
+        padding-bottom: 96px;
+      }
+      .hud {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .card-stat .k { font-size: 0.48rem; }
+      .card-stat .v { font-size: 0.82rem; }
+      .table {
+        min-height: 0;
+        margin-bottom: 6px;
+      }
+      .table-stage {
+        gap: 4px 6px;
+        margin-bottom: 4px;
+      }
+      .discard-tray,
+      .shoe-lane {
+        min-height: 0;
+        width: 52px;
+        font-size: 0.5rem;
+        padding: 4px;
+      }
+      .discard-tray::before {
+        width: 28px;
+        height: 36px;
+      }
+      .status {
+        min-height: 34px;
+        font-size: 0.72rem;
+        padding: 6px 8px;
+      }
+      .hand { padding: 6px 6px 8px; }
+      .hand-title { font-size: 0.72rem; gap: 4px; }
+      .cards { min-height: 82px; }
+      .playing-card { width: 56px; height: 82px; padding: 4px; }
+      .mobile-pit { padding: 6px; }
+      .mobile-pit .btn,
+      .mobile-pit .chip-btn {
+        min-height: 38px;
+        font-size: 0.7rem;
+      }
+    }
+
     @media (max-width: 680px) {
       .shell {
         width: min(760px, 94vw);
@@ -1974,6 +2060,9 @@
       .moment-banner,
       .moment-banner.show,
       .playing-card.deal-from-shoe,
+      #dealerCards .playing-card.hole-flip-reveal,
+      .bet-circle.chips-pay-player .felt-chip,
+      .bet-circle.chips-sweep-away .felt-chip,
       .flying-chip,
       .hand-bust-crumble .playing-card,
       #splitHandWrap.split-slide-in,
@@ -2400,6 +2489,7 @@
     let shoeGeneration = 0;
     let dealerHoleShoeGeneration = null;
     let dealerHoleCountResolved = false;
+    let pendingHoleFlip = false;
     let cutCardsRemaining = 18;
     let shoeDecks = 4;
     let decisionStreak = 0;
@@ -2984,6 +3074,7 @@
         runningCount += hiLoValue(holeCard);
       }
       dealerHoleCountResolved = true;
+      pendingHoleFlip = true;
       return true;
     }
 
@@ -3056,8 +3147,17 @@
 
       dealerHand.forEach((card, i) => {
         const hide = dealerHoleHidden && i === 1;
-        ui.dealerCards.appendChild(createCardElement(card, hide));
+        const el = createCardElement(card, hide);
+        if (i === 1 && pendingHoleFlip && !hide) {
+          if (turdjackKit && turdjackKit.markHoleFlipOnCard) {
+            turdjackKit.markHoleFlipOnCard(el);
+          } else {
+            el.classList.add('hole-flip-reveal');
+          }
+        }
+        ui.dealerCards.appendChild(el);
       });
+      pendingHoleFlip = false;
 
       playerHand.forEach((card) => {
         ui.playerCards.appendChild(createCardElement(card, false));
