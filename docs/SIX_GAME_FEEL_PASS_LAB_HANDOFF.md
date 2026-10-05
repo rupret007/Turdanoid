@@ -54,6 +54,8 @@ and game-specific suites (e.g. `tests/turdrummy-layoff.test.js`, `tests/turdanoi
 
 Record the **exact commit SHA** for this handoff in the PR body after push.
 
+Handoff commit: `74877e3` (update if amended).
+
 ### Browser smoke (`npm run test:smoke`)
 
 CI runs Playwright Chromium on Ubuntu after `npx playwright install --with-deps chromium`.
