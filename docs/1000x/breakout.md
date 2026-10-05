@@ -1,57 +1,50 @@
 # TurdAnoid 1000x — breakout lane
 
-Round 4: in-play visual pop (rendering only; HP/scoring/levels unchanged).
+Round 5 (final QA): power-up/boss readability, desktop theater layout, capture harness.
 
-## Honest audit (round 4)
+## Honest audit (round 5)
 
-| Area | Round-3 | Round-4 focus |
-|------|---------|---------------|
-| Gameplay | Tally, nudge | Unchanged |
-| Feel | Coach, perf caps | Brick chip puff + hit flash; impact rings on all wall hits |
-| Graphics | Title great; **in-play wall flat mint** | Rainbow rows per world; stronger brick bevel; gold/metal read; world wall tint |
-| Animation | Clear party | Ball glow/trail; paddle plunger redesign; brick white flash on hit |
-| Audio | Mute-safe | Unchanged |
-| HUD | Mobile chips | Unchanged |
-| Mobile/touch | HUD drag | Ball/paddle/bricks readability @320–390 |
-| A11y | aria-live | Unchanged |
-| Perf | Device tiers | Sprite cache keyed by color (correctness + no wrong tints) |
+| Area | Round-4 | Round-5 |
+|------|---------|---------|
+| Gameplay | Stable | Unchanged scoring/levels; boss QA hooks only on localhost |
+| Feel | Juice + caps | Unchanged |
+| Graphics | Rainbow wall | Desktop side gutters + height-filled portrait shell @1280 |
+| Power-ups | Capsule art | All types labeled on capsule (`lab`); HUD chips have tooltips; wide layout moves chip column |
+| Boss | Phases + sludge | QA hook sets phase HP; capture script for phases/victory |
+| HUD | Mobile glass | Side panels show classic/boss best on wide screens |
+| Mobile/touch | Unchanged | Phone still full-bleed stage (no letterbox) |
+| A11y | aria-live | Chip `title` tooltips; reduced-motion/mute unchanged |
 | Onboarding | Coach | Unchanged |
-| Playtest | r3 autoplay | r4 screenshots @390 + 1280 |
+| Perf | Device tiers | Wide mode uses same canvas pixel budget as tall phone (~390×844 aspect) |
 
-**Root cause (r3):** `brickColors` always applied `MATERIAL_PALETTES.sewer` for ~75% of bricks, and sprite cache keys omitted `c1`/`c2` so the first mint sprite was reused for the whole wall.
+## Checklist (round 5)
 
-## Checklist (round 4)
-
-- [x] Row/world rainbow brick hues (≥4 distinct hues per wall); special materials unchanged
-- [x] Stronger brick sprites: bevel, specular, bottom lip, visible cracks, gold/metal
-- [x] Sprite cache keys include fill colors
-- [x] Ball: larger draw radius (`BALL_VISUAL_SCALE`), glow halo, brighter trail
-- [x] Paddle: red plunger cup + teal rim + handle; power glow retained
-- [x] Per-world `playWallTint` behind brick field in play
-- [x] Hit feedback: brick flash-white, chip puff, modest shake; impact ring on hits
-- [x] Unit tests for row hues, world rotation, sprite keys
-- [x] Autoplay screenshots → `conductor/reviews/turdanoid-1000x/r4/breakout-autoplay/`
+- [x] QA test hook: spawn capsule, activate power, boss phase, clear tally, game over (`window.__turdanoid` localhost only)
+- [x] `scripts/turdanoid-qa-capture.mjs` → `conductor/reviews/turdanoid-1000x/r5/breakout-qa/` (390 + 1280 capsules, active chips, boss phases, tally, game over)
+- [x] Power capsule `lab` on every type; HUD chip tooltips via `TurdanoidQA.displayName`
+- [x] Desktop 1280×800: `TurdanoidLayout.computePlayfield` height-first portrait shell + side art/HUD gutters
+- [x] Unit tests: `tests/turdanoid-layout.test.js`, `tests/turdanoid-qa.test.js`
+- [x] Reduced-motion / mute: existing smoke + `turdanoid-fx` / audio tests green
+- [x] Classic scoring compat tests green
 - [ ] Shared `SuiteAudio` mixer (shared lane)
 
 ## Needs shared change
 
 - Hub badge for `turdanoid_boss_best_v1` and classic best (shared hub 2.0).
 
-## Autoplay findings (2026-10-05, port 8151)
+## What to try on a phone
 
-| Session | Avg FPS | Console | Stuck | H-loop |
-|---------|---------|---------|-------|--------|
-| Classic 390×844 | ~70 | 0 | 0 | 0 |
-| Classic 1280×800 | 71.4 | 0 | 0 | 0 |
-| Boss 390×844 | 72.3 | 0 | 0 | 0 |
-
-Screenshots: `conductor/reviews/turdanoid-1000x/r4/breakout-autoplay/` (bob-overnight-inject clone).
+1. **START FLUSHING** — drag below the HUD; confirm rainbow bricks and glowing ball read clearly at arm’s length.
+2. Catch a **🪠 plunger** — watch falling pickups curve toward the seat; chip column should not cover the paddle.
+3. Stack **🌀 multiball + 🔥 fire** — three flaming turds; tap to fire lasers/TP/dogs when active.
+4. **Boss Flush** from the title menu — dodge sludge; phases should announce in the announcer strip.
+5. Toggle **🔇** before first tap if you want silence; respect system **Reduce motion** to calm shake/flash.
 
 ## Verification
 
 | Check | Result |
 |-------|--------|
-| `npx vitest run` | PASS (303/303) |
+| `npx vitest run` | PASS (309/309) |
 | `npm run lint` | PASS (warnings only, pre-existing) |
 | `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8151` | PASS |
-| `node scripts/turdanoid-autoplay.mjs 8151 …/r4/breakout-autoplay/` | PASS |
+| `node scripts/turdanoid-qa-capture.mjs 8151` | PASS |

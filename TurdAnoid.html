@@ -21,6 +21,8 @@
 <script src="games/turdanoid-coach-core.js"></script>
 <script src="games/turdanoid-perf-core.js"></script>
 <script src="games/turdanoid-tally-core.js"></script>
+<script src="games/turdanoid-layout-core.js"></script>
+<script src="games/turdanoid-qa-core.js"></script>
 <script src="assets/turdsuite.js"></script>
 <style>
   :root{
@@ -42,8 +44,23 @@
     background-attachment:fixed;
   }
   #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(8px,var(--safe-top)) 8px max(8px,var(--safe-bot))}
-  #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center}
+  #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;gap:0}
+  #playShell{position:relative;width:100%;height:100%;flex:0 0 auto;max-width:100%;max-height:100%}
+  #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px rgba(158,255,200,.18)}
   canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(158,255,200,.14), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
+  .side-gutter{flex:1 1 0;min-width:0;max-width:min(420px,22vw);display:none;pointer-events:none;padding:max(12px,var(--safe-top)) 10px max(12px,var(--safe-bot));align-self:stretch}
+  #stage.layout-wide .side-gutter{display:flex;flex-direction:column;justify-content:center}
+  .side-art{padding:16px 14px;border-radius:16px;border:1px solid rgba(158,255,200,.16);background:linear-gradient(165deg,rgba(8,24,20,.75),rgba(4,12,10,.55));box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 16px 40px rgba(0,0,0,.35)}
+  .side-title{font-size:11px;letter-spacing:.22em;text-transform:uppercase;opacity:.65;margin-bottom:10px}
+  .side-stat{font-size:13px;font-weight:700;line-height:1.45;color:var(--accent);margin-bottom:6px}
+  .side-stat.gold{color:var(--gold)}
+  .side-deco{margin-top:14px;height:120px;border-radius:12px;opacity:.85;background:
+    repeating-linear-gradient(90deg,rgba(158,255,200,.06) 0 8px,transparent 8px 16px),
+    radial-gradient(ellipse 80% 60% at 50% 40%,rgba(178,144,255,.22),transparent 70%),
+    linear-gradient(180deg,rgba(20,50,42,.5),rgba(8,20,16,.8))}
+  #sideRight .side-art{text-align:right}
+  #stage.layout-wide #powers{left:auto;right:10px;top:max(88px,calc(var(--safe-top) + 72px));bottom:auto;width:min(148px,38vw);flex-direction:column;align-items:stretch;justify-content:flex-start;gap:5px}
+  #stage.layout-wide #powers .chip{font-size:10px;min-width:0;width:100%}
 
   /* HUD — glass chips so the numbers read over any wall */
   .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.65);gap:8px}
@@ -170,6 +187,16 @@
 <div id="app">
   <div id="announcer" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="stage">
+    <aside id="sideLeft" class="side-gutter" aria-hidden="true">
+      <div class="side-art">
+        <p class="side-title">Classic best</p>
+        <p class="side-stat gold" id="sideBestClassic">—</p>
+        <p class="side-title">Boss best</p>
+        <p class="side-stat" id="sideBestBoss">—</p>
+        <div class="side-deco" aria-hidden="true"></div>
+      </div>
+    </aside>
+    <div id="playShell">
     <canvas id="game"></canvas>
 
     <div class="hud" aria-hidden="true">
@@ -266,6 +293,16 @@
         <button id="btnEndQuit">MAIN MENU</button>
       </div>
     </div>
+    </div>
+    <aside id="sideRight" class="side-gutter" aria-hidden="true">
+      <div class="side-art">
+        <p class="side-title">Sewer tips</p>
+        <p class="side-stat">🪠 Magnet pulls every drop</p>
+        <p class="side-stat">🔥 Fire + multiball = chaos</p>
+        <p class="side-stat">💰 Gold doubles breaks</p>
+        <div class="side-deco" aria-hidden="true"></div>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -278,6 +315,10 @@
 
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d', { alpha:false });
+const elStage = document.getElementById('stage');
+const playShell = document.getElementById('playShell');
+const TLAYOUT = typeof TurdanoidLayout !== 'undefined' ? TurdanoidLayout : null;
+const TQA = typeof TurdanoidQA !== 'undefined' ? TurdanoidQA : null;
 const reducedMotion = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 let DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2.5));
 let W = 0, H = 0;
@@ -509,10 +550,31 @@ btnSound.textContent = soundOn ? '🔊' : '🔇';
 
 /* ---- Resize ---- */
 function resize(){
-  const stage = document.getElementById('stage');
-  const r = stage.getBoundingClientRect();
-  W = Math.max(280, Math.floor(r.width));
-  H = Math.max(380, Math.floor(r.height));
+  const r = elStage.getBoundingClientRect();
+  const stageW = Math.max(1, Math.floor(r.width));
+  const stageH = Math.max(1, Math.floor(r.height));
+  let canvasW = stageW;
+  let canvasH = stageH;
+  if(TLAYOUT){
+    const layout = TLAYOUT.computePlayfield(stageW, stageH);
+    canvasW = layout.canvasW;
+    canvasH = layout.canvasH;
+    elStage.classList.toggle('layout-wide', layout.wide);
+    if(playShell){
+      if(layout.wide){
+        playShell.style.width = canvasW + 'px';
+        playShell.style.height = canvasH + 'px';
+      } else {
+        playShell.style.width = '100%';
+        playShell.style.height = '100%';
+      }
+    }
+  } else if(playShell){
+    playShell.style.width = '100%';
+    playShell.style.height = '100%';
+  }
+  W = Math.max(280, canvasW);
+  H = Math.max(380, canvasH);
   DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2.5));
   cv.width = Math.floor(W*DPR);
   cv.height = Math.floor(H*DPR);
@@ -1060,27 +1122,32 @@ function updateHud(){
   const livesCol = hudLives.closest('.col');
   if(livesCol) livesCol.classList.toggle('critical', lives === 1 && state === 'playing');
 }
-function powerChip(label, frames, maxFrames){
+function powerChip(label, frames, maxFrames, title){
   const pct = maxFrames > 0 ? Math.max(0, Math.min(100, Math.round((frames / maxFrames) * 100))) : 100;
-  return `<span class="chip">${label}<span class="chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span>`;
+  const tip = title ? ` title="${title.replace(/"/g, '&quot;')}"` : '';
+  return `<span class="chip"${tip}>${label}<span class="chip-bar" aria-hidden="true"><span style="width:${pct}%"></span></span></span>`;
+}
+function powerChipTitle(type, fallback){
+  if(TQA && TQA.displayName) return TQA.displayName(type);
+  return fallback || type;
 }
 function updatePowers(){
   const f = 60*8;
   const items = [];
-  if(activePowers.big)     items.push(powerChip('📏 Big', activePowers.big, f*2.5));
-  if(activePowers.slow)    items.push(powerChip('🐌 Slow', activePowers.slow, f));
-  if(activePowers.laser)   items.push(powerChip('🔫 Laser', activePowers.laser, f));
-  if(activePowers.paper)   items.push(powerChip('🧻 TP', activePowers.paper, f));
-  if(activePowers.sticky)  items.push(powerChip('🧲 Catch', activePowers.sticky, f));
-  if(activePowers.fire)    items.push(powerChip('🔥 Fire', activePowers.fire, f));
-  if(activePowers.shield)  items.push(powerChip('🛡️ Shield', activePowers.shield, f*1.5));
-  if(activePowers.hotdog)  items.push(powerChip('🌭 Dogs', activePowers.hotdog, f));
-  if(activePowers.plunger) items.push(powerChip('🪠 Magnet', activePowers.plunger, f*1.2));
-  if(activePowers.ghost)   items.push(powerChip('👻 Ghost', activePowers.ghost, 60*5));
-  if(activePowers.gold)    items.push(powerChip('💰 2×', activePowers.gold, 60*6));
-  if(activePowers.shrink)  items.push(powerChip('😬 Shrunk', activePowers.shrink, f));
-  if(activePowers.fast)    items.push(powerChip('💨 Speed', activePowers.fast, f));
-  if(activePowers.reverse) items.push(powerChip('🔄 Reversed', activePowers.reverse, 60*5));
+  if(activePowers.big)     items.push(powerChip('📏 Big', activePowers.big, f*2.5, powerChipTitle('enlarge', 'Big paddle')));
+  if(activePowers.slow)    items.push(powerChip('🐌 Slow', activePowers.slow, f, powerChipTitle('slow', 'Slow ball')));
+  if(activePowers.laser)   items.push(powerChip('🔫 Laser', activePowers.laser, f, powerChipTitle('laser', 'Laser')));
+  if(activePowers.paper)   items.push(powerChip('🧻 TP', activePowers.paper, f, powerChipTitle('paper', 'Toilet paper')));
+  if(activePowers.sticky)  items.push(powerChip('🧲 Catch', activePowers.sticky, f, powerChipTitle('catch', 'Sticky catch')));
+  if(activePowers.fire)    items.push(powerChip('🔥 Fire', activePowers.fire, f, powerChipTitle('fire', 'Fire ball')));
+  if(activePowers.shield)  items.push(powerChip('🛡️ Shield', activePowers.shield, f*1.5, powerChipTitle('shield', 'Shield')));
+  if(activePowers.hotdog)  items.push(powerChip('🌭 Dogs', activePowers.hotdog, f, powerChipTitle('hotdog', 'Hot dog rockets')));
+  if(activePowers.plunger) items.push(powerChip('🪠 Magnet', activePowers.plunger, f*1.2, powerChipTitle('plunger', 'Plunger magnet')));
+  if(activePowers.ghost)   items.push(powerChip('👻 Ghost', activePowers.ghost, 60*5, powerChipTitle('ghost', 'Ghost ball')));
+  if(activePowers.gold)    items.push(powerChip('💰 2×', activePowers.gold, 60*6, powerChipTitle('gold', 'Gold rush')));
+  if(activePowers.shrink)  items.push(powerChip('😬 Shrunk', activePowers.shrink, f, powerChipTitle('shrink', 'Shrink paddle')));
+  if(activePowers.fast)    items.push(powerChip('💨 Speed', activePowers.fast, f, powerChipTitle('speed', 'Speed up')));
+  if(activePowers.reverse) items.push(powerChip('🔄 Reversed', activePowers.reverse, 60*5, powerChipTitle('reverse', 'Reversed controls')));
   elPowers.innerHTML = items.length ? items.join('') : '';
 }
 
@@ -1237,6 +1304,7 @@ function gameOver(won){
     best = Math.max(best, score);
     localStorage.setItem(STORAGE_KEY, String(best));
   }
+  updateSideStats();
   $('endTitle').firstChild.textContent = won ? (gameMode==='boss' ? 'King Flushed!' : 'You Win!') : 'Flushed.';
   $('endSub').textContent = won ? (gameMode==='boss' ? 'sewer royalty' : 'sewer royalty') : 'better luck next plunge';
   $('endQuip').textContent = (won?WIN_QUIPS:GAME_OVER_QUIPS)[Math.floor(Math.random()*(won?WIN_QUIPS:GAME_OVER_QUIPS).length)];
@@ -1281,22 +1349,84 @@ const POWERS = [
   {t:'life',    e:'❤️', lab:'+1', col:'#ff7ab6', unlock:1, weight:0.6},
   {t:'laser',   e:'🔫', lab:'LZ', col:'#ff7ab6', unlock:1, weight:2.5},
   // ---- Themed combat (level 2+) ----
-  {t:'paper',   e:'🧻',  col:'#ffffff', unlock:2, weight:2},
-  {t:'shield',  e:'🛡️', col:'#7ae6ff', unlock:2, weight:1.4},
-  {t:'fire',    e:'🔥',  col:'#ff9d74', unlock:2, weight:1.6},
+  {t:'paper',   e:'🧻',  lab:'TP', col:'#ffffff', unlock:2, weight:2},
+  {t:'shield',  e:'🛡️', lab:'SH', col:'#7ae6ff', unlock:2, weight:1.4},
+  {t:'fire',    e:'🔥',  lab:'FR', col:'#ff9d74', unlock:2, weight:1.6},
   // ---- Creative funny set (level 3-5) ----
-  {t:'bomb',    e:'💣',  col:'#ffd76a', unlock:3, weight:1.4},
-  {t:'plunger', e:'🪠',  col:'#b290ff', unlock:3, weight:1.6},
-  {t:'flush',   e:'🚽',  col:'#7ae6ff', unlock:4, weight:1.2},
-  {t:'hotdog',  e:'🌭',  col:'#ff9d74', unlock:4, weight:1.5},
-  {t:'ghost',   e:'👻',  col:'#cdd5ff', unlock:5, weight:1.3},
-  {t:'skunk',   e:'🦨',  col:'#7af1c4', unlock:5, weight:1.4},
-  {t:'gold',    e:'💰',  col:'#ffd76a', unlock:6, weight:1.0},
+  {t:'bomb',    e:'💣',  lab:'BM', col:'#ffd76a', unlock:3, weight:1.4},
+  {t:'plunger', e:'🪠',  lab:'MG', col:'#b290ff', unlock:3, weight:1.6},
+  {t:'flush',   e:'🚽',  lab:'FL', col:'#7ae6ff', unlock:4, weight:1.2},
+  {t:'hotdog',  e:'🌭',  lab:'HD', col:'#ff9d74', unlock:4, weight:1.5},
+  {t:'ghost',   e:'👻',  lab:'GH', col:'#cdd5ff', unlock:5, weight:1.3},
+  {t:'skunk',   e:'🦨',  lab:'SK', col:'#7af1c4', unlock:5, weight:1.4},
+  {t:'gold',    e:'💰',  lab:'2×', col:'#ffd76a', unlock:6, weight:1.0},
   // ---- Bad ones (level 6+) ----
-  {t:'shrink',  e:'😬',  col:'#ff7ab6', unlock:6, bad:true, weight:1},
-  {t:'speed',   e:'💨',  col:'#ff9d74', unlock:6, bad:true, weight:1},
-  {t:'reverse', e:'🔄',  col:'#b290ff', unlock:8, bad:true, weight:0.8},
+  {t:'shrink',  e:'😬',  lab:'XS', col:'#ff7ab6', unlock:6, bad:true, weight:1},
+  {t:'speed',   e:'💨',  lab:'SP', col:'#ff9d74', unlock:6, bad:true, weight:1},
+  {t:'reverse', e:'🔄',  lab:'RV', col:'#b290ff', unlock:8, bad:true, weight:0.8},
 ];
+function powerDef(type){
+  return POWERS.find(p => p.t === type);
+}
+function qaSpawnCapsule(type, yRatio){
+  const p = powerDef(type);
+  if(!p || state !== 'playing') return false;
+  powerups = powerups.filter(u => !u._qa);
+  const y = H * (yRatio != null ? yRatio : 0.38);
+  powerups.push({
+    x: W * 0.5, y, vy: 0, t: p.t, e: p.e,
+    lab: p.lab || p.t.slice(0, 2).toUpperCase(),
+    col: p.col, bad: !!p.bad, wob: 0, spin: 0, _qa: true
+  });
+  return true;
+}
+function qaActivatePower(type){
+  const p = powerDef(type);
+  if(!p || state !== 'playing') return false;
+  applyPower({ t: p.t, e: p.e, lab: p.lab, col: p.col, bad: p.bad });
+  return true;
+}
+function qaBossSetPhase(phase){
+  if(gameMode !== 'boss' || state !== 'playing'){
+    gameMode = 'boss';
+    beginRun();
+  } else {
+    spawnBossFight();
+    balls = [ newBall(true) ];
+    waitingLaunch = true;
+  }
+  const maxHp = TBOSS ? TBOSS.MAX_HP : 120;
+  const ratio = phase >= 3 ? 0.22 : phase >= 2 ? 0.48 : 0.88;
+  boss.hp = Math.max(1, Math.floor(maxHp * ratio));
+  boss.maxHp = maxHp;
+  boss.phase = TBOSS ? TBOSS.phaseForHp(boss.hp, boss.maxHp) : phase;
+  boss.announcedPhase = boss.phase;
+  hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tClearTally);
+  clearTally = null;
+  updateHud();
+  return true;
+}
+function qaResetPowers(){
+  activePowers = {};
+  powerups = [];
+  updatePowers();
+}
+function qaBeginClearTally(){
+  hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause);
+  state = 'playing';
+  beginClearTally(level || 4, 1280, 3);
+}
+function qaShowGameOver(won){
+  hideOverlay(tTitle); hideOverlay(tPause); hideOverlay(tClearTally);
+  clearTally = null;
+  gameOver(!!won);
+}
+function updateSideStats(){
+  const elC = $('sideBestClassic');
+  const elB = $('sideBestBoss');
+  if(elC) elC.textContent = best.toLocaleString();
+  if(elB) elB.textContent = bossBest.toLocaleString();
+}
 function maybeDrop(x,y){
   const remaining = bricks.length;
   // High drop rate early to hook the player, settling to a steady flow mid-game.
@@ -2790,6 +2920,7 @@ resize();
 paddle = newPaddle();
 buildStars();
 pickTitleQuip();
+updateSideStats();
 lastTime = performance.now();
 requestAnimationFrame(loop);
 
@@ -2814,6 +2945,8 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
   window.__turdanoid = {
     startGame, step, newLevel, quitToMenu, doPause, doResume,
     applyPower, spawnMulti, handleWindowBlur, pointerMove, launch, skipClearTally,
+    qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers,
+    beginClearTally, gameOver,
     get state(){ return state; },
     get score(){ return score; },
     set score(v){ score = v; },
@@ -2834,7 +2967,11 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get powerups(){ return powerups; },
     get floats(){ return floats; },
     get W(){ return W; },
-    get H(){ return H; }
+    get H(){ return H; },
+    get gameMode(){ return gameMode; },
+    get boss(){ return boss; },
+    get powerTypes(){ return TQA ? TQA.POWER_TYPES : POWERS.map(p => p.t); },
+    get timedPowerTypes(){ return TQA ? TQA.TIMED_POWER_TYPES : []; }
   };
 })();
 
