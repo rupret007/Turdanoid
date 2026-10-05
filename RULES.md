@@ -117,6 +117,11 @@ Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS k
 - **Mobile Hold / Next**: The held piece and next piece stay on the thumb dock so a phone run can see the queue without scrolling. Hold dims after it is used this piece, and a second tap does not swap
 - **Frame hitch clamp**: A stalled frame cannot dump extra gravity; motion stays capped to one 33ms step
 - **End-run receipt**: Game over shows the run score against this device's best, marks a new best, and Space or Enter starts the next run
+- **Board-first mobile**: At phone widths the side panel hides, the HUD compacts, and the playfield gets priority above the thumb dock
+- **Level-up flash**: Clearing a level goal triggers a brief well flash and on-board level banner
+- **Clear callouts**: Combos, back-to-back, tetris, and T-spin clears show floating board callouts (reduced-motion caps particle bursts)
+- **Board gestures**: Swipe/tap/flick on the canvas (toggle in Run Menu; stored in `turdtrisGestures_v1`)
+- **Audio**: Layered WebAudio clears respect both `turdtrisSoundOn_v1` and hub `turdsuite_muted`
 
 ### Levels
 

@@ -935,9 +935,56 @@ body::after {
     @media (prefers-reduced-motion: reduce) {
     .pb-danger.warn,.pb-danger.alarm { animation: none; }
   }
+
+.sr-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 980px) {
+  body.board-focus {
+    padding-bottom: calc(220px + env(safe-area-inset-bottom));
+    align-items: flex-start;
+  }
+  body.board-focus .layout {
+    margin-top: 2px;
+  }
+  body.board-focus .topbar p {
+    display: none;
+  }
+  body.board-focus .topbar h1 {
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+  }
+  body.board-focus .hud {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+  body.board-focus .card {
+    padding: 5px 6px 6px;
+  }
+  body.board-focus .card .v {
+    font-size: 0.95rem;
+  }
+  body.board-focus .game-grid .panel {
+    display: none;
+  }
+  body.board-focus #game {
+    width: min(400px, 94vw, 46dvh);
+  }
+}
 </style>
 </head>
-<body class="suite-ambient suite-no-zoom">
+<body class="suite-ambient suite-no-zoom board-focus">
+<div id="statusLive" class="sr-live" aria-live="polite" aria-atomic="true"></div>
 <div class="welcome-guide" id="welcomeGuide">
   <div class="welcome-card">
     <h2>Turdtris Turbo</h2>
@@ -949,6 +996,7 @@ body::after {
       <li><strong>Hard Drop:</strong> Space</li>
       <li><strong>Hold Piece:</strong> <strong>C</strong></li>
       <li><strong>Pause:</strong> <strong>P</strong></li>
+      <li><strong>Phone board:</strong> swipe to move, tap to rotate, flick down to hard drop (toggle in Run Menu)</li>
     </ul>
     <p>Tip: Use hold + ghost piece to plan Tetrises and T-Spins instead of panic-drops.</p>
     <div class="welcome-actions">
@@ -980,6 +1028,7 @@ body::after {
           <button class="btn" onclick="togglePause()">⏯ Pause</button>
           <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
           <button class="btn" onclick="restartGame()">↻ Restart</button>
+          <button class="btn subtle" id="gesturesToggle" type="button" onclick="toggleGestures()">👆 Board gestures on</button>
         </div>
       </details>
     </div>
@@ -1167,6 +1216,11 @@ const ARR_MS = 33;
 const MOBILE_REPEAT_MS = 52;
 const MOBILE_REPEAT_INITIAL_DELAY_MS = 148;
 const FEEL_DANGER_HUD_RATIO = 0.55;
+const FEEL_SHAKE_DECAY = 0.86;
+const FEEL_LEVEL_FLASH_FRAMES = 28;
+const GESTURES_STORAGE_KEY = 'turdtrisGestures_v1';
+let gesturesEnabled = true;
+let levelFlash = 0;
 let dasLeftHeld = false;
 let dasRightHeld = false;
 let dasLeftMs = 0;
@@ -1434,37 +1488,58 @@ function unlockAudio() {
   }
 }
 
-function playSfx(type) {
-  if (!soundEnabled) return;
+function suiteMuted() {
+  try {
+    return window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted();
+  } catch (err) {
+    return false;
+  }
+}
+
+function playSfx(type, opts) {
+  if (!soundEnabled || suiteMuted()) return;
+  unlockAudio();
+  if (window.__turdtrisAudio) {
+    window.__turdtrisAudio.play(type, opts || {});
+    return;
+  }
   const ctx = ensureAudio();
   if (!ctx || ctx.state !== 'running') return;
-
-  const profileMap = {
-    rotate: { f: 520, dur: 0.05, wave: 'triangle', vol: 0.03 },
-    hold: { f: 430, dur: 0.08, wave: 'triangle', vol: 0.04 },
-    drop: { f: 280, dur: 0.08, wave: 'square', vol: 0.04 },
-    lock: { f: 210, dur: 0.06, wave: 'sawtooth', vol: 0.03 },
-    clear: { f: 760, dur: 0.11, wave: 'triangle', vol: 0.05 },
-    level: { f: 900, dur: 0.14, wave: 'triangle', vol: 0.05 },
-    pause: { f: 310, dur: 0.08, wave: 'square', vol: 0.035 },
-    victory: { f: 1040, dur: 0.2, wave: 'triangle', vol: 0.06 },
-    gameover: { f: 120, dur: 0.2, wave: 'sawtooth', vol: 0.055 }
-  };
-
-  const p = profileMap[type] || profileMap.lock;
   try {
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = p.wave;
-    osc.frequency.setValueAtTime(p.f, now);
-    gain.gain.setValueAtTime(p.vol, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + p.dur);
+    if (window.TurdtrisAudio && window.TurdtrisAudio.playTurdtrisSfx) {
+      window.TurdtrisAudio.playTurdtrisSfx(ctx, type, opts || {});
+    }
   } catch (err) {}
+}
+
+function loadGesturesPref() {
+  try {
+    const raw = localStorage.getItem(GESTURES_STORAGE_KEY);
+    if (raw === '0') return false;
+    return true;
+  } catch (err) {
+    return true;
+  }
+}
+
+function saveGesturesPref() {
+  try {
+    localStorage.setItem(GESTURES_STORAGE_KEY, gesturesEnabled ? '1' : '0');
+  } catch (err) {}
+}
+
+function updateGesturesButton() {
+  const btn = document.getElementById('gesturesToggle');
+  if (!btn) return;
+  btn.textContent = gesturesEnabled ? '👆 Board gestures on' : '👆 Board gestures off';
+}
+
+function toggleGestures() {
+  gesturesEnabled = !gesturesEnabled;
+  saveGesturesPref();
+  updateGesturesButton();
+  setHype(gesturesEnabled ? 'Board swipes armed.' : 'Button-only mode.', 72);
+  updateScore();
 }
 
 function toggleSound() {
@@ -1515,7 +1590,11 @@ function setHype(message, durationMs) {
 }
 
 function triggerSceneShake(amount) {
-  sceneShake = Math.min(16, Math.max(sceneShake, amount || 0));
+  const fx = window.TurdtrisFx;
+  const scaled = fx && fx.effectiveShake
+    ? fx.effectiveShake(amount || 0, reducedMotion)
+    : (amount || 0);
+  sceneShake = Math.min(16, Math.max(sceneShake, scaled));
 }
 
 function updateSceneFx() {
@@ -1523,8 +1602,33 @@ function updateSceneFx() {
   else hypeText = '';
 
   if (sceneShake > 0) {
-    sceneShake *= 0.86;
-    if (sceneShake < 0.2) sceneShake = 0;
+    const fx = window.TurdtrisFx;
+    sceneShake = fx && fx.decaySceneShake
+      ? fx.decaySceneShake(sceneShake, FEEL_SHAKE_DECAY)
+      : (sceneShake * FEEL_SHAKE_DECAY < 0.2 ? 0 : sceneShake * FEEL_SHAKE_DECAY);
+  }
+  if (levelFlash > 0) levelFlash--;
+}
+
+function pushClearCallouts(linesClearedThisTurn, tSpin, perfectClear) {
+  const fx = window.TurdtrisFx;
+  if (!fx || !fx.buildClearCallouts) return;
+  const callouts = fx.buildClearCallouts({
+    lines: linesClearedThisTurn,
+    tSpin,
+    combo,
+    b2b,
+    perfect: perfectClear
+  });
+  let y = BOARD_H * 0.22;
+  for (let i = 0; i < callouts.length && i < 3; i++) {
+    floatTexts.push({
+      text: callouts[i].text,
+      x: BOARD_W / 2,
+      y: y + i * 22,
+      life: 48,
+      color: callouts[i].color
+    });
   }
 }
 
@@ -1904,7 +2008,7 @@ function lockPiece() {
   let turnScore = 0;
   let clutchBonus = 0;
   if (linesClearedThisTurn > 0) {
-    playSfx('clear');
+    playSfx('clear', { linesCleared: linesClearedThisTurn });
     try {
       if (window.Suite) {
         if (tSpin) Suite.hype(Suite.quip('tspin') || 'T-SPIN!');
@@ -1938,9 +2042,9 @@ function lockPiece() {
     levelLines += linesClearedThisTurn;
 
     const perfectClear = playfield.every((r) => r.every((cell) => !cell));
+    pushClearCallouts(linesClearedThisTurn, tSpin, perfectClear);
     if (perfectClear) {
       turnScore += 1200 * level;
-      floatTexts.push({ text: 'PERFECT CLEAR', x: BOARD_W / 2, y: BOARD_H * 0.3, life: 52, color: '#8ee8c7' });
       setHype('Perfect clear! The bowl sparkles.', 122);
       triggerSceneShake(3.9);
       try { if (window.Suite) { Suite.hype(Suite.quip('perfect') || 'PERFECT CLEAR!'); Suite.win(); } } catch (e) {}
@@ -1962,6 +2066,12 @@ function lockPiece() {
     }
 
     if (level > levelBefore && level < MAX_LEVEL) {
+      levelFlash = FEEL_LEVEL_FLASH_FRAMES;
+      const fx = window.TurdtrisFx;
+      const banner = fx && fx.levelUpBannerText
+        ? fx.levelUpBannerText(level, activeMutator)
+        : `LEVEL ${level}`;
+      floatTexts.push({ text: banner, x: BOARD_W / 2, y: BOARD_H * 0.16, life: 56, color: '#8ff5c6' });
       setHype(`Level ${level} online: ${activeMutator}.`, 102);
       triggerSceneShake(2.6);
       playSfx('level');
@@ -2149,6 +2259,13 @@ function drawPlayfield() {
   context.fillStyle = bg;
   context.fillRect(0, 0, BOARD_W, BOARD_H);
 
+  if (levelFlash > 0) {
+    const t = levelFlash / FEEL_LEVEL_FLASH_FRAMES;
+    const pulse = reducedMotion && reducedMotion.matches ? 0.35 : 0.55 + (1 - t) * 0.35;
+    context.fillStyle = `rgba(143, 245, 198, ${(pulse * 0.22).toFixed(3)})`;
+    context.fillRect(0, 0, BOARD_W, BOARD_H);
+  }
+
   // Faint checker of well tiles + a soft spotlight down the middle columns
   context.fillStyle = 'rgba(255,255,255,0.022)';
   for (let row = 0; row < 20; row++) {
@@ -2237,7 +2354,10 @@ function drawPlayfield() {
       // First frame of a clear: burst of sparks in the row's colours
       fx.sparked = true;
       const y = (fx.row - 2) * grid + grid / 2;
-      for (let k = 0; k < 26; k++) {
+      const sparkBudget = (window.TurdtrisFx && window.TurdtrisFx.sparkCountForClear)
+        ? window.TurdtrisFx.sparkCountForClear(26, reducedMotion)
+        : (reducedMotion && reducedMotion.matches ? 8 : 26);
+      for (let k = 0; k < sparkBudget; k++) {
         const name = fx.colorSeed[Math.floor(Math.random() * cols)] || 'O';
         clearSparks.push({
           x: Math.random() * BOARD_W, y: y + (Math.random() - 0.5) * grid,
@@ -2491,6 +2611,11 @@ function updateScore() {
     const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';
     statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
     statusEl.classList.toggle('hype', hypeTimer > 0);
+  }
+  const liveEl = document.getElementById('statusLive');
+  if (liveEl) {
+    const short = hypeTimer > 0 && hypeText ? hypeText : statusText;
+    liveEl.textContent = short;
   }
 }
 
@@ -2832,6 +2957,7 @@ if (canvas) {
   canvas.addEventListener('touchend', (e) => {
     if (onboardingOpen) return;
     if (gameOver || paused) return;
+    if (!gesturesEnabled) return;
 
     const touch = e.changedTouches[0];
     if (!touch) return;
@@ -2855,7 +2981,9 @@ if (canvas) {
 }
 
 soundEnabled = loadSoundPref();
+gesturesEnabled = loadGesturesPref();
 updateSoundButtons();
+updateGesturesButton();
 restartGame();
 if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
   showWelcomeGuide();
@@ -2992,6 +3120,37 @@ if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
   setTimeout(() => { bossMood('🪠', 'bounce'); bossSay('Stack carefully, sewer kid.', 2400); }, 700);
 })();
 
+window.turdtrisRuntime = {
+  ensureAudio,
+  soundEnabled: () => soundEnabled
+};
+
+</script>
+<script type="module">
+import * as TurdtrisFx from './games/turdtris-fx.js';
+import { createTurdtrisAudioPlayer, playTurdtrisSfx } from './games/turdtris-audio.js';
+import { shouldUseBoardFocusLayout } from './games/turdtris-layout.js';
+
+window.TurdtrisFx = TurdtrisFx;
+window.TurdtrisAudio = { playTurdtrisSfx };
+
+function wireTurdtrisRuntime() {
+  const rt = window.turdtrisRuntime;
+  if (!rt) return;
+  window.__turdtrisAudio = createTurdtrisAudioPlayer({
+    getContext: () => rt.ensureAudio(),
+    getSoundEnabled: () => rt.soundEnabled(),
+    getSuiteMuted: () => (window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted())
+  });
+}
+
+function applyBoardFocus() {
+  document.body.classList.toggle('board-focus', shouldUseBoardFocusLayout(window.innerWidth));
+}
+
+wireTurdtrisRuntime();
+applyBoardFocus();
+window.addEventListener('resize', applyBoardFocus);
 </script>
 </body>
 </html>
