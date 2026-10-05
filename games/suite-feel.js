@@ -36,7 +36,7 @@ export const TURDTRIS_FEEL = {
 };
 
 export const CARD_TABLE_FEEL = {
-  crapeightsAiMs: 600,
+  crapeightsAiMs: 760,
   turdrummyQuickAiMs: 180,
   turdrummyAiMs: 540,
   turdspadesAiMs: 400

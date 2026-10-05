@@ -248,7 +248,13 @@ The first player to reach 200 points wins the match.
 
 ### Controls
 
-- **Click/Tap**: Select a card, then use `Play Selected`; use `Draw`, `Pass`, or `Smart` as available
+- **Click/Tap**: Select a lit card, then use `Play Selected`; tap the selected card again to play. Use `Draw`, `Pass`, or `Smart` as available
+- **Arrow keys / Home / End**: Browse your focused hand; Enter/Space selects the focused card
+- **Sort: Suit / Rank**: Reorder the display without changing your cards
+- **Wild wheel**: Choose a suit, with remaining card counts and a recommendation; Escape / Back to hand cancels before playing
+- **Table details**: Open the paused rules, log, standings and bot difficulty drawer; Back to table / Escape resumes
+- **Hand fan**: Every card stays on the table; large hands use additional rows to preserve touch targets. A selected card lifts above the fan
+- **Points at risk**: Shows the value opponents collect from your hand if they go out
 - **P**: Play selected card
 - **D**: Draw
 - **A / Enter**: Smart move
@@ -256,10 +262,15 @@ The first player to reach 200 points wins the match.
 
 ### AI Strategy
 
-1. Score legal choices by action value and the bot's remaining hand
-2. Save or play wild 8s according to the best available move
-3. When playing an 8, declare the suit most represented in hand
-4. Draw and pass when no legal play is available
+1. Plan suit continuity and rank bridges using only the bot's own hand and public information
+2. Hold wild 8s as escape cards, but shed their 50-point risk when opponents are close to going out
+3. Use draw-two, skip and reverse against visible threats, considering who receives the next turn
+4. Infer weak suits from public draws/passes; these clues fade as more cards are played
+5. Choose a wild suit using remaining cards and public clues; draw and pass when no legal play exists
+
+Choose **Easy**, **Normal** (default), or **Sharp** in Table details. Easy plays simple matches. Normal retains the original fair strategy above. Sharp searches future suit/rank routes, saves bridging 8s, and plans consecutive Draw Two plays on future turns. Penalties still resolve immediately: Draw Twos cannot be stacked in response.
+
+AI observations reset on round start or continue; existing saved tables load unchanged. `Smart` always uses Normal. Difficulty and new display-only personal stats are stored separately from the unchanged v1 match save. Scoring and the 200-point target are unchanged. The end-of-round receipt reveals and totals the opponents' leftovers; a match winner receives the Sewer Crown.
 
 ---
 

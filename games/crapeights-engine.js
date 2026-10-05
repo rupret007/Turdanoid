@@ -83,7 +83,7 @@ export class CrapeightsEngine {
 
   canPlayCard(card) {
     const topCard = this.discardPile[this.discardPile.length - 1];
-    if (!topCard) {return false;}
+    if (!card || !topCard) {return false;}
 
     // 8s are wild - can always be played
     if (card.rank === '8') {return true;}
@@ -136,6 +136,10 @@ export class CrapeightsEngine {
 
   drawFromDeck() {
     const drawn = this.drawCard();
+    if (!drawn) {
+      this.switchTurn();
+      return { card: null, canPlay: false };
+    }
     this.playerHand.push(drawn);
 
     // Check if drawn card can be played
@@ -153,7 +157,7 @@ export class CrapeightsEngine {
   }
 
   cpuPlay() {
-    if (this.currentPlayer !== 'cpu') {return null;}
+    if (this.currentPlayer !== 'cpu' || this.gameOver) {return null;}
 
     // CPU strategy: play matching card, prefer non-8s, then 8s
     const playable = this.cpuHand.filter(card => this.canPlayCard(card));
@@ -161,6 +165,10 @@ export class CrapeightsEngine {
     if (playable.length === 0) {
       // Draw
       const drawn = this.drawCard();
+      if (!drawn) {
+        this.switchTurn();
+        return { action: 'draw', card: null };
+      }
       this.cpuHand.push(drawn);
       if (this.canPlayCard(drawn)) {
         // CPU plays drawn card if possible
@@ -171,7 +179,14 @@ export class CrapeightsEngine {
           // Pick a suit CPU has most of
           this.currentSuit = this.mostCommonSuit(this.cpuHand);
         } else {
+          this.lastPlayWasEight = false;
           this.currentSuit = drawn.suit;
+        }
+        if (this.cpuHand.length === 0) {
+          this.gameOver = true;
+          this.winner = 'cpu';
+        } else {
+          this.switchTurn();
         }
       } else {
         this.switchTurn();
