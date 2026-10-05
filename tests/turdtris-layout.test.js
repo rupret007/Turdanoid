@@ -43,13 +43,13 @@ describe('turdtris-layout', () => {
     expect(layout.boardHeight + layout.verticalReservation).toBeLessThan(1400);
   });
 
-  it('preserves the existing desktop canvas sizing rule', () => {
+  it('reserves desktop room for the title, menu and HUD', () => {
     const layout = boardCanvasCssWidth(1280, 900);
     expect(layout.mobile).toBe(false);
-    expect(layout.width).toBe('min(440px, 78vw, 44dvh)');
-    expect(layout.boardWidth).toBe(396);
-    expect(layout.boardHeight).toBe(792);
-    expect(boardCanvasCssWidth(1920, 1080).boardWidth).toBe(440);
+    expect(layout.width).toBe('min(380px, 60vw, calc((100dvh - 300px) / 2))');
+    expect(layout.boardWidth).toBe(300);
+    expect(layout.boardHeight).toBe(600);
+    expect(boardCanvasCssWidth(1920, 1080).boardWidth).toBe(380);
   });
 
   it('handles missing dimensions and unusably short viewports without negative geometry', () => {

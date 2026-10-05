@@ -23,13 +23,13 @@ export function boardCanvasCssWidth(viewportWidth, viewportHeight, safeAreaBotto
   const inset = Number.isFinite(Number(safeAreaBottom)) ? Math.max(0, Number(safeAreaBottom)) : 0;
   const mobile = shouldUseBoardFocusLayout(w);
   if (!mobile) {
-    const boardWidth = Math.min(440, w * 0.78, h * 0.44);
+    const boardWidth = Math.max(0, Math.min(380, w * 0.6, (h - 300) / 2));
     return {
-      width: 'min(440px, 78vw, 44dvh)',
+      width: 'min(380px, 60vw, calc((100dvh - 300px) / 2))',
       boardWidth,
       boardHeight: boardWidth * 2,
       horizontalReservation: 0,
-      verticalReservation: 0,
+      verticalReservation: 300,
       safeAreaBottom: inset,
       mobile
     };

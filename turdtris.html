@@ -981,6 +981,77 @@ body::after {
     width: min(400px, 94vw, 46dvh);
   }
 }
+/* Board callouts and the receipt replace overlapping global hype banners. */
+.suite-hype, .pb-banner { display: none !important; }
+/* The arcade cabinet reserves real space for the phone dock. */
+.mobile-menu { display: block; width: auto; position: relative; z-index: 45; }
+.mobile-menu summary { min-height: 32px; display: flex; align-items: center; }
+.mobile-menu details[open] { position: absolute; right: 0; top: 0; width: min(340px, 88vw); max-height: 75dvh; overflow-y: auto; background: #191b20; box-shadow: 0 16px 50px #000b; }
+.run-settings { display: grid; gap: 10px; padding-top: 12px; margin-top: 12px; border-top: 1px solid #ffffff25; }
+.run-settings label { display: grid; grid-template-columns: 1fr 128px; align-items: center; gap: 8px; font-size: .78rem; color: #eee5d4; }
+.run-settings select { min-width: 0; min-height: 40px; border: 1px solid #82948d; border-radius: 7px; color: #edfff8; background: #192a29; padding: 4px; font: inherit; }
+.run-settings p { font-size: .72rem; line-height: 1.4; color: #bac9c4; }
+:is(button, summary, select):focus-visible { outline: 3px solid #93ffe0; outline-offset: 3px; }
+.well-caption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 3px 7px; color: #9bdbcc; font-size: .63rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.well-caption .live-dot { color: #b2ffcd; }
+.board-wrap::after { content: none; }
+.board-wrap { border-color: #759b91; background: linear-gradient(140deg, #273638, #121b22 35%, #334338); box-shadow: 0 0 0 3px #0d1319, 0 0 0 4px #63857966, 0 20px 65px #0008; }
+.overlay { z-index: 4; overflow-y: auto; }
+.overlay-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.overlay-card.is-record { border-color: #a9ffe0; box-shadow: 0 0 35px #80ffd344; }
+.record-seal { display: none; color: #a6ffdc; font-size: .72rem; font-weight: 900; letter-spacing: .16em; margin-bottom: 8px; }
+.is-record .record-seal { display: block; animation: recordReveal .7s ease-out; }
+@keyframes recordReveal { from { transform: scale(1.25); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.welcome-card { max-height: calc(100dvh - 32px); overflow-y: auto; }
+.guide-legend { display: flex; gap: 8px; margin: 12px 0; }
+.guide-legend span { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid #8ee8c755; font-size: .76rem; background: #8ee8c70b; }
+.control-btn[data-action="drop"] { background: linear-gradient(#f4d495, #ba884d); color: #261a13; border-color: #ffe3af; }
+.control-btn[data-action="rotate"] { background: linear-gradient(#344b53, #203438); border-color: #81c8c0; }
+.control-btn.is-pressed { transform: translateY(2px); filter: brightness(1.25); }
+@media (max-width: 980px) {
+  body.board-focus { padding: 6px 6px calc(172px + env(safe-area-inset-bottom)); }
+  body.board-focus .layout { width: 100%; padding: 7px; margin-top: 0; border-radius: 14px; }
+  body.board-focus .topbar { flex-direction: row; align-items: center; gap: 6px; margin-bottom: 6px; }
+  body.board-focus .top-actions { display: none; }
+  body.board-focus .topbar h1 { font-size: .91rem; letter-spacing: .04em; }
+  body.board-focus .mobile-menu details { padding: 2px 8px; }
+  body.board-focus .mobile-menu summary { font-size: .69rem; min-height: 32px; }
+  body.board-focus .hud { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-bottom: 4px; }
+  body.board-focus .card { padding: 5px 2px; border-radius: 7px; text-align: center; }
+  body.board-focus .card .k { font-size: .51rem; letter-spacing: .025em; }
+  body.board-focus .card .v { font-size: .84rem; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+  body.board-focus .board-wrap { margin: 3px auto; padding: 4px; border-radius: 9px; }
+  body.board-focus .well-caption { padding-bottom: 4px; font-size: .53rem; }
+  body.board-focus #game { width: min(calc(100vw - 42px), calc((100dvh - 330px - env(safe-area-inset-bottom)) / 2)); }
+  .mobile-controls { bottom: max(6px, env(safe-area-inset-bottom)); padding: 6px; gap: 6px; border-color: #749589; background: #141f24f5; }
+  .mobile-controls-main, .mobile-controls-meta { gap: 6px; }
+  .mobile-controls .control-btn { min-width: 0; min-height: 48px; padding: 6px 2px; font-size: .83rem; border-radius: 9px; }
+  .mobile-preview-box canvas { height: 31px; }
+  .mobile-piece-queue { grid-template-columns: 62px 62px; }
+  .mobile-level-progress { font-size: .58rem; gap: 4px; grid-template-columns: 1fr auto; }
+  .mobile-level-progress > span { grid-column: 1 / -1; }
+  .pb-boss, .pb-bubble { display: none; }
+  .suite-back-pill { display: none; }
+  .overlay { padding: 7px; }
+  .overlay-card { padding: 12px 9px; }
+  .overlay-card h2 { font-size: 1.35rem; }
+  .overlay-card .overlay-flavor { font-size: .68rem; }
+  .overlay-stat { padding: 6px 3px; }
+  .overlay-stat .k { font-size: .53rem; }
+  .overlay-stat .v { font-size: .95rem; }
+}
+@media (max-height: 700px) and (max-width: 980px) {
+  body.board-focus #game { width: min(calc(100vw - 42px), calc((100dvh - 302px - env(safe-area-inset-bottom)) / 2)); }
+  .well-caption { display: none; }
+  .overlay-card .overlay-flavor { display: none; }
+  .overlay-card h2 { font-size: 1.05rem; margin-bottom: 5px; }
+  .overlay-kicker { font-size: .6rem; margin-bottom: 3px; }
+  .record-seal { font-size: .56rem; margin-bottom: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .control-btn:active, .control-btn.is-pressed { transform: none; }
+}
 </style>
 </head>
 <body class="suite-ambient suite-no-zoom board-focus">
@@ -996,9 +1067,10 @@ body::after {
       <li><strong>Hard Drop:</strong> Space</li>
       <li><strong>Hold Piece:</strong> <strong>C</strong></li>
       <li><strong>Pause:</strong> <strong>P</strong></li>
-      <li><strong>Phone board:</strong> swipe to move, tap to rotate, flick down to hard drop (toggle in Run Menu)</li>
+      <li><strong>Phone board:</strong> tap to rotate; swipe left/right to move; drag down for soft drop; flick up or down quickly to hard drop. Toggle gestures in Run Menu.</li>
     </ul>
-    <p>Tip: Use hold + ghost piece to plan Tetrises and T-Spins instead of panic-drops.</p>
+    <div class="guide-legend"><span><strong>Ghost outline</strong><br>Your landing spot.</span><span><strong>Landing meter</strong><br>Time left to slide or spin.</span><span><strong>4 rows</strong><br>A mighty TURDTRIS!</span></div>
+    <p>Hold saves a piece for later. Clear rows to travel from bathroom to orbit. Tune movement and music in Run Menu.</p>
     <div class="welcome-actions">
       <button class="btn" onclick="quickStartRun()">Quick Start</button>
       <button class="btn subtle" onclick="hideWelcomeGuide()">Review Then Start</button>
@@ -1029,6 +1101,13 @@ body::after {
           <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
           <button class="btn" onclick="restartGame()">↻ Restart</button>
           <button class="btn subtle" id="gesturesToggle" type="button" onclick="toggleGestures()">👆 Board gestures on</button>
+          <button class="btn subtle" id="musicToggle" type="button" onclick="toggleMusic()">♫ Music on</button>
+        </div>
+        <div class="run-settings">
+          <label for="dasSetting">Move delay (DAS)<select id="dasSetting" onchange="saveInputSettings()"><option value="100">Fast · 100ms</option><option value="156">Classic · 156ms</option><option value="220">Relaxed · 220ms</option></select></label>
+          <label for="arrSetting">Move repeat (ARR)<select id="arrSetting" onchange="saveInputSettings()"><option value="16">Fast · 16ms</option><option value="33">Classic · 33ms</option><option value="66">Relaxed · 66ms</option></select></label>
+          <label for="softSetting">Soft drop<select id="softSetting" onchange="saveInputSettings()"><option value="0">Classic auto</option><option value="20">Fast · 20ms</option><option value="50">Steady · 50ms</option><option value="100">Gentle · 100ms</option></select></label>
+          <p>Timing applies to keyboard movement. Thumb buttons keep their familiar repeat. Close the menu to resume your run.</p>
         </div>
       </details>
     </div>
@@ -1045,7 +1124,8 @@ body::after {
 
   <div class="game-grid">
     <div class="board-wrap" data-motto="Stack clean. Panic dirty.">
-      <canvas width="320" height="640" id="game"></canvas>
+      <div class="well-caption"><span id="zoneName">01 / Porcelain Palace</span><span class="live-dot">● CLASSIC</span></div>
+      <canvas width="320" height="640" id="game" role="img" aria-label="Turdtris playfield. Use arrow keys to move, X or Z to rotate, Space to drop, C to hold, P to pause."></canvas>
 
       <div class="overlay" id="pauseOverlay">
         <div class="overlay-card">
@@ -1058,6 +1138,7 @@ body::after {
 
       <div class="overlay" id="gameOverOverlay">
         <div class="overlay-card" id="endOverlayCard" data-tone="gameover">
+          <div class="record-seal">✦ PERSONAL BEST ✦</div>
           <div class="overlay-kicker" id="endKicker">Pipe Jam</div>
           <h2 id="endTitle">Game Over</h2>
           <p class="overlay-flavor" id="endFlavor">The stack fought back.</p>
@@ -1065,6 +1146,9 @@ body::after {
             <div class="overlay-stat"><div class="k">Final Score</div><div class="v" id="finalScore">0</div></div>
             <div class="overlay-stat"><div class="k">Lines Cleared</div><div class="v" id="finalLines">0</div></div>
             <div class="overlay-stat"><div class="k" id="endBestLabel">Best</div><div class="v" id="endBest">0</div></div>
+            <div class="overlay-stat"><div class="k">Max combo</div><div class="v" id="finalCombo">0</div></div>
+            <div class="overlay-stat"><div class="k">Turdtrises</div><div class="v" id="finalTetrises">0</div></div>
+            <div class="overlay-stat"><div class="k">Time / PPS</div><div class="v" id="finalPace">0:00 / 0.00</div></div>
           </div>
           <p class="overlay-flavor">Space or Enter runs it back.</p>
           <button class="btn" onclick="restartGame()">Play Again</button>
@@ -1180,6 +1264,16 @@ let hypeTimer = 0;
 const SOUND_STORAGE_KEY = 'turdtrisSoundOn_v1';
 let soundEnabled = true;
 let audioCtx = null;
+let audioArmed = false;
+const MUSIC_STORAGE_KEY = 'turdtrisMusic_v1';
+let musicEnabled = true;
+let inputSettings = { das: 156, arr: 33, softDrop: 0 };
+let rotationBuffer = null;
+let runStats = { pieces: 0, elapsedMs: 0, maxCombo: 0, tetrises: 0, tSpins: 0, perfectClears: 0 };
+let effectTime = 0;
+let spawnAge = 0;
+let dropTrails = [];
+let takeover = null;
 
 const TURDTRIS_BALANCE = {
   linesGoalBands: [
@@ -1232,20 +1326,20 @@ function tickDasRepeat(delta) {
   if (!tetromino || gameOver || paused) return;
   if (dasLeftHeld) {
     dasLeftMs += delta;
-    if (dasLeftMs >= DAS_DELAY_MS) {
+    if (dasLeftMs >= inputSettings.das) {
       arrLeftMs += delta;
-      while (arrLeftMs >= ARR_MS) {
-        arrLeftMs -= ARR_MS;
+      while (arrLeftMs >= inputSettings.arr) {
+        arrLeftMs -= inputSettings.arr;
         movePiece(-1);
       }
     }
   }
   if (dasRightHeld) {
     dasRightMs += delta;
-    if (dasRightMs >= DAS_DELAY_MS) {
+    if (dasRightMs >= inputSettings.das) {
       arrRightMs += delta;
-      while (arrRightMs >= ARR_MS) {
-        arrRightMs -= ARR_MS;
+      while (arrRightMs >= inputSettings.arr) {
+        arrRightMs -= inputSettings.arr;
         movePiece(1);
       }
     }
@@ -1368,8 +1462,12 @@ let rAF = null;
 let onboardingOpen = false;
 let guidePausedGame = false;
 let clearHoldIntervalRef = () => {};
+let cancelBoardGesture = () => {};
 
 function clearHeldInput() {
+  cancelBoardGesture();
+  if (rotationBuffer) rotationBuffer.clear();
+  document.querySelectorAll('.control-btn.is-pressed').forEach(btn => btn.classList.remove('is-pressed'));
   softDrop = false;
   clearHoldIntervalRef();
   dasLeftHeld = false;
@@ -1381,6 +1479,7 @@ function clearHeldInput() {
 }
 
 function stopLoop() {
+  if (window.__turdtrisAudio) window.__turdtrisAudio.stop();
   if (rAF) {
     cancelAnimationFrame(rAF);
     rAF = null;
@@ -1480,7 +1579,7 @@ function ensureAudio() {
 }
 
 function unlockAudio() {
-  if (!soundEnabled) return;
+  if (!audioArmed || !soundEnabled || suiteMuted()) return;
   const ctx = ensureAudio();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
@@ -1490,14 +1589,15 @@ function unlockAudio() {
 
 function suiteMuted() {
   try {
-    return window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted();
+    const stored = localStorage.getItem('turdsuite_muted');
+    return stored !== null ? stored === '1' : !!(window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted());
   } catch (err) {
     return false;
   }
 }
 
 function playSfx(type, opts) {
-  if (!soundEnabled || suiteMuted()) return;
+  if (!audioArmed || !soundEnabled || suiteMuted()) return;
   unlockAudio();
   if (window.__turdtrisAudio) {
     window.__turdtrisAudio.play(type, opts || {});
@@ -1510,6 +1610,67 @@ function playSfx(type, opts) {
       window.TurdtrisAudio.playTurdtrisSfx(ctx, type, opts || {});
     }
   } catch (err) {}
+}
+
+function armAudio(event) {
+  if (!event.isTrusted) return;
+  audioArmed = true;
+  if (window.__turdtrisAudio) window.__turdtrisAudio.arm();
+  unlockAudio();
+}
+document.addEventListener('pointerdown', armAudio, { capture: true });
+document.addEventListener('keydown', armAudio, { capture: true });
+
+function updateMusic() {
+  if (window.__turdtrisAudio) window.__turdtrisAudio.update({
+    active: !paused && !gameOver && !onboardingOpen,
+    level,
+    danger: getDangerRatio() >= 0.55
+  });
+}
+
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  try { localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0'); } catch (e) {}
+  syncSettings();
+  updateMusic();
+}
+
+function syncSettings() {
+  const music = document.getElementById('musicToggle');
+  if (music) {
+    music.textContent = musicEnabled ? '♫ Music on' : '♫ Music off';
+    music.setAttribute('aria-pressed', String(musicEnabled));
+  }
+  for (const [id, key] of [['dasSetting', 'das'], ['arrSetting', 'arr'], ['softSetting', 'softDrop']]) {
+    const field = document.getElementById(id);
+    if (!field) continue;
+    const value = String(inputSettings[key]);
+    if (![...field.options].some(option => option.value === value)) {
+      const custom = document.createElement('option');
+      custom.value = value; custom.textContent = `${value}ms`; field.appendChild(custom);
+    }
+    field.value = value;
+  }
+}
+
+function saveInputSettings() {
+  if (!window.TurdtrisPresentation) return;
+  inputSettings = window.TurdtrisPresentation.normalizeInputSettings({
+    das: document.getElementById('dasSetting').value,
+    arr: document.getElementById('arrSetting').value,
+    softDrop: document.getElementById('softSetting').value
+  });
+  try { localStorage.setItem(window.TurdtrisPresentation.INPUT_SETTINGS_KEY, JSON.stringify(inputSettings)); } catch (e) {}
+  clearHeldInput();
+  syncSettings();
+}
+
+function haptic(kind) {
+  const helper = window.TurdtrisPresentation;
+  if (!helper || !navigator.vibrate) return;
+  const duration = helper.hapticDuration(kind, reducedMotion);
+  if (duration) { try { navigator.vibrate(duration); } catch (e) {} }
 }
 
 function loadGesturesPref() {
@@ -1532,6 +1693,7 @@ function updateGesturesButton() {
   const btn = document.getElementById('gesturesToggle');
   if (!btn) return;
   btn.textContent = gesturesEnabled ? '👆 Board gestures on' : '👆 Board gestures off';
+  btn.setAttribute('aria-pressed', String(gesturesEnabled));
 }
 
 function toggleGestures() {
@@ -1546,6 +1708,7 @@ function toggleSound() {
   soundEnabled = !soundEnabled;
   saveSoundPref();
   updateSoundButtons();
+  updateMusic();
   if (soundEnabled) {
     unlockAudio();
     setHype('Sound online. Sewer orchestra armed.', 84);
@@ -1593,7 +1756,7 @@ function triggerSceneShake(amount) {
   const fx = window.TurdtrisFx;
   const scaled = fx && fx.effectiveShake
     ? fx.effectiveShake(amount || 0, reducedMotion)
-    : (amount || 0);
+    : (reducedMotion?.matches ? 0 : (amount || 0));
   sceneShake = Math.min(16, Math.max(sceneShake, scaled));
 }
 
@@ -1619,7 +1782,7 @@ function pushClearCallouts(linesClearedThisTurn, tSpin, perfectClear) {
     combo,
     b2b,
     perfect: perfectClear
-  });
+  }).filter(callout => callout.text !== 'PERFECT CLEAR' && callout.text !== 'TURDTRIS!');
   let y = BOARD_H * 0.22;
   for (let i = 0; i < callouts.length && i < 3; i++) {
     floatTexts.push({
@@ -1709,7 +1872,7 @@ function getKickData(pieceName, from, to) {
   return srsJlstz[key] || [[0, 0]];
 }
 
-function tryRotate(direction) {
+function tryRotate(direction, fromBuffer = false) {
   if (!tetromino || gameOver || paused) return;
 
   const from = tetromino.rotation;
@@ -1731,13 +1894,16 @@ function tryRotate(direction) {
       recentMoveWasRotate = true;
       lastKickUsed = i > 0;
       resetLockDelayOnAction();
+      if (rotationBuffer) rotationBuffer.clear();
       playSfx('rotate');
       return;
     }
   }
+  if (!fromBuffer && rotationBuffer) rotationBuffer.queue(direction, performance.now());
 }
 
 function spawnNextPiece() {
+  spawnAge = 0;
   if (!nextTetromino) nextTetromino = getNextTetromino();
   tetromino = nextTetromino;
   nextTetromino = getNextTetromino();
@@ -1757,6 +1923,10 @@ function spawnNextPiece() {
       return;
     }
     statusText = 'Spawn squeeze saved. Keep stacking.';
+  }
+  if (rotationBuffer) {
+    const pending = rotationBuffer.consume(performance.now());
+    if (pending) tryRotate(pending, true);
   }
 }
 
@@ -1797,6 +1967,7 @@ function holdCurrentPiece() {
     }
   }
 
+  spawnAge = 0;
   statusText = `Holding ${holdName}.`;
   canHold = false;
   lockAccumulator = 0;
@@ -1809,6 +1980,7 @@ function movePiece(offset) {
   const nextCol = tetromino.col + offset;
   if (isValidMove(tetromino.matrix, tetromino.row, nextCol)) {
     tetromino.col = nextCol;
+    playSfx('move');
     tetromino.lastActionRotate = false;
     resetLockDelayOnAction();
   }
@@ -1821,6 +1993,7 @@ function softDropStep() {
   if (isValidMove(tetromino.matrix, nextRow, tetromino.col)) {
     tetromino.row = nextRow;
     score = Math.min(Number.MAX_SAFE_INTEGER, score + 1);
+    playSfx('soft');
     tetromino.lastActionRotate = false;
   } else {
     lockPiece();
@@ -1829,13 +2002,25 @@ function softDropStep() {
 
 function hardDrop() {
   if (!tetromino || gameOver || paused) return;
+  const startRow = tetromino.row;
   let distance = 0;
   while (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) {
     tetromino.row++;
     distance++;
   }
   score = Math.min(Number.MAX_SAFE_INTEGER, score + distance * 2);
+  if (!reducedMotion?.matches && distance > 0) {
+    const cells = tetromino.matrix.flatMap((r, ri) => r.flatMap((v, ci) => v ? [{ x: (tetromino.col + ci) * grid, y: (tetromino.row + ri - 2) * grid }] : []));
+    dropTrails.push({ cells, distance: (tetromino.row - startRow) * grid, color: pieceColors[tetromino.name], age: 0 });
+    dropTrails = dropTrails.slice(-3);
+    for (let n = 0; n < 10; n++) {
+      const cell = cells[n % cells.length];
+      clearSparks.push({ x: cell.x + 16, y: cell.y + 28, vx: (Math.random() - .5) * 4, vy: -Math.random() * 2, size: 2 + Math.random() * 2, life: 15, max: 15, color: '#c1e8d2', spin: .05, rot: 0 });
+    }
+    clearSparks = clearSparks.slice(-96);
+  }
   playSfx('drop');
+  haptic('hardDrop');
   lockPiece();
 }
 
@@ -1851,6 +2036,7 @@ function isGrounded(piece) {
 }
 
 function isTSpin(piece) {
+  if (window.TurdtrisPresentation) return window.TurdtrisPresentation.detectTSpin({ piece, grid: playfield, cols, rows });
   if (!piece || piece.name !== 'T' || !piece.lastActionRotate) return false;
 
   const centerRow = piece.row + 1;
@@ -1992,12 +2178,15 @@ function lockPiece() {
     life: 9
   });
 
+  lockFlashes = lockFlashes.slice(-12);
   const tSpin = isTSpin(tetromino);
 
+  const fullRows = playfield.flatMap((r, row) => r.every(Boolean) ? [{ row, life: 32, colorSeed: r.slice() }] : []);
+  clearEffects.push(...fullRows);
+  clearEffects = clearEffects.slice(-12);
   let linesClearedThisTurn = 0;
   for (let row = rows - 1; row >= 0; row--) {
     if (playfield[row].every((cell) => !!cell)) {
-      clearEffects.push({ row, life: 18, colorSeed: playfield[row].slice() });
       playfield.splice(row, 1);
       playfield.unshift(new Array(cols).fill(0));
       linesClearedThisTurn++;
@@ -2007,12 +2196,16 @@ function lockPiece() {
 
   let turnScore = 0;
   let clutchBonus = 0;
+  runStats.pieces++;
+  if (linesClearedThisTurn === 4) runStats.tetrises++;
+  if (tSpin) runStats.tSpins++;
+  if (linesClearedThisTurn > 0) haptic('clear');
   if (linesClearedThisTurn > 0) {
     playSfx('clear', { linesCleared: linesClearedThisTurn });
     try {
       if (window.Suite) {
         if (tSpin) Suite.hype(Suite.quip('tspin') || 'T-SPIN!');
-        else if (linesClearedThisTurn === 4) { Suite.hype(Suite.quip('tetris') || 'TETRIS!'); Suite.win(); }
+        else if (linesClearedThisTurn === 4) { Suite.hype(Suite.quip('tetris') || 'TETRIS!');  }
         else if (linesClearedThisTurn >= 2) Suite.toast('💩 ' + linesClearedThisTurn + '× ' + (Suite.quip('line') || 'CLEAR'));
       }
     } catch (e) {}
@@ -2034,6 +2227,7 @@ function lockPiece() {
     }
 
     combo++;
+    runStats.maxCombo = Math.max(runStats.maxCombo, combo);
     if (combo > 1) {
       turnScore += combo * 50 * level;
     }
@@ -2041,13 +2235,17 @@ function lockPiece() {
     linesCleared += linesClearedThisTurn;
     levelLines += linesClearedThisTurn;
 
-    const perfectClear = playfield.every((r) => r.every((cell) => !cell));
+    const perfectClear = window.TurdtrisPresentation
+      ? window.TurdtrisPresentation.isPerfectClear(playfield)
+      : playfield.every((r) => r.every((cell) => !cell));
     pushClearCallouts(linesClearedThisTurn, tSpin, perfectClear);
     if (perfectClear) {
+      runStats.perfectClears++;
+      takeover = { age: 0, text: 'PERFECT CLEAR' };
       turnScore += 1200 * level;
       setHype('Perfect clear! The bowl sparkles.', 122);
       triggerSceneShake(3.9);
-      try { if (window.Suite) { Suite.hype(Suite.quip('perfect') || 'PERFECT CLEAR!'); Suite.win(); } } catch (e) {}
+      try { if (window.Suite) { Suite.hype(Suite.quip('perfect') || 'PERFECT CLEAR!');  } } catch (e) {}
     }
 
     const stackHeight = getStackHeight();
@@ -2092,6 +2290,7 @@ function lockPiece() {
     if (clutchBonus > 0) statusText += ` (Clutch +${clutchBonus})`;
 
     if (linesClearedThisTurn === 4) {
+      takeover = { age: 0, text: perfectClear ? 'PERFECT CLEAR' : 'TURDTRIS!' };
       setHype('TURDTRIS! Pipe blast!', 118);
       triggerSceneShake(5.1);
     } else if (tSpin && linesClearedThisTurn >= 2) {
@@ -2106,6 +2305,7 @@ function lockPiece() {
     if (tSpin) {
       turnScore = 100 * level;
       statusText = `T-Spin no line +${turnScore}`;
+      floatTexts.push({ text: 'T-SPIN', x: BOARD_W / 2, y: BOARD_H * .3, life: 48, color: '#d6a2ff' });
       playSfx('clear');
     } else {
       playSfx('lock');
@@ -2143,6 +2343,10 @@ function roundRectPath(ctx, x, y, w, h, r) {
 // Beveled, glossy tile. Used for the stack, the active piece, previews and
 // the ghost (dashed outline). Garbage cells render as cracked sewer stone.
 function drawTile(ctx, x, y, size, colorHex, alpha, opts) {
+  if (window.TurdtrisArt) {
+    window.TurdtrisArt.drawTile(ctx, x, y, size, colorHex, alpha, { ...opts, time: effectTime, reducedMotion: !!reducedMotion?.matches });
+    return;
+  }
   if (size < 4) return;
   const o = opts || {};
   const inset = 1;
@@ -2253,65 +2457,19 @@ function drawPlayfield() {
 
   context.setTransform(DPR, 0, 0, DPR, 0, 0);
   const theme = themes[(level - 1) % themes.length];
-  const bg = context.createLinearGradient(0, 0, 0, BOARD_H);
-  bg.addColorStop(0, theme.bgA);
-  bg.addColorStop(1, theme.bgB);
-  context.fillStyle = bg;
-  context.fillRect(0, 0, BOARD_W, BOARD_H);
-
-  if (levelFlash > 0) {
-    const t = levelFlash / FEEL_LEVEL_FLASH_FRAMES;
-    const pulse = reducedMotion && reducedMotion.matches ? 0.35 : 0.55 + (1 - t) * 0.35;
-    context.fillStyle = `rgba(143, 245, 198, ${(pulse * 0.22).toFixed(3)})`;
+  if (window.TurdtrisArt) {
+    window.TurdtrisArt.drawBackground(context, { level, time: effectTime, danger: getDangerRatio(), reducedMotion: !!reducedMotion?.matches, width: BOARD_W, height: BOARD_H });
+  } else {
+    context.fillStyle = theme.bgA;
+    context.fillRect(0, 0, BOARD_W, BOARD_H);
+  }
+  if (levelFlash > 0 && !reducedMotion?.matches) {
+    context.fillStyle = `rgba(143,245,198,${levelFlash / FEEL_LEVEL_FLASH_FRAMES * .12})`;
     context.fillRect(0, 0, BOARD_W, BOARD_H);
   }
 
-  // Faint checker of well tiles + a soft spotlight down the middle columns
-  context.fillStyle = 'rgba(255,255,255,0.022)';
-  for (let row = 0; row < 20; row++) {
-    for (let col = 0; col < cols; col++) {
-      if ((row + col) % 2 === 0) context.fillRect(col * grid, row * grid, grid, grid);
-    }
-  }
-  const spot = context.createRadialGradient(BOARD_W / 2, BOARD_H * 0.2, 10, BOARD_W / 2, BOARD_H * 0.45, BOARD_H * 0.75);
-  spot.addColorStop(0, 'rgba(255,255,255,0.075)');
-  spot.addColorStop(1, 'rgba(255,255,255,0)');
-  context.fillStyle = spot;
-  context.fillRect(0, 0, BOARD_W, BOARD_H);
-
-  // Grid as crosshair ticks at the intersections (lighter than full lines)
-  context.strokeStyle = theme.grid;
-  context.lineWidth = 1;
-  context.beginPath();
-  for (let row = 1; row < 20; row++) {
-    for (let col = 1; col < cols; col++) {
-      const x = col * grid + 0.5;
-      const y = row * grid + 0.5;
-      context.moveTo(x - 3, y); context.lineTo(x + 3, y);
-      context.moveTo(x, y - 3); context.lineTo(x, y + 3);
-    }
-  }
-  context.stroke();
-
-  // Well walls: inner shadow on both sides and a floor glow
-  const wallL = context.createLinearGradient(0, 0, 18, 0);
-  wallL.addColorStop(0, 'rgba(0,0,0,0.42)');
-  wallL.addColorStop(1, 'rgba(0,0,0,0)');
-  context.fillStyle = wallL;
-  context.fillRect(0, 0, 18, BOARD_H);
-  const wallR = context.createLinearGradient(BOARD_W - 18, 0, BOARD_W, 0);
-  wallR.addColorStop(0, 'rgba(0,0,0,0)');
-  wallR.addColorStop(1, 'rgba(0,0,0,0.42)');
-  context.fillStyle = wallR;
-  context.fillRect(BOARD_W - 18, 0, 18, BOARD_H);
-  const floor = context.createLinearGradient(0, BOARD_H - 40, 0, BOARD_H);
-  floor.addColorStop(0, 'rgba(255,203,135,0)');
-  floor.addColorStop(1, 'rgba(255,203,135,0.12)');
-  context.fillStyle = floor;
-  context.fillRect(0, BOARD_H - 40, BOARD_W, 40);
-
   const dangerRatio = getDangerRatio();
-  if (dangerRatio > 0) {
+  if (dangerRatio > 0 && !window.TurdtrisArt) {
     const pulse = reducedMotion?.matches ? 1 : 0.55 + Math.sin(Date.now() / 130) * 0.35;
     const alpha = (0.08 + dangerRatio * 0.3) * Math.max(0.2, pulse);
     const danger = context.createLinearGradient(0, 0, 0, BOARD_H * 0.55);
@@ -2334,7 +2492,7 @@ function drawPlayfield() {
     const lf = lockFlashes[i];
     lf.life--;
     if (lf.life <= 0) { lockFlashes.splice(i, 1); continue; }
-    const strength = (lf.life / 9) * 0.55;
+    const strength = reducedMotion?.matches ? 0 : (lf.life / 9) * 0.35;
     for (const [r, c] of lf.cells) flashMap.set(r * 100 + c, strength);
   }
 
@@ -2344,7 +2502,7 @@ function drawPlayfield() {
       if (!cell) continue;
       const cellColor = pieceColors[cell] || '#b0a498';
       const flash = flashMap.get(row * 100 + col) || 0;
-      drawCell(col * grid, (row - 2) * grid, cellColor, 1, flash ? { flash } : undefined);
+      drawCell(col * grid, (row - 2) * grid, cellColor, 1, flash ? { flash, lockProgress: 1 - flash / .35 } : undefined);
     }
   }
 
@@ -2355,9 +2513,9 @@ function drawPlayfield() {
       fx.sparked = true;
       const y = (fx.row - 2) * grid + grid / 2;
       const sparkBudget = (window.TurdtrisFx && window.TurdtrisFx.sparkCountForClear)
-        ? window.TurdtrisFx.sparkCountForClear(26, reducedMotion)
-        : (reducedMotion && reducedMotion.matches ? 8 : 26);
-      for (let k = 0; k < sparkBudget; k++) {
+        ? window.TurdtrisFx.sparkCountForClear(16, reducedMotion)
+        : (reducedMotion?.matches ? 0 : 16);
+      for (let k = 0; k < sparkBudget && !reducedMotion?.matches; k++) {
         const name = fx.colorSeed[Math.floor(Math.random() * cols)] || 'O';
         clearSparks.push({
           x: Math.random() * BOARD_W, y: y + (Math.random() - 0.5) * grid,
@@ -2368,25 +2526,16 @@ function drawPlayfield() {
       }
     }
     fx.life--;
-    const t = Math.max(0, fx.life / 18);
-    const rowY = (fx.row - 2) * grid;
-    for (let col = 0; col < cols; col++) {
-      const name = fx.colorSeed[col] || 'O';
-      // Cells shrink toward their centre while fading out
-      const shrink = grid * (1 - t) * 0.5;
-      drawTile(context, col * grid + shrink, rowY + shrink, grid - shrink * 2, pieceColors[name] || '#ffe1a6', t, { flash: t > 0.6 ? (t - 0.6) * 2 : 0 });
-    }
-    // Horizontal light sweep
-    context.save();
-    context.globalAlpha = t * 0.85;
-    const sweep = context.createLinearGradient(0, rowY, 0, rowY + grid);
-    sweep.addColorStop(0, 'rgba(255,255,255,0)');
-    sweep.addColorStop(0.5, 'rgba(255,255,255,0.9)');
-    sweep.addColorStop(1, 'rgba(255,255,255,0)');
-    context.fillStyle = sweep;
-    context.fillRect(0, rowY, BOARD_W, grid);
-    context.restore();
+    if (window.TurdtrisArt) window.TurdtrisArt.drawFlush(context, {
+      rowY: (fx.row - 2) * grid, colors: fx.colorSeed.map(name => pieceColors[name]),
+      progress: 1 - fx.life / 32, size: grid, width: BOARD_W, reducedMotion: !!reducedMotion?.matches
+    });
     if (fx.life <= 0) clearEffects.splice(i, 1);
+  }
+
+  clearSparks = reducedMotion?.matches ? [] : clearSparks.slice(-96);
+  if (window.TurdtrisArt && !reducedMotion?.matches) {
+    for (const trail of dropTrails) window.TurdtrisArt.drawDropTrail(context, { ...trail, progress: trail.age / 250, reducedMotion: false });
   }
 
   // Sparks from line clears (render-only)
@@ -2419,12 +2568,21 @@ function drawPlayfield() {
         if (!tetromino.matrix[row][col]) continue;
         const drawY = tetromino.row + row - 2;
         if (drawY < 0) continue;
-        drawCell((tetromino.col + col) * grid, drawY * grid, pieceColors[tetromino.name], 1);
+        drawCell((tetromino.col + col) * grid, drawY * grid, pieceColors[tetromino.name], 1, { spawnProgress: Math.min(1, spawnAge / 180) });
       }
     }
   }
 
+  // A calm, persistent landing meter communicates lock delay without a flash.
+  if (tetromino && isGrounded(tetromino)) {
+    const left = Math.max(4, Math.min(BOARD_W - 100, tetromino.col * grid));
+    const bottom = Math.min(BOARD_H - 7, Math.max(16, (tetromino.row + tetromino.matrix.length - 2) * grid + 4));
+    context.fillStyle = '#081815'; context.fillRect(left, bottom, 96, 4);
+    context.fillStyle = lockAccumulator > 350 ? '#ffb877' : '#b6ffe4';
+    context.fillRect(left, bottom, 96 * Math.max(0, 1 - lockAccumulator / lockDelayMs), 4);
+  }
   drawFloatTexts();
+  if (takeover && window.TurdtrisArt) window.TurdtrisArt.drawTakeover(context, { progress: takeover.age / 1400, width: BOARD_W, height: BOARD_H, text: takeover.text, reducedMotion: !!reducedMotion?.matches });
   context.restore();
 }
 
@@ -2527,6 +2685,7 @@ function drawHoldPreview() {
 }
 
 function drawFloatTexts() {
+  floatTexts = floatTexts.slice(-12);
   for (let i = floatTexts.length - 1; i >= 0; i--) {
     const f = floatTexts[i];
     f.life--;
@@ -2542,7 +2701,7 @@ function drawFloatTexts() {
     context.fillStyle = f.color || '#ffe8c4';
     context.fillText(f.text, f.x, f.y);
     context.restore();
-    f.y -= 0.5;
+    if (!reducedMotion?.matches) f.y -= 0.5;
     if (f.life <= 0) floatTexts.splice(i, 1);
   }
 }
@@ -2553,6 +2712,11 @@ function updateScore() {
     try { localStorage.setItem('turdtrisHighScore', String(highScore)); } catch (e) {}
   }
 
+  const zone = window.TurdtrisTheme ? window.TurdtrisTheme(level) : null;
+  if (zone) {
+    const zoneEl = document.getElementById('zoneName');
+    if (zoneEl) zoneEl.textContent = zone.name;
+  }
   const scoreEl = document.getElementById('score');
   const highScoreEl = document.getElementById('highScore');
   const levelEl = document.getElementById('level');
@@ -2609,13 +2773,13 @@ function updateScore() {
   if (statusEl) {
     const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
     const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';
-    statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
+    statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${zone ? zone.name : themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
     statusEl.classList.toggle('hype', hypeTimer > 0);
   }
   const liveEl = document.getElementById('statusLive');
   if (liveEl) {
     const short = hypeTimer > 0 && hypeText ? hypeText : statusText;
-    liveEl.textContent = short;
+    if (liveEl.textContent !== short) liveEl.textContent = short;
   }
 }
 
@@ -2623,14 +2787,16 @@ function showGameOver(won) {
   const isWin = !!won;
   gameOver = true;
   paused = false;
+  clearHeldInput();
+  if (window.__turdtrisAudio) window.__turdtrisAudio.stop();
   if (rAF) {
     cancelAnimationFrame(rAF);
     rAF = null;
   }
   try {
     if (window.Suite) {
-      if (isWin) { Suite.hype(Suite.quip('win') || 'CERTIFIED FLUSHER'); Suite.win(); }
-      else        { Suite.hype(Suite.quip('lose') || 'FLUSHED'); Suite.fart(); }
+      if (isWin) { Suite.hype(Suite.quip('win') || 'CERTIFIED FLUSHER');  }
+      else        { Suite.hype(Suite.quip('lose') || 'FLUSHED');  }
     }
   } catch (e) {}
 
@@ -2653,6 +2819,12 @@ function showGameOver(won) {
       ? 'You hit level 69, made the stack panic, and left the whole arcade smelling victory.'
       : 'The stack finally buckled you. Take a breath, then bring the filth back cleaner.';
   }
+  if (overlayCardEl) overlayCardEl.classList.toggle('is-record', isNewBest);
+  document.getElementById('finalCombo').textContent = String(runStats.maxCombo);
+  document.getElementById('finalTetrises').textContent = String(runStats.tetrises);
+  const seconds = Math.floor(runStats.elapsedMs / 1000);
+  const pps = runStats.elapsedMs > 0 ? runStats.pieces / (runStats.elapsedMs / 1000) : 0;
+  document.getElementById('finalPace').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} / ${pps.toFixed(2)}`;
   if (overlayEl) overlayEl.style.display = 'grid';
   if (finalScoreEl) finalScoreEl.textContent = String(score);
   if (finalLinesEl) finalLinesEl.textContent = String(linesCleared);
@@ -2666,6 +2838,10 @@ function showGameOver(won) {
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
+  if (!paused) {
+    const menu = document.querySelector('.mobile-menu details');
+    if (menu) menu.open = false;
+  }
   playSfx('pause');
 
   const overlayEl = document.getElementById('pauseOverlay');
@@ -2679,6 +2855,15 @@ function togglePause() {
 }
 
 function restartGame() {
+  const menu = document.querySelector('.mobile-menu details');
+  if (menu) menu.open = false;
+  clearHeldInput();
+  if (window.__turdtrisAudio) window.__turdtrisAudio.stop();
+  runStats = { pieces: 0, elapsedMs: 0, maxCombo: 0, tetrises: 0, tSpins: 0, perfectClears: 0 };
+  effectTime = 0;
+  spawnAge = 0;
+  dropTrails = [];
+  takeover = null;
   score = 0;
   level = 1;
   linesCleared = 0;
@@ -2746,17 +2931,28 @@ function loop(timestamp) {
   if (gameOver) return;
 
   if (!lastFrameTime) lastFrameTime = timestamp;
-  const delta = clampFrameDelta(timestamp - lastFrameTime);
+  const wallDelta = Math.max(0, timestamp - lastFrameTime);
+  const delta = clampFrameDelta(wallDelta);
   lastFrameTime = timestamp;
 
   if (!paused && tetromino) {
-    const gravity = softDrop ? Math.max(20, Math.floor(getGravityMs() / 15)) : getGravityMs();
+    runStats.elapsedMs += wallDelta;
+    effectTime += delta;
+    if (tetromino.matrix.some((r, ri) => tetromino.row + ri >= 2 && r.some(Boolean))) spawnAge += delta;
+    dropTrails.forEach(trail => { trail.age += delta; });
+    dropTrails = dropTrails.filter(trail => trail.age < 250);
+    if (takeover) { takeover.age += delta; if (takeover.age >= 1400) takeover = null; }
+    const softGravity = window.TurdtrisPresentation
+      ? window.TurdtrisPresentation.softDropInterval(getGravityMs(), inputSettings)
+      : Math.max(20, Math.floor(getGravityMs() / 15));
+    const gravity = softDrop ? softGravity : getGravityMs();
     dropAccumulator += delta;
 
     while (dropAccumulator >= gravity) {
       dropAccumulator -= gravity;
       if (isValidMove(tetromino.matrix, tetromino.row + 1, tetromino.col)) {
         tetromino.row++;
+        if (softDrop) playSfx('soft');
         tetromino.lastActionRotate = false;
       } else {
         break;
@@ -2776,12 +2972,16 @@ function loop(timestamp) {
     tickDasRepeat(delta);
   }
 
+  updateMusic();
   updateSceneFx();
   drawPlayfield();
+  if (gameOver || paused) return;
   rAF = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', (e) => {
+  if (e.target?.matches?.('select, input, textarea, summary')) return;
+  if (!gameOver && e.target?.matches?.('button') && (e.code === 'Space' || e.code === 'Enter')) return;
   if (onboardingOpen) {
     if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
       e.preventDefault();
@@ -2898,7 +3098,9 @@ if (mobileControls) {
     unlockAudio();
 
     const action = target.getAttribute('data-action');
-    if (paused && action !== 'pause') return;
+    if ((paused || gameOver) && action !== 'pause') return;
+    target.classList.add('is-pressed');
+    if (action !== 'drop') haptic(action === 'down' ? 'softDrop' : (action === 'left' || action === 'right') ? 'move' : action);
     clearHoldInterval();
     if (action !== 'down') softDrop = false;
     const run = () => {
@@ -2915,7 +3117,8 @@ if (mobileControls) {
     };
 
     run();
-    if (action === 'left' || action === 'right' || action === 'down') {
+    updateScore();
+    if (!gameOver && !paused && (action === 'left' || action === 'right' || action === 'down')) {
       holdDelayTimeout = setTimeout(() => {
         holdDelayTimeout = null;
         holdInterval = setInterval(run, MOBILE_REPEAT_MS);
@@ -2926,8 +3129,23 @@ if (mobileControls) {
   const endHold = () => {
     softDrop = false;
     clearHoldInterval();
+    mobileControls.querySelectorAll('.is-pressed').forEach(btn => btn.classList.remove('is-pressed'));
   };
 
+  mobileControls.addEventListener('click', (e) => {
+    // Mouse/touch already act on press. Keyboard activation produces detail=0.
+    if (e.detail !== 0 || onboardingOpen || gameOver) return;
+    const action = e.target.closest('[data-action]')?.dataset.action;
+    if (!action || (paused && action !== 'pause')) return;
+    if (action === 'left') movePiece(-1);
+    if (action === 'right') movePiece(1);
+    if (action === 'rotate') tryRotate(1);
+    if (action === 'down') softDropStep();
+    if (action === 'drop') hardDrop();
+    if (action === 'hold') holdCurrentPiece();
+    if (action === 'pause') togglePause();
+    updateScore();
+  });
   mobileControls.addEventListener('pointerup', endHold);
   mobileControls.addEventListener('pointercancel', endHold);
   mobileControls.addEventListener('pointerleave', endHold);
@@ -2942,10 +3160,14 @@ if (canvas) {
   let touchStartX = 0;
   let touchStartY = 0;
   let touchStartTime = 0;
+  cancelBoardGesture = () => { touchStartTime = 0; };
+  canvas.addEventListener('touchcancel', cancelBoardGesture, { passive: true });
 
   canvas.addEventListener('touchstart', (e) => {
-    if (onboardingOpen) return;
-    if (gameOver) return;
+    if (onboardingOpen || paused || gameOver || !gesturesEnabled || e.touches.length !== 1) {
+      touchStartTime = 0;
+      return;
+    }
     unlockAudio();
     const touch = e.touches[0];
     if (!touch) return;
@@ -2957,29 +3179,34 @@ if (canvas) {
   canvas.addEventListener('touchend', (e) => {
     if (onboardingOpen) return;
     if (gameOver || paused) return;
-    if (!gesturesEnabled) return;
+    if (!gesturesEnabled || !touchStartTime) return;
 
     const touch = e.changedTouches[0];
     if (!touch) return;
     const dx = touch.clientX - touchStartX;
     const dy = touch.clientY - touchStartY;
     const dt = Date.now() - touchStartTime;
+    touchStartTime = 0;
 
-    if (dt < 180 && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
-      tryRotate(1);
-      return;
+    const action = window.TurdtrisPresentation?.classifyGesture({ dx, dy, elapsedMs: dt });
+    if (action === 'rotate') tryRotate(1);
+    if (action === 'left' || action === 'right') {
+      const steps = Math.min(5, Math.max(1, Math.floor(Math.abs(dx) / 32)));
+      for (let i = 0; i < steps; i++) movePiece(action === 'left' ? -1 : 1);
     }
-
-    if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx > 25) movePiece(1);
-      if (dx < -25) movePiece(-1);
-      return;
+    if (action === 'softDrop') {
+      const steps = Math.min(4, Math.max(1, Math.floor(dy / 32)));
+      const piece = tetromino;
+      for (let i = 0; i < steps && tetromino === piece; i++) softDropStep();
     }
-
-    if (dy > 25) hardDrop();
+    if (action === 'hardDrop') hardDrop();
+    else if (action) haptic(action === 'left' || action === 'right' ? 'move' : action);
+    updateScore();
   }, { passive: true });
 }
 
+try { musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0'; } catch (e) {}
+syncSettings();
 soundEnabled = loadSoundPref();
 gesturesEnabled = loadGesturesPref();
 updateSoundButtons();
@@ -3122,16 +3349,29 @@ if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
 
 window.turdtrisRuntime = {
   ensureAudio,
-  soundEnabled: () => soundEnabled
+  soundEnabled: () => soundEnabled,
+  musicEnabled: () => musicEnabled,
+  audioArmed: () => audioArmed,
+  initializePresentation(helpers, theme) {
+    window.TurdtrisPresentation = helpers;
+    window.TurdtrisTheme = theme;
+    rotationBuffer = new helpers.RotationBuffer();
+    try { inputSettings = helpers.parseInputSettings(localStorage.getItem(helpers.INPUT_SETTINGS_KEY)); } catch (e) {}
+    syncSettings();
+    updateScore(); drawPlayfield(); drawNextPreview(); drawHoldPreview();
+  }
 };
 
 </script>
 <script type="module">
 import * as TurdtrisFx from './games/turdtris-fx.js';
+import * as TurdtrisPresentation from './games/turdtris-presentation.js';
+import { createTurdtrisArt, themeForLevel } from './games/turdtris-art.js';
 import { createTurdtrisAudioPlayer, playTurdtrisSfx } from './games/turdtris-audio.js';
-import { shouldUseBoardFocusLayout } from './games/turdtris-layout.js';
+import { shouldUseBoardFocusLayout, boardCanvasCssWidth } from './games/turdtris-layout.js';
 
 window.TurdtrisFx = TurdtrisFx;
+window.TurdtrisArt = createTurdtrisArt();
 window.TurdtrisAudio = { playTurdtrisSfx };
 
 function wireTurdtrisRuntime() {
@@ -3140,17 +3380,34 @@ function wireTurdtrisRuntime() {
   window.__turdtrisAudio = createTurdtrisAudioPlayer({
     getContext: () => rt.ensureAudio(),
     getSoundEnabled: () => rt.soundEnabled(),
-    getSuiteMuted: () => (window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted())
+    getMusicEnabled: () => rt.musicEnabled(),
+    getSuiteMuted: () => suiteMuted()
   });
+  if (rt.audioArmed()) window.__turdtrisAudio.arm();
+  rt.initializePresentation(TurdtrisPresentation, themeForLevel);
 }
 
 function applyBoardFocus() {
   document.body.classList.toggle('board-focus', shouldUseBoardFocusLayout(window.innerWidth));
+  const board = document.getElementById('game');
+  if (board) board.style.width = boardCanvasCssWidth(window.innerWidth, window.innerHeight).width;
 }
 
 wireTurdtrisRuntime();
 applyBoardFocus();
 window.addEventListener('resize', applyBoardFocus);
+const runMenu = document.querySelector('.mobile-menu details');
+let menuPausedRun = false;
+runMenu.addEventListener('toggle', () => {
+  if (runMenu.open) {
+    menuPausedRun = !paused && !gameOver && !onboardingOpen;
+    if (menuPausedRun) togglePause();
+  } else if (menuPausedRun) {
+    menuPausedRun = false;
+    if (paused && !gameOver && !onboardingOpen) togglePause();
+  }
+});
+window.addEventListener('storage', updateMusic);
 </script>
 </body>
 </html>
