@@ -120,3 +120,26 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 - Physical-phone audio, haptics and frame-rate profiling: NOT RUN.
 
 Round 2 complete: 13 / 14 targets done; only the optional Sprint/Ultra stretch target remains. All changes are committed locally on the lane branch.
+
+## Round 3 — quality, playtest, finish
+
+### Honest audit before implementation
+
+- **Gameplay:** Classic's live inline scoring differs from the simplified engine module. Compatibility must exercise the HTML against b3821b4, including combo indexing, B2B ordering, drop points and the actual gravity curve. Separate timed/line challenges remain absent.
+- **Feel / graphics / animation:** The procedural cabinet and four chapters are established. Short-phone overlays and legibility need screenshot review during sustained play, rather than only initial-state geometry checks. Busy clear effects can obscure the landing zone.
+- **Audio:** Gesture and mute gating have unit coverage; the sustained browser exercise must include a persisted mute and verify that no audio context starts there.
+- **HUD / mobile:** The dock fits both phone sizes in prior measurements, but sustained score growth, pause/menu transitions and end receipts still need automated coverage at 320px. Preserve smoke-tested controls and labels.
+- **Accessibility / onboarding:** Reduced-motion behavior exists but needs a complete browser run. Guide/menu pause ownership must be checked while movement is held; keyboard focus must not accidentally drive the board.
+- **Performance:** Cached material artwork exists, but the renderer still constructs a Map each frame, copies particle arrays, creates option/envelope objects per tile and builds gradients for trails. These are measurable optimization targets, not grounds to claim 60fps before profiling.
+- **AI:** No opponent AI applies. A simple placement bot is useful as a sustained gameplay test driver, with real input paths and progress assertions.
+
+### Round 3 checklist
+
+- [ ] Standalone autoplay harness: ~90s each at 390×844, 320×640, 1280×800, reduced-motion and muted; screenshots every ~10s plus machine-readable FPS, long tasks, errors and state checks.
+- [ ] Inspect captured screenshots; fix cramped/overlapping HUD, overlays, dock targets and poor tile/environment contrast.
+- [ ] Pin live Classic scoring and speed/level progression to b3821b4 in Vitest.
+- [ ] Remove avoidable steady-frame render allocations and verify sprite/background caching with tests and browser measurements.
+- [ ] Opt-in Sprint 40L and Ultra 2-minute modes with isolated new best keys and specific completion receipts.
+- [ ] Full `npx vitest run`, `npm run lint`, and Chromium smoke on 8152; document measured FPS and remaining limitations.
+
+The explicitly requested `scripts/turdtris-autoplay.mjs` and this lane report are the only additions outside the lane's game/test file patterns. Generated evidence goes to the conductor's explicitly requested screenshot directory; no other checkout is modified.
