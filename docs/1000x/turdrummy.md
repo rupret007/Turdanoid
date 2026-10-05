@@ -180,8 +180,8 @@ Run it with `--match` to play a whole match to the trophy. Screenshots go to `--
 
 ### Measured
 - Full sweep (2 rounds each, seed 1): phone, small, desktop, reduced, continue and keyboard all clean.
-- Full match at 390x844 (seed 7): 8-9 rounds, trophy shown, no findings.
-- Bot turn latency: median about 610 ms, max about 660 ms.
+- Full matches at 390x844: 7-10 rounds each, trophy shown, no findings.
+- Bot turn latency: median about 610 ms; the slowest bot turn in the runs was about 1 s (one sample).
 - Reduced motion: 0 flights, 0 confetti canvases across a 2-round run.
 - Continue: a mid-round table left for the hub and reopened restores identically; the next move is accepted.
 
