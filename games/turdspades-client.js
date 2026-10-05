@@ -79,6 +79,30 @@ function ensureReceiptRoot() {
   return el;
 }
 
+function ensureTableAnnouncer() {
+  let el = document.getElementById('tsTableAnnouncer');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tsTableAnnouncer';
+    el.className = 'ts-table-announcer';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.setAttribute('aria-atomic', 'true');
+    document.querySelector('.app')?.prepend(el);
+  }
+  return el;
+}
+
+function announceTable(text) {
+  if (!text) {
+    return;
+  }
+  const el = ensureTableAnnouncer();
+  el.textContent = '';
+  void el.offsetWidth;
+  el.textContent = text;
+}
+
 function showBotHint(text) {
   if (!text) {
     return;
@@ -345,6 +369,9 @@ export function mountTurdspadesEnhancements() {
     const { card, player } = ev.detail || {};
     audio.playCardPlay(card);
     const seat = NAMES[player] || 'You';
+    if (player !== 0) {
+      announceTable(`${seat} plays ${formatCardLabel(card)}`);
+    }
     flyCardToTrick(sweepLayer, seat, formatCardLabel(card), { reduced: reduced() });
   });
 
@@ -373,6 +400,15 @@ export function mountTurdspadesEnhancements() {
 
   window.addEventListener('turdspades:round-scored', (ev) => {
     const detail = ev.detail || {};
+    const delta = detail.deltaUs;
+    if (typeof delta === 'number') {
+      const sign = delta >= 0 ? '+' : '';
+      announceTable(
+        detail.matchEnd
+          ? `Match over. Your team ${sign}${delta} this round.`
+          : `Round scored. Your team ${sign}${delta}.`
+      );
+    }
     showScoringReceipt(receiptRoot, {
       title: detail.matchEnd ? 'Match settled' : 'Round receipt',
       lines: detail.lines || [],
@@ -403,6 +439,7 @@ export function mountTurdspadesEnhancements() {
 
   window.addEventListener('turdspades:spades-broken', () => {
     audio.playSpadesBroken();
+    announceTable('Spades are broken — trump is live');
     pulseSpadesBroken(tableEl, reduced());
     spawnSpadeShards(fxCanvas, reduced());
   });
@@ -410,6 +447,7 @@ export function mountTurdspadesEnhancements() {
   window.addEventListener('turdspades:trick-complete', (ev) => {
     const { winner, trick } = ev.detail || {};
     audio.playTrickWin();
+    announceTable(`${NAMES[winner] || 'Player'} wins the trick`);
     tsEventAvatar(winner, 'happy');
     if (!trick?.length) {
       return;

@@ -321,6 +321,13 @@ Partnership Spades trick-taking game against two CPU opponents.
 5. Shed low cards when the contract is safe and trump when void if a trick is needed
 6. **Difficulty** (top bar, stored as `turdspades_ai_difficulty_v1`): **Easy** mirrors classic heuristics; **Normal** (default) tracks played spades and avoids overtrumping a set partner; **Hard** is more conservative with trump when bags/contract are safe
 
+### Controls
+
+- **Bid**: +/- dial, bid chips, **N** for Nil, **Lock Bid** (or **Enter**)
+- **Play**: Tap/select a legal card, **Play Selected** (or **Enter**); **←/→** move focus among legal cards
+- **Round end**: **Next Round** or **Enter**
+- Screen reader: live announcements for bot plays, trick wins, spades broken, and round scoring
+
 ### Table UI (1000x)
 
 - Compact **Us vs Them** strip always visible; **Score details** expands the full stat tiles
