@@ -276,6 +276,8 @@ describe('TurdspadesEngine', () => {
       expect(livePage).toContain('function scheduleAiIfNeeded');
       expect(livePage).toContain('function suspendPlayForBackground');
       expect(livePage).toContain("window.addEventListener('blur', suspendPlayForBackground)");
+      expect(livePage).toContain('function tsEvent');
+      expect(livePage).toContain('turdspades-client.js');
       expect(livePage).not.toContain('guard < 80');
     });
 
