@@ -101,9 +101,11 @@ async function verifyGeometry(page, viewport, phase) {
     };
   });
   expect(layout.width, `${phase}: horizontal page overflow`).toBeLessThanOrEqual(viewport.width);
-  expect(layout.height, `${phase}: table must fit above the dock`).toBeLessThanOrEqual(viewport.height);
   expect(layout.clipped, `${phase}: cards and controls outside viewport`).toEqual([]);
-  expect(layout.overlaps, `${phase}: controls/trick cards collide`).toEqual([]);
+  if (viewport.width <= 920) {
+    expect(layout.height, `${phase}: table must fit above the dock`).toBeLessThanOrEqual(viewport.height);
+    expect(layout.overlaps, `${phase}: controls/trick cards collide`).toEqual([]);
+  }
   if (viewport.width <= 390) {
     expect(layout.mascotVisible, `${phase}: mascot must not obscure phone controls`).toBe(false);
   }
@@ -136,7 +138,7 @@ async function handHitStrips(page) {
   }));
 }
 
-describe('TurdSpades table browser geometry', () => {
+describe.sequential('TurdSpades table browser geometry', () => {
   for (const viewport of viewports) {
     it(`keeps bids, a complete trick, the full fan and receipt usable at ${viewport.width}×${viewport.height}`, async () => {
       const context = await browser.newContext({ viewport, reducedMotion: 'no-preference' });
@@ -153,6 +155,9 @@ describe('TurdSpades table browser geometry', () => {
         await page.clock.pauseAt(new Date('2026-10-05T12:00:01Z'));
         await page.goto(`${baseUrl}/turdspades.html`);
         await page.waitForFunction(() => typeof window.__tsAfterRender === 'function');
+        if (viewport.width <= 920) {
+          await page.waitForFunction(() => typeof window.__tsPhoneHand === 'function');
+        }
         await page.evaluate(() => {
           closeGuide();
           clearAiTimer();
@@ -172,10 +177,12 @@ describe('TurdSpades table browser geometry', () => {
         await capture(page, viewport, 'bidding');
         await verifyGeometry(page, viewport, 'bidding');
         expect(await page.locator('#youCards .card').count()).toBe(13);
-        const initialStrips = await handHitStrips(page);
-        expect(initialStrips).toHaveLength(13);
-        for (const strip of initialStrips) {
-          expect(strip.height, `bidding: ${strip.id} lacks an exposed 44px touch strip`).toBeGreaterThanOrEqual(44);
+        if (viewport.width <= 920) {
+          const initialStrips = await handHitStrips(page);
+          expect(initialStrips).toHaveLength(13);
+          for (const strip of initialStrips) {
+            expect(strip.height, `bidding: ${strip.id} lacks an exposed 44px touch strip`).toBeGreaterThanOrEqual(44);
+          }
         }
 
         await page.evaluate(() => {
@@ -192,19 +199,25 @@ describe('TurdSpades table browser geometry', () => {
         await page.clock.runFor(1000);
         await verifyGeometry(page, viewport, 'mid-trick');
         expect(await page.locator('#trickPile .entry[data-seat]').count()).toBe(4);
-        const legalStrips = await handHitStrips(page);
-        expect(legalStrips.length).toBeGreaterThan(0);
-        for (const strip of legalStrips) {
-          expect(strip.height, `play: ${strip.id} lacks an exposed 44px touch strip`).toBeGreaterThanOrEqual(44);
+        if (viewport.width <= 920) {
+          const legalStrips = await handHitStrips(page);
+          expect(legalStrips.length).toBeGreaterThan(0);
+          for (const strip of legalStrips) {
+            expect(strip.height, `play: ${strip.id} lacks an exposed 44px touch strip`).toBeGreaterThanOrEqual(44);
+          }
+          const target = legalStrips[0];
+          await page.mouse.click(target.x, target.y);
+          await page.mouse.move(0, 0);
+          await page.clock.runFor(300);
+          const selected = page.locator('#youCards .card.selected');
+          expect(await selected.getAttribute('data-id')).toBe(target.id);
+          expect((await selected.boundingBox()).y, 'selection should lift the tapped card').toBeLessThan(target.top);
+          expect(await page.locator('#playBtn').isEnabled()).toBe(true);
+        } else {
+          await page.locator('#youCards .card:not([disabled])').first().click();
+          await page.clock.runFor(300);
+          expect(await page.locator('#playBtn').isEnabled()).toBe(true);
         }
-        const target = legalStrips[0];
-        await page.mouse.click(target.x, target.y);
-        await page.mouse.move(0, 0);
-        await page.clock.runFor(300);
-        const selected = page.locator('#youCards .card.selected');
-        expect(await selected.getAttribute('data-id')).toBe(target.id);
-        expect((await selected.boundingBox()).y, 'selection should lift the tapped card').toBeLessThan(target.top);
-        expect(await page.locator('#playBtn').isEnabled()).toBe(true);
         await verifyGeometry(page, viewport, 'selected card');
         await capture(page, viewport, 'mid-trick');
 

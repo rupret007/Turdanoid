@@ -35,13 +35,13 @@ The round 3 horizontal-scroll checks were insufficient: overflow clipping hid th
 | Accessibility | Preserve keyboard/button contracts, label cards and expose selection. Keep touch surfaces at least 44px high; show legal and illegal cards distinctly. |
 | Performance | Compute geometry on render/resize only. No animation loop, runtime network assets or new dependencies. |
 
-- [ ] One compact four-seat felt at 390×844 and 320×640; play page fits the viewport.
-- [ ] Width-aware 13-card hand; selected lift, legal glow, dimmed illegal cards, reachable exposed hit areas.
-- [ ] Phone mascot and floating Hub cannot cover cards or buttons.
-- [ ] Compact bid controls and round receipt fit both phone widths.
-- [ ] Preserve smoke selectors, scoring, AI behavior and continue snapshots.
-- [ ] Playwright screenshots for bidding, mid-trick and receipt at 390×844, 320×640 and 1280×800; geometry and hit-testing assertions.
-- [ ] Full unit/browser tests, lint and required smoke pass; local commits only.
+- [x] One compact four-seat felt at 390×844 and 320×640; play page fits the viewport.
+- [x] Width-aware 13-card hand; selected lift, legal glow, dimmed illegal cards, reachable exposed hit areas.
+- [x] Phone mascot and floating Hub cannot cover cards or buttons.
+- [x] Compact bid controls and round receipt fit both phone widths.
+- [x] Preserve smoke selectors, scoring, AI behavior and continue snapshots.
+- [x] Playwright screenshots for bidding, mid-trick and receipt at 390×844, 320×640 and 1280×800; geometry and hit-testing assertions.
+- [x] Full unit/browser tests, lint and required smoke pass; local commits only.
 
 ### Round 1 (done)
 - [x] WebAudio SFX module (card, trick, spades broken, bid, bag, match) + mute + gesture unlock
