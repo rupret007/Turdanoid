@@ -494,6 +494,7 @@
       position: relative;
       width: min(168px, 42vw);
       height: min(168px, 42vw);
+      overflow: hidden;
       border-radius: 50%;
       border: 2px solid rgba(255, 215, 106, 0.35);
       background:
@@ -554,8 +555,24 @@
       border-radius: 50%;
       background: radial-gradient(circle at 30% 28%, #fff, transparent 40%), radial-gradient(circle, #a6e4ff, #2b7cb0);
       animation: chipFlyBet 0.42s cubic-bezier(0.2, 1.2, 0.35, 1) forwards;
-      z-index: 6;
+      z-index: 1;
       pointer-events: none;
+    }
+
+    .table-stage #playerHandWrap .cards,
+    .table-stage #splitHandWrap .cards,
+    .table-stage .zone-dealer .cards {
+      position: relative;
+      z-index: 3;
+    }
+
+    .table-bet-zone {
+      position: relative;
+      z-index: 0;
+    }
+
+    .table[data-phase="playing"] .flying-chip {
+      display: none !important;
     }
 
     @keyframes chipFlyBet {
@@ -733,6 +750,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
     }
 
     .table-edge-streak {
@@ -1234,6 +1252,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       margin-bottom: 8px;
       font-size: 0.9rem;
       color: var(--ink);
@@ -1245,6 +1264,13 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
+      flex: 1 1 auto;
+      white-space: nowrap;
+    }
+
+    .hand-title strong .seat-label-short {
+      display: none;
     }
 
     .hand-title strong[data-icon]::before {
@@ -2003,6 +2029,26 @@
       .table[data-phase="betting"] .mobile-felt-chip-rack {
         display: flex;
       }
+      .table[data-phase="playing"] .table-bet-zone {
+        display: none;
+      }
+      .hand-title strong .seat-label-full {
+        display: none;
+      }
+      .hand-title strong .seat-label-short {
+        display: inline;
+      }
+      .hand-title .score-pill {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
       .mobile-pit-extra .mobile-pit-bets .chip-btn[data-chip] {
         display: none;
       }
@@ -2033,6 +2079,15 @@
         font-size: 0.5rem;
         padding: 4px;
       }
+      .table[data-phase="playing"] .discard-tray,
+      .table[data-phase="playing"] .shoe-lane {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .table[data-phase="playing"] .felt-inlay {
+        opacity: 0.35;
+        margin-bottom: 2px;
+      }
       .discard-tray::before {
         width: 28px;
         height: 36px;
@@ -2043,7 +2098,13 @@
         padding: 6px 8px;
       }
       .hand { padding: 6px 6px 8px; }
-      .hand-title { font-size: 0.72rem; gap: 4px; }
+      .hand-title { font-size: 0.78rem; gap: 6px; margin-bottom: 4px; }
+      .hand-title strong .seat-label-full {
+        display: none;
+      }
+      .hand-title strong .seat-label-short {
+        display: inline;
+      }
       .cards { min-height: 82px; }
       .playing-card { width: 56px; height: 82px; padding: 4px; }
       .mobile-pit { padding: 6px; }
@@ -2261,9 +2322,32 @@
       .table-stage {
         flex: 1;
         min-height: 0;
-        gap: 4px 8px;
+        gap: 2px 8px;
         margin-bottom: 4px;
         align-content: start;
+      }
+      .table-stage .hand {
+        margin-bottom: 4px;
+        padding: 5px 8px 6px;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.1));
+        border-color: rgba(255, 255, 255, 0.05);
+        box-shadow: none;
+      }
+      .table-stage .hand::before {
+        display: none;
+      }
+      .table-stage .hand.active-hand {
+        background:
+          radial-gradient(ellipse 80% 120% at 50% 100%, rgba(255, 215, 106, 0.1), transparent 72%),
+          linear-gradient(180deg, rgba(255, 224, 141, 0.04), rgba(0, 0, 0, 0.08));
+        box-shadow: inset 0 0 0 1px rgba(255, 215, 106, 0.12);
+      }
+      .table-bet-zone {
+        margin-top: 0;
+      }
+      .bet-circle {
+        width: min(108px, 22vw);
+        height: min(108px, 22vw);
       }
       .cards {
         min-height: 88px;
@@ -2439,7 +2523,10 @@
 
           <div class="hand zone-dealer">
             <div class="hand-title">
-              <strong data-icon="🚽">Dealer (Toilet Boss)</strong>
+              <strong data-icon="🚽" aria-label="Dealer, Toilet Boss">
+                <span class="seat-label-full">Dealer (Toilet Boss)</span>
+                <span class="seat-label-short" aria-hidden="true">Dealer</span>
+              </strong>
               <div class="hand-total-wrap">
                 <span id="dealerTotalBadge"></span>
                 <span class="score-pill" id="dealerScoreText">Score: ?</span>
@@ -2457,7 +2544,10 @@
 
           <div class="hand" id="playerHandWrap">
             <div class="hand-title">
-              <strong data-icon="💩">Player (You + Poop Luck)</strong>
+              <strong data-icon="💩" aria-label="Player, You plus Poop Luck">
+                <span class="seat-label-full">Player (You + Poop Luck)</span>
+                <span class="seat-label-short" aria-hidden="true">You</span>
+              </strong>
               <div class="hand-total-wrap">
                 <span id="playerTotalBadge"></span>
                 <span class="score-pill" id="playerScoreText">Score: 0</span>
@@ -2469,7 +2559,10 @@
 
           <div class="hand" id="splitHandWrap" hidden>
             <div class="hand-title">
-              <strong data-icon="🧻">Split Hand (Backup Turd Luck)</strong>
+              <strong data-icon="🧻" aria-label="Split Hand, Backup Turd Luck">
+                <span class="seat-label-full">Split Hand (Backup Turd Luck)</span>
+                <span class="seat-label-short" aria-hidden="true">Split</span>
+              </strong>
               <div class="hand-total-wrap">
                 <span id="splitTotalBadge" hidden></span>
                 <span class="score-pill" id="splitScoreText">Score: 0</span>

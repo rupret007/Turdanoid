@@ -14,7 +14,7 @@ import { listTurdjackDevScenarios } from '../games/turdjack-dev-scenarios.js';
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.argv[2]) || 8153;
 const outDir =
-  '/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/r4/crapjack-moments';
+  '/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/r5/crapjack-moments';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

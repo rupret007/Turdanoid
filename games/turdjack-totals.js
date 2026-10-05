@@ -30,5 +30,6 @@ export function formatHandTotalBadge(total, isSoft, hidden = false) {
  */
 export function renderTotalBadgeHtml(badge) {
   const mode = badge.mode || 'hard';
-  return `<span class="total-badge mode-${mode}" data-mode="${mode}">${badge.text}</span>`;
+  const aria = badge.aria ? ` aria-label="${String(badge.aria).replace(/"/g, '&quot;')}"` : '';
+  return `<span class="total-badge mode-${mode}" data-mode="${mode}" role="status"${aria}>${badge.text}</span>`;
 }

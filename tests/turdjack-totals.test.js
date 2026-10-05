@@ -9,6 +9,8 @@ describe('turdjack-totals', () => {
   it('marks soft hands', () => {
     const badge = formatHandTotalBadge(18, true, false);
     expect(badge.mode).toBe('soft');
-    expect(renderTotalBadgeHtml(badge)).toContain('mode-soft');
+    const html = renderTotalBadgeHtml(badge);
+    expect(html).toContain('mode-soft');
+    expect(html).toContain('aria-label');
   });
 });

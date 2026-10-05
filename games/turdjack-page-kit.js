@@ -17,6 +17,7 @@ import {
   useDealFlight
 } from './turdjack-deal-anim.js';
 import { buildFeltChipStackHtml, feltBetLabel } from './turdjack-table-chips.js';
+import { clearFlyingChips, FLYING_CHIP_CLASS, FLYING_CHIP_MAX_MS } from './turdjack-chip-flight.js';
 import {
   momentKindFromStatus,
   momentBannerCopy,
@@ -134,18 +135,23 @@ export function installTurdjackKit(win) {
     if (reducedMotion || !btn) {return;}
     const betZone = doc.getElementById('betCircle');
     if (!betZone) {return;}
+    const tableSection = doc.querySelector('.table');
+    if (tableSection?.dataset?.phase === 'playing') {return;}
+    clearFlyingChips(betZone);
     const chip = doc.createElement('span');
-    chip.className = 'flying-chip';
+    chip.className = FLYING_CHIP_CLASS;
     const denom = btn.dataset.chip || '10';
     chip.dataset.denom = denom;
     const from = btn.getBoundingClientRect();
     const to = betZone.getBoundingClientRect();
-    const dx = from.left - to.left;
-    const dy = from.top - to.top;
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
     chip.style.setProperty('--fly-dx', `${dx}px`);
     chip.style.setProperty('--fly-dy', `${dy}px`);
     betZone.appendChild(chip);
-    chip.addEventListener('animationend', () => chip.remove(), { once: true });
+    const remove = () => chip.remove();
+    chip.addEventListener('animationend', remove, { once: true });
+    globalThis.setTimeout(remove, FLYING_CHIP_MAX_MS);
     audio.play('chip');
   }
 
@@ -479,6 +485,8 @@ export function installTurdjackKit(win) {
     lastCardCounts = { dealer: 0, player: 0, split: 0 };
     setCoachWhy(null);
     doc.querySelectorAll('.coach-pulse').forEach((b) => b.classList.remove('coach-pulse'));
+    clearFlyingChips(doc.getElementById('betCircle'));
+    clearFlyingChips(doc.querySelector('.table'));
   }
 
   function onSplit() {
