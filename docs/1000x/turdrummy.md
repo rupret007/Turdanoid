@@ -70,62 +70,76 @@ audio/logic-heavy but visually almost unchanged. This round is about the table i
 
 ## Round 2 checklist
 
-Each target is concrete and testable. `[x]` = done this round, `[ ]` = not done.
+Each target is concrete and testable. `[x]` = done this round. `[ ]` = not done, with the reason.
 
 ### 1. Table-first layout
-- [ ] Felt is the hero: the `.table` surface is the only panel chrome; zones lose their boxes.
-- [ ] Opponent hand is a centred, overlapping, arced fan of card backs across the top.
-- [ ] Stock and discard sit on the felt with depth/shadow; discard shows a fanned top.
-- [ ] Your hand is an overlapping arced fan at the bottom; at 390px every card is at least 44px wide
-      and the indices stay legible (overlap is capped so no card shows less than ~0.3 of its width).
-- [ ] Meld readout, round log and stats move into a collapsible drawer (`#tableDrawer`).
-- [ ] Every existing ID and button label that `browser-smoke.js` uses still exists.
+- [x] Felt is the hero: zones lose their boxes; piles sit on the felt; the centre is a felt well.
+- [x] Opponent hand is a centred, overlapping, arced fan of card backs (`#opponentCards`, nth-child arc).
+- [x] Stock and discard sit on the felt with depth/shadow (stock stack, discard drop-shadow).
+- [ ] Discard pile shows a fanned top (two or three cards). Not done: the single top card with its
+      flip keeps the pile readable, and a fan would need a second data source the page does not keep.
+- [x] Your hand is an overlapping arced fan at the bottom. At 390px every card is 48px wide. A single
+      row keeps at least 42% of each card visible; when that cannot fit, meld groups wrap onto a
+      second row (`fanLayout`, `.is-wrapped`). Verified: no horizontal scroll at 320, 390 or desktop.
+- [x] Meld readout, round log and stats move into a collapsible drawer (`#tableDrawer`), open by
+      default on wide screens and folded on phones.
+- [x] Every existing ID and button label that `browser-smoke.js` uses still exists.
 
 ### 2. Meld visuals
-- [ ] Hand is grouped by meld: each set/run is a contiguous group with a coloured bracket and label.
-- [ ] Deadwood cards sit slightly lower in their own grey group.
-- [ ] Deadwood counter tweens to its new value instead of snapping (instant under reduced motion).
-- [ ] Knock shows a "ready" glow when legal; Gin shows a shimmer sweep when gin is possible.
+- [x] Hand is grouped by meld: each set or run is a contiguous group with a coloured bracket and label.
+- [x] Deadwood cards sit slightly lower in their own grey group.
+- [x] Deadwood counter eases to its new value (`setCounter`); instant under reduced motion.
+- [x] Knock shows a ready glow when legal; Gin shows a shimmer sweep when gin is possible.
 
 ### 3. Card motion
-- [ ] Draw from stock or discard flies the card into its hand slot.
-- [ ] Discard flies from the hand to the discard pile.
-- [ ] Opponent draws and discards fly from/to its fan.
-- [ ] Deal staggers both hands at round start.
-- [ ] Card lift on hover/select is kept; all flights are skipped under `prefers-reduced-motion`.
+- [x] Draw from stock or discard flies the card into its hand slot (fixed clone, WAAPI).
+- [x] Discard flies from the hand to the discard pile.
+- [x] Bot draws and discards fly from and to its fan.
+- [ ] Round-start deal: unchanged. The existing staggered `card-deal` for both hands is kept, but no
+      new deal flight was added, so the deal reads as before.
+- [x] Card lift on hover and select is kept. Every flight, flip, tween and banner slide is skipped
+      under `prefers-reduced-motion` (`motionOn`, `TurdRummyMotion.shouldAnimate`, CSS gate).
 
 ### 4. Big moments
-- [ ] Knock/gin/undercut: the bot's hand flips face-up card by card on the table.
-- [ ] Laid-off cards fly onto the knocker's side.
-- [ ] A round banner counts up deadwood totals and the round score; it never blocks the dock.
-- [ ] Match win: a trophy panel shows match stats read from `turdrummy_stats_v1` (read-only) with
-      Rematch and Keep Table buttons.
+- [x] Knock, gin and undercut: the bot's hand flips face-up with a staggered flip.
+- [x] Laid-off cards fly from their owner's hand onto the knocker's melds (or the bot's fan).
+- [x] Round banner counts up deadwood and points; it never takes clicks (`pointer-events: none`).
+- [x] Match win: trophy panel with stats read from `turdrummy_stats_v1` (read-only), with Rematch and
+      Keep Table.
 
 ### 5. AI
-- [ ] Tracks the human's discard-pile takes and infers the sets/runs they are building.
-- [ ] Discard scoring penalises feeding those sets/runs (feed risk), tunable per difficulty.
-- [ ] Knock threshold adds turn-count and stock-pressure terms.
-- [ ] Difficulty Easy / Normal / Sharp in the topbar, persisted under the new key
-      `turdrummyDifficulty_v1` (default Normal = previous strength plus the feed-risk term).
-- [ ] Pure decisions covered by unit tests (`tests/turdrummy-ai.test.js`).
+- [x] Tracks the human's discard-pile takes and infers the sets and runs they are building
+      (`activeHumanTakes`, `computeFeedRisk`). Takes they threw back stop counting.
+- [x] Discard scoring penalises feeding those sets and runs, weighted per difficulty.
+- [x] Knock threshold adds a level offset and stock pressure (stock ≤ 4 after six bot turns).
+- [x] Difficulty Easy / Normal / Sharp in the top bar, saved under `turdrummyDifficulty_v1`.
+      Default Normal = the round-1 strength plus the feed-risk term.
+- [x] Pure decisions unit-tested (`tests/turdrummy-ai.test.js`). The full discard choice is not
+      unit-tested because it lives in the page script; it is covered by page tests and the browser check.
 
 ### 6. Onboarding
-- [ ] First-round coach: four steps that highlight stock, hand, melds and knock; each step advances
-      on the real action, with Next/Skip. Remembered under the new key `turdrummyCoach_v1`.
-- [ ] HUD tiles carry `title` tooltips that explain Stock Left, Deadwood, Target and so on.
+- [x] First-round coach: four steps (draw, discard, melds, knock). Each advances on the real action
+      it teaches, with Next and Skip. Saved under `turdrummyCoach_v1`.
+- [x] HUD tiles carry `title` tooltips that explain Stock Left, Your Deadwood, Target and the rest.
 
 ### 7. Mobile, a11y, feel
-- [ ] No horizontal scroll at 320px, 390px or desktop.
-- [ ] Hand focus survives re-renders (arrow keys move through cards; Enter/Space selects).
-- [ ] Layoff sound and deadwood tick added to the SFX bank.
-- [ ] Reduced motion gates every flight, flip, tween, banner slide and confetti burst.
+- [x] No horizontal scroll at 320px, 390px or desktop (measured).
+- [x] Hand focus survives re-renders; arrow keys, Home and End move between cards.
+- [x] Layoff sound and deadwood tick added to the SFX bank.
+- [x] Reduced motion gates every flight, flip, tween, banner slide and confetti burst.
+- [ ] Hand cards are tapped on their visible strip when overlapped (a card's left part is covered by
+      the next one). Every card is 48px wide on a phone; the strip is narrower only in the 11-card,
+      four-group case, which wraps to two rows instead.
 
 ## Known limits (honest)
-- Overlapped fan cards are tapped on their visible strip (a card's left part is covered by the next
-  one). Cards themselves are 44px+ wide; the strip is narrower at 320px with 11 cards.
-- The coach and the feed-risk memory are per-device and per-round. The memory resets on reload
+- Overlapped fan cards are tapped on their visible strip (the next card covers their right part).
+  Cards are 48px wide on phones; a crowded hand wraps onto a second row rather than narrowing strips.
+- The coach and the feed-risk memory are per device and per round. The memory resets on reload
   because the continue snapshot shape is frozen for save compatibility; the discard pile itself is
-  still restored, so the AI's view of the discard is intact.
+  still restored, so the bot's view of the discard is intact. The coach restarts at step 1 after a
+  reload until it is finished.
+- Layout and motion were checked in headless Chromium at 320, 390 and 1440px with the flights and
+  banners running. They were not checked on a physical phone (no device here).
 
 ## Needs shared change (shared lane owns these files)
 - `assets/turdsuite.css` could expose a shared `--suite-card-fan` helper; TurdRummy keeps its own

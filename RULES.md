@@ -276,11 +276,33 @@ Gin Rummy card game against an AI opponent.
 3. Adjust the knock threshold to the match score and round length
 4. Call gin at 0 deadwood and knock only within the current threshold
 5. Remembers every card seen in the discard pile: among near-tied discard choices, prefers to shed cards whose rank or same-suit run neighbors are already dead (less likely to feed the opponent a set or run)
+6. Remembers what you took from the discard pile: a card that would help a set or run you are building (same rank, or same suit one or two ranks away) costs the bot extra to discard. Cards you threw back stop counting. This memory lives for the round and is not saved, so a reload forgets it
+7. Knock timing adds stock pressure (Normal and Sharp): once the stock is down to 4 or fewer cards and the bot has taken six turns this round, it accepts one more point of deadwood before knocking
+
+### Bot Difficulty
+
+Use the **Bot** button in the top bar to cycle **Easy → Normal → Sharp**. The choice is saved on this device under its own key and applies from the next bot decision.
+
+| Level | Behaviour |
+|-------|-----------|
+| Easy | Ignores what you are building and makes small scoring mistakes; knocks only with two points less deadwood than Normal |
+| Normal | The strength above: discard-pile memory, what you took from the discard, stock pressure |
+| Sharp | Leans harder on what you are building and will knock with one point more deadwood than Normal |
+
+### Table & Coach
+
+- Your hand is grouped by meld: each set or run sits under a coloured bracket, and deadwood cards sit lower in their own grey group. Arrow keys move between cards, and focus stays on the same card after each move
+- Stats (rounds, wins, gins, undercuts) sit in a drawer under your hand, with the meld readout and a short log of recent moves. The drawer opens by default on wide screens and folds on phones
+- Knock glows when a knock is legal; Gin shimmers when gin is possible
+- When the round ends, the bot's hand turns face-up, laid-off cards fly onto the knocker's melds, and a banner counts up the deadwood and the points. The banner never takes clicks
+- When the match ends, a trophy panel shows your saved stats for this device with **Rematch** and **Keep Table**
+- The first round starts with a short coach (draw, discard, melds, knock). It advances on the actions it describes, can be skipped, and does not come back once finished
+- Cards fly between the piles and the hands when they are drawn or discarded. Motion is off under the reduced-motion preference, and the game is fully playable without it
 
 ### Sound & Feel
 
 - Sound is on by default; toggle with the topbar Sound button (independent of the other games' mute settings)
-- Draw, discard, invalid-action, knock, gin, undercut and match-end each have a distinct synthesized cue
+- Draw, discard, invalid-action, knock, gin, undercut and match-end each have a distinct synthesized cue; layoffs and the round-banner count-up have their own short cues
 - Gin, undercut and match wins add a short confetti burst and a light haptic buzz on supported devices; both are skipped automatically when the OS-level reduced-motion preference is on
 
 ---

@@ -918,7 +918,6 @@
 
     .pile-body { justify-content: center; }
 
-    .pile.is-target .pile-body { filter: drop-shadow(0 0 12px rgba(255, 215, 106, 0.55)); }
 
     .pile h3 {
       color: rgba(255, 225, 168, 0.85);
@@ -1612,16 +1611,6 @@
     /* Keyboard focus ring on hand cards survives re-renders (see renderPlayerHand). */
     #playerHand .card-button:focus-visible { outline-offset: 3px; }
 
-    /* Meld brackets: a quick settle when a card joins a group. */
-    .hand-group.is-new::after { animation: trBracketIn 0.36s ease-out backwards; }
-    @keyframes trBracketIn {
-      from { transform: scaleX(0.2); opacity: 0; }
-      to { transform: scaleX(1); opacity: 0.9; }
-    }
-
-    /* Deadwood counter bump when the value changes (the number itself tweens in JS). */
-    #deadwoodValue { display: inline-block; }
-
     /* First-round coach: a plain card inside the centre band, never a blocking overlay. */
     .coach {
       position: relative;
@@ -1748,7 +1737,6 @@
     @media (prefers-reduced-motion: reduce) {
       #knockBtn.is-ready:not(:disabled),
       #ginBtn.is-ready:not(:disabled)::after,
-      .hand-group.is-new::after,
       .coach-spot,
       .round-banner,
       .tr-drawer > summary::after {
