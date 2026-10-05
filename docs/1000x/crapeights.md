@@ -139,7 +139,7 @@ Re-read the round-0 audit, current live page, local presentation/AI/save modules
 - [x] Confirm exact b3821b4 fixture fidelity through the live page, continued action and unchanged legacy/new stats key formats.
 - [x] Tighten flights and input feedback, retain readable bot pacing, and make reduced-motion effects instant.
 - [x] Verify full-round keyboard play, visible focus, bot announcements and non-inert round-result announcements.
-- [ ] Run required full Vitest, lint and Chromium smoke at 8154; record final evidence and commit locally after each logical chunk.
+- [x] Run required full Vitest, lint and Chromium smoke at 8154; record final evidence and commit locally after each logical chunk.
 
 ## Round 3 scope / Needs shared change
 
@@ -169,6 +169,36 @@ The shared zoom guard should exempt native interactive controls using `touch-act
 Representative artifacts: [390px table](crapeights-autoplay-r3/phone-390-opening.png), [320px table](crapeights-autoplay-r3/small-320-opening.png), [desktop table](crapeights-autoplay-r3/keyboard-1280-opening.png), [wild picker](crapeights-autoplay-r3/match/phone-390-wild-suit-picker.png), [match trophy](crapeights-autoplay-r3/match/phone-390-match-1-trophy.png), [four-scenario report](crapeights-autoplay-r3/report.json), [full-match report](crapeights-autoplay-r3/match/report.json).
 
 - **NOT RUN — physical phone, listening, screen-reader hardware and measured phone frame rate:** browser checks verify native touch/keyboard behavior, visible focus, announcement semantics, overflow and motion/audio gates. Hardware review remains separate.
+
+# Round 4 — conductor screenshot polish
+
+## Focus
+
+Conductor r4-stage screenshots flagged two remaining presentation issues: at **320px**, bot reaction speech and **+2 CARDS** stamps overlapped opponent names, card counts, and avatars; at **1280×800**, the hand could read larger and the arena should consume more vertical space without shrinking tap targets.
+
+## Round 4 targets
+
+- [x] Move phone reaction speech below opponent tiles so names, meta counts, and mini fans stay uncovered.
+- [x] Anchor penalty stamps in the seat label band below avatars (exported `stampAnchor` + unit test).
+- [x] Short-desktop (≤900px height): taller flex arena, tighter chrome, **108px** full fan cards (compact fan only at ≤760px height, **92px** cards).
+- [x] Re-run foreground autoplay at 390 / 320 / 1280 (+ reduced-motion control); zero errors or stalls.
+- [x] Full Vitest, lint (lane-clean), and Chromium smoke on **8154**.
+
+## Round 4 validation
+
+- **PASS — unit suite:** `npx vitest run --maxWorkers=1 --testTimeout=30000`, 24 files / **361** tests (adds `stampAnchor` regression).
+- **PASS — lint:** `npm run lint`, zero errors; four pre-existing Crapjack warnings outside this lane (not in `tests/crapeights.test.js`, which is clean).
+- **PASS — autoplay:** `PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs --port 8154 --scenario all --output docs/1000x/crapeights-autoplay-r4` — phone **390**, small **320**, keyboard **1280×800**, and reduced-motion: **0** console/page errors, **0** layout failures, Continue exercised each run. Artifacts: [report](crapeights-autoplay-r4/report.json).
+- **PASS — smoke:** `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8154` → **Browser smoke checks passed**.
+
+## Needs shared change
+
+Unchanged from prior rounds: shared Hub pill overlap on short phones; shared `preventDoubleTapZoom` should exempt `touch-action: manipulation` controls; Crapjack unused-import lint warnings in `games/turdjack-engine.js` and `tests/turdjack.test.js`.
+
+## Round 4 local commits
+
+- `e979889` — speech/stamp layout, short-desktop arena and hand sizing.
+- Final docs/evidence commit records round-four checklist and validation.
 
 
 ### Round 3 final verification
