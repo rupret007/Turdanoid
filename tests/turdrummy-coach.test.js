@@ -40,7 +40,9 @@ describe('nextCoachIndex', () => {
   });
 
   it('tolerates a bad index', () => {
-    expect(nextCoachIndex(-3, 'drawn')).toBe(0);
+    // -3 clamps to step 0, which advances on 'drawn'; a non-matching event still holds at 0.
+    expect(nextCoachIndex(-3, 'drawn')).toBe(1);
+    expect(nextCoachIndex(-3, 'discarded')).toBe(0);
     expect(nextCoachIndex(undefined, 'next')).toBe(1);
   });
 });
