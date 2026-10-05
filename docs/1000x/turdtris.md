@@ -96,7 +96,7 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 - [x] Game-over receipt: max combo, tetrises, active time, PPS, personal-best celebration; old high-score key unchanged.
 - [x] Reduced-motion policies and unit tests for every new effect family; legacy score/settings compatibility tests.
 - [x] Full Vitest suite, lint, and Chromium smoke (including held-input-pause) pass; see the shared lint warnings and host-load test invocation below.
-- [ ] Optional separate Sprint 40L / Ultra 2-minute modes (stretch; classic compatibility takes priority).
+- [x] Optional separate Sprint 40L / Ultra 2-minute modes (completed in round 3 with isolated records).
 
 
 ### Round 2 implementation notes
@@ -135,11 +135,45 @@ Round 2 complete: 13 / 14 targets done; only the optional Sprint/Ultra stretch t
 
 ### Round 3 checklist
 
-- [ ] Standalone autoplay harness: ~90s each at 390×844, 320×640, 1280×800, reduced-motion and muted; screenshots every ~10s plus machine-readable FPS, long tasks, errors and state checks.
-- [ ] Inspect captured screenshots; fix cramped/overlapping HUD, overlays, dock targets and poor tile/environment contrast.
-- [ ] Pin live Classic scoring and speed/level progression to b3821b4 in Vitest.
-- [ ] Remove avoidable steady-frame render allocations and verify sprite/background caching with tests and browser measurements.
-- [ ] Opt-in Sprint 40L and Ultra 2-minute modes with isolated new best keys and specific completion receipts.
-- [ ] Full `npx vitest run`, `npm run lint`, and Chromium smoke on 8152; document measured FPS and remaining limitations.
+- [x] Standalone autoplay harness: ~90s each at 390×844, 320×640, 1280×800, reduced-motion and muted; screenshots every ~10s plus machine-readable FPS, long tasks, errors and state checks.
+- [x] Inspect captured screenshots; fix cramped/overlapping HUD, overlays, dock targets and poor tile/environment contrast.
+- [x] Pin live Classic scoring and speed/level progression to b3821b4 in Vitest.
+- [x] Remove avoidable steady-frame render allocations and verify sprite/background caching with tests and browser measurements.
+- [x] Opt-in Sprint 40L and Ultra 2-minute modes with isolated new best keys and specific completion receipts.
+- [x] Full `npx vitest run`, `npm run lint`, and Chromium smoke on 8152; document measured FPS and remaining limitations.
 
 The explicitly requested `scripts/turdtris-autoplay.mjs` and this lane report are the only additions outside the lane's game/test file patterns. Generated evidence goes to the conductor's explicitly requested screenshot directory; no other checkout is modified.
+
+### Changes and evidence
+
+- **Screenshot-led fixes:** Inspected actual 320px onboarding, active play, pause, menu, end receipts and environment fixtures. Phone overlays now span the cabinet instead of squeezing inside the 169px board; calm opaque panels replace competing tile patterns. Guide actions remain visible while instructions scroll. Sprint's time fields and five-digit scores exposed HUD ellipses; weighted columns and responsive tabular type fix those, with explicit overflow checks in autoplay. Ghost outlines now retain approximately a full CSS pixel of stroke on the smallest phone board; solid tiles remain distinct in all four environments.
+- **Modes:** Classic loads by default and retains its decimal-string best unchanged. Run Menu explicitly starts Sprint (40 lines, completed runs only, best milliseconds in `turdtrisSprint40BestMs_v1`) or Ultra (120 active seconds, best score in `turdtrisUltra120Best_v1`). Challenges use existing score/speed progression without garbage and have mode-specific receipts. Pause, guide and blur exclude inactive time. Independent active-time checks before scoring input prevent overtime drops during a delayed animation frame and preserve Sprint's final partial frame. No continuation keys or snapshot shapes changed.
+- **Classic pins:** 44 actual-page tests derive expectations directly from `git show b3821b4:turdtris.html`, not the simplified exported engine. They pin line awards, T-spins, perfect clears, clutch, combo indexing, B2B ordering/persistence, both drop paths, the complete gravity table, level goals and surplus lines. The historical held gravity soft-drop path remains worth zero extra points; discrete soft drops are one point per cell and hard drops two.
+- **Rendering:** All 29 fixed-resolution assets (16 tiles/ghosts, eight trails, four environments, danger veil) rasterize once at factory initialization, then scale for board/preview/resize. Pixel backing is approximately 4.2 MiB. Reusable cell buffers and drawing arguments replace per-frame maps, option/envelope objects, effect-array copies, tile lookup arrays and trail gradients. Audio queues compact in place. Clear/spawn events and new WebAudio voices still allocate bounded objects; this is not a claim that the entire browser or every game event is allocation-free.
+- **Harness:** `PLAYWRIGHT_CHANNEL=chromium node scripts/turdtris-autoplay.mjs` serves only this checkout on 8152 and closes its browser/server. Five serial 90-second variants use real dock/keyboard inputs and a simple placement heuristic, with state/error/overflow/canvas-cache/audio checks and raw frame/long-task samples. Screenshots every ~10s plus onboarding/pause/menu. Clearly labeled, post-measurement synthetic fixtures cover topout/replay, Sprint completion, Ultra timeout, isolated records and all four environments; their scores/levels are never claimed as bot achievements.
+- **Full tests PASS:** Final plain **`npx vitest run`: 24 files / 439 tests PASS**, 19.84s, after the autoplay fixes. An earlier plain run had 11 timeout-only failures in unchanged hub/card/breakout suites under host load (~36); a serial retry also passed all 439 tests in 249.63s. No assertions or shared test configuration were weakened. Targeted scoring/mode tests: 82/82 PASS; final art/FX checks: 20/20 PASS.
+- **Lint PASS with shared warnings:** `npm run lint` exits 0, zero errors; the same six pre-existing shared warnings listed above remain. Turdtris modules/tests are clean. `node --check scripts/turdtris-autoplay.mjs` and `git diff --check` also pass.
+- **First sustained playtest:** Four variants passed; reduced motion exposed a leftover positive shake budget after level changes, although the renderer already suppressed the movement. Set the Turdtris reduced-motion shake cap to zero and pin that behavior explicitly. Visual review also widened the small Sprint Combo column. An apparently shifted 390px receipt was a capture during its reveal; waiting 800ms for post-measurement receipt screenshots produces the correctly centered panel. First-pass reports are retained under `first-pass/`; the final complete five-variant rerun passes.
+
+### Final measured autoplay — PASS
+
+Recorded 2026-10-05 08:19 UTC with headless Chromium. Each scenario ran for at least 90 seconds, serially, without concurrent tests. These are browser rAF pacing measurements on this host, **not physical-phone GPU or tactile/audio validation**.
+
+| Scenario | Measured seconds | Mean rAF FPS | P95 frame (ms) | Long tasks (>50ms) | Bot placements | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 390×844 | 90.473 | 73.50 | 26.3 | 0 | 170 | PASS |
+| 320×640 | 90.056 | 69.49 | 26.4 | 1 (59ms) | 163 | PASS |
+| 1280×800 | 90.232 | 70.40 | 22.1 | 0 | 311 | PASS |
+| Reduced motion, 390×844 | 90.036 | 70.19 | 22.4 | 0 | 233 | PASS |
+| Muted, 390×844 | 90.206 | 73.38 | 26.9 | 0 | 188 | PASS |
+
+- **Zero** console errors, page errors, unexpected dialogs, horizontal overflow, stale pause/guide overlays, stuck runs, undersized touch targets, or cache growth across all five runs. Exactly 29 created canvases before and after each measured segment. The muted scenario started **zero** oscillators. Reduced motion retained no shake, particles or trails. Desktop, reduced-motion and muted runs also exercised natural topouts and successful replays.
+- At 390×844, the board is 257×514 at y=125 (bottom 639); dock starts at 665. At 320×640, it is 169×338 at y=109 (bottom 447); dock starts at 461. All seven dock actions are at least 44×44px. Final screenshot review confirms complete Sprint times, five-digit scores and Combo labels, centered receipts, legible ghosts and all four environment contrasts.
+- The output root is `/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/r3/turdtris-autoplay/`. `summary.md`/`summary.json` contain the final five PASS results; each scenario includes raw `measurements.json`, its state/error `report.json`, gameplay screenshots every ~10s, and labeled synthetic receipt/environment fixtures. Earlier diagnostic captures remain under `probe/` and `first-pass/`.
+- Physical phone audio, vibration and GPU frame-rate testing: **NOT RUN**. No new shared code change is required for these features; the six existing shared lint warnings and optional prior hub/audio work remain under Needs shared change.
+
+### Final smoke and completion
+
+- **Smoke PASS:** `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8152` printed `Browser smoke checks passed` with exit 0, including `turdtris-held-input-pause`, mobile dock and restart/receipt checks. Run once after all fixes; no smoke assertions or shared smoke files changed this round.
+- **Final lint PASS:** `npm run lint` again exited 0 with zero errors and only the six pre-existing out-of-lane warnings. Script syntax and final whitespace checks pass.
+- **Round 3 checklist: 6 / 6 done.** Implementation, tests, harness and report are committed locally on `cursor/turdanoid-1000x-turdtris`. Classic save/score compatibility is intact; optional challenge bests use new keys only.
