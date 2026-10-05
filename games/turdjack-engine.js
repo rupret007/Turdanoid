@@ -2,7 +2,7 @@
  * Blackjack engine for Turdanoid
  */
 
-import { RANKS, SUITS, createShoe, handValue, isSoftHand, hiLoValue } from './cards.js';
+import { createShoe, handValue, isSoftHand } from './cards.js';
 
 export const INITIAL_BANKROLL = 1000;
 export const MIN_BET = 10;
