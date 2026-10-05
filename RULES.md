@@ -275,6 +275,13 @@ Gin Rummy card game against an AI opponent.
 2. Prefer useful discard-pile cards and shed expensive deadwood when safe
 3. Adjust the knock threshold to the match score and round length
 4. Call gin at 0 deadwood and knock only within the current threshold
+5. Remembers every card seen in the discard pile: among near-tied discard choices, prefers to shed cards whose rank or same-suit run neighbors are already dead (less likely to feed the opponent a set or run)
+
+### Sound & Feel
+
+- Sound is on by default; toggle with the topbar Sound button (independent of the other games' mute settings)
+- Draw, discard, invalid-action, knock, gin, undercut and match-end each have a distinct synthesized cue
+- Gin, undercut and match wins add a short confetti burst and a light haptic buzz on supported devices; both are skipped automatically when the OS-level reduced-motion preference is on
 
 ---
 

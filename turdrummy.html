@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/turdrummy-ai-core.js"></script>
+  <script src="games/turdrummy-audio-core.js"></script>
+  <script src="games/turdrummy-fx-core.js"></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -1391,6 +1394,7 @@
       </div>
       <div class="top-links">
         <a href="./" aria-label="Back to game hub">&#x1F3E0; Hub</a>
+        <button class="btn" id="soundToggleBtn" data-sound-toggle aria-pressed="true">&#x1F50A; Sound On</button>
         <button class="btn" id="quickGuideBtn">&#x2753; Rules</button>
         <button class="btn" id="newRoundBtn">&#x1F0CF; New Round</button>
         <button class="btn warn" id="resetMatchBtn">&#x21BB; Reset Match</button>
@@ -1430,7 +1434,7 @@
             <div class="pile-body" id="discardPile"></div>
           </div>
         </div>
-        <div class="message" id="messageBox"></div>
+        <div class="message" id="messageBox" role="status" aria-live="polite"></div>
       </section>
 
       <section class="zone zone--hand">
@@ -1487,6 +1491,7 @@
         takeDiscardLateRound: 8,
         meldPotentialBias: 2.4,
         highCardDumpBias: 1.1,
+        discardSafetyBias: 0.9,
         knockBase: 6,
         knockWhenBehindBy: 8,
         knockWhenAheadBy: 5
@@ -1533,7 +1538,27 @@
     let aiTurnTimeoutId = null;
     let focusPausedAiTurn = false;
 
+    const audioPlayer = (window.TurdRummyAudio && TurdRummyAudio.createPlayer)
+      ? TurdRummyAudio.createPlayer(window.localStorage)
+      : null;
+
+    function playSfx(name) {
+      try {
+        if (audioPlayer) audioPlayer.play(name);
+      } catch (err) { /* cosmetic only */ }
+    }
+
+    function discardSafetyBonus(history, card) {
+      try {
+        if (window.TurdRummyAI && TurdRummyAI.computeDiscardSafety) {
+          return TurdRummyAI.computeDiscardSafety(history, card);
+        }
+      } catch (err) { /* fall through */ }
+      return 0;
+    }
+
     const el = {
+      soundToggleBtn: document.getElementById("soundToggleBtn"),
       roundValue: document.getElementById("roundValue"),
       playerScoreValue: document.getElementById("playerScoreValue"),
       aiScoreValue: document.getElementById("aiScoreValue"),
@@ -2239,6 +2264,7 @@
     function selectCard(cardId) {
       if (!state.playerHand.some((card) => card.id === cardId)) return;
       state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
+      playSfx("select");
       renderAll();
     }
 
@@ -2270,6 +2296,7 @@
       state.turn = state.dealer === "player" ? "ai" : "player";
       state.phase = "draw";
       state.message = state.turn === "player" ? "Round started. Your draw." : "Round started. AI draws first.";
+      playSfx("deal");
       saveStats();
       renderAll();
       if (state.turn === "ai") {
@@ -2286,6 +2313,7 @@
           return;
         }
         state.message = "No stock left. Draw discard or start a new round.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2295,6 +2323,7 @@
       state.drawnCardId = drawn.id;
       state.drawnCardSource = "stock";
       state.message = "You drew from stock. Select a discard.";
+      playSfx("drawStock");
       renderAll();
     }
 
@@ -2303,6 +2332,7 @@
       const drawn = state.discard.pop();
       if (!drawn) {
         state.message = "Discard pile is empty.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2312,6 +2342,7 @@
       state.drawnCardId = drawn.id;
       state.drawnCardSource = "discard";
       state.message = "You drew " + cardText(drawn) + " from discard.";
+      playSfx("drawDiscard");
       renderAll();
     }
 
@@ -2323,6 +2354,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.message = "You discarded " + cardText(discardCard) + ". AI turn...";
+      playSfx("discard");
       renderAll();
       queueAiTurn(580);
     }
@@ -2332,11 +2364,13 @@
       const selected = getSelectedCard();
       if (!selected) {
         state.message = "Pick a card first.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
         state.message = "You cannot draw discard and toss the same card immediately.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2349,11 +2383,13 @@
       const selected = getSelectedCard();
       if (!selected) {
         state.message = "Select your discard first.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
         state.message = "Cannot discard the same up-card this turn.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2362,11 +2398,13 @@
       const analysis = analyzeHand(reduced);
       if (requestGin && analysis.deadwoodScore !== 0) {
         state.message = "Not gin yet. Need deadwood of 0.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (!requestGin && analysis.deadwoodScore > TURDRUMMY_BALANCE.knockLimit) {
         state.message = "Too much deadwood to knock.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2421,6 +2459,10 @@
       score -= deadwoodValue * TURDRUMMY_BALANCE.ai.highCardDumpBias;
       if (analysis.deadwoodScore === 0) score -= 18;
       if (deadwoodValue >= 10 && !cardLikelyUsefulForMeld(remaining, card)) score -= 1.6;
+      // Memory play: a card whose rank/run-neighbors are already dead in the
+      // discard pile is unlikely to complete an opponent's set or run, so
+      // favor discarding it (ties/near-ties only — deadwood still dominates).
+      score -= discardSafetyBonus(state.discard, card) * TURDRUMMY_BALANCE.ai.discardSafetyBias;
 
       return {
         card,
@@ -2686,6 +2728,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.message = state.lastAiAction + " Your draw.";
+      playSfx("aiMove");
       renderAll();
     }
 
@@ -2803,11 +2846,29 @@
         closeGuide();
         startFirstRoundIfNeeded();
       });
+
+      if (el.soundToggleBtn) {
+        el.soundToggleBtn.addEventListener("click", () => {
+          if (!audioPlayer) return;
+          audioPlayer.unlock();
+          audioPlayer.setEnabled(!audioPlayer.isEnabled());
+          updateSoundToggleLabel();
+          if (audioPlayer.isEnabled()) playSfx("select");
+        });
+      }
+    }
+
+    function updateSoundToggleLabel() {
+      if (!el.soundToggleBtn) return;
+      const on = audioPlayer ? audioPlayer.isEnabled() : false;
+      el.soundToggleBtn.textContent = on ? "\u{1F50A} Sound On" : "\u{1F508} Sound Off";
+      el.soundToggleBtn.setAttribute("aria-pressed", String(on));
     }
 
     function init() {
       loadStats();
       bindEvents();
+      updateSoundToggleLabel();
       const restoredTable = tryRestoreTable();
       if (!restoredTable) renderAll();
       const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen("turdrummy.html"));
@@ -2821,6 +2882,17 @@
       if (document.hidden) suspendAiForBackground();
       else resumeAiFromBackground();
     });
+
+    (function setupAudioUnlock() {
+      if (!audioPlayer) return;
+      const unlockOnce = () => {
+        audioPlayer.unlock();
+        window.removeEventListener("pointerdown", unlockOnce);
+        window.removeEventListener("keydown", unlockOnce);
+      };
+      window.addEventListener("pointerdown", unlockOnce, { once: true });
+      window.addEventListener("keydown", unlockOnce, { once: true });
+    })();
 
     init();
   
@@ -2959,6 +3031,107 @@
   }
 
   setTimeout(() => { bossMood('🤖', 'bounce'); bossSay('Sit. Sort. Suffer.', 2400); }, 700);
+})();
+
+// ============================================================
+// === TurdRummy SFX + haptics + reduced-motion-aware confetti =
+// ============================================================
+(function () {
+  'use strict';
+
+  const prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  let canvas = null;
+  let ctx2d = null;
+  let particles = [];
+  let rafId = null;
+  let lastTs = 0;
+
+  function resizeCanvas() {
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function ensureCanvas() {
+    if (canvas || prefersReducedMotion) return canvas;
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '9996';
+    canvas.style.pointerEvents = 'none';
+    document.body.appendChild(canvas);
+    ctx2d = canvas.getContext('2d');
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return canvas;
+  }
+
+  function drawFrame(ts) {
+    if (!canvas || !ctx2d) return;
+    const dt = lastTs ? (ts - lastTs) / 1000 : 0;
+    lastTs = ts;
+    particles = window.TurdRummyFX ? TurdRummyFX.stepParticles(particles, dt) : [];
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    for (const p of particles) {
+      ctx2d.save();
+      ctx2d.translate(p.x, p.y);
+      ctx2d.rotate(p.rot);
+      ctx2d.fillStyle = p.color;
+      ctx2d.globalAlpha = Math.max(0, Math.min(1, p.life));
+      ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx2d.restore();
+    }
+    if (particles.length > 0) {
+      rafId = window.requestAnimationFrame(drawFrame);
+    } else {
+      rafId = null;
+      lastTs = 0;
+    }
+  }
+
+  // One confetti burst for a round win, a bigger one for a match win. No-op
+  // (and no canvas is ever created) when the player prefers reduced motion.
+  function celebrate(big) {
+    if (prefersReducedMotion || !window.TurdRummyFX) return;
+    if (!ensureCanvas()) return;
+    const originX = window.innerWidth / 2;
+    const originY = window.innerHeight * 0.32;
+    particles = particles.concat(TurdRummyFX.createBurst(big ? 90 : 48, originX, originY));
+    if (!rafId) rafId = window.requestAnimationFrame(drawFrame);
+  }
+
+  function haptic(pattern) {
+    try {
+      if (window.navigator && typeof window.navigator.vibrate === 'function') {
+        window.navigator.vibrate(pattern);
+      }
+    } catch (err) { /* cosmetic only */ }
+  }
+
+  // Wrap setMessage a third time (same pattern the mascot block above uses)
+  // so big-moment audio/haptics/confetti react to the same status text
+  // without threading extra calls through every scoring branch.
+  if (typeof setMessage === 'function') {
+    const prevSetMessage = setMessage;
+    setMessage = function (text, summary) {
+      prevSetMessage(text, summary);
+      try {
+        const t = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
+        const last = setMessage._lastFx || ''; if (t === last) return; setMessage._lastFx = t;
+        if (t.includes('match winner: player'))        { playSfx('matchWin'); celebrate(true); haptic([20, 40, 20, 40, 60]); }
+        else if (t.includes('match winner: ai'))       { playSfx('matchLose'); haptic(30); }
+        else if (t.includes('you called gin'))         { playSfx('gin'); celebrate(false); haptic([18, 40, 24]); }
+        else if (t.includes('ai called gin'))          { playSfx('roundLose'); haptic(12); }
+        else if (t.includes('undercut! you'))          { playSfx('undercut'); celebrate(false); haptic([14, 30, 14]); }
+        else if (t.includes('undercut! ai'))           { playSfx('roundLose'); haptic(12); }
+        else if (t.includes('you knocked'))            { playSfx('knock'); haptic(18); }
+        else if (t.includes('ai knocked'))             { playSfx('roundLose'); haptic(10); }
+        else if (t.includes('round is a draw'))        { playSfx('invalid'); }
+      } catch (err) { /* cosmetic only */ }
+    };
+  }
 })();
 
 </script>
