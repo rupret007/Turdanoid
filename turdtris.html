@@ -1590,7 +1590,10 @@ function unlockAudio() {
 function suiteMuted() {
   try {
     const stored = localStorage.getItem('turdsuite_muted');
-    return stored !== null ? stored === '1' : !!(window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted());
+    if (stored !== null) return stored === '1';
+  } catch (err) {}
+  try {
+    return !!(window.Suite && typeof window.Suite.isMuted === 'function' && window.Suite.isMuted());
   } catch (err) {
     return false;
   }
@@ -2017,7 +2020,7 @@ function hardDrop() {
       const cell = cells[n % cells.length];
       clearSparks.push({ x: cell.x + 16, y: cell.y + 28, vx: (Math.random() - .5) * 4, vy: -Math.random() * 2, size: 2 + Math.random() * 2, life: 15, max: 15, color: '#c1e8d2', spin: .05, rot: 0 });
     }
-    clearSparks = clearSparks.slice(-96);
+    clearSparks = clearSparks.slice(-72);
   }
   playSfx('drop');
   haptic('hardDrop');
@@ -2533,7 +2536,7 @@ function drawPlayfield() {
     if (fx.life <= 0) clearEffects.splice(i, 1);
   }
 
-  clearSparks = reducedMotion?.matches ? [] : clearSparks.slice(-96);
+  clearSparks = reducedMotion?.matches ? [] : clearSparks.slice(-72);
   if (window.TurdtrisArt && !reducedMotion?.matches) {
     for (const trail of dropTrails) window.TurdtrisArt.drawDropTrail(context, { ...trail, progress: trail.age / 250, reducedMotion: false });
   }

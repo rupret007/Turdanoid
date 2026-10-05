@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { JSDOM } from 'jsdom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as TurdtrisPresentation from '../games/turdtris-presentation.js';
 
 const html = readFileSync(
@@ -36,7 +36,7 @@ function makeCtxStub() {
   });
 }
 
-function bootPage(storedBest) {
+function bootPage(storedBest, storedSettings, storedPrefs = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url: 'http://localhost/turdtris.html',
@@ -48,6 +48,10 @@ function bootPage(storedBest) {
       if (storedBest !== undefined) {
         window.localStorage.setItem('turdtrisHighScore', String(storedBest));
       }
+      if (storedSettings !== undefined) {
+        window.localStorage.setItem(TurdtrisPresentation.INPUT_SETTINGS_KEY, storedSettings);
+      }
+      Object.entries(storedPrefs).forEach(([key, value]) => window.localStorage.setItem(key, value));
     }
   });
   const w = dom.window;
@@ -348,5 +352,103 @@ describe('Turdtris presentation integration preserves classic play', () => {
     w.restartGame();
     expect(w.eval('runStats')).toEqual(TurdtrisPresentation.createRunStats());
     expect(w.localStorage.getItem('turdtrisHighScore')).toBe('1000');
+  });
+});
+
+describe('Turdtris page audio integration', () => {
+  let w;
+  let player;
+
+  beforeEach(() => {
+    w = bootPage('120');
+    player = { arm: vi.fn(), stop: vi.fn(), play: vi.fn(), update: vi.fn() };
+    w.__turdtrisAudio = player;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    w.close();
+  });
+
+  it('rejects synthetic pointer and keyboard events without arming or creating audio', () => {
+    const createAudio = vi.fn();
+    w.AudioContext = createAudio;
+    w.document.dispatchEvent(new w.Event('pointerdown', { bubbles: true }));
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code: 'ArrowLeft', bubbles: true }));
+    w.playSfx('drop');
+    expect(w.turdtrisRuntime.audioArmed()).toBe(false);
+    expect(player.arm).not.toHaveBeenCalled();
+    expect(player.play).not.toHaveBeenCalled();
+    expect(createAudio).not.toHaveBeenCalled();
+  });
+
+  it('restores music opt-out and toggles only its additive key', () => {
+    w.close();
+    w = bootPage('120', undefined, {
+      turdtrisMusic_v1: '0', turdtrisSoundOn_v1: '0', turdsuite_muted: '1'
+    });
+    w.__turdtrisAudio = player;
+    expect(w.turdtrisRuntime.musicEnabled()).toBe(false);
+    expect(w.turdtrisRuntime.soundEnabled()).toBe(false);
+    expect(w.document.getElementById('musicToggle').getAttribute('aria-pressed')).toBe('false');
+    const before = Object.fromEntries(Object.keys(w.localStorage).map(key => [key, w.localStorage.getItem(key)]));
+    w.toggleMusic();
+    expect(w.turdtrisRuntime.musicEnabled()).toBe(true);
+    expect(w.localStorage.getItem('turdtrisMusic_v1')).toBe('1');
+    expect(w.document.getElementById('musicToggle').getAttribute('aria-pressed')).toBe('true');
+    expect(player.update).toHaveBeenCalledOnce();
+    for (const [key, value] of Object.entries(before)) {
+      if (key !== 'turdtrisMusic_v1') {expect(w.localStorage.getItem(key)).toBe(value);}
+    }
+    w.toggleMusic();
+    expect(w.localStorage.getItem('turdtrisMusic_v1')).toBe('0');
+    expect(w.turdtrisRuntime.soundEnabled()).toBe(false);
+  });
+
+  it('defaults music on without writing any existing preference', () => {
+    expect(w.turdtrisRuntime.musicEnabled()).toBe(true);
+    expect(w.localStorage.getItem('turdtrisMusic_v1')).toBeNull();
+    expect(w.localStorage.getItem('turdtrisSoundOn_v1')).toBeNull();
+    w.toggleMusic();
+    expect(w.localStorage.getItem('turdtrisMusic_v1')).toBe('0');
+    expect(w.localStorage.getItem('turdtrisSoundOn_v1')).toBeNull();
+    expect(w.localStorage.getItem('turdtrisHighScore')).toBe('120');
+  });
+
+  it.each(['pause', 'guide', 'blur', 'gameover', 'victory'])('immediately stops music at the %s boundary', boundary => {
+    if (boundary === 'pause') {w.togglePause();}
+    if (boundary === 'guide') {w.showWelcomeGuide();}
+    if (boundary === 'blur') {w.dispatchEvent(new w.Event('blur'));}
+    if (boundary === 'gameover') {w.showGameOver(false);}
+    if (boundary === 'victory') {w.showGameOver(true);}
+    expect(player.stop).toHaveBeenCalled();
+    w.updateMusic();
+    expect(player.update).toHaveBeenLastCalledWith(expect.objectContaining({ active: false }));
+  });
+
+  it.each(['game', 'suite'])('gates SFX with the restored %s mute setting', muteSource => {
+    w.close();
+    const storedPrefs = muteSource === 'game' ? { turdtrisSoundOn_v1: '0' } : { turdsuite_muted: '1' };
+    w = bootPage('120', undefined, storedPrefs);
+    w.__turdtrisAudio = player;
+    w.eval('audioArmed = true');
+    w.playSfx('clear', { linesCleared: 4 });
+    w.showGameOver(true);
+    expect(player.play).not.toHaveBeenCalled();
+    expect(w.eval('audioCtx')).toBeNull();
+  });
+
+  it('consults the suite mute state even when browser storage is blocked', () => {
+    const isMuted = vi.fn(() => true);
+    w.Suite = { isMuted };
+    vi.spyOn(w.Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new w.DOMException('Storage blocked', 'SecurityError');
+    });
+    w.eval('audioArmed = true');
+    expect(w.suiteMuted()).toBe(true);
+    w.playSfx('drop');
+    expect(isMuted).toHaveBeenCalled();
+    expect(player.play).not.toHaveBeenCalled();
+    expect(w.eval('audioCtx')).toBeNull();
   });
 });

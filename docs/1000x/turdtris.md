@@ -100,7 +100,7 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 
 ### Round 2 implementation notes
 
-- Added a cached procedural sprite/background renderer (eight materials with faces; four illustrated chapters). Art is rendered once per material/theme; ghost, spawn, squash, drop, drain, takeover and danger policies have direct reduced-motion tests. Maximum live clear/dust particles: 96, drop trails: 3, clear rows/lock groups/float labels: 12 each. No runtime network assets.
+- Added a cached procedural sprite/background renderer (eight materials with faces; four illustrated chapters). Art is rendered once per material/theme; ghost, spawn, squash, drop, drain, takeover and danger policies have direct reduced-motion tests. Maximum retained clear/dust particles: 72, drop trails: 3, clear rows/lock groups/float labels: 12 each. No runtime network assets.
 - Replaced overlapping global hype banners with canvas clear callouts and a readable personal-best receipt. Phone layouts reserve the dock height explicitly; the legacy floating Hub shortcut is hidden on phones because the Run Menu already supplies Hub and the floating shortcut obscured cells.
 - At 390×844, measured board = 257×514, bottom 640, dock top 665. At 320×640, board = 169×338, bottom 450, dock top 461. Both have 48px controls, zero horizontal or vertical document overflow, all Hold/Next/controls visible, and no console errors. Desktop 1280×900 also fits the entire board without overflow. Physical-device audio/tactile feel remains unverified.
 - Input and music keys are additive: `turdtrisInputFeel_v1` and `turdtrisMusic_v1`. Old high scores remain decimal strings; no continuation snapshot formats were touched. Classic scoring matches live-page tests for single/double/triple/tetris, each perfect-clear bonus, and T-spin no-line. No scoring changes or challenge modes were introduced.
@@ -111,6 +111,6 @@ Read the conductor's round-0 audit and the live inline engine. The engine in `tu
 ### Round 2 validation
 
 - Targeted module tests: PASS (art, audio, FX, layout, presentation).
-- Live-page integration tests: PASS (27 tests before final full-suite run).
+- Live-page integration tests: PASS (38 tests before final full-suite run), including gesture-only audio, music opt-out, all pause boundaries and blocked-storage mute fallback.
 - In-memory Chromium visual/geometry checks: PASS at 320×640, 390×844 and 1280×900; four-row flush/perfect-clear receipt and settings pause/restart checked. No screenshot assets added to the repository.
 - Full Vitest / lint / smoke: pending final required run.
