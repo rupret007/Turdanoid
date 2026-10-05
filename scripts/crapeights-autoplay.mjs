@@ -71,7 +71,7 @@ async function inspect(page) {
         left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom };
     });
     const status = document.querySelector('#statusText');
-    return { key: JSON.stringify(state), state, suitChoice: suits[0], cards,
+    return { key: JSON.stringify(state), state, selected: selectedCardId, suitChoice: suits[0], cards,
       status: status?.textContent, live: { role: status?.getAttribute('role'), politeness: status?.getAttribute('aria-live') },
       layout: { viewport: innerWidth, scrollWidth: document.documentElement.scrollWidth,
         bodyWidth: document.body.scrollWidth, height: document.documentElement.scrollHeight },
@@ -100,7 +100,7 @@ async function checkFocus(page, result) {
 
 async function tabTo(page, selector, result) {
   for (let count = 0; count < 120; count += 1) {
-    if (await page.evaluate(selector => document.activeElement?.matches(selector), selector)) {
+    if (await page.locator(selector).first().evaluate(element => document.activeElement === element)) {
       await checkFocus(page, result);
       return;
     }
@@ -145,6 +145,7 @@ async function waitDismissed(page, selector) {
 }
 
 async function tapCard(page, card, scenario, result) {
+  const before = await inspect(page);
   const selector = `#playerHand [data-card-id="${card.id}"]`;
   if (scenario.keyboard) {
     await tabTo(page, '#playerHand .card-btn', result);
@@ -158,8 +159,9 @@ async function tapCard(page, card, scenario, result) {
     await checkFocus(page, result);
     await page.keyboard.press('Enter');
     result.keyboard.enters += 1;
-    if ((await inspect(page)).state.pendingWild) return;
-    await page.keyboard.press('KeyP');
+    const selected = await inspect(page);
+    if (selected.key === before.key && selected.selected !== Number(card.id)) throw new Error(`Enter did not select card ${card.id}`);
+    if (selected.key === before.key) await page.keyboard.press('KeyP');
     result.keyboard.plays += 1;
   } else {
     // Find an actually exposed point in the fan; a card's center can be covered.
@@ -179,9 +181,16 @@ async function tapCard(page, card, scenario, result) {
     if (!point) throw new Error(`Playable card ${card.id} has no exposed tap point`);
     if (scenario.touch) await page.touchscreen.tap(point.x, point.y);
     else await page.mouse.click(point.x, point.y);
+    const selected = await inspect(page);
+    if (selected.key === before.key && selected.selected !== Number(card.id)) {
+      throw new Error(`Touch did not select card ${card.id}; rapid native input may have been canceled`);
+    }
     // Selection can lift a card. The second action uses the stable native Play button.
-    if (!(await inspect(page)).state.pendingWild) await activate(page, '#playBtn', scenario, result);
+    if (selected.key === before.key && !await activate(page, '#playBtn', scenario, result)) {
+      throw new Error(`Selected legal card ${card.id} has no enabled Play Selected button`);
+    }
   }
+  if ((await inspect(page)).key === before.key) throw new Error(`Playing selected card ${card.id} did not change the table`);
   result.actions.Card += 1;
 }
 
@@ -192,17 +201,21 @@ async function readSave(page) {
 async function continueViaHub(page, scenario, result, screenshot) {
   const before = await readSave(page);
   if (!before || !before.roundActive || before.currentPlayer !== 0) throw new Error('Continue check did not start on a live human turn');
-  if (scenario.touch) await activate(page, '.mobile-menu summary', scenario, result);
-  await Promise.all([
-    page.waitForURL(url => url.pathname === '/' || url.pathname === '/index.html'),
-    activate(page, scenario.touch ? '.mobile-menu-actions button' : '.actions button', scenario, result),
-  ]);
+  console.log(`[${scenario.name}] Continue: leaving round ${before.roundNumber} through Hub`);
+  if (scenario.touch) {
+    if (!await activate(page, '.mobile-menu summary', scenario, result)) throw new Error('Continue: Table Menu cannot be activated');
+    if (!await page.locator('.mobile-menu details').evaluate(element => element.open)) throw new Error('Continue: Table Menu touch did not open its controls');
+  }
+  if (!await activate(page, scenario.touch ? '.mobile-menu-actions button' : '.actions button', scenario, result)) {
+    throw new Error('Continue: Hub button is hidden or disabled');
+  }
+  await page.waitForURL(url => url.pathname === '/' || url.pathname === '/index.html', { timeout: 5000 })
+    .catch(() => { throw new Error(`Continue: Hub activation did not navigate (URL ${page.url()})`); });
   const resume = '.game-card[href="crapeights.html"]';
   if (!(await page.locator(`${resume} .play`).textContent()).includes('Continue')) throw new Error('Hub does not offer Continue for the live table');
-  await Promise.all([
-    page.waitForURL('**/crapeights.html'),
-    activate(page, resume, scenario, result),
-  ]);
+  if (!await activate(page, resume, scenario, result)) throw new Error('Continue: hub resume link is hidden or disabled');
+  await page.waitForURL(url => url.pathname.endsWith('/crapeights.html'), { timeout: 5000 })
+    .catch(() => { throw new Error(`Continue: resume link did not navigate (URL ${page.url()})`); });
   await page.waitForFunction(() => typeof roundActive !== 'undefined' && roundActive);
   const after = await readSave(page);
   if (JSON.stringify(after) !== JSON.stringify(before)) {
@@ -333,6 +346,7 @@ async function runScenario(scenario) {
           result.modalChecks.push('Wild suit choice dismisses picker');
         }
       } else if (snapshot.state.player === 0) {
+        if ((await inspect(page)).state.player !== 0) continue;
         if (!result.continue.exactSnapshot && humanTurns >= 2 && !snapshot.state.drawn) {
           await continueViaHub(page, scenario, result, screenshot);
           continueKey = (await inspect(page)).key;
@@ -345,7 +359,14 @@ async function runScenario(scenario) {
           await tapCard(page, card, scenario, result);
         } else {
           const action = playable.length ? 'Smart' : snapshot.state.drawn ? 'Pass' : 'Draw';
-          if (await activate(page, `#${action.toLowerCase()}Btn`, scenario, result)) result.actions[action] += 1;
+          const beforeAction = (await inspect(page)).key;
+          let activated = false;
+          try { activated = await activate(page, `#${action.toLowerCase()}Btn`, scenario, result); }
+          catch (error) { if ((await inspect(page)).key === beforeAction) throw error; }
+          const accepted = (await inspect(page)).key !== beforeAction;
+          // An automatic pass can win the race with a pending Pass press.
+          if (!accepted) throw new Error(`${action} ${activated ? 'activation was ignored' : 'is unavailable'} on the human turn`);
+          if (activated) result.actions[action] += 1;
         }
         humanTurns += 1;
       }

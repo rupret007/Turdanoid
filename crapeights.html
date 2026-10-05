@@ -581,6 +581,19 @@
     @media(max-width:760px){.suit-row{display:none}}
     @media(max-width:360px){.opp-cards{height:26px;margin-top:-2px;transform:scale(.6);transform-origin:50% 0}.pile-row{top:117px}.opp-card.active .mini-back:last-child{animation:none}}
 
+    /* Keep decorative light inside scrollable dialogs and responses snappy. */
+    .overlay-card::after{right:0;bottom:0}
+    .overlay-card,#roundOverlay .overlay-card{animation-duration:.24s}
+    #suitChooser[style*="flex"] .suit-grid{animation-duration:.24s}
+    .card-btn,.suit-btn,.drawer-launch,.mobile-menu summary,.dialog-hub{touch-action:manipulation}
+    @media(max-width:760px){
+      .opp-cards{height:26px;margin-top:-2px;transform:scale(.6);transform-origin:50% 0}
+      .opp-card.active .mini-back:last-child{animation:none}
+      .flow-badge{display:none}
+      .turn-banner span#turnHint{font-size:10px;line-height:1.45}
+      .selection-note{position:absolute;left:0;top:47px}
+    }
+
 </style>
 </head>
 <body class="suite-ambient">
@@ -1542,7 +1555,10 @@
         roundTwoStats = window.CrapeightsEffects.recordRound(roundTwoStats, { humanWon: winnerIndex === 0, points, matchFinished });
         window.CrapeightsEffects.saveStats(roundTwoStats);
       }
-      tableEffects?.action({ type: 'win', playerIndex: winnerIndex, name: winner.name });
+      // The result dialog replaces table action stamps immediately; keep its
+      // receipt readable while its own small card tally plays.
+      tableEffects?.clear();
+      CrapeightsPresentation.clearEffects();
       setStatus(summary, true);
       addHistory(summary);
       playSfx(winnerIndex === 0 ? 'win' : 'lose');
@@ -1776,7 +1792,7 @@
       const el = document.getElementById('tableEvent');
       clearTimeout(eventTimer);
       el.replaceChildren(); el.classList.remove('show');
-      if (!event) return;
+      if (!event || tableEffects) return;
       const title = document.createElement('b'); title.textContent = event[0];
       const detail = document.createElement('small'); detail.textContent = event[1];
       el.append(title, detail); el.classList.add('show');
@@ -1837,6 +1853,14 @@
       }[aiDifficulty];
     }
     function wireEvents() {
+      // The suite's document touchend zoom guard cancels a second rapid tap,
+      // even when it targets a different button. Native manipulation controls
+      // already suppress double-tap zoom; preserve their native click sequence.
+      document.querySelectorAll('.shell,.overlay').forEach(surface => {
+        surface.addEventListener('touchend', event => {
+          if (event.target.closest?.('button,summary,a[href]')) event.stopPropagation();
+        }, { passive: true });
+      });
       document.getElementById('tableDrawerBtn').addEventListener('click', openTableDrawer);
       document.getElementById('closeDrawerBtn').addEventListener('click', closeTableDrawer);
       document.getElementById('aiDifficulty').addEventListener('change', event => {

@@ -274,6 +274,35 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(game.state()).toEqual(before);
   });
 
+  it.each([
+    ['card face', '#playerHand .card-btn .center', null],
+    ['modal control', '#quickStartBtn', 'showWelcomeGuide'],
+    ['details summary', '#tableDrawer summary span', 'openTableDrawer']
+  ])('preserves native rapid-tap activation on a %s', (_name, selector, openModal) => {
+    const game = boot();
+    if (openModal) { game.w[openModal](); }
+    const target = game.w.document.querySelector(selector);
+    expect(target).not.toBeNull();
+    let documentTouches = 0;
+    // Model a second touch inside the suite's 350 ms double-tap zoom window.
+    // Canceling it at document would also suppress its native button click.
+    game.w.document.addEventListener('touchend', event => {
+      documentTouches++;
+      event.preventDefault();
+    }, { passive: false });
+    const event = new game.w.Event('touchend', { bubbles: true, cancelable: true });
+    expect(target.dispatchEvent(event)).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(documentTouches).toBe(0);
+
+    // Ordinary table touches still reach the global guard; the exception is
+    // limited to controls, including their nested artwork and label spans.
+    const backgroundTouch = new game.w.Event('touchend', { bubbles: true, cancelable: true });
+    game.w.document.querySelector('.arena').dispatchEvent(backgroundTouch);
+    expect(documentTouches).toBe(1);
+    expect(backgroundTouch.defaultPrevented).toBe(true);
+  });
+
   it('keeps keyboard card focus through selection and supports arrows, Home and End', () => {
     const game = boot();
     const hand = game.w.document.getElementById('playerHand');

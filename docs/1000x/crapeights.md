@@ -144,3 +144,16 @@ Re-read the round-0 audit, current live page, local presentation/AI/save modules
 ## Round 3 scope / Needs shared change
 
 This explicitly requested lane document and autoplay script are authorized exceptions to the initial owned-file list. The absolute hard rule to work only in this checkout takes precedence over the requested external artifact directory: round-3 evidence goes in `docs/1000x/crapeights-autoplay-r3/`. The conductor must copy it to `/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/r3/crapeights-autoplay/`. The required external audit was read only. Existing shared Hub-pill overlap and out-of-lane lint warnings will be rechecked, not changed in this lane.
+
+### Autoplay findings and fixes in progress
+
+- The stronger dialog check found decorative `::after` glow extending 32px outside every modal's scrolling box. Contained the glow; entrances now last 240ms.
+- Actual rapid touch input exposed the shared `preventDoubleTapZoom` document handler: every second touch within 350ms cancels native activation on cards, buttons, summaries and links. This broke card → Play, Table Menu → Hub and drawer open → close. Protected this game's interactive surfaces locally, using native `touch-action: manipulation` and retaining non-control event propagation. Added regression coverage; no artificial input delays conceal the defect.
+- Improved harness assertions to reject ignored card selections/actions and identify the exact failing Continue navigation stage.
+- Screenshot review found 390px opponent fans crossing pile headings, redundant action banners crowding stamps, and an end-round stamp covering the scoring receipt. Reduced phone fans, removed duplicate enhanced-table notices, and clear table effects before the result dialog; retained the receipt's own effects. Compact phone selection text also removes an unnecessary line from the table height.
+- Fixed keyboard focus falling to the body when its card is played, added a live result summary inside the dialog, and verified two full desktop keyboard rounds with Continue during the discovery run.
+- Reduced-motion changes now immediately settle the receipt total and cancel outstanding tally timers. Card flights are 260ms, while the existing readable 760ms bot pacing is retained. Added gated selection, pass and utility sounds.
+
+### Additional Needs shared change
+
+The shared zoom guard should exempt native interactive controls using `touch-action: manipulation`; its present document-level `preventDefault()` cancels legitimate rapid activation across the suite. Crappy Eights now contains a tested local workaround. The shared fixed Hub pill still covers some lower-left content on short screens; its placement remains the shared lane's responsibility.
