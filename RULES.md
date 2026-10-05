@@ -37,7 +37,7 @@ TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 le
 | Brick destroyed | +5 × level |
 | Combo multiplier | +0.5× per 4 combo hits |
 | 💰 Gold Rush | 2× all brick points |
-| Level clear bonus | 200 + level × 50 |
+| Level clear bonus | 200 + level × 50 (shown on an animated tally screen; Space/tap to skip) |
 
 ### Power-Ups
 
