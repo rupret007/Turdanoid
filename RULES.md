@@ -384,6 +384,26 @@ Partnership Spades trick-taking game against two CPU opponents.
 3. A Nil bidder sheds the highest card that can safely lose; its partner overtakes that Nil winner when a cheaper cover exists and still plays for the team contract
 4. Use the lowest winning card when the team still needs tricks
 5. Shed low cards when the contract is safe and trump when void if a trick is needed
+6. **Difficulty** (top bar, stored as `turdspades_ai_difficulty_v1`): **Easy** mirrors classic heuristics; **Normal** (default) tracks played spades and avoids overtrumping a set partner; **Hard** is more conservative with trump when bags/contract are safe
+
+### Controls
+
+- **Bid**: +/- dial, bid chips, **N** for Nil, **Lock Bid** (or **Enter**)
+- **Play**: Tap/select a legal card, **Play Selected** (or **Enter**); **←/→** move focus among legal cards
+- **Round end**: **Next Round** or **Enter**
+- Screen reader: live announcements for bot plays, trick wins, spades broken, and round scoring
+
+### Table UI (1000x)
+
+- Compact **Us vs Them** strip always visible; **Score details** expands the full stat tiles
+- Bid with the dial, **0–13 chips**, or **N** for Nil; hand hint suggests expected tricks
+- Seat avatars, trick stacks, deal/sweep motion (disabled with reduced motion)
+
+### Presentation (1000x lane)
+
+- WebAudio synth for card play, trick wins, spades broken, bids, bag penalties, and match end (respects `turdsuite_muted`; unlocks after first tap/key)
+- Trick cards sweep toward the winner; spades broken triggers a felt pulse (animations respect `prefers-reduced-motion`)
+- Bots briefly explain their line (Nil duck, cover, chase, slough) in an on-table hint bar
 
 ---
 
