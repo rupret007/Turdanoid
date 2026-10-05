@@ -288,6 +288,317 @@ body::after {
   align-items: start;
 }
 
+.main-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.cabinet-hold,
+.cabinet-rail .rail-extra,
+.cabinet-rail .next-queue {
+  display: none;
+}
+
+.cabinet-hold {
+  border: 1px solid rgba(255, 203, 135, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0)), rgba(18, 12, 8, 0.88);
+  padding: 10px;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.cabinet-hold h3,
+.next-queue h3 {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.cabinet-hold canvas {
+  width: 100%;
+  max-width: 140px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
+  background: #12100f;
+  box-shadow: inset 0 0 0 1px rgba(255, 203, 135, 0.2), inset 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.cabinet-rail {
+  display: block;
+  min-width: 0;
+}
+
+.next-queue-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.next-queue-slots canvas {
+  width: 100%;
+  max-width: 168px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: #12100f;
+  box-shadow: inset 0 0 0 1px rgba(255, 203, 135, 0.18), inset 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.next-queue-slots canvas:first-child {
+  border-color: rgba(142, 232, 199, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(142, 232, 199, 0.35), 0 0 12px rgba(142, 232, 199, 0.12);
+}
+
+.help-drawer {
+  border: 1px solid rgba(255, 203, 135, 0.28);
+  border-radius: 12px;
+  background: rgba(16, 10, 6, 0.82);
+  padding: 8px 10px;
+}
+
+.help-drawer summary {
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  list-style: none;
+  text-align: center;
+}
+
+.help-drawer summary::-webkit-details-marker { display: none; }
+
+.help-drawer .controls {
+  margin-top: 8px;
+  font-size: 0.76rem;
+}
+
+.desktop-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 100%, rgba(80, 140, 120, 0.22), transparent 55%),
+    radial-gradient(circle at 20% 20%, rgba(255, 180, 100, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 15%, rgba(120, 200, 180, 0.1), transparent 35%);
+}
+
+body.desktop-cabinet {
+  padding: clamp(6px, 1vw, 12px);
+  align-items: stretch;
+  overflow-y: hidden;
+}
+
+body.desktop-cabinet .layout {
+  width: min(100vw - 16px, 1360px);
+  max-height: calc(100dvh - 12px);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+  margin: 0 auto;
+}
+
+body.desktop-cabinet .topbar {
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+body.desktop-cabinet .topbar p {
+  display: none;
+}
+
+body.desktop-cabinet .main-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(108px, 13vw) minmax(0, 1fr) minmax(168px, 19vw);
+  grid-template-rows: 1fr;
+  gap: clamp(10px, 1.4vw, 18px);
+  align-items: center;
+  justify-items: stretch;
+}
+
+body.desktop-cabinet .cabinet-hold {
+  display: block;
+  grid-column: 1;
+  align-self: center;
+}
+
+body.desktop-cabinet .game-grid {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+}
+
+body.desktop-cabinet .game-grid .panel {
+  display: none;
+}
+
+body.desktop-cabinet .board-wrap {
+  margin: 0 auto;
+}
+
+body.desktop-cabinet .cabinet-rail {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 100%;
+  overflow: hidden;
+  align-self: center;
+}
+
+body.desktop-cabinet .cabinet-rail .hud {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+}
+
+body.desktop-cabinet .cabinet-rail .card {
+  padding: 7px 6px 8px;
+}
+
+body.desktop-cabinet .cabinet-rail .card .v {
+  font-size: 1.05rem;
+}
+
+body.desktop-cabinet .cabinet-rail .next-queue,
+body.desktop-cabinet .cabinet-rail .rail-extra {
+  display: block;
+}
+
+body.desktop-cabinet #game {
+  width: min(420px, calc((100dvh - 108px - env(safe-area-inset-bottom)) / 2), calc((100vw - 360px) / 2));
+  max-height: calc(100dvh - 120px);
+}
+
+body.desktop-cabinet .run-progress-copy {
+  font-size: 0.68rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+body.desktop-cabinet .status {
+  min-height: 48px;
+  font-size: 0.76rem;
+  -webkit-line-clamp: 3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 981px) and (max-height: 820px) {
+  body.desktop-cabinet .cabinet-rail .card .v { font-size: 0.95rem; }
+  body.desktop-cabinet .cabinet-rail .card .k { font-size: 0.58rem; }
+}
+
+.attract-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.42;
+}
+
+.welcome-guide {
+  flex-direction: column;
+}
+
+.welcome-guide.is-open {
+  display: flex;
+}
+
+.attract-card {
+  position: relative;
+  z-index: 2;
+  width: min(520px, 100%);
+}
+
+.attract-logo {
+  font-size: clamp(2rem, 6vw, 2.85rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, #fff8e8 0%, #ffcb87 40%, #d4842e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(255, 203, 135, 0.45));
+}
+
+.attract-tagline {
+  text-align: center;
+  font-size: 0.92rem;
+  opacity: 0.9;
+  margin-bottom: 10px;
+}
+
+.attract-best {
+  text-align: center;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8ee8c7;
+  margin-bottom: 12px;
+}
+
+.attract-best strong,
+.attract-best span {
+  font-size: 1.35rem;
+  color: #eafff5;
+  font-variant-numeric: tabular-nums;
+}
+
+.attract-modes {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.attract-modes label {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #e8dcc8;
+}
+
+.attract-modes select {
+  min-height: 42px;
+  border-radius: 8px;
+  border: 1px solid rgba(142, 232, 199, 0.35);
+  background: #192a29;
+  color: #edfff8;
+  font: inherit;
+  padding: 6px 8px;
+}
+
+.attract-card .guide-legend {
+  margin-top: 8px;
+}
+
+.attract-card ul {
+  max-height: 28vh;
+  overflow-y: auto;
+}
+
 .board-wrap {
   position: relative;
   border-radius: 16px;
@@ -977,6 +1288,20 @@ body::after {
   body.board-focus .game-grid .panel {
     display: none;
   }
+  body.board-focus .main-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  body.board-focus .cabinet-hold,
+  body.board-focus .cabinet-rail .next-queue,
+  body.board-focus .cabinet-rail .rail-extra {
+    display: none;
+  }
+  body.board-focus .cabinet-rail {
+    order: -1;
+    display: block;
+  }
   body.board-focus #game {
     width: min(400px, 94vw, 46dvh);
   }
@@ -1067,9 +1392,23 @@ body::after {
 </head>
 <body class="suite-ambient suite-no-zoom board-focus">
 <div id="statusLive" class="sr-live" aria-live="polite" aria-atomic="true"></div>
+<div class="desktop-scene" id="desktopScene" aria-hidden="true"></div>
 <div class="welcome-guide" id="welcomeGuide">
-  <div class="welcome-card">
-    <h2>Turdtris Turbo</h2>
+  <canvas class="attract-canvas" id="attractCanvas" aria-hidden="true" width="640" height="480"></canvas>
+  <div class="welcome-card attract-card">
+    <div class="attract-logo" aria-hidden="true">Turdtris</div>
+    <p class="attract-tagline">Sewer-stack arcade · ghost · hold · chaos modifiers</p>
+    <p class="attract-best">Classic best <span id="attractBest">0</span></p>
+    <div class="attract-modes">
+      <label for="attractModeSetting">Pick your flush
+        <select id="attractModeSetting">
+          <option value="classic">Classic · 69 levels</option>
+          <option value="sprint">Sprint · 40 lines</option>
+          <option value="ultra">Ultra · 2 minutes</option>
+        </select>
+      </label>
+    </div>
+    <h2 class="sr-live" style="position:absolute;width:1px;height:1px;overflow:hidden">Turdtris Turbo</h2>
     <p>Stack clean, survive level modifiers, and score big with combos and back-to-back clears.</p>
     <ul>
       <li><strong>Move:</strong> Left/Right arrows</li>
@@ -1083,8 +1422,9 @@ body::after {
     <div class="guide-legend"><span><strong>Ghost outline</strong><br>Your landing spot.</span><span><strong>Landing meter</strong><br>Time left to slide or spin.</span><span><strong>4 rows</strong><br>A mighty TURDTRIS!</span></div>
     <p>Hold saves a piece for later. Clear rows to travel from bathroom to orbit. Run Menu also has Sprint 40L, Ultra 2-minute, movement tuning and music.</p>
     <div class="welcome-actions">
-      <button class="btn" onclick="quickStartRun()">Quick Start</button>
-      <button class="btn subtle" onclick="hideWelcomeGuide()">Review Then Start</button>
+      <button class="btn" type="button" onclick="startAttractMode()">Play</button>
+      <button class="btn subtle" type="button" onclick="quickStartRun()">Quick Start</button>
+      <button class="btn subtle" type="button" onclick="hideWelcomeGuide()">Review Then Start</button>
     </div>
   </div>
 </div>
@@ -1127,16 +1467,13 @@ body::after {
     </div>
   </div>
 
-  <div class="hud">
-    <div class="card"><div class="k">Score</div><div class="v" id="score">0</div></div>
-    <div class="card"><div class="k" id="highLabel">High</div><div class="v" id="highScore">0</div></div>
-    <div class="card"><div class="k" id="levelLabel">Level</div><div class="v" id="level">1</div></div>
-    <div class="card"><div class="k">Lines</div><div class="v" id="lines">0</div></div>
-    <div class="card warn"><div class="k">Combo</div><div class="v" id="combo">0</div></div>
-    <div class="card good"><div class="k">B2B</div><div class="v" id="b2b">0</div></div>
-  </div>
+  <div class="main-stage">
+    <aside class="cabinet-hold" aria-label="Hold piece">
+      <h3>Hold</h3>
+      <canvas width="120" height="80" id="hold"></canvas>
+    </aside>
 
-  <div class="game-grid">
+    <div class="game-grid board-column">
     <div class="board-wrap" data-motto="Stack clean. Panic dirty.">
       <div class="well-caption"><span id="zoneName">01 / Porcelain Palace</span><span class="live-dot" id="modeBadge">● CLASSIC</span></div>
       <canvas width="320" height="640" id="game" role="img" aria-label="Turdtris playfield. Use arrow keys to move, X or Z to rotate, Space to drop, C to hold, P to pause."></canvas>
@@ -1170,12 +1507,8 @@ body::after {
       </div>
     </div>
 
-    <aside class="panel">
+    <aside class="panel legacy-panel">
       <div class="preview-row">
-        <div class="preview-box">
-          <h3>Hold</h3>
-          <canvas width="120" height="80" id="hold"></canvas>
-        </div>
         <div class="preview-box">
           <h3>Next</h3>
           <canvas width="120" height="80" id="next"></canvas>
@@ -1183,6 +1516,38 @@ body::after {
       </div>
 
       <div class="run-progress">
+        <div class="run-progress-head"><span>Next flush</span><strong id="levelProgressTextLegacy">0 / 8 lines</strong></div>
+      </div>
+
+      <div>
+        <h3>Status</h3>
+        <div class="status" id="statusTextLegacy">Stack clean, survive long, and chain line clears.</div>
+      </div>
+    </aside>
+  </div>
+
+    <aside class="cabinet-rail" aria-label="Run stats and queue">
+      <div class="hud" id="hudRail">
+        <div class="card"><div class="k">Score</div><div class="v" id="score">0</div></div>
+        <div class="card"><div class="k" id="highLabel">High</div><div class="v" id="highScore">0</div></div>
+        <div class="card"><div class="k" id="levelLabel">Level</div><div class="v" id="level">1</div></div>
+        <div class="card"><div class="k">Lines</div><div class="v" id="lines">0</div></div>
+        <div class="card warn"><div class="k">Combo</div><div class="v" id="combo">0</div></div>
+        <div class="card good"><div class="k">B2B</div><div class="v" id="b2b">0</div></div>
+      </div>
+
+      <div class="next-queue" id="desktopNextQueue">
+        <h3>Next</h3>
+        <div class="next-queue-slots" id="nextQueueSlots">
+          <canvas class="queue-slot" width="96" height="64" id="nextQueue0" aria-label="Next piece"></canvas>
+          <canvas class="queue-slot" width="96" height="64" id="nextQueue1" aria-hidden="true"></canvas>
+          <canvas class="queue-slot" width="96" height="64" id="nextQueue2" aria-hidden="true"></canvas>
+          <canvas class="queue-slot" width="96" height="64" id="nextQueue3" aria-hidden="true"></canvas>
+          <canvas class="queue-slot" width="96" height="64" id="nextQueue4" aria-hidden="true"></canvas>
+        </div>
+      </div>
+
+      <div class="run-progress rail-extra">
         <div class="run-progress-head"><span>Next flush</span><strong id="levelProgressText">0 / 8 lines</strong></div>
         <div class="run-progress-track" id="levelProgressBar" role="progressbar" aria-label="Lines toward the next Turdtris level" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0" aria-valuetext="0 of 8 lines">
           <div class="run-progress-fill" id="levelProgressFill"></div>
@@ -1190,23 +1555,18 @@ body::after {
         <p class="run-progress-copy" id="nextLevelPreview">Clear 8 more lines to reach Level 2. Warmup Flow adds no garbage yet.</p>
       </div>
 
-      <div>
+      <details class="help-drawer rail-extra">
+        <summary title="Controls help">?</summary>
+        <div class="controls">
+          Left/Right: Move · Up/X: Rotate CW · Z: CCW<br>
+          Down: Soft drop · Space: Hard drop · C: Hold<br>
+          P: Pause · M: Sound · Phone: swipe &amp; tap on board
+        </div>
+      </details>
+
+      <div class="rail-extra">
         <h3>Status</h3>
         <div class="status" id="statusText">Stack clean, survive long, and chain line clears.</div>
-      </div>
-
-      <div>
-        <h3>Controls</h3>
-        <div class="controls">
-          Left/Right: Move<br>
-          Up or X: Rotate<br>
-          Z: Rotate CCW<br>
-          Down: Soft Drop<br>
-          Space: Hard Drop<br>
-          C: Hold Piece<br>
-          P: Pause<br>
-          M: Sound
-        </div>
       </div>
     </aside>
   </div>
@@ -1407,6 +1767,8 @@ const nextCanvas = document.getElementById('next');
 const nextContext = nextCanvas ? nextCanvas.getContext('2d') : null;
 const holdCanvas = document.getElementById('hold');
 const holdContext = holdCanvas ? holdCanvas.getContext('2d') : null;
+const nextQueueCanvases = Array.from({ length: 5 }, (_, index) => document.getElementById(`nextQueue${index}`));
+const nextQueueContexts = nextQueueCanvases.map((canvas) => (canvas ? canvas.getContext('2d') : null));
 const mobileNextCanvas = document.getElementById('mobileNext');
 const mobileNextContext = mobileNextCanvas ? mobileNextCanvas.getContext('2d') : null;
 const mobileHoldCanvas = document.getElementById('mobileHold');
@@ -1418,6 +1780,8 @@ const BOARD_W = cols * grid;
 const BOARD_H = 20 * grid;
 const PREVIEW_W = 120;
 const PREVIEW_H = 80;
+const QUEUE_PREVIEW_W = 96;
+const QUEUE_PREVIEW_H = 64;
 const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
 function setupHiDpi(target, w, h) {
   if (!target) return;
@@ -1429,6 +1793,9 @@ setupHiDpi(nextCanvas, PREVIEW_W, PREVIEW_H);
 setupHiDpi(holdCanvas, PREVIEW_W, PREVIEW_H);
 setupHiDpi(mobileNextCanvas, PREVIEW_W, PREVIEW_H);
 setupHiDpi(mobileHoldCanvas, PREVIEW_W, PREVIEW_H);
+for (let i = 0; i < nextQueueCanvases.length; i++) {
+  if (nextQueueCanvases[i]) setupHiDpi(nextQueueCanvases[i], QUEUE_PREVIEW_W, QUEUE_PREVIEW_H);
+}
 
 // Render-only effect lists (never read by game logic).
 let lockFlashes = [];
@@ -1527,11 +1894,24 @@ function ensureLoopRunning() {
   rAF = requestAnimationFrame(loop);
 }
 
+function refreshAttractBest() {
+  const attractBest = document.getElementById('attractBest');
+  if (attractBest) attractBest.textContent = String(highScore);
+  const attractMode = document.getElementById('attractModeSetting');
+  const modeSetting = document.getElementById('modeSetting');
+  if (attractMode && modeSetting) attractMode.value = modeSetting.value;
+}
+
 function showWelcomeGuide() {
   syncChallengeClock();
   clearHeldInput();
+  refreshAttractBest();
   const guide = document.getElementById('welcomeGuide');
-  if (guide) guide.style.display = 'flex';
+  if (guide) {
+    guide.style.display = 'flex';
+    guide.classList.add('is-open');
+  }
+  if (window.__turdtrisStartAttract) window.__turdtrisStartAttract();
   onboardingOpen = true;
   guidePausedGame = !paused && !gameOver;
   if (guidePausedGame) {
@@ -1544,7 +1924,11 @@ function showWelcomeGuide() {
 
 function hideWelcomeGuide() {
   const guide = document.getElementById('welcomeGuide');
-  if (guide) guide.style.display = 'none';
+  if (guide) {
+    guide.style.display = 'none';
+    guide.classList.remove('is-open');
+  }
+  if (window.__turdtrisStopAttract) window.__turdtrisStopAttract();
   onboardingOpen = false;
   if (window.Suite && Suite.guide) Suite.guide.mark('turdtris.html');
   if (guidePausedGame && !gameOver) paused = false;
@@ -1562,6 +1946,16 @@ function quickStartRun() {
   playSfx('level');
   ensureLoopRunning();
   updateScore();
+}
+
+function startAttractMode() {
+  const attractMode = document.getElementById('attractModeSetting');
+  const modeSetting = document.getElementById('modeSetting');
+  if (attractMode && modeSetting) modeSetting.value = attractMode.value;
+  hideWelcomeGuide();
+  unlockAudio();
+  if (typeof startSelectedMode === 'function') startSelectedMode();
+  else quickStartRun();
 }
 
 function handleWindowBlur() {
@@ -2650,30 +3044,32 @@ function drawPlayfield() {
 function drawPreview(ctx, targetCanvas, piece, options) {
   if (!ctx || !targetCanvas) return;
   const dim = !!(options && options.dim);
+  const viewW = (options && options.width) || PREVIEW_W;
+  const viewH = (options && options.height) || PREVIEW_H;
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.clearRect(0, 0, PREVIEW_W, PREVIEW_H);
-  const bg = ctx.createLinearGradient(0, 0, 0, PREVIEW_H);
+  ctx.clearRect(0, 0, viewW, viewH);
+  const bg = ctx.createLinearGradient(0, 0, 0, viewH);
   bg.addColorStop(0, '#110d0a');
   bg.addColorStop(1, '#1c1310');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
-  const glow = ctx.createRadialGradient(PREVIEW_W / 2, PREVIEW_H / 2, 4, PREVIEW_W / 2, PREVIEW_H / 2, PREVIEW_W * 0.55);
+  ctx.fillRect(0, 0, viewW, viewH);
+  const glow = ctx.createRadialGradient(viewW / 2, viewH / 2, 4, viewW / 2, viewH / 2, viewW * 0.55);
   glow.addColorStop(0, 'rgba(255,203,135,0.14)');
   glow.addColorStop(1, 'rgba(255,203,135,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+  ctx.fillRect(0, 0, viewW, viewH);
 
   if (!piece) {
     if (dim) {
       ctx.fillStyle = 'rgba(8, 5, 3, 0.45)';
-      ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+      ctx.fillRect(0, 0, viewW, viewH);
     }
     return;
   }
 
   const matrix = piece.matrix;
-  const blockSize = 18;
+  const blockSize = (options && options.blockSize) || 18;
   // Trim empty rows/cols so the piece sits visually centred
   let minR = matrix.length, maxR = -1, minC = Infinity, maxC = -1;
   for (let r = 0; r < matrix.length; r++) {
@@ -2686,8 +3082,8 @@ function drawPreview(ctx, targetCanvas, piece, options) {
   if (maxR < 0) return;
   const pw = (maxC - minC + 1) * blockSize;
   const ph = (maxR - minR + 1) * blockSize;
-  const offsetX = (PREVIEW_W - pw) / 2 - minC * blockSize;
-  const offsetY = (PREVIEW_H - ph) / 2 - minR * blockSize;
+  const offsetX = (viewW - pw) / 2 - minC * blockSize;
+  const offsetY = (viewH - ph) / 2 - minR * blockSize;
   const colorHex = pieceColors[piece.name];
 
   // Drop shadow under the piece
@@ -2712,7 +3108,7 @@ function drawPreview(ctx, targetCanvas, piece, options) {
   ctx.globalAlpha = 1;
   if (dim) {
     ctx.fillStyle = 'rgba(10, 6, 4, 0.38)';
-    ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+    ctx.fillRect(0, 0, viewW, viewH);
   }
 }
 
@@ -2732,9 +3128,25 @@ function syncHoldControl() {
   if (holdBox) holdBox.classList.toggle('is-used', used);
 }
 
+function piecePreviewFromName(name) {
+  if (!name || !tetrominos[name]) return null;
+  return { name, matrix: tetrominos[name] };
+}
+
 function drawNextPreview() {
   drawPreview(nextContext, nextCanvas, nextTetromino);
   drawPreview(mobileNextContext, mobileNextCanvas, nextTetromino);
+  const peek = window.TurdtrisQueue && window.TurdtrisQueue.peekUpcomingPieceNames
+    ? window.TurdtrisQueue.peekUpcomingPieceNames(tetrominoSequence, nextTetromino ? nextTetromino.name : null, 5)
+    : (nextTetromino ? [nextTetromino.name] : []);
+  for (let i = 0; i < nextQueueContexts.length; i++) {
+    const ctx = nextQueueContexts[i];
+    const canvas = nextQueueCanvases[i];
+    if (!ctx || !canvas) continue;
+    const piece = piecePreviewFromName(peek[i]);
+    canvas.setAttribute('aria-hidden', piece ? (i === 0 ? 'false' : 'true') : 'true');
+    drawPreview(ctx, canvas, piece, { blockSize: 12, width: QUEUE_PREVIEW_W, height: QUEUE_PREVIEW_H });
+  }
 }
 
 function drawHoldPreview() {
@@ -2796,6 +3208,8 @@ function updateScore() {
   if (scoreEl) scoreEl.textContent = String(score);
   if (highScoreEl) highScoreEl.textContent = runMode === 'classic' ? String(highScore)
     : runMode === 'sprint' ? (modeBest ? window.TurdtrisModes.formatRunTime(modeBest, true) : '—') : String(modeBest);
+  const attractBest = document.getElementById('attractBest');
+  if (attractBest && runMode === 'classic') attractBest.textContent = String(highScore);
   if (levelEl && runMode === 'classic') levelEl.textContent = String(level);
   if (linesEl) linesEl.textContent = runMode === 'sprint' ? `${Math.min(40, linesCleared)}/40` : String(linesCleared);
   updateModeClock();
@@ -2807,6 +3221,8 @@ function updateScore() {
   const boundedProgress = Math.max(0, Math.min(boundedGoal, runMode === 'sprint' ? linesCleared : Number.isFinite(levelLines) ? Math.floor(levelLines) : 0));
   const progressPercent = Math.round((boundedProgress / boundedGoal) * 100);
   if (levelProgressTextEl) levelProgressTextEl.textContent = `${boundedProgress} / ${boundedGoal} lines`;
+  const levelProgressLegacy = document.getElementById('levelProgressTextLegacy');
+  if (levelProgressLegacy) levelProgressLegacy.textContent = `${boundedProgress} / ${boundedGoal} lines`;
   if (levelProgressBarEl) {
     levelProgressBarEl.setAttribute('aria-valuemax', String(boundedGoal));
     levelProgressBarEl.setAttribute('aria-valuenow', String(boundedProgress));
@@ -2838,7 +3254,10 @@ function updateScore() {
   if (statusEl) {
     const hypeTag = hypeTimer > 0 && hypeText ? ` Hype: ${hypeText}` : '';
     const dangerTag = getDangerRatio() > 0.65 ? ' DANGER: stack is feral.' : '';
-    statusEl.textContent = `${statusText}${hypeTag}${dangerTag} Theme: ${zone ? zone.name : themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
+    const fullStatus = `${statusText}${hypeTag}${dangerTag} Theme: ${zone ? zone.name : themes[(level - 1) % themes.length].name}. Mutator: ${activeMutator}. Gravity: ${getGravityMs()}ms. Goal: ${levelLines}/${levelGoal} lines.`;
+    statusEl.textContent = fullStatus;
+    const statusLegacy = document.getElementById('statusTextLegacy');
+    if (statusLegacy) statusLegacy.textContent = fullStatus;
     statusEl.classList.toggle('hype', hypeTimer > 0);
   }
   const liveEl = document.getElementById('statusLive');
@@ -3345,6 +3764,8 @@ updateGesturesButton();
 restartGame();
 if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
   showWelcomeGuide();
+} else {
+  refreshAttractBest();
 }
 
 
@@ -3501,8 +3922,11 @@ import * as TurdtrisModes from './games/turdtris-modes.js';
 import { createTurdtrisArt, themeForLevel } from './games/turdtris-art.js';
 import { createTurdtrisAudioPlayer, playTurdtrisSfx } from './games/turdtris-audio.js';
 import { shouldUseBoardFocusLayout, boardCanvasCssWidth } from './games/turdtris-layout.js';
+import * as TurdtrisQueue from './games/turdtris-queue.js';
+import { createAttractField } from './games/turdtris-attract.js';
 
 window.TurdtrisFx = TurdtrisFx;
+window.TurdtrisQueue = TurdtrisQueue;
 window.TurdtrisModes = TurdtrisModes;
 window.TurdtrisArt = createTurdtrisArt();
 window.TurdtrisAudio = { playTurdtrisSfx };
@@ -3521,14 +3945,82 @@ function wireTurdtrisRuntime() {
 }
 
 function applyBoardFocus() {
-  document.body.classList.toggle('board-focus', shouldUseBoardFocusLayout(window.innerWidth));
+  const mobile = shouldUseBoardFocusLayout(window.innerWidth);
+  document.body.classList.toggle('board-focus', mobile);
+  document.body.classList.toggle('desktop-cabinet', !mobile);
+  const scene = document.getElementById('desktopScene');
+  if (scene) scene.style.display = mobile ? 'none' : 'block';
   const board = document.getElementById('game');
   if (board) board.style.width = boardCanvasCssWidth(window.innerWidth, window.innerHeight).width;
 }
 
+const attractCanvas = document.getElementById('attractCanvas');
+let attractField = null;
+let attractRaf = 0;
+let attractLast = 0;
+
+function paintAttractFrame(now) {
+  if (!attractCanvas || !attractField) return;
+  const ctx = attractCanvas.getContext('2d');
+  if (!ctx) return;
+  const w = attractCanvas.clientWidth || attractCanvas.width;
+  const h = attractCanvas.clientHeight || attractCanvas.height;
+  if (attractCanvas.width !== w || attractCanvas.height !== h) {
+    attractCanvas.width = w;
+    attractCanvas.height = h;
+    attractField.resize(w, h);
+  }
+  const delta = attractLast ? now - attractLast : 16;
+  attractLast = now;
+  attractField.step(delta);
+  ctx.clearRect(0, 0, w, h);
+  const colors = { I: '#7ad7ff', O: '#ffd56a', T: '#c98bff', S: '#7dffb2', Z: '#ff8f8f', J: '#7f9dff', L: '#ffb07a' };
+  for (const piece of attractField.pieces()) {
+    ctx.save();
+    ctx.globalAlpha = piece.alpha;
+    ctx.translate(piece.x + piece.block * 2, piece.y + piece.block * 2);
+    ctx.rotate(piece.angle);
+    ctx.fillStyle = colors[piece.name] || '#ffcb87';
+    for (let r = 0; r < piece.matrix.length; r++) {
+      for (let c = 0; c < piece.matrix[r].length; c++) {
+        if (!piece.matrix[r][c]) continue;
+        ctx.fillRect(c * piece.block - piece.block * 2, r * piece.block - piece.block * 2, piece.block - 2, piece.block - 2);
+      }
+    }
+    ctx.restore();
+  }
+}
+
+function attractLoop(now) {
+  paintAttractFrame(now);
+  attractRaf = requestAnimationFrame(attractLoop);
+}
+
+function startAttractLoop() {
+  if (!attractCanvas) return;
+  const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const w = attractCanvas.clientWidth || window.innerWidth;
+  const h = attractCanvas.clientHeight || window.innerHeight;
+  attractField = createAttractField(w, h, reduced);
+  attractLast = 0;
+  if (attractRaf) cancelAnimationFrame(attractRaf);
+  attractRaf = requestAnimationFrame(attractLoop);
+}
+
+function stopAttractLoop() {
+  if (attractRaf) cancelAnimationFrame(attractRaf);
+  attractRaf = 0;
+  attractField = null;
+}
+
+window.__turdtrisStartAttract = startAttractLoop;
+window.__turdtrisStopAttract = stopAttractLoop;
+
 wireTurdtrisRuntime();
 applyBoardFocus();
 window.addEventListener('resize', applyBoardFocus);
+const openGuide = document.getElementById('welcomeGuide');
+if (openGuide && openGuide.style.display === 'flex') startAttractLoop();
 const runMenu = document.querySelector('.mobile-menu details');
 let menuPausedRun = false;
 runMenu.addEventListener('toggle', () => {

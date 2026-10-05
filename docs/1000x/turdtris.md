@@ -177,3 +177,27 @@ Recorded 2026-10-05 08:19 UTC with headless Chromium. Each scenario ran for at l
 - **Smoke PASS:** `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8152` printed `Browser smoke checks passed` with exit 0, including `turdtris-held-input-pause`, mobile dock and restart/receipt checks. Run once after all fixes; no smoke assertions or shared smoke files changed this round.
 - **Final lint PASS:** `npm run lint` again exited 0 with zero errors and only the six pre-existing out-of-lane warnings. Script syntax and final whitespace checks pass.
 - **Round 3 checklist: 6 / 6 done.** Implementation, tests, harness and report are committed locally on `cursor/turdanoid-1000x-turdtris`. Classic save/score compatibility is intact; optional challenge bests use new keys only.
+
+## Round 4 — desktop cabinet & attract (final)
+
+### Audit (pre-change)
+
+- **Gameplay / save:** Unchanged scoring and keys; bag randomizer already supports peeking the stack for UI.
+- **HUD / desktop:** 1280×800 read as a dashboard — small board, wide side panel with Next flush, Status and Controls prose (conductor r3 screenshots).
+- **Attract:** Welcome guide was a static card, not an arcade title screen.
+- **Mobile:** Prior phone cabinet retained; smoke depends on **Review Then Start** label.
+
+### Round 4 checklist
+
+- [x] Desktop cabinet: centered tall board (~346×692 at 1280×800), Hold left, 5-piece Next queue right, stat column, ambient scene, **?** controls drawer; 1024×768 / 1440×900 sizing via `turdtris-layout.js`
+- [x] Arcade attract: logo, falling-piece canvas (`turdtris-attract.js`), mode picker, classic best, **Play**; reduced-motion caps piece count
+- [x] `games/turdtris-queue.js` + tests for bag peek order
+- [x] Autoplay screenshots 1280 & 390 → `conductor/reviews/turdanoid-1000x/r4/turdtris/`
+- [x] Vitest (444), lint, smoke including `turdtris-held-input-pause`
+
+### Round 4 validation
+
+- `VITEST_MAX_WORKERS=1 npx vitest run`: **PASS** (444 tests; plain parallel run had one unrelated hub timeout under load)
+- `npm run lint`: **PASS** (0 errors; six pre-existing shared warnings)
+- `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8152`: **PASS**
+- `node scripts/turdtris-autoplay.mjs --runs=desktop-1280,phone-390 --output=…/r4/turdtris`: **PASS** (45s each; FPS ~73 desktop / ~75 phone)
