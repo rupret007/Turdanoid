@@ -5,6 +5,16 @@ const PIECES = Object.freeze({
   I: '#72dbff', J: '#7f9dff', L: '#ffb274', O: '#ffe181',
   S: '#83f7ae', Z: '#ff8f99', T: '#d6a2ff', G: '#6f5d4f'
 });
+const PIECE_NAMES = Object.freeze(Object.keys(PIECES));
+const PIECE_LOOKUP = Object.create(null);
+for (const name of PIECE_NAMES) {
+  PIECE_LOOKUP[name] = name;
+  PIECE_LOOKUP[PIECES[name]] = name;
+  PIECE_LOOKUP[PIECES[name].toUpperCase()] = name;
+}
+Object.freeze(PIECE_LOOKUP);
+const EMPTY_OPTIONS = Object.freeze({});
+const EMPTY_CELLS = Object.freeze([]);
 const THEMES = Object.freeze([
   Object.freeze({ id: 'bathroom', name: 'Porcelain Palace', accent: '#8ff4e5', ink: '#071d26', index: 0 }),
   Object.freeze({ id: 'sewer', name: 'Midnight Sewer', accent: '#9ef58b', ink: '#101c16', index: 1 }),
@@ -37,9 +47,16 @@ export function effectPolicy(reducedMotion = false) {
 
 /** Normalized progress makes animation independent of the display frame rate. */
 export function effectEnvelope(kind, progress, reducedMotion = false) {
+  return writeEffectEnvelope(kind, progress, reducedMotion, {});
+}
+
+// The public helper returns independent values; the renderer reuses its scratch
+// envelopes so hundreds of settled tiles do not create garbage every frame.
+function writeEffectEnvelope(kind, progress, reducedMotion, out) {
   const p = clamp(progress);
   const moving = !motionIsReduced(reducedMotion);
-  const out = { alpha: 1, scaleX: 1, scaleY: 1, rotation: 0, offsetY: 0 };
+  out.alpha = 1; out.scaleX = 1; out.scaleY = 1; out.rotation = 0; out.offsetY = 0;
+  if (p === 1 && (kind === 'spawn' || kind === 'lock')) { return out; }
   if (kind === 'spawn' && moving) {
     const scale = 1 - 0.24 * Math.pow(1 - p, 2) + Math.sin(p * Math.PI) * 0.1;
     out.scaleX = out.scaleY = scale;
@@ -91,12 +108,11 @@ function shade(color, amount) {
 }
 
 function resolvePiece(value) {
-  if (PIECES[value]) { return value; }
-  return Object.keys(PIECES).find((key) => PIECES[key] === String(value).toLowerCase()) || 'G';
+  return PIECE_LOOKUP[value] || PIECE_LOOKUP[String(value).toLowerCase()] || 'G';
 }
 
 function drawFace(ctx, name) {
-  const index = Object.keys(PIECES).indexOf(name);
+  const index = PIECE_NAMES.indexOf(name);
   ctx.lineCap = 'round';
   ctx.lineWidth = 2.2;
   ctx.strokeStyle = '#18333c';
@@ -173,7 +189,7 @@ function paintSprite(ctx, name, ghost) {
   circle(ctx, 20, 12, 1.4, 'rgba(255,255,255,0.8)');
 
   // Deterministic, very low contrast stipple; made once, never per frame.
-  const seed = Object.keys(PIECES).indexOf(name) + 1;
+  const seed = PIECE_NAMES.indexOf(name) + 1;
   for (let i = 0; i < 18; i++) {
     const x = 11 + ((i * 19 + seed * 7) % 43);
     const y = 22 + ((i * 13 + seed * 5) % 27);
@@ -279,8 +295,9 @@ function paintBackground(ctx, theme) {
 
 /** Factory injection keeps rendering testable without a browser or canvas package. */
 export function createTurdtrisArt(canvasFactory = () => document.createElement('canvas')) {
-  const sprites = new Map(), backgrounds = new Map();
-  let dangerVignette = null;
+  const sprites = Object.create(null), ghosts = Object.create(null), trails = Object.create(null);
+  const backgrounds = [];
+  const tileEnvelope = {}, flushEnvelope = {}, takeoverEnvelope = {};
 
   function makeCanvas(width, height, paint) {
     const canvas = canvasFactory(); canvas.width = width; canvas.height = height;
@@ -288,44 +305,54 @@ export function createTurdtrisArt(canvasFactory = () => document.createElement('
     return canvas;
   }
 
-  function sprite(name, ghost) {
-    const key = `${name}:${ghost ? 'ghost' : 'solid'}`;
-    if (!sprites.has(key)) {
-      sprites.set(key, makeCanvas(SPRITE_SIZE, SPRITE_SIZE, (ctx) => paintSprite(ctx, name, ghost)));
-    }
-    return sprites.get(key);
+  // Fixed resolution assets are warmed once. Resizing only changes drawImage
+  // destination sizes; a scene change or the first hard drop never rasterizes art.
+  for (const name of PIECE_NAMES) {
+    sprites[name] = makeCanvas(SPRITE_SIZE, SPRITE_SIZE, (ctx) => paintSprite(ctx, name, false));
+    ghosts[name] = makeCanvas(SPRITE_SIZE, SPRITE_SIZE, (ctx) => paintSprite(ctx, name, true));
+    trails[name] = makeCanvas(8, 256, (ctx) => {
+      const streak = ctx.createLinearGradient(0, 0, 0, 256);
+      streak.addColorStop(0, 'rgba(255,255,255,0)');
+      streak.addColorStop(0.72, PIECES[name]); streak.addColorStop(1, '#edffff');
+      ctx.fillStyle = streak; ctx.fillRect(0, 0, 8, 256);
+    });
   }
+  for (const theme of THEMES) {
+    backgrounds[theme.index] = makeCanvas(320, 640, (ctx) => paintBackground(ctx, theme));
+  }
+  const dangerVignette = makeCanvas(320, 640, (ctx) => {
+    const glow = ctx.createLinearGradient(0, 0, 0, 320);
+    glow.addColorStop(0, '#ff555a'); glow.addColorStop(1, 'rgba(255,40,55,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, 320, 320);
+  });
 
-  function drawTile(ctx, x, y, size, colorOrName, alpha = 1, opts = {}) {
+  function drawTile(ctx, x, y, size, colorOrName, alpha = 1, opts = EMPTY_OPTIONS) {
     if (!ctx || size < 2 || alpha <= 0) { return; }
     const name = resolvePiece(colorOrName);
-    const policy = effectPolicy(opts.reducedMotion);
+    const moving = !motionIsReduced(opts.reducedMotion);
     const envelope = opts.spawnProgress !== undefined
-      ? effectEnvelope('spawn', opts.spawnProgress, opts.reducedMotion)
-      : effectEnvelope('lock', opts.lockProgress ?? 1, opts.reducedMotion);
+      ? writeEffectEnvelope('spawn', opts.spawnProgress, opts.reducedMotion, tileEnvelope)
+      : writeEffectEnvelope('lock', opts.lockProgress ?? 1, opts.reducedMotion, tileEnvelope);
     ctx.save(); ctx.globalAlpha *= clamp(alpha);
     ctx.translate(x + size / 2, y + size / 2 + envelope.offsetY * size);
     ctx.scale(envelope.scaleX, envelope.scaleY);
-    ctx.drawImage(sprite(name, !!opts.ghost), -size / 2, -size / 2, size, size);
-    if (opts.ghost && policy.shimmer) {
+    ctx.drawImage(opts.ghost ? ghosts[name] : sprites[name], -size / 2, -size / 2, size, size);
+    if (opts.ghost && moving) {
       const p = (((Number(opts.time) || 0) + y * 8) % 1600) / 1600;
       ctx.globalAlpha *= Math.sin(p * Math.PI) * 0.32;
       ctx.fillStyle = '#e5ffff';
       ctx.fillRect(-size * 0.34, size * (p * 0.7 - 0.35), size * 0.68, 1.5);
-    } else if (opts.flash > 0 && policy.flash) {
+    } else if (opts.flash > 0 && moving) {
       ctx.globalAlpha *= clamp(opts.flash) * 0.38;
       ctx.fillStyle = '#e5fff7'; roundPath(ctx, -size / 2 + 2, -size / 2 + 2, size - 4, size - 4, size / 6); ctx.fill();
     }
     ctx.restore();
   }
 
-  function drawBackground(ctx, { level = 1, time = 0, danger = 0, reducedMotion = false, width = 320, height = 640 } = {}) {
-    const theme = themeForLevel(level), policy = effectPolicy(reducedMotion);
-    if (!backgrounds.has(theme.id)) {
-      backgrounds.set(theme.id, makeCanvas(320, 640, (target) => paintBackground(target, theme)));
-    }
-    ctx.drawImage(backgrounds.get(theme.id), 0, 0, width, height);
-    if (policy.ambient) {
+  function drawBackground(ctx, { level = 1, time = 0, danger = 0, reducedMotion = false, width = 320, height = 640 } = EMPTY_OPTIONS) {
+    const theme = themeForLevel(level), moving = !motionIsReduced(reducedMotion);
+    ctx.drawImage(backgrounds[theme.index], 0, 0, width, height);
+    if (moving) {
       const count = Math.min(14, 5 + Math.floor(level / 2));
       const speed = 0.008 + Math.min(20, level) * 0.0004 + clamp(danger) * 0.006;
       ctx.save(); ctx.strokeStyle = theme.accent; ctx.fillStyle = theme.accent; ctx.lineWidth = 1;
@@ -339,48 +366,42 @@ export function createTurdtrisArt(canvasFactory = () => document.createElement('
       ctx.restore();
     }
     if (danger > 0) {
-      if (!dangerVignette) {
-        dangerVignette = makeCanvas(320, 640, (target) => {
-          const glow = target.createLinearGradient(0, 0, 0, 320);
-          glow.addColorStop(0, '#ff555a'); glow.addColorStop(1, 'rgba(255,40,55,0)');
-          target.fillStyle = glow; target.fillRect(0, 0, 320, 320);
-        });
-      }
       ctx.save();
-      ctx.globalAlpha = clamp(danger) * (policy.dangerPulse ? 0.14 + Math.sin(time / 480) * 0.065 : 0.14);
+      ctx.globalAlpha = clamp(danger) * (moving ? 0.14 + Math.sin(time / 480) * 0.065 : 0.14);
       ctx.drawImage(dangerVignette, 0, 0, width, height); ctx.restore();
     }
     return theme;
   }
 
-  function drawDropTrail(ctx, { cells = [], distance = 0, size = 32, color = 'I', progress = 0, reducedMotion = false } = {}) {
-    const envelope = effectEnvelope('trail', progress, reducedMotion);
-    if (!envelope.alpha || distance <= 0) { return; }
-    ctx.save(); ctx.globalAlpha = envelope.alpha * 0.55;
-    const hue = PIECES[resolvePiece(color)];
-    for (const cell of cells.slice(0, 4)) {
-      const height = Math.min(distance, 640), x = cell.x, y = cell.y;
-      const streak = ctx.createLinearGradient(x, y - height, x, y + size);
-      streak.addColorStop(0, 'rgba(255,255,255,0)'); streak.addColorStop(0.72, hue); streak.addColorStop(1, '#edffff');
-      ctx.fillStyle = streak; ctx.fillRect(x + size * 0.15, y - height, size * 0.7, height + size * 0.9);
+  function drawDropTrail(ctx, { cells = EMPTY_CELLS, distance = 0, size = 32, color = 'I', progress = 0, reducedMotion = false } = EMPTY_OPTIONS) {
+    const p = clamp(progress), alpha = (1 - p) * (1 - p);
+    if (motionIsReduced(reducedMotion) || !alpha || distance <= 0) { return; }
+    ctx.save(); ctx.globalAlpha = alpha * 0.55;
+    const name = resolvePiece(color), hue = PIECES[name], trail = trails[name];
+    const height = Math.min(distance, 640);
+    for (let i = 0; i < Math.min(4, cells.length); i++) {
+      const cell = cells[i], x = cell.x, y = cell.y;
+      // Crop the cached gradient to preserve the original tail's color stops.
+      ctx.drawImage(trail, 0, 0, 8, 256 * (height + size * 0.9) / (height + size),
+        x + size * 0.15, y - height, size * 0.7, height + size * 0.9);
       ctx.fillStyle = '#e7ffff'; ctx.globalAlpha *= 0.7;
       ctx.fillRect(x + size * 0.46, y - height * 0.72, size * 0.08, height * 0.72 + size);
-      ctx.globalAlpha = envelope.alpha * 0.55;
+      ctx.globalAlpha = alpha * 0.55;
     }
     // Twelve deterministic dust motes, bounded regardless of drop distance.
     for (let i = 0; i < Math.min(12, cells.length * 3); i++) {
       const cell = cells[i % cells.length];
       const side = i % 2 ? 1 : -1;
-      const spread = progress * (12 + (i % 4) * 8);
-      circle(ctx, cell.x + size / 2 + side * spread, cell.y + size - Math.sin(progress * Math.PI) * (5 + i % 5 * 3), 1.4 + i % 3, hue);
+      const spread = p * (12 + (i % 4) * 8);
+      circle(ctx, cell.x + size / 2 + side * spread, cell.y + size - Math.sin(p * Math.PI) * (5 + i % 5 * 3), 1.4 + i % 3, hue);
     }
     ctx.restore();
   }
 
-  function drawFlush(ctx, { rowY = 0, colors = [], progress = 0, size = 32, width = 320, reducedMotion = false } = {}) {
-    const p = clamp(progress), envelope = effectEnvelope('flush', p, reducedMotion);
+  function drawFlush(ctx, { rowY = 0, colors = EMPTY_CELLS, progress = 0, size = 32, width = 320, reducedMotion = false } = EMPTY_OPTIONS) {
+    const p = clamp(progress), envelope = writeEffectEnvelope('flush', p, reducedMotion, flushEnvelope);
     if (!envelope.alpha) { return; }
-    const moving = effectPolicy(reducedMotion).flush;
+    const moving = !motionIsReduced(reducedMotion);
     const center = width / 2, centerY = rowY + size * 0.55;
     ctx.save();
     if (moving) {
@@ -396,14 +417,14 @@ export function createTurdtrisArt(canvasFactory = () => document.createElement('
       const y = centerY + (moving ? Math.sin(col * 0.9 + p * TAU) * p * (1 - p) * 35 + p * p * size : 0);
       ctx.save(); ctx.translate(x, y); ctx.rotate(envelope.rotation * (col % 2 ? 1 : -1));
       const tileSize = size * envelope.scaleX;
-      drawTile(ctx, -tileSize / 2, -tileSize / 2, tileSize, colors[col] || 'O', envelope.alpha, { reducedMotion });
+      drawTile(ctx, -tileSize / 2, -tileSize / 2, tileSize, colors[col] || 'O', envelope.alpha);
       ctx.restore();
     }
     ctx.restore();
   }
 
-  function drawTakeover(ctx, { progress = 0, width = 320, height = 640, reducedMotion = false, text = 'TURDTRIS!' } = {}) {
-    const envelope = effectEnvelope('takeover', progress, reducedMotion);
+  function drawTakeover(ctx, { progress = 0, width = 320, height = 640, reducedMotion = false, text = 'TURDTRIS!' } = EMPTY_OPTIONS) {
+    const envelope = writeEffectEnvelope('takeover', progress, reducedMotion, takeoverEnvelope);
     if (!envelope.alpha) { return; }
     ctx.save(); ctx.globalAlpha = envelope.alpha; ctx.translate(width / 2, height * 0.4);
     ctx.scale(envelope.scaleX, envelope.scaleY);

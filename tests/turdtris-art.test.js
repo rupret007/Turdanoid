@@ -15,8 +15,12 @@ function canvasContext() {
 }
 
 function renderer() {
-  const factory = vi.fn(() => ({ getContext: () => canvasContext() }));
-  return { art: createTurdtrisArt(factory), factory, ctx: canvasContext() };
+  const contexts = [];
+  const factory = vi.fn(() => {
+    const ctx = canvasContext(); contexts.push(ctx);
+    return { getContext: () => ctx };
+  });
+  return { art: createTurdtrisArt(factory), factory, contexts, ctx: canvasContext() };
 }
 
 describe('Turdtris scene chapters', () => {
@@ -29,39 +33,43 @@ describe('Turdtris scene chapters', () => {
 
   it('caches whole backgrounds by scene instead of creating canvases each frame', () => {
     const { art, factory, ctx } = renderer();
+    factory.mockClear();
     for (const level of [1, 2, 4, 5, 6, 9, 12, 13, 99]) {
       art.drawBackground(ctx, { level, time: level * 100 });
     }
-    expect(factory).toHaveBeenCalledTimes(4);
+    expect(factory).not.toHaveBeenCalled();
     expect(ctx.drawImage).toHaveBeenCalledTimes(9);
     art.drawBackground(ctx, { level: 99, danger: 0.6 });
     art.drawBackground(ctx, { level: 99, danger: 0.9 });
-    expect(factory).toHaveBeenCalledTimes(5);
+    expect(factory).not.toHaveBeenCalled();
   });
 });
 
 describe('Turdtris cached tile art', () => {
   it('reuses the same sprite for piece names and legacy hex colors', () => {
     const { art, factory, ctx } = renderer();
+    factory.mockClear();
     for (let frame = 0; frame < 30; frame++) {
       art.drawTile(ctx, 0, 0, 32, 'I');
       art.drawTile(ctx, 32, 0, 32, '#72dbff');
     }
-    expect(factory).toHaveBeenCalledTimes(1);
+    expect(factory).not.toHaveBeenCalled();
     expect(ctx.drawImage).toHaveBeenCalledTimes(60);
-    // Preview-sized sprites share the cache; ghost outlines get their own.
+    expect(ctx.drawImage.mock.calls[0][0]).toBe(ctx.drawImage.mock.calls[1][0]);
+    // Preview sizes and ghost outlines use assets warmed before the first frame.
     art.drawTile(ctx, 0, 0, 24, 'I');
     art.drawTile(ctx, 0, 0, 32, 'I', 1, { ghost: true });
-    expect(factory).toHaveBeenCalledTimes(2);
+    expect(factory).not.toHaveBeenCalled();
   });
 
   it('keeps fallback art bounded for unknown cell colors and skips invisible tiles', () => {
     const { art, factory, ctx } = renderer();
+    factory.mockClear();
     art.drawTile(ctx, 0, 0, 32, '#unknown');
     art.drawTile(ctx, 0, 0, 32, null);
     art.drawTile(ctx, 0, 0, 1, 'I');
     art.drawTile(ctx, 0, 0, 32, 'I', 0);
-    expect(factory).toHaveBeenCalledTimes(1);
+    expect(factory).not.toHaveBeenCalled();
     expect(ctx.drawImage).toHaveBeenCalledTimes(2);
   });
 });
@@ -123,7 +131,69 @@ describe('Turdtris motion accessibility', () => {
     ctx.arc.mockClear();
     art.drawDropTrail(ctx, { cells: Array.from({ length: 100 }, () => ({ x: 0, y: 200 })), distance: 9999, progress: 0.4 });
     expect(ctx.arc).toHaveBeenCalledTimes(12);
-    expect(ctx.fillRect).toHaveBeenCalledTimes(8);
+    expect(ctx.drawImage).toHaveBeenCalledTimes(5);
+    expect(ctx.fillRect).toHaveBeenCalledTimes(4);
+    expect(ctx.drawImage.mock.calls.slice(1).every((call) => call[8] <= 672)).toBe(true);
     expect(ctx.fillRect.mock.calls.every((call) => call[3] <= 672)).toBe(true);
+  });
+});
+
+describe('Turdtris warmed frame assets', () => {
+  it.each([false, true, { matches: true }])('never rasterizes new art across repeated frames and resizes (%j)', (reducedMotion) => {
+    const { art, factory, contexts, ctx } = renderer();
+    // Eight solids, eight ghosts, eight drop gradients, four scenes, one danger veil.
+    expect(factory).toHaveBeenCalledTimes(29);
+    const gradients = contexts.map((source) => source.createLinearGradient.mock.calls.length + source.createRadialGradient.mock.calls.length);
+    const cells = [{ x: 0, y: 400 }, { x: 32, y: 400 }, { x: 64, y: 400 }, { x: 96, y: 400 }];
+    const colors = ['I', 'J', 'L', 'O', 'S', 'Z', 'T', 'G'];
+    const opts = { reducedMotion, ghost: false, time: 0 };
+    const background = { level: 1, time: 0, danger: 0.8, reducedMotion, width: 320, height: 640 };
+    const drop = { cells, distance: 320, color: 'I', progress: 0.4, reducedMotion };
+    const flush = { colors, progress: 0.5, reducedMotion };
+    const takeover = { progress: 0.5, reducedMotion };
+    factory.mockClear();
+    for (let frame = 0; frame < 60; frame++) {
+      background.level = 1 + frame % 16; background.time = frame * 16;
+      background.width = frame % 2 ? 240 : 360; background.height = background.width * 2;
+      art.drawBackground(ctx, background);
+      for (const color of colors) {
+        opts.ghost = false; art.drawTile(ctx, 0, 0, frame % 2 ? 24 : 36, color, 1, opts);
+        opts.ghost = true; art.drawTile(ctx, 0, 0, 32, color, 1, opts);
+        drop.color = color; art.drawDropTrail(ctx, drop);
+      }
+      art.drawFlush(ctx, flush); art.drawTakeover(ctx, takeover);
+    }
+    expect(factory).not.toHaveBeenCalled();
+    expect(contexts.map((source) => source.createLinearGradient.mock.calls.length + source.createRadialGradient.mock.calls.length)).toEqual(gradients);
+    expect(ctx.createLinearGradient).not.toHaveBeenCalled();
+    expect(ctx.createRadialGradient).not.toHaveBeenCalled();
+    if (reducedMotion) {
+      expect(ctx.arc).not.toHaveBeenCalled();
+      expect(ctx.ellipse).not.toHaveBeenCalled();
+      expect(ctx.fillRect).not.toHaveBeenCalled();
+    }
+  });
+
+  it('keeps public envelope results independent from later frames', () => {
+    const first = effectEnvelope('spawn', 0);
+    const other = effectEnvelope('lock', 0.4);
+    const { art, ctx } = renderer();
+    art.drawTile(ctx, 0, 0, 32, 'S', 1, { lockProgress: 0.8 });
+    art.drawFlush(ctx, { colors: ['I', 'O'], progress: 0.5 });
+    expect(first).toEqual({ alpha: 1, scaleX: 0.76, scaleY: 0.76, rotation: 0, offsetY: 0 });
+    expect(other.scaleY).toBeLessThan(1);
+    expect(first).not.toBe(other);
+  });
+
+  it('resolves mixed-case legacy colors and hostile property names to bounded cached assets', () => {
+    const { art, ctx, factory } = renderer();
+    factory.mockClear();
+    for (const color of ['I', '#72DBFF', '#72DbFf', 'G', '__proto__', 'constructor']) {
+      art.drawTile(ctx, 0, 0, 32, color);
+    }
+    const images = ctx.drawImage.mock.calls.map((call) => call[0]);
+    expect(images[0]).toBe(images[1]); expect(images[0]).toBe(images[2]);
+    expect(images[3]).toBe(images[4]); expect(images[3]).toBe(images[5]);
+    expect(factory).not.toHaveBeenCalled();
   });
 });
