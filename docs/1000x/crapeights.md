@@ -58,3 +58,25 @@ The new local modules are classic scripts with testable deterministic helpers. T
 - `57c0906` — table, art, guidance, controls, audio, FX and regression coverage.
 - `2395980` — Hub escape, native modal focus and motion contracts.
 - Final documentation commit records completed checklist and passing validation.
+
+# Round 2 — the living Dirty Deck
+
+## Deeper follow-up audit
+
+Re-read the round-0 conductor audit and current live page, AI, presentation helpers, save tests and smoke contracts. Round 1 substantially improved identity and fairness, but its scrolling hand rail still hides cards on phones; simply enlarging cards worsens that problem. Desktop table height is fixed while standings consume space below it. Seats have portraits and a subtle turn pulse but no character reactions or idle expression. Action feedback is still mostly a text banner and a single flight. Results explain the total but do not reveal the cards behind it. Existing audio is already layered, gesture/mute gated and bounded; preserve it and prioritize visual timing. Existing keyboard/modal work and old-save tests are good foundations. Layout changes need explicit bounds and hit-target checks, and full-round browser play is needed to catch stalled decisions. CSS-only idle motion and capped event effects should retain the event-driven performance model.
+
+## Round 2 targets
+
+- [ ] Fitted arced hand, larger readable cards, selected lift, clear legality, every card reachable with 44px targets; large hands use additional fan rows instead of horizontal clipping.
+- [ ] Desktop table fills available viewport; rules/log/standings/settings live in an accessible drawer.
+- [ ] Three blinking/bobbing characters, speech/reactions, active-seat ring and thinking card tease.
+- [ ] Targeted two-card penalty flight/counter, Skip stamp, Reverse swirl, wild bloom/pile wash, ONE LEFT alert; reduced-motion equivalents.
+- [ ] Leftover-card scoring receipt, points collection, match trophy/confetti and separate display-only round-2 stats.
+- [ ] Easy / Normal / Sharp selector persisted in a new key; Normal remains existing fair AI; difficulty decision tests.
+- [ ] Unit tests for fan geometry, effects/motion/stats, difficulty and actual page integration; unchanged old v1 save fixture still loads.
+- [ ] Full-round Playwright autoplay at 390 and 1280, screenshots/error/stuck-turn evidence, extra 320px layout coverage.
+- [ ] Full Vitest, lint and Chromium smoke on8154 PASS; local logical commits and final evidence.
+
+## Round 2 scope interpretation / Needs shared change
+
+The explicit workflow authorizes this lane document and round-2 focus authorizes `scripts/crapeights-autoplay.mjs`, in addition to the listed game files. The hard rule forbids writing outside this worktree, so autoplay evidence will be saved inside `docs/1000x/crapeights-autoplay/`. The conductor must copy these artifacts to its requested external `reviews/turdanoid-1000x/r2/crapeights-autoplay/` directory. The round-0 external audit was read only as expressly requested. No shared runtime change is planned.
