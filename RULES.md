@@ -81,6 +81,8 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 Tetris-style block stacking game with Guideline-inspired mechanics (7-bag, SRS kicks, combo system) across a 69-level run.
 
+Classic is the default on every page load. In Run Menu, choose a challenge and press **Start selected mode** to begin a fresh run. **Sprint 40L** measures active time to clear 40 lines; only completed runs set a best time (`turdtrisSprint40BestMs_v1`). **Ultra 2:00** gives two minutes of active play to score; it saves a separate best (`turdtrisUltra120Best_v1`). Pausing stops either clock. Both challenges keep Classic scoring and speed progression but omit garbage. Challenge records never change `turdtrisHighScore`; Play Again repeats the current mode.
+
 ### Controls
 
 - **←/→**: Move piece
