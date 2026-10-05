@@ -10,6 +10,15 @@
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/turdrummy-ai-core.js"></script>
+  <script src="games/turdrummy-audio-core.js"></script>
+  <script src="games/turdrummy-fx-core.js"></script>
+  <script src="games/turdrummy-meld-core.js"></script>
+  <script src="games/turdrummy-hand-visibility-core.js"></script>
+  <script src="games/turdrummy-motion-core.js"></script>
+  <script src="games/turdrummy-coach-core.js"></script>
+  <script src="games/turdrummy-presentation-core.js"></script>
+  <script src="games/turdrummy-moment-fixtures-core.js"></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -33,8 +42,10 @@
       --felt-hi: #1d6149;
       --felt-mid: #154536;
       --felt-lo: #0f3c30;
-      --card-w: clamp(42px, 7.2vw, 60px);
-      --card-h: clamp(60px, 10.8vw, 86px);
+      --card-w: clamp(46px, 6.6vw, 80px);
+      --card-h: calc(var(--card-w) * 1.42);
+      --fan-overlap: 0px;
+      --group-gap: 10px;
       --back-w: clamp(34px, 5.6vw, 46px);
       --back-h: clamp(48px, 8.4vw, 66px);
       --radius: 12px;
@@ -90,7 +101,7 @@
     }
 
     .app {
-      width: min(1100px, 100%);
+      width: min(1280px, 100%);
       min-height: calc(100vh - 16px);
       border: 1px solid var(--panel-border);
       border-radius: 18px;
@@ -365,9 +376,10 @@
       margin: 12px;
       padding: 12px;
       display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 10px;
-      overflow: auto;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto;
+      gap: 8px;
+      overflow: hidden;
       position: relative;
       border-radius: 18px;
       background:
@@ -412,49 +424,44 @@
     }
 
     /* ---------- Zones ---------- */
+    /* Round 2: zones are no longer boxed panels. The felt is the hero; each zone
+       is just a band on it, so the cards read as sitting on the table. */
     .zone {
-      border: 1px solid rgba(158, 255, 200, 0.16);
+      border: 0;
       border-radius: 14px;
-      padding: 10px;
-      background: var(--suite-glass);
-      box-shadow: var(--suite-glass-edge);
+      padding: 4px 2px;
+      background: none;
+      box-shadow: none;
       position: relative;
+      min-width: 0;
     }
+
+    .zone--opponent { padding-top: 2px; }
 
     .zone--center {
       border: 0;
-      padding: 14px;
+      padding: 12px 10px 10px;
+      border-radius: 16px;
       background:
         var(--tr-watermark) right 24px top 44px / 400px 75px no-repeat,
-        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 42%),
-        var(--suite-felt-noise),
-        linear-gradient(180deg, rgba(26, 92, 68, 0.55), rgba(14, 58, 44, 0.6));
-      box-shadow:
-        inset 0 0 0 2px #4a2f18,
-        inset 0 0 0 3px rgba(255, 214, 150, 0.42),
-        inset 0 0 0 5px #2b1a0c,
-        inset 0 14px 30px rgba(0, 0, 0, 0.35),
-        0 8px 20px rgba(0, 0, 0, 0.25);
+        radial-gradient(ellipse 62% 70% at 50% 46%, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0) 74%);
+      box-shadow: inset 0 0 0 1px rgba(255, 215, 106, 0.14);
     }
 
     .zone--center::before {
       content: "";
       position: absolute;
-      inset: 9px;
-      border-radius: 9px;
-      border: 1px solid rgba(255, 215, 106, 0.18);
+      inset: 6px;
+      border-radius: 12px;
+      border: 1px dashed rgba(255, 215, 106, 0.14);
       pointer-events: none;
     }
 
     .zone--hand {
-      border: 1px solid rgba(0, 0, 0, 0.38);
-      background:
-        var(--suite-felt-noise),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.34));
-      box-shadow:
-        inset 0 3px 14px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(0, 0, 0, 0.45),
-        0 1px 0 rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 6px 4px 2px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.3) 46%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .zone-header {
@@ -506,10 +513,81 @@
       gap: 6px;
     }
 
+    /* Your hand is a single overlapping, arced fan. JS sets --fan-overlap (negative px,
+       so each card shows `step` px of itself) and --group-gap between meld groups. */
     #playerHand {
-      padding: 12px 4px 4px;
-      min-height: calc(var(--card-h) + 16px);
+      flex-wrap: nowrap;
+      gap: 0; /* spacing between groups comes from --group-gap, so the fan maths stays exact */
+      justify-content: center;
+      align-items: flex-end;
+      padding: 24px 6px 12px;
+      min-height: calc(var(--card-h) + 36px);
+      overflow: visible;
     }
+
+    /* Crowded hands (JS adds .is-wrapped) flow whole groups onto a second row instead of
+       squeezing every card below a readable strip. */
+    #playerHand.is-wrapped {
+      flex-wrap: wrap;
+      row-gap: 36px;
+    }
+
+    .hand-group {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      flex: 0 0 auto;
+      padding-bottom: 12px;
+    }
+
+    .hand-group + .hand-group { margin-left: var(--group-gap); }
+
+    #playerHand .hand-group .card {
+      position: relative;
+      z-index: var(--fan-z, 1);
+    }
+
+    .hand-group .card + .card { margin-left: var(--fan-overlap); }
+
+    /* Bracket under each meld: a coloured bar with a label above it. */
+    .hand-group::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--group-color, #9cff73);
+      box-shadow: 0 0 8px var(--group-color, #9cff73);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .hand-group--set { --group-color: #2fc986; }
+    .hand-group--run { --group-color: #38b8e6; }
+
+    .hand-group--deadwood { padding-bottom: 12px; }
+    .hand-group--deadwood::after {
+      background: repeating-linear-gradient(90deg, rgba(185, 214, 193, 0.5) 0 6px, transparent 6px 10px);
+      box-shadow: none;
+      opacity: 0.8;
+    }
+
+    .hand-group-label {
+      position: absolute;
+      left: 2px;
+      top: -18px;
+      font-size: 0.56rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--group-color, var(--muted));
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .hand-group--deadwood .hand-group-label { color: rgba(185, 214, 193, 0.7); }
 
     /* ---------- Cards ---------- */
     .card {
@@ -535,6 +613,11 @@
       overflow: hidden;
       transition: transform 0.16s cubic-bezier(0.2, 1.2, 0.4, 1), box-shadow 0.16s ease, filter 0.16s ease, opacity 0.16s ease;
       flex: 0 0 auto;
+      /* Fan arc: JS sets --fr (tilt) and --fy (drop). Individual rotate/translate
+         compose with the hover/select transform instead of fighting it. */
+      rotate: var(--fr, 0deg);
+      translate: 0 var(--fy, 0px);
+      transform-origin: 50% 150%;
     }
 
     .card::before {
@@ -663,7 +746,7 @@
     .card-button:hover {
       transform: translateY(-5px);
       box-shadow: var(--suite-card-shadow-lift), var(--suite-paper-edge);
-      z-index: 1;
+      z-index: calc(var(--fan-z, 1) + 4);
     }
 
     .card-button:active {
@@ -677,14 +760,14 @@
 
     .card-button.selected,
     .card-button.selected:hover {
-      transform: translateY(-10px) scale(1.04);
+      transform: translateY(-8px) scale(1.02);
       box-shadow:
         0 0 0 2px #ffd76a,
         0 0 0 4px rgba(255, 215, 106, 0.35),
         0 0 24px rgba(255, 215, 106, 0.6),
         var(--suite-card-shadow-lift),
         var(--suite-paper-edge);
-      z-index: 2;
+      z-index: calc(var(--fan-z, 1) + 8);
     }
 
     .card-button.selected::before {
@@ -779,12 +862,30 @@
     /* Opponent hand: fanned overlap */
     #opponentCards {
       gap: 0;
-      padding: 6px 0 4px 8px;
+      padding: 8px 0 2px;
       align-items: flex-end;
+      justify-content: center;
+      min-height: calc(var(--back-h) + 14px);
     }
 
-    #opponentCards .back-card {
+    /* Revealed bot cards (round over) reuse the card markup at fan size. */
+    #opponentCards .card {
+      width: var(--back-w);
+      height: var(--back-h);
       margin-left: -12px;
+      padding: 3px 3px;
+      rotate: var(--fr, 0deg);
+      translate: 0 var(--fy, 0px);
+    }
+
+    #opponentCards .card .card-face { font-size: 0.46rem; }
+    #opponentCards .card .card-suit { font-size: 0.8rem; }
+    #opponentCards .card::after { display: none; }
+    #opponentCards .card::before { inset: 2px; }
+    #opponentCards .card:first-child { margin-left: 0; }
+
+    #opponentCards .back-card {
+      margin-left: -18px;
       box-shadow: inset 0 0 0 3px #f4f1e6, inset 0 0 0 4px rgba(0, 0, 0, 0.25), -4px 6px 12px rgba(0, 0, 0, 0.4);
       transform-origin: 50% 120%;
     }
@@ -805,19 +906,26 @@
     /* ---------- Table center piles ---------- */
     .piles {
       display: flex;
-      gap: 12px;
-      align-items: stretch;
+      gap: 28px;
+      align-items: flex-start;
+      justify-content: center;
       flex-wrap: wrap;
+      padding: 4px 0 2px;
     }
 
+    /* Piles sit on the felt: no boxes, just a label, the pile, and a soft shadow. */
     .pile {
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 0;
       border-radius: 12px;
-      padding: 8px 12px 10px;
+      padding: 4px 6px 6px;
       min-width: 138px;
-      background: rgba(0, 0, 0, 0.28);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 6px 18px rgba(0, 0, 0, 0.35);
+      background: none;
+      box-shadow: none;
+      text-align: center;
     }
+
+    .pile-body { justify-content: center; }
+
 
     .pile h3 {
       color: rgba(255, 225, 168, 0.85);
@@ -1241,10 +1349,74 @@
        readout row, so reserve its footprint on the row. The app is centered at 1100px, so the
        indent shrinks as the viewport grows: 155px - appLeft, where appLeft = max(8px, (100vw - 1100px) / 2). */
     @media (min-width: 921px) {
-      .melds {
-        padding-left: 176px;
-        padding-left: clamp(0px, calc(155px - max(8px, (100vw - 1100px) / 2)), 176px);
+      :root {
+        --card-w: 80px;
+        --back-h: 84px;
       }
+
+      .table-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) min(272px, 26vw);
+        align-items: stretch;
+        min-height: 0;
+      }
+
+      .table {
+        margin: 8px 0 8px 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+      }
+
+      .zone--hand {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        min-height: 0;
+      }
+
+      #playerHand {
+        flex: 1 1 auto;
+        align-items: flex-end;
+        padding-top: 18px;
+        padding-bottom: 10px;
+      }
+
+      .tr-drawer--side {
+        margin: 8px 12px 8px 0;
+        align-self: stretch;
+        max-height: none;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .tr-drawer--side > summary {
+        flex-shrink: 0;
+      }
+
+      .tr-drawer--side .tr-drawer-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .melds {
+        padding-left: 0;
+      }
+    }
+
+    @media (min-width: 921px) and (max-height: 860px) {
+      :root {
+        --card-w: 74px;
+        --back-h: 78px;
+      }
+
+      .topbar { padding: 6px 10px; }
+      .status { padding: 4px 10px; }
+      .zone--opponent .card-row { transform: scale(0.92); transform-origin: top center; }
     }
 
     @media (max-width: 920px) {
@@ -1270,7 +1442,12 @@
     }
 
     @media (max-width: 640px) {
-      :root { --tr-dock-clear: max(152px, env(safe-area-inset-bottom) + 146px); }
+      /* 48px hand cards keep a 44px+ tap width on a 390px phone (and 320px, where the fan
+         compresses instead of scrolling). Indices stay legible in the visible strip. */
+      :root {
+        --tr-dock-clear: max(152px, env(safe-area-inset-bottom) + 146px);
+        --card-w: 48px;
+      }
 
       /* Compact 4 + 3 dock: two 44px rows, tighter padding/type; the footer-note band is tall
          enough (34px) that the shared fixed "Hub" pill sits beside the note instead of on a button. */
@@ -1312,20 +1489,23 @@
       .table {
         margin: 11px 10px;
         padding: 9px;
-        gap: 9px;
+        gap: 6px;
       }
 
-      .zone { padding: 9px; }
-      .zone--center { padding: 12px 10px; }
+      .zone { padding: 4px 1px; }
+      .zone--hand { padding: 4px 2px 2px; }
+      .zone--center { padding: 10px 8px 8px; }
       .zone--center { background-size: 300px 56px, auto, auto, auto; }
 
       .stat { padding: 6px 8px 6px 10px; }
       .stat-value { font-size: 1.05rem; }
 
-      .pile { min-width: 0; flex: 1 1 140px; padding: 7px 9px 9px; }
+      .piles { gap: 14px; }
+      .pile { min-width: 0; flex: 1 1 120px; padding: 2px 4px 4px; }
       .pile-body { gap: 8px; }
 
-      #opponentCards .back-card { margin-left: -10px; }
+      #opponentCards .back-card { margin-left: -16px; }
+      #playerHand { padding: 22px 2px 10px; }
     }
 
     @media (max-width: 760px) {
@@ -1380,6 +1560,499 @@
       .tr-deadwood #trDeadwoodValue{font-size:12px;white-space:nowrap}
       .tr-deadwood #trDeadwoodValue::after{content:none}
     }
+    /* === Round 2: table drawer, coach, banners, trophy, flights ================ */
+
+    /* Table + side drawer: felt is the hero on desktop; phones keep a fold-under drawer. */
+    .table-stage {
+      min-height: 0;
+      display: block;
+    }
+
+    .tr-drawer {
+      border: 1px solid rgba(158, 255, 200, 0.16);
+      border-radius: 14px;
+      background: rgba(6, 18, 12, 0.6);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      margin: 0 2px;
+    }
+
+    .tr-drawer > summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      color: var(--accent);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tr-drawer > summary::-webkit-details-marker { display: none; }
+    .tr-drawer > summary::after {
+      content: "\25BE";
+      transition: transform 0.2s ease;
+      color: var(--muted);
+    }
+    .tr-drawer[open] > summary::after { transform: rotate(180deg); }
+    .tr-drawer > summary:focus-visible { outline: 2px solid var(--mint); outline-offset: -2px; border-radius: 12px; }
+
+    .tr-drawer-body {
+      display: grid;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+
+    .tr-drawer .melds { margin-top: 0; border-top: 0; padding-top: 0; }
+
+    .round-log {
+      list-style: none;
+      display: grid;
+      gap: 4px;
+      max-height: 148px;
+      overflow: auto;
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.35;
+    }
+
+    .round-log li {
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.22);
+      border-left: 2px solid rgba(156, 255, 115, 0.35);
+    }
+
+    .round-log li:last-child { color: var(--ink); border-left-color: var(--gold); }
+
+    .drawer-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin: 0;
+    }
+
+    .drawer-stats div {
+      border-radius: 10px;
+      padding: 6px 8px;
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .drawer-stats dt {
+      color: var(--muted);
+      font-size: 0.56rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .drawer-stats dd {
+      font-size: 1rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Knock and Gin: a ready state that draws the eye only when the move is legal. */
+    #knockBtn.is-ready:not(:disabled) {
+      border-color: rgba(255, 215, 106, 0.9);
+      animation: trReadyGlow 1.6s ease-in-out infinite;
+    }
+
+    #ginBtn { position: relative; overflow: hidden; }
+
+    #ginBtn.is-ready:not(:disabled)::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.6) 50%, transparent 65%);
+      background-size: 260% 100%;
+      animation: trShimmer 1.9s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes trReadyGlow {
+      0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 215, 106, 0.35), 0 0 10px rgba(255, 215, 106, 0.22); }
+      50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 2px rgba(255, 215, 106, 0.7), 0 0 22px rgba(255, 215, 106, 0.5); }
+    }
+
+    @keyframes trShimmer {
+      0% { background-position: 130% 0; }
+      100% { background-position: -130% 0; }
+    }
+
+    /* Keyboard focus ring on hand cards survives re-renders (see renderPlayerHand). */
+    #playerHand .card-button:focus-visible { outline-offset: 3px; }
+
+    /* First-round coach: a plain card inside the centre band, never a blocking overlay. */
+    .coach {
+      position: relative;
+      display: grid;
+      gap: 6px;
+      margin: 10px 0 0;
+      padding: 10px 12px 10px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(122, 230, 255, 0.45);
+      background: linear-gradient(90deg, rgba(122, 230, 255, 0.12), transparent 60%), rgba(12, 24, 34, 0.9);
+      box-shadow: 0 0 0 1px rgba(122, 230, 255, 0.12), 0 10px 22px rgba(0, 0, 0, 0.3);
+      color: var(--ink);
+    }
+
+    .coach[hidden] { display: none; }
+
+    .coach::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+      background: linear-gradient(180deg, var(--aqua), var(--violet));
+    }
+
+    .coach-step {
+      color: var(--aqua);
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .coach h2 { font-size: 0.95rem; letter-spacing: 0.04em; }
+    .coach p { color: var(--muted); font-size: 0.82rem; line-height: 1.4; }
+    .coach-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .coach-actions .btn { min-height: 40px; }
+
+    /* Highlight target for the current coach step. Pure CSS, no layout change. */
+    .coach-spot { outline: 2px dashed rgba(122, 230, 255, 0.8); outline-offset: 4px; border-radius: 12px; }
+
+    /* Round banner: counts up deadwood and points. Never intercepts clicks. */
+    .round-banner {
+      position: fixed;
+      left: 50%;
+      top: 34%;
+      z-index: 9994;
+      transform: translate(-50%, -50%) scale(0.86);
+      min-width: min(300px, calc(100vw - 32px));
+      padding: 12px 18px 12px;
+      border-radius: 16px;
+      text-align: center;
+      color: var(--ink);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0)), rgba(8, 22, 14, 0.94);
+      border: 1px solid rgba(255, 215, 106, 0.5);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 215, 106, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+    }
+
+    .round-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .round-banner.show.is-skippable {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .round-banner.defeat { border-color: rgba(255, 157, 157, 0.5); }
+    .round-banner.draw { border-color: rgba(122, 230, 255, 0.5); }
+
+    .rb-skip-hint {
+      margin-top: 8px;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .rb-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold-soft);
+    }
+
+    .rb-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .rb-row b {
+      display: block;
+      font-size: 1.3rem;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Trophy panel reuses the guide overlay chrome. */
+    .trophy-card { text-align: center; }
+    .trophy-card .trophy-icon { font-size: 3rem; line-height: 1; margin-bottom: 4px; }
+    .trophy-card .trophy-scores { font-size: 1.1rem; font-weight: 800; color: var(--ink); margin-bottom: 12px; }
+    .trophy-card dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; }
+    .trophy-card dl div { border-radius: 10px; padding: 8px 6px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.07); }
+    .trophy-card dt { color: var(--muted); font-size: 0.56rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .trophy-card dd { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .trophy-card .overlay-actions { justify-content: center; }
+
+    /* Fixed flight clones (draws, discards, layoffs). Purely visual, never focusable. */
+    .fly-card {
+      position: fixed;
+      z-index: 9993;
+      pointer-events: none;
+      margin: 0;
+      will-change: transform;
+      transform-origin: 50% 50%;
+    }
+
+    .fly-card > .card,
+    .fly-card > .back-card {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      rotate: none;
+      translate: none;
+    }
+
+    .fly-card > .card { box-shadow: var(--suite-card-shadow-lift); }
+
+    /* Round-2 reduced-motion gate: every new animation above is stilled here too. */
+    @media (prefers-reduced-motion: reduce) {
+      #knockBtn.is-ready:not(:disabled),
+      #ginBtn.is-ready:not(:disabled)::after,
+      .coach-spot,
+      .round-banner,
+      .tr-drawer > summary::after {
+        animation: none;
+        transition: none;
+      }
+      .round-banner { transform: translate(-50%, -50%); }
+      #knockBtn.is-ready:not(:disabled) { box-shadow: 0 0 0 2px rgba(255, 215, 106, 0.6); }
+      #ginBtn.is-ready:not(:disabled)::after { display: none; }
+      .card, .card-button { transition: none; }
+    }
+
+    @media (max-width: 920px) {
+      .drawer-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .trophy-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+      .table-stage {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .table-stage > .tr-drawer {
+        margin: 2px 6px 6px;
+        flex-shrink: 0;
+      }
+
+      .zone--hand {
+        margin-bottom: 4px;
+      }
+
+      #playerHand {
+        padding-bottom: 16px;
+      }
+    }
+
+    /* 320px phones: one tight HUD row + trim the table frame so the hand keeps its width. */
+    @media (max-width: 360px) {
+      .topbar {
+        padding: 3px 6px 4px;
+        gap: 4px;
+      }
+
+      .title-group h1 {
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+      }
+
+      .title-group h1::after {
+        display: none;
+      }
+
+      .top-links {
+        gap: 3px;
+      }
+
+      .top-links .btn,
+      .top-links a {
+        min-height: 28px;
+        padding: 3px 3px;
+        font-size: 0.62rem;
+        border-radius: 8px;
+      }
+
+      .status {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 2px 3px;
+        padding: 2px 4px;
+      }
+
+      .stat {
+        padding: 2px 4px 2px 5px;
+        border-radius: 8px;
+      }
+
+      .stat-label .lbl-full { display: none; }
+      .stat-label .lbl-short { display: inline; }
+
+      .stat-label {
+        font-size: 0.5rem;
+        letter-spacing: 0.05em;
+        margin-bottom: 0;
+        line-height: 1.05;
+      }
+
+      .stat-value {
+        font-size: 0.76rem;
+        line-height: 1.1;
+      }
+
+      .stat.hot .stat-label::after,
+      .stat.gin .stat-label::after {
+        content: none;
+      }
+
+      .table { margin: 6px 4px; padding: 5px; gap: 4px; }
+      .zone--hand .zone-title { font-size: 0.68rem; }
+      .tr-deadwood { padding: 3px 7px; gap: 5px; }
+      .tr-deadwood .bar { width: 52px; }
+      .tr-deadwood .label { font-size: 7px; }
+      #playerHand { padding: 6px 0 22px; }
+      #playerHand.is-wrapped { row-gap: 44px; }
+      .table-stage > .tr-drawer { margin-top: 4px; }
+      .tr-drawer > summary { min-height: 36px; padding: 6px 10px; font-size: 0.68rem; }
+
+      .card-button.selected,
+      .card-button.selected:hover {
+        transform: translateY(-5px) scale(1.01);
+      }
+    }
+
+    .stat-label .lbl-short { display: none; }
+
+    /* === Round 3: table-first fit pass ===================================================
+       Floating widgets (mascot, bubble, deadwood meter) now sit inside their zone headers.
+       Phones trade chrome for felt so the player's hand is in the first screen; desktop
+       trims the frame so the whole hand clears the action dock at 1280x800. */
+    .zone--opponent .zone-header,
+    .zone--hand .zone-header { position: relative; flex-wrap: wrap; }
+    .tr-boss {
+      position: static;
+      z-index: auto;
+      width: auto;
+      height: auto;
+      font-size: 1.45rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      background: none;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+    }
+    .tr-bubble {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 4px;
+      bottom: auto;
+      left: auto;
+      z-index: 30;
+      min-width: 176px;
+      max-width: min(240px, 78vw);
+      transform-origin: top right;
+      transform: translateY(-6px) scale(0.94);
+    }
+    .tr-bubble.show { transform: translateY(0) scale(1); }
+    .tr-bubble::after { top: -8px; bottom: auto; right: 24px; transform: rotate(45deg); }
+    .zone--opponent .zone-title::before { content: none; }
+    .tr-deadwood {
+      position: static;
+      z-index: auto;
+      min-width: 0;
+      flex-direction: row;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      margin-left: auto;
+    }
+    .tr-deadwood .bar { width: 84px; height: 7px; }
+    .tr-deadwood #trDeadwoodValue { font-size: 11px; white-space: nowrap; }
+    .tr-deadwood #trDeadwoodValue::after { content: none; }
+    .tr-deadwood .label { white-space: nowrap; }
+
+    @media (max-width: 640px) {
+      .title-group p { display: none; }
+      .topbar { padding: 5px 8px; gap: 5px; }
+      .title-group h1 { font-size: 1.05rem; }
+      .top-links { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+      .top-links .btn,
+      .top-links a { min-height: 30px; padding: 4px 4px; font-size: 0.68rem; }
+      .status { padding: 4px 8px; gap: 4px 5px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .stat { padding: 3px 7px 4px 9px; }
+      .stat-label { font-size: 0.54rem; line-height: 1.1; }
+      .stat-value { font-size: 0.92rem; line-height: 1.15; }
+      .zone--hand .zone-meta { display: none; }
+      .message { margin-top: 3px; }
+      .zone--hand { padding-top: 2px; }
+      .zone--hand .zone-header { margin-bottom: 0; }
+      #playerHand { padding: 8px 2px 4px; }
+      .table { margin: 4px; padding: 4px; gap: 2px; }
+      .zone--center { padding: 4px 6px 4px; }
+      .zone--center .zone-title { display: none; }
+      .zone--center .zone-header { margin-bottom: 3px; }
+      .zone--opponent { padding-top: 0; }
+      .zone-header { margin-bottom: 2px; }
+      .piles { padding: 0; }
+      .pile h3 { margin-bottom: 4px; }
+      .action-dock { padding: 5px 8px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+      .footer-note { min-height: 34px; }
+      .zone--hand { padding: 4px 2px 0; }
+      .message { padding: 6px 10px; font-size: 0.78rem; }
+      .tr-deadwood .bar { width: 64px; }
+      .tr-boss { font-size: 1.25rem; }
+      .tr-bubble { font-size: 12px; }
+    }
+
+    /* The first-round coach is a two-column strip on phones and short screens, not a 145px card. */
+    @media (max-width: 640px), (max-height: 860px) {
+      .coach {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2px 8px;
+        margin-top: 4px;
+        margin-bottom: 2px;
+        padding: 5px 8px 5px 12px;
+        max-width: 100%;
+      }
+      .coach-step { grid-column: 1 / -1; font-size: 0.55rem; line-height: 1.2; }
+      .coach h2 { font-size: 0.85rem; line-height: 1.2; }
+      .coach p { font-size: 0.72rem; line-height: 1.25; }
+      .coach-actions { grid-column: 2; grid-row: 2 / span 2; flex-direction: column; justify-content: center; }
+      .coach-actions .btn { min-height: 32px; padding: 4px 9px; font-size: 0.7rem; }
+    }
+
+    @media (min-width: 921px) and (max-height: 860px) {
+      .topbar { padding: 8px 12px; }
+      .title-group p { display: none; }
+      .status { padding: 6px 12px; }
+      .stat { padding: 5px 10px 5px 12px; }
+      .table { margin: 8px 12px 6px; padding: 8px 10px; gap: 6px; }
+      .zone--center { padding: 8px 10px 6px; }
+      .zone--center .pile { padding: 0 4px; }
+      .zone--hand .zone-header { margin-bottom: 2px; }
+      #playerHand { padding-top: 14px; padding-bottom: 6px; }
+      .action-dock { padding: 6px 10px; }
+      .footer-note { display: none; }
+    }
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
@@ -1391,6 +2064,8 @@
       </div>
       <div class="top-links">
         <a href="./" aria-label="Back to game hub">&#x1F3E0; Hub</a>
+        <button class="btn" id="soundToggleBtn" data-sound-toggle aria-pressed="true">&#x1F50A; Sound On</button>
+        <button class="btn" id="difficultyBtn" type="button" aria-label="Bot difficulty" title="Cycle the bot: Easy, Normal, Sharp">&#x1F916; Bot: Normal</button>
         <button class="btn" id="quickGuideBtn">&#x2753; Rules</button>
         <button class="btn" id="newRoundBtn">&#x1F0CF; New Round</button>
         <button class="btn warn" id="resetMatchBtn">&#x21BB; Reset Match</button>
@@ -1398,16 +2073,17 @@
     </header>
 
     <section class="status">
-      <div class="stat"><div class="stat-label">Round</div><div class="stat-value" id="roundValue">0</div></div>
-      <div class="stat"><div class="stat-label">Player Score</div><div class="stat-value" id="playerScoreValue">0</div></div>
-      <div class="stat"><div class="stat-label">AI Score</div><div class="stat-value" id="aiScoreValue">0</div></div>
-      <div class="stat"><div class="stat-label">Stock Left</div><div class="stat-value" id="stockValue">0</div></div>
-      <div class="stat"><div class="stat-label">Your Deadwood</div><div class="stat-value" id="deadwoodValue">0</div></div>
-      <div class="stat"><div class="stat-label">Target</div><div class="stat-value" id="targetValue">100</div></div>
+      <div class="stat" title="Which hand you are on. Round 1 deals the first hand."><div class="stat-label"><span class="lbl-full">Round</span><span class="lbl-short">Rnd</span></div><div class="stat-value" id="roundValue">0</div></div>
+      <div class="stat" title="Your running match score. First to the target wins."><div class="stat-label"><span class="lbl-full">Player Score</span><span class="lbl-short">You</span></div><div class="stat-value" id="playerScoreValue">0</div></div>
+      <div class="stat" title="The bot's running match score."><div class="stat-label"><span class="lbl-full">AI Score</span><span class="lbl-short">Bot</span></div><div class="stat-value" id="aiScoreValue">0</div></div>
+      <div class="stat" title="Cards left to draw. When the stock runs out, the discard pile is reshuffled; if neither can supply a card, the round is a draw."><div class="stat-label"><span class="lbl-full">Stock Left</span><span class="lbl-short">Stk</span></div><div class="stat-value" id="stockValue">0</div></div>
+      <div class="stat" title="Points in your unmelded cards. Aces are 1, face cards 10. Knock at 10 or less; Gin at 0."><div class="stat-label"><span class="lbl-full">Your Deadwood</span><span class="lbl-short">DW</span></div><div class="stat-value" id="deadwoodValue">0</div></div>
+      <div class="stat" title="First player to this score wins the match."><div class="stat-label"><span class="lbl-full">Target</span><span class="lbl-short">Tgt</span></div><div class="stat-value" id="targetValue">100</div></div>
     </section>
 
+    <div class="table-stage">
     <main class="table" data-motto="Deadwood Dept. says this table smells strategic">
-      <section class="zone zone--opponent">
+      <section class="zone zone--opponent" aria-label="Bot hand">
         <div class="zone-header">
           <div class="zone-title">Opponent Hand</div>
           <div class="zone-meta" id="aiMeta">10 cards</div>
@@ -1415,33 +2091,51 @@
         <div class="card-row" id="opponentCards"></div>
       </section>
 
-      <section class="zone zone--center">
+      <section class="zone zone--center" aria-label="Table center">
         <div class="zone-header">
           <div class="zone-title">Table Center</div>
           <div class="zone-meta" id="turnMeta">Turn: Player</div>
         </div>
         <div class="piles">
-          <div class="pile">
+          <div class="pile" id="stockWell">
             <h3>Stock</h3>
-            <div class="pile-body" id="stockPile"></div>
+            <div class="pile-body" id="stockPile" role="group" aria-label="Stock pile"></div>
           </div>
-          <div class="pile">
+          <div class="pile" id="discardWell">
             <h3>Discard Top</h3>
-            <div class="pile-body" id="discardPile"></div>
+            <div class="pile-body" id="discardPile" role="group" aria-label="Discard pile"></div>
           </div>
         </div>
-        <div class="message" id="messageBox"></div>
+        <div class="coach" id="coachCard" role="region" aria-label="TurdRummy coach" hidden>
+          <span class="coach-step" id="coachStep">Coach</span>
+          <h2 id="coachTitle"></h2>
+          <p id="coachBody"></p>
+          <div class="coach-actions">
+            <button class="btn" id="coachSkipBtn" type="button">Skip coach</button>
+            <button class="btn primary" id="coachNextBtn" type="button">Next</button>
+          </div>
+        </div>
+        <div class="message" id="messageBox" role="status" aria-live="polite"></div>
       </section>
 
-      <section class="zone zone--hand">
+      <section class="zone zone--hand" aria-label="Your hand">
         <div class="zone-header">
           <div class="zone-title">Your Hand</div>
           <div class="zone-meta" id="selectionMeta">Select a card</div>
         </div>
-        <div class="card-row" id="playerHand"></div>
-        <div class="melds" id="meldPreview"></div>
+        <div class="card-row" id="playerHand" role="group" aria-label="Your cards. Use arrow keys to move between cards."></div>
       </section>
     </main>
+
+      <details class="tr-drawer tr-drawer--side" id="tableDrawer">
+        <summary>Melds, log &amp; stats</summary>
+        <div class="tr-drawer-body">
+          <div class="melds" id="meldPreview"></div>
+          <ol class="round-log" id="roundLog" aria-label="Recent table events"></ol>
+          <dl class="drawer-stats" id="drawerStats" aria-label="Your match stats on this device"></dl>
+        </div>
+      </details>
+    </div>
 
     <footer class="action-dock">
       <div class="action-grid">
@@ -1467,16 +2161,46 @@
           <li>Gin when post-discard deadwood is exactly 0.</li>
           <li>Undercut gives bonus points to the defender.</li>
         </ul>
-        <p>On mobile, draw/discard/knock/gin are grouped in one button dock.</p>
+        <p>Your hand groups melds under coloured brackets; grey cards are deadwood. The Knock button glows when a knock is legal, and Gin shimmers when gin is possible.</p>
+        <p>On mobile, draw/discard/knock/gin are grouped in one button dock. Bot difficulty (Easy, Normal, Sharp) is in the top bar.</p>
         <div class="overlay-actions">
           <button class="btn primary" id="startRoundBtn">Start Round</button>
           <button class="btn" id="closeGuideBtn">Close Guide</button>
         </div>
       </div>
     </div>
+    <div class="round-banner" id="roundBanner" aria-hidden="true">
+      <div class="rb-title" id="rbTitle"></div>
+      <div class="rb-row">
+        <span>Knocker<b id="rbKnockerDw">0</b></span>
+        <span id="rbPointsLabel">Points<b id="rbPoints">0</b></span>
+        <span>Defender<b id="rbDefenderDw">0</b></span>
+      </div>
+      <div class="rb-skip-hint" id="rbSkipHint" hidden>Tap or Space to skip</div>
+    </div>
+    <div class="overlay" id="trophyOverlay">
+      <div class="overlay-card trophy-card" role="dialog" aria-modal="true" aria-labelledby="trophyHeadline">
+        <div class="trophy-icon" aria-hidden="true" id="trophyIcon">&#x1F3C6;</div>
+        <h2 id="trophyHeadline">Match Over</h2>
+        <p class="trophy-scores" id="trophyScores"></p>
+        <dl id="trophyStats" aria-label="Match stats saved on this device"></dl>
+        <div class="overlay-actions">
+          <button class="btn primary" id="trophyRematchBtn" type="button">Rematch</button>
+          <button class="btn" id="trophyKeepBtn" type="button">Keep Table</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
+    const Presentation = window.TurdRummyPresentation || {
+      ROUND_BANNER_VISIBLE_MS: 2800,
+      PRESENTATION_AUTO_SKIP_MS: 3000,
+      REVEAL_STAGGER_STEP_MS: 90,
+      REVEAL_STAGGER_CAP_MS: 720,
+      trophyDelayMs: () => 3250
+    };
+
     const TURDRUMMY_BALANCE = {
       knockLimit: 10,
       ginBonus: 25,
@@ -1487,6 +2211,7 @@
         takeDiscardLateRound: 8,
         meldPotentialBias: 2.4,
         highCardDumpBias: 1.1,
+        discardSafetyBias: 0.9,
         knockBase: 6,
         knockWhenBehindBy: 8,
         knockWhenAheadBy: 5
@@ -1521,6 +2246,9 @@
       roundOver: false,
       matchOver: false,
       initialized: false,
+      // Round-2 memory (not persisted): cards the human drew from the discard, and bot turns this round.
+      humanDiscardTakes: [],
+      aiTurns: 0,
       stats: {
         roundsPlayed: 0,
         playerRoundWins: 0,
@@ -1533,7 +2261,457 @@
     let aiTurnTimeoutId = null;
     let focusPausedAiTurn = false;
 
+    const audioPlayer = (window.TurdRummyAudio && TurdRummyAudio.createPlayer)
+      ? TurdRummyAudio.createPlayer(window.localStorage)
+      : null;
+
+    function playSfx(name) {
+      try {
+        if (audioPlayer) audioPlayer.play(name);
+      } catch (err) { /* cosmetic only */ }
+    }
+
+    // ---- Round-2 helpers. The optional core modules (games/turdrummy-*-core.js) degrade to
+    // plain behaviour when absent, so the page still plays if one fails to load.
+    const Meld = window.TurdRummyMeld || null;
+    const Motion = window.TurdRummyMotion || null;
+    const Coach = window.TurdRummyCoach || null;
+    const AIApi = window.TurdRummyAI || null;
+    const HAND_GROUP_GAP = 8;
+    const FEED_RISK_WEIGHT = 1.2;
+    const DIFFICULTY_LABELS = { easy: "Easy", normal: "Normal", sharp: "Sharp" };
+    const DIFFICULTY_ORDER = ["easy", "normal", "sharp"];
+    const reducedMotionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    const presentationTimers = [];
+    const roundLog = [];
+    let aiLevel = AIApi ? AIApi.loadDifficulty(window.localStorage) : "normal";
+    let coachIndex = 0;
+    let handLayoutQueued = false;
+    let bannerTimer = 0;
+    let presentationAutoSkipTimer = 0;
+    let presentationActive = false;
+    let pendingTrophyAfterPresentation = false;
+    let lastBannerModel = null;
+
+    // The one reduced-motion gate for flights, count-ups and the reveal stagger.
+    function motionOn() {
+      const reduced = !!(reducedMotionQuery && reducedMotionQuery.matches);
+      const canAnimate = typeof window.requestAnimationFrame === "function"
+        && typeof Element.prototype.animate === "function";
+      return !!Motion && Motion.shouldAnimate({ reduced, canAnimate });
+    }
+
+    function later(fn, ms) {
+      const id = window.setTimeout(fn, ms);
+      presentationTimers.push(id);
+      return id;
+    }
+
+    function clearPresentation() {
+      presentationTimers.splice(0).forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(bannerTimer);
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = 0;
+      presentationActive = false;
+      pendingTrophyAfterPresentation = false;
+      if (el.roundBanner) {
+        el.roundBanner.classList.remove("show", "is-skippable");
+      }
+      if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+    }
+
+    function finalizeBannerNumbers() {
+      if (!lastBannerModel || !el.roundBanner) return;
+      el.rbKnockerDw.textContent = String(lastBannerModel.knockerDeadwood);
+      el.rbDefenderDw.textContent = String(lastBannerModel.defenderDeadwood);
+      el.rbPoints.textContent = String(lastBannerModel.points);
+    }
+
+    function skipPresentation() {
+      if (!presentationActive) return;
+      const openTrophy = pendingTrophyAfterPresentation;
+      presentationTimers.splice(0).forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(bannerTimer);
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = 0;
+      presentationActive = false;
+      pendingTrophyAfterPresentation = false;
+      if (el.roundBanner) {
+        el.roundBanner.classList.remove("show", "is-skippable");
+      }
+      if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+      finalizeBannerNumbers();
+      el.opponentCards.querySelectorAll(".card").forEach((node) => {
+        node.classList.remove("card-flip");
+        node.style.animationDelay = "0ms";
+      });
+      if (openTrophy) showTrophy();
+    }
+
+    function armPresentation({ showTrophyAfter }) {
+      presentationActive = true;
+      pendingTrophyAfterPresentation = !!showTrophyAfter;
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = window.setTimeout(() => {
+        if (presentationActive) skipPresentation();
+      }, Presentation.PRESENTATION_AUTO_SKIP_MS);
+    }
+
+    function rectOf(selector) {
+      const node = document.querySelector(selector);
+      if (!node) return null;
+      const box = node.getBoundingClientRect();
+      if (!box.width || !box.height) return null;
+      return { left: box.left, top: box.top, width: box.width, height: box.height };
+    }
+
+    // The bot's fan has no single card to fly from, so its discards leave from the middle of the fan.
+    function fanOriginRect() {
+      const box = rectOf("#opponentCards");
+      if (!box) return null;
+      const sample = rectOf("#opponentCards .back-card, #opponentCards .card") || { width: 40, height: 58 };
+      return {
+        left: box.left + box.width / 2 - sample.width / 2,
+        top: box.top + box.height / 2 - sample.height / 2,
+        width: sample.width,
+        height: sample.height
+      };
+    }
+
+    // Fixed clone that travels from `from` to `to` (viewport rects). Never reflows the real hand.
+    function flyCard(from, to, faceHtml) {
+      if (!from || !to || !motionOn()) return;
+      const node = document.createElement("div");
+      node.className = "fly-card";
+      node.setAttribute("aria-hidden", "true");
+      node.innerHTML = faceHtml;
+      node.style.left = from.left + "px";
+      node.style.top = from.top + "px";
+      node.style.width = from.width + "px";
+      node.style.height = from.height + "px";
+      document.body.appendChild(node);
+      const delta = Motion.flightDelta(from, to);
+      const anim = node.animate(
+        [
+          { transform: "translate(0px, 0px) scale(1)" },
+          { transform: "translate(" + delta.dx + "px, " + delta.dy + "px) scale(" + delta.scale + ")" }
+        ],
+        {
+          duration: Motion.flightDuration(Math.hypot(delta.dx, delta.dy)),
+          easing: "cubic-bezier(0.2, 0.85, 0.3, 1)",
+          fill: "forwards"
+        }
+      );
+      const remove = () => node.remove();
+      anim.onfinish = remove;
+      anim.oncancel = remove;
+    }
+
+    function flyTo(from, targetSelector, faceHtml) {
+      if (!from) return;
+      flyCard(from, rectOf(targetSelector), faceHtml);
+    }
+
+    function backFaceHtml() {
+      return '<div class="back-card"></div>';
+    }
+
+    function stopCountTween(node) {
+      if (node.dataset.tweening) {
+        window.cancelAnimationFrame(Number(node.dataset.tweening));
+        delete node.dataset.tweening;
+      }
+    }
+
+    function countTween(node, from, to, duration) {
+      stopCountTween(node);
+      const started = window.performance ? window.performance.now() : Date.now();
+      const frame = (now) => {
+        const t = (now - started) / duration;
+        node.textContent = String(Motion.tweenValue(from, to, t));
+        if (t < 1) node.dataset.tweening = String(window.requestAnimationFrame(frame));
+        else delete node.dataset.tweening;
+      };
+      node.dataset.tweening = String(window.requestAnimationFrame(frame));
+    }
+
+    // Deadwood and similar counters ease to their new value; instant when motion is off.
+    function setCounter(node, value) {
+      if (!node) return;
+      const next = Math.round(Number(value) || 0);
+      const prev = Number(node.dataset.counter);
+      node.dataset.counter = String(next);
+      stopCountTween(node);
+      if (!Number.isFinite(prev) || prev === next || !motionOn()) {
+        node.textContent = String(next);
+        return;
+      }
+      countTween(node, prev, next, 360);
+    }
+
+    // Keeps the hand on one row: measures the cards and sets the fan overlap, so a card always
+    // shows a readable strip (never narrower than 30% of its width) and never scrolls sideways.
+    function layoutHand() {
+      const container = el.playerHand;
+      if (!Meld || !container) return;
+      const cards = container.querySelectorAll(".card");
+      if (cards.length === 0) return;
+      const cardWidth = cards[0].offsetWidth;
+      const styles = window.getComputedStyle(container);
+      const available = container.clientWidth
+        - parseFloat(styles.paddingLeft || "0")
+        - parseFloat(styles.paddingRight || "0");
+      const groupNodes = container.querySelectorAll(".hand-group");
+      let largestGroup = 1;
+      groupNodes.forEach((node) => { largestGroup = Math.max(largestGroup, node.querySelectorAll(".card").length); });
+      const Vis = window.TurdRummyHandVisibility;
+      const indexStrip = Vis ? Vis.CORNER_INDEX_WIDTH : 16;
+      const fan = Meld.fanLayout({
+        cardWidth,
+        count: cards.length,
+        groupCount: groupNodes.length || 1,
+        availableWidth: available,
+        groupGap: HAND_GROUP_GAP,
+        largestGroup,
+        indexStripPx: indexStrip,
+        minStepRatio: Vis ? Vis.minFanStepRatio(cardWidth) : undefined
+      });
+      container.style.setProperty("--fan-overlap", (fan.step - cardWidth).toFixed(2) + "px");
+      container.style.setProperty("--group-gap", HAND_GROUP_GAP + "px");
+      container.classList.toggle("is-wrapped", fan.wrap);
+    }
+
+    function scheduleHandLayout() {
+      if (handLayoutQueued) return;
+      handLayoutQueued = true;
+      const run = () => {
+        handLayoutQueued = false;
+        layoutHand();
+      };
+      if (window.requestAnimationFrame) window.requestAnimationFrame(run);
+      else window.setTimeout(run, 16);
+    }
+
+    function pushLog(text) {
+      const line = String(text || "").replace(/\s+/g, " ").trim();
+      if (!line || roundLog[roundLog.length - 1] === line) return;
+      roundLog.push(line);
+      if (roundLog.length > 8) roundLog.shift();
+    }
+
+    function renderLog() {
+      el.roundLog.innerHTML = "";
+      if (roundLog.length === 0) {
+        const empty = document.createElement("li");
+        empty.textContent = "No moves yet. Start a round.";
+        el.roundLog.appendChild(empty);
+        return;
+      }
+      roundLog.forEach((line) => {
+        const item = document.createElement("li");
+        item.textContent = line;
+        el.roundLog.appendChild(item);
+      });
+    }
+
+    // Read-only view of the saved device stats (the page keeps its own copy in state.stats).
+    function renderDrawerStats() {
+      const st = state.stats;
+      const rows = [
+        ["Rounds", st.roundsPlayed],
+        ["Round wins", st.playerRoundWins],
+        ["Your gins", st.playerGins],
+        ["Undercuts", st.undercuts]
+      ];
+      el.drawerStats.innerHTML = rows
+        .map(([label, value]) => "<div><dt>" + label + "</dt><dd>" + (Number(value) || 0) + "</dd></div>")
+        .join("");
+    }
+
+    function aiProfile() {
+      if (AIApi) return AIApi.profileFor(aiLevel);
+      return { level: "normal", feedRiskBias: 0, discardSafetyBias: 1, scoreNoise: 0, knockOffset: 0, stockPressure: 0 };
+    }
+
+    function updateDifficultyLabel() {
+      const label = DIFFICULTY_LABELS[aiLevel] || "Normal";
+      el.difficultyBtn.textContent = "\u{1F916} Bot: " + label;
+      el.difficultyBtn.setAttribute("aria-label", "Bot difficulty: " + label + ". Activate to change.");
+    }
+
+    function cycleDifficulty() {
+      const at = DIFFICULTY_ORDER.indexOf(aiLevel);
+      aiLevel = DIFFICULTY_ORDER[(at + 1) % DIFFICULTY_ORDER.length];
+      if (AIApi) AIApi.saveDifficulty(window.localStorage, aiLevel);
+      updateDifficultyLabel();
+      playSfx("select");
+      try {
+        if (window.Suite) Suite.toast("Bot is now " + DIFFICULTY_LABELS[aiLevel] + ".");
+      } catch (err) { /* cosmetic only */ }
+    }
+
+    // Coach: a first-round, non-blocking card. The page reports the real actions it teaches.
+    function coachIsDone() {
+      return !!Coach && Coach.loadCoachDone(window.localStorage);
+    }
+
+    function syncCoach() {
+      const steps = Coach ? Coach.COACH_STEPS : [];
+      const show = !!Coach && state.initialized && state.round === 1 && !state.roundOver && !state.matchOver
+        && !coachIsDone() && coachIndex < steps.length && !el.guideOverlay.classList.contains("show");
+      el.coachCard.hidden = !show;
+      document.querySelectorAll(".coach-spot").forEach((node) => node.classList.remove("coach-spot"));
+      if (!show) return;
+      const step = steps[coachIndex];
+      el.coachStep.textContent = "Coach " + (coachIndex + 1) + " of " + steps.length;
+      el.coachTitle.textContent = step.title;
+      el.coachBody.textContent = step.body;
+      el.coachNextBtn.textContent = coachIndex === steps.length - 1 ? "Got it" : "Next";
+      const spots = { stock: "#stockWell", hand: "#playerHand", knock: "#knockBtn" };
+      const target = document.querySelector(spots[step.spot] || "");
+      if (target) target.classList.add("coach-spot");
+    }
+
+    function finishCoach() {
+      if (Coach) Coach.markCoachDone(window.localStorage);
+      coachIndex = Coach ? Coach.COACH_STEPS.length : 0;
+      syncCoach();
+    }
+
+    function coachEvent(event) {
+      if (!Coach || coachIsDone()) return;
+      const next = Coach.nextCoachIndex(coachIndex, event);
+      if (next === coachIndex) return;
+      coachIndex = next;
+      if (coachIndex >= Coach.COACH_STEPS.length) finishCoach();
+      else syncCoach();
+    }
+
+    // Round banner: names the result and counts up the deadwood and points. Never takes clicks.
+    function showRoundBanner(model) {
+      const banner = el.roundBanner;
+      lastBannerModel = model;
+      el.rbTitle.textContent = model.title;
+      banner.classList.toggle("defeat", model.tone === "defeat");
+      banner.classList.toggle("draw", model.tone === "draw");
+      banner.classList.remove("show", "is-skippable");
+      void banner.offsetWidth;
+      banner.classList.add("show");
+      if (el.rbSkipHint) el.rbSkipHint.hidden = false;
+      const counters = [
+        [el.rbKnockerDw, model.knockerDeadwood],
+        [el.rbDefenderDw, model.defenderDeadwood],
+        [el.rbPoints, model.points]
+      ];
+      const animate = motionOn();
+      counters.forEach(([node, to], i) => {
+        stopCountTween(node);
+        if (!animate) {
+          node.textContent = String(to);
+          return;
+        }
+        node.textContent = "0";
+        countTween(node, 0, Math.round(Number(to) || 0), 420 + i * 50);
+      });
+      if (animate) playSfx("tick");
+      window.clearTimeout(bannerTimer);
+      bannerTimer = window.setTimeout(() => {
+        banner.classList.remove("show", "is-skippable");
+        if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+        if (pendingTrophyAfterPresentation) {
+          pendingTrophyAfterPresentation = false;
+          showTrophy();
+        }
+        presentationActive = false;
+      }, Presentation.ROUND_BANNER_VISIBLE_MS);
+      banner.classList.add("is-skippable");
+    }
+
+    function roundBannerModel(knocker, awardedTo, isGin, points, knockerDw, defenderDw) {
+      const who = (side) => (side === "player" ? "You" : "AI");
+      let title;
+      if (isGin) title = who(knocker) + " called Gin!";
+      else if (awardedTo === knocker) title = who(knocker) + " knocked";
+      else title = "Undercut! " + who(awardedTo) + " takes it";
+      let tone = awardedTo === "player" ? "victory" : "defeat";
+      if (points === 0) tone = "draw";
+      return { title, tone, points, knockerDeadwood: knockerDw, defenderDeadwood: defenderDw };
+    }
+
+    // Layoffs: each laid-off card flies from its owner's hand onto the knocker's melds, after the reveal.
+    function runLayoffFlights(defender, knocker, cards) {
+      if (!cards || cards.length === 0) return;
+      const start = Motion ? Motion.staggerDelay(state.aiHand.length, 110, 1000) + 260 : 0;
+      cards.forEach((card, i) => {
+        later(() => {
+          const fromSelector = defender === "ai"
+            ? '#opponentCards [data-hand-id="' + card.id + '"]'
+            : '#playerHand [data-hand-id="' + card.id + '"]';
+          const toSelector = knocker === "player"
+            ? "#playerHand .hand-group:not(.hand-group--deadwood)"
+            : "#opponentCards";
+          flyTo(rectOf(fromSelector), toSelector, createCardHtml(card, false, false));
+          playSfx("layoff");
+        }, start + i * 150);
+      });
+    }
+
+    // Trophy: match stats come from the saved stats key, read-only. Rematch and Keep Table are the only actions.
+    function readSavedStats() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        return parsed && parsed.stats && typeof parsed.stats === "object" ? parsed.stats : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function showTrophy() {
+      if (!state.matchOver) return;
+      const won = state.playerScore > state.aiScore;
+      const tie = state.playerScore === state.aiScore;
+      el.trophyIcon.textContent = won ? "\u{1F3C6}" : (tie ? "\u{1F91D}" : "\u{1F4A9}");
+      el.trophyHeadline.textContent = won ? "Sewer Champion" : (tie ? "Dead Heat" : "The Bot Wins The Bowl");
+      el.trophyScores.textContent = "You " + state.playerScore + " · Bot " + state.aiScore;
+      const st = readSavedStats() || state.stats;
+      const rows = [
+        ["Rounds", st.roundsPlayed],
+        ["Round wins", st.playerRoundWins],
+        ["Your gins", st.playerGins],
+        ["Undercuts", st.undercuts]
+      ];
+      el.trophyStats.innerHTML = rows
+        .map(([label, value]) => "<div><dt>" + label + "</dt><dd>" + (Number(value) || 0) + "</dd></div>")
+        .join("");
+      el.trophyOverlay.classList.add("show");
+      el.trophyRematchBtn.focus();
+    }
+
+    function hideTrophy() {
+      el.trophyOverlay.classList.remove("show");
+    }
+
+    // Presentation-only feed risk: the bot avoids discards that would help a set or run the human is building.
+    function feedRiskPenalty(card) {
+      if (!AIApi) return 0;
+      const profile = aiProfile();
+      if (!profile.feedRiskBias) return 0;
+      const takes = AIApi.activeHumanTakes(state.humanDiscardTakes, state.discard);
+      return AIApi.computeFeedRisk(takes, card) * profile.feedRiskBias * FEED_RISK_WEIGHT;
+    }
+
+    function discardSafetyBonus(history, card) {
+      try {
+        if (window.TurdRummyAI && TurdRummyAI.computeDiscardSafety) {
+          return TurdRummyAI.computeDiscardSafety(history, card);
+        }
+      } catch (err) { /* fall through */ }
+      return 0;
+    }
+
     const el = {
+      soundToggleBtn: document.getElementById("soundToggleBtn"),
       roundValue: document.getElementById("roundValue"),
       playerScoreValue: document.getElementById("playerScoreValue"),
       aiScoreValue: document.getElementById("aiScoreValue"),
@@ -1561,7 +2739,29 @@
       quickGuideBtn: document.getElementById("quickGuideBtn"),
       guideOverlay: document.getElementById("guideOverlay"),
       closeGuideBtn: document.getElementById("closeGuideBtn"),
-      startRoundBtn: document.getElementById("startRoundBtn")
+      startRoundBtn: document.getElementById("startRoundBtn"),
+      difficultyBtn: document.getElementById("difficultyBtn"),
+      tableDrawer: document.getElementById("tableDrawer"),
+      roundLog: document.getElementById("roundLog"),
+      drawerStats: document.getElementById("drawerStats"),
+      roundBanner: document.getElementById("roundBanner"),
+      rbTitle: document.getElementById("rbTitle"),
+      rbKnockerDw: document.getElementById("rbKnockerDw"),
+      rbDefenderDw: document.getElementById("rbDefenderDw"),
+      rbPoints: document.getElementById("rbPoints"),
+      coachCard: document.getElementById("coachCard"),
+      coachStep: document.getElementById("coachStep"),
+      coachTitle: document.getElementById("coachTitle"),
+      coachBody: document.getElementById("coachBody"),
+      coachNextBtn: document.getElementById("coachNextBtn"),
+      coachSkipBtn: document.getElementById("coachSkipBtn"),
+      trophyOverlay: document.getElementById("trophyOverlay"),
+      trophyHeadline: document.getElementById("trophyHeadline"),
+      trophyIcon: document.getElementById("trophyIcon"),
+      trophyScores: document.getElementById("trophyScores"),
+      trophyStats: document.getElementById("trophyStats"),
+      trophyRematchBtn: document.getElementById("trophyRematchBtn"),
+      trophyKeepBtn: document.getElementById("trophyKeepBtn")
     };
 
     function randomIntExclusive(max) {
@@ -1659,6 +2859,8 @@
       state.lastAiAction = String(snap.lastAiAction || "");
       state.roundOver = !!snap.roundOver;
       state.matchOver = !!snap.matchOver;
+      state.humanDiscardTakes = [];
+      state.aiTurns = 0;
       state.initialized = true;
       return true;
     }
@@ -1934,7 +3136,8 @@
       return solve(0, 0);
     }
 
-    function createCardHtml(card, interactive, selected) {
+    // extraAttrs is trusted markup built by the page (data-hand-id, inline fan vars), never user text.
+    function createCardHtml(card, interactive, selected, extraAttrs) {
       const redClass = RED_SUITS.has(card.suit) ? "red" : "";
       const selectedClass = selected ? "selected" : "";
       const buttonClass = interactive ? "card-button " + selectedClass : "";
@@ -1942,12 +3145,13 @@
       const faceMeta = cardFaceMeta(card.rank);
       const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : "";
       const styleAttrs = ` data-rank="${rankLabel(card.rank)}" data-suit="${card.suit}"`;
+      const extra = extraAttrs ? " " + extraAttrs : "";
       const cornerIndex = `<span class="card-index-rank">${rankLabel(card.rank)}</span><span class="card-index-suit">${SUIT_SYMBOLS[card.suit]}</span>`;
       const safeId = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(card.id) : String(card.id).replace(/[<>"]/g, '');
       const safeLabel = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(label) : String(label).replace(/[<>"]/g, '');
       if (interactive) {
         return `
-          <button class="card ${redClass} ${buttonClass}" data-card-id="${safeId}" aria-label="${safeLabel}"${faceAttrs}${styleAttrs}>
+          <button class="card ${redClass} ${buttonClass}" data-card-id="${safeId}" aria-label="${safeLabel}" aria-pressed="${selected ? "true" : "false"}"${faceAttrs}${styleAttrs}${extra}>
             <div class="card-face">${cornerIndex}</div>
             <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
             <div class="card-face">${cornerIndex}</div>
@@ -1955,7 +3159,7 @@
         `;
       }
       return `
-        <div class="card ${redClass}"${faceAttrs}${styleAttrs}>
+        <div class="card ${redClass}"${faceAttrs}${styleAttrs}${extra}>
           <div class="card-face">${cornerIndex}</div>
           <div class="card-suit">${SUIT_SYMBOLS[card.suit]}</div>
           <div class="card-face">${cornerIndex}</div>
@@ -1985,21 +3189,21 @@
       return `<span class="meld-chip meld-chip--${kind}" title="${formatMeld(meld)}"><b>${prefix}</b>${meld.cards.map(cardChipHtml).join("")}</span>`;
     }
 
+    // Hand nodes carry data-hand-id, so decorators match by card, not by DOM position
+    // (the hand is displayed in meld-group order, which differs from the sorted state order).
     function decoratePlayerHand() {
       cosmeticRoundCheck();
-      const nodes = el.playerHand.querySelectorAll(".card");
       const next = new Set();
       let fresh = 0;
-      nodes.forEach((node, i) => {
-        const card = state.playerHand[i];
-        if (!card) return;
-        next.add(card.id);
-        if (!cosmeticSeen.handIds.has(card.id)) {
+      el.playerHand.querySelectorAll("[data-hand-id]").forEach((node) => {
+        const id = node.getAttribute("data-hand-id");
+        next.add(id);
+        if (!cosmeticSeen.handIds.has(id)) {
           node.classList.add("card-deal");
           node.style.animationDelay = (fresh * 32) + "ms";
           fresh += 1;
         }
-        if (state.drawnCardSource && card.id === state.drawnCardId) {
+        if (state.drawnCardSource && id === state.drawnCardId) {
           node.dataset.drawn = state.drawnCardSource;
         }
       });
@@ -2009,10 +3213,8 @@
     function decorateMeldCards(analysis) {
       const meldById = new Map();
       analysis.melds.forEach((meld) => meld.cards.forEach((card) => meldById.set(card.id, meld.type)));
-      el.playerHand.querySelectorAll(".card").forEach((node, i) => {
-        const card = state.playerHand[i];
-        if (!card) return;
-        const type = meldById.get(card.id);
+      el.playerHand.querySelectorAll("[data-hand-id]").forEach((node) => {
+        const type = meldById.get(node.getAttribute("data-hand-id"));
         if (type) node.dataset.meld = type;
         else delete node.dataset.meld;
       });
@@ -2038,6 +3240,26 @@
 
     function renderOpponentCards() {
       const count = state.aiHand.length;
+      if (state.roundOver && count > 0) {
+        // Round over: the bot's hand turns face-up. Only the first render of each round end flips.
+        const freshReveal = cosmeticSeen.revealRound !== state.round;
+        cosmeticSeen.revealRound = state.round;
+        el.opponentCards.innerHTML = state.aiHand
+          .map((card) => createCardHtml(card, false, false, 'data-hand-id="' + card.id + '"'))
+          .join("");
+        if (freshReveal && motionOn()) {
+          el.opponentCards.querySelectorAll(".card").forEach((node, i) => {
+            node.classList.add("card-flip");
+            node.style.animationDelay = Motion.staggerDelay(
+              i,
+              Presentation.REVEAL_STAGGER_STEP_MS,
+              Presentation.REVEAL_STAGGER_CAP_MS
+            ) + "ms";
+          });
+        }
+        el.aiMeta.textContent = count + " revealed";
+        return;
+      }
       el.aiMeta.textContent = count + " cards";
       let html = "";
       for (let i = 0; i < count; i += 1) {
@@ -2073,10 +3295,31 @@
     function renderPlayerHand() {
       sortPlayerHand();
       const interactive = state.turn === "player" && !state.roundOver;
-      el.playerHand.innerHTML = state.playerHand
-        .map((card) => createCardHtml(card, interactive, card.id === state.selectedCardId))
-        .join("");
+      // A full re-render would drop keyboard focus; remember the focused card and restore it below.
+      const focusedId = el.playerHand.contains(document.activeElement)
+        ? document.activeElement.getAttribute("data-card-id")
+        : null;
+      const groups = Meld
+        ? Meld.groupHandForDisplay(analyzeHand(state.playerHand))
+        : [{ kind: "deadwood", label: "Deadwood", cards: state.playerHand.slice() }];
+      const count = state.playerHand.length;
+      let at = 0;
+      el.playerHand.innerHTML = groups.map((group) => {
+        const cards = group.cards.map((card) => {
+          const tilt = Meld ? Meld.fanTransform(at, count, { maxTilt: 7, arc: 7 }) : { rotate: 0, lift: 0 };
+          const drop = group.kind === "deadwood" ? 6 : 0;
+          at += 1;
+          const fan = ` style="--fr:${tilt.rotate}deg;--fy:${tilt.lift + drop}px;--fan-z:${at}"`;
+          return createCardHtml(card, interactive, card.id === state.selectedCardId, `data-hand-id="${card.id}"${fan}`);
+        }).join("");
+        return `<div class="hand-group hand-group--${group.kind}" data-kind="${group.kind}"><span class="hand-group-label" aria-hidden="true">${group.label}</span>${cards}</div>`;
+      }).join("");
+      if (focusedId) {
+        const again = el.playerHand.querySelector('[data-card-id="' + focusedId + '"]');
+        if (again) again.focus({ preventScroll: true });
+      }
       decoratePlayerHand();
+      layoutHand();
     }
 
     function formatMeld(meld) {
@@ -2093,7 +3336,7 @@
     function renderMeldPreview() {
       const analysis = analyzeHand(state.playerHand);
       const selected = getSelectedCard();
-      el.deadwoodValue.textContent = String(analysis.deadwoodScore);
+      setCounter(el.deadwoodValue, analysis.deadwoodScore);
       const lines = [];
       if (analysis.melds.length > 0) {
         lines.push('<span class="meld-label">Best melds</span>' + analysis.melds.map(formatMeldChip).join(""));
@@ -2111,6 +3354,11 @@
     }
 
     function writeStatusBox(target, statusText, summaryText) {
+      // The status box is a live region. Re-rendering the same text (every card tap re-renders the table)
+      // must not rewrite it, or screen readers repeat the last status on each tap.
+      const key = String(statusText || "") + "\u0001" + String(summaryText || "");
+      if (target.dataset.key === key) return;
+      target.dataset.key = key;
       target.textContent = "";
       const statusLabel = document.createElement("strong");
       statusLabel.textContent = "Status:";
@@ -2125,6 +3373,7 @@
 
     function setMessage(text, summary) {
       state.message = text;
+      pushLog(text);
       if (summary !== undefined) state.roundSummary = summary;
       const mood = messageTone(state.message, state.roundSummary);
       el.messageBox.dataset.tone = mood.tone;
@@ -2189,6 +3438,9 @@
       el.ginBtn.disabled = !canDiscard || !selected || sameAsTakenDiscard || !selectedAnalysis ||
         selectedAnalysis.deadwoodScore !== 0;
       el.newRoundBtn.disabled = state.initialized && (!state.roundOver || state.matchOver);
+      // Ready states: the glow appears only when the move would actually be legal.
+      el.knockBtn.classList.toggle("is-ready", !el.knockBtn.disabled);
+      el.ginBtn.classList.toggle("is-ready", !el.ginBtn.disabled);
     }
 
     function renderAll() {
@@ -2199,6 +3451,9 @@
       renderMeldPreview();
       updateActionButtons();
       setMessage(state.message, state.roundSummary);
+      renderLog();
+      renderDrawerStats();
+      syncCoach();
       persistTable();
     }
 
@@ -2239,13 +3494,18 @@
     function selectCard(cardId) {
       if (!state.playerHand.some((card) => card.id === cardId)) return;
       state.selectedCardId = state.selectedCardId === cardId ? null : cardId;
+      playSfx("select");
       renderAll();
     }
 
     function dealRound() {
       clearAiTurnTimeout();
+      clearPresentation();
       focusPausedAiTurn = false;
       state.round += 1;
+      state.humanDiscardTakes = [];
+      state.aiTurns = 0;
+      if (state.round === 1) coachIndex = 0;
       state.dealer = state.round === 1 ? "player" : (state.dealer === "player" ? "ai" : "player");
       state.stock = shuffleDeck(createDeck());
       state.discard = [];
@@ -2270,6 +3530,7 @@
       state.turn = state.dealer === "player" ? "ai" : "player";
       state.phase = "draw";
       state.message = state.turn === "player" ? "Round started. Your draw." : "Round started. AI draws first.";
+      playSfx("deal");
       saveStats();
       renderAll();
       if (state.turn === "ai") {
@@ -2286,33 +3547,44 @@
           return;
         }
         state.message = "No stock left. Draw discard or start a new round.";
+        playSfx("invalid");
         renderAll();
         return;
       }
+      const fromRect = rectOf("#stockPile .back-card");
       state.playerHand.push(drawn);
       sortPlayerHand();
       state.phase = "discard";
       state.drawnCardId = drawn.id;
       state.drawnCardSource = "stock";
       state.message = "You drew from stock. Select a discard.";
+      playSfx("drawStock");
       renderAll();
+      flyTo(fromRect, '#playerHand [data-hand-id="' + drawn.id + '"]', backFaceHtml());
+      coachEvent("drawn");
     }
 
     function playerDrawFromDiscard() {
       if (!isPlayerDrawPhase()) return;
+      const fromRect = rectOf("#discardPile .card");
       const drawn = state.discard.pop();
       if (!drawn) {
         state.message = "Discard pile is empty.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       state.playerHand.push(drawn);
+      state.humanDiscardTakes.push(drawn);
       sortPlayerHand();
       state.phase = "discard";
       state.drawnCardId = drawn.id;
       state.drawnCardSource = "discard";
       state.message = "You drew " + cardText(drawn) + " from discard.";
+      playSfx("drawDiscard");
       renderAll();
+      flyTo(fromRect, '#playerHand [data-hand-id="' + drawn.id + '"]', createCardHtml(drawn, false, false));
+      coachEvent("drawn");
     }
 
     function endPlayerTurnNormal(discardCard) {
@@ -2323,6 +3595,7 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.message = "You discarded " + cardText(discardCard) + ". AI turn...";
+      playSfx("discard");
       renderAll();
       queueAiTurn(580);
     }
@@ -2332,16 +3605,21 @@
       const selected = getSelectedCard();
       if (!selected) {
         state.message = "Pick a card first.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
         state.message = "You cannot draw discard and toss the same card immediately.";
+        playSfx("invalid");
         renderAll();
         return;
       }
+      const fromRect = rectOf('#playerHand [data-card-id="' + selected.id + '"]');
       state.playerHand = handAfterDiscard(state.playerHand, selected.id);
       endPlayerTurnNormal(selected);
+      flyTo(fromRect, "#discardPile .card", createCardHtml(selected, false, false));
+      coachEvent("discarded");
     }
 
     function playerKnockOrGin(requestGin) {
@@ -2349,11 +3627,13 @@
       const selected = getSelectedCard();
       if (!selected) {
         state.message = "Select your discard first.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (state.drawnCardSource === "discard" && state.drawnCardId === selected.id) {
         state.message = "Cannot discard the same up-card this turn.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2362,11 +3642,13 @@
       const analysis = analyzeHand(reduced);
       if (requestGin && analysis.deadwoodScore !== 0) {
         state.message = "Not gin yet. Need deadwood of 0.";
+        playSfx("invalid");
         renderAll();
         return;
       }
       if (!requestGin && analysis.deadwoodScore > TURDRUMMY_BALANCE.knockLimit) {
         state.message = "Too much deadwood to knock.";
+        playSfx("invalid");
         renderAll();
         return;
       }
@@ -2421,6 +3703,13 @@
       score -= deadwoodValue * TURDRUMMY_BALANCE.ai.highCardDumpBias;
       if (analysis.deadwoodScore === 0) score -= 18;
       if (deadwoodValue >= 10 && !cardLikelyUsefulForMeld(remaining, card)) score -= 1.6;
+      // Memory play: a card whose rank/run-neighbors are already dead in the
+      // discard pile is unlikely to complete an opponent's set or run, so
+      // favor discarding it (ties/near-ties only — deadwood still dominates).
+      score -= discardSafetyBonus(state.discard, card) * TURDRUMMY_BALANCE.ai.discardSafetyBias * aiProfile().discardSafetyBias;
+      // Feed risk: discarding a card the human's visible takes are building on hands them a set or run.
+      score += feedRiskPenalty(card);
+      if (AIApi) score = AIApi.applyScoreNoise(score, aiProfile().scoreNoise, Math.random);
 
       return {
         card,
@@ -2454,7 +3743,16 @@
       if (diff >= 20) threshold = aiCfg.knockWhenBehindBy;
       else if (diff <= -20) threshold = aiCfg.knockWhenAheadBy;
       if (state.round >= aiCfg.takeDiscardLateRound) threshold += 1;
-      return Math.max(3, Math.min(TURDRUMMY_BALANCE.knockLimit, threshold));
+      const base = Math.max(3, Math.min(TURDRUMMY_BALANCE.knockLimit, threshold));
+      if (!AIApi) return base;
+      // Level offset plus stock pressure (a nearly empty stock late in a round favours knocking).
+      return AIApi.computeKnockThreshold({
+        baseThreshold: base,
+        profile: aiProfile(),
+        aiTurns: state.aiTurns,
+        stockCount: state.stock.length,
+        knockLimit: TURDRUMMY_BALANCE.knockLimit
+      });
     }
 
     function aiShouldTakeDiscard(topCard) {
@@ -2569,10 +3867,12 @@
       const defenderBase = analyzeHand(defenderHand);
       let defenderDeadwood = defenderBase.deadwoodScore;
       let layoffText = "";
+      let layoffCards = [];
 
       if (!isGin) {
         const layoff = applyLayoff(defenderHand, knockerMelds);
         defenderDeadwood = layoff.deadwoodScore;
+        layoffCards = layoff.laidOffCards.slice();
         if (layoff.laidOffCards.length > 0) {
           layoffText = " Layoff: " + layoff.laidOffCards.map(cardText).join(", ") + ".";
         }
@@ -2626,15 +3926,32 @@
       state.roundSummary = summary + " Knocker deadwood: " + knockerDeadwood + ", defender deadwood: " + defenderDeadwood + ".";
       saveStats();
       renderAll();
+      // Big-moment presentation runs after the state is final; the score above never waits on it.
+      pushLog(summary);
+      armPresentation({ showTrophyAfter: state.matchOver });
+      showRoundBanner(roundBannerModel(knocker, awardedTo, isGin, points, knockerDeadwood, defenderDeadwood));
+      runLayoffFlights(defender, knocker, layoffCards);
+    }
+
+    // The bot's move as two flights: its draw lands in its fan, its discard leaves the fan for the pile.
+    function flyAiMove(drawFrom, drawFace, discardFrom, discardFace) {
+      if (!motionOn()) return;
+      flyTo(drawFrom, "#opponentCards", drawFace);
+      later(() => flyTo(discardFrom, "#discardPile .card", discardFace), 320);
     }
 
     function aiTurn() {
       if (state.roundOver || state.turn !== "ai") return;
       state.phase = "draw";
+      state.aiTurns += 1;
 
       let drawn = null;
       let source = "stock";
       const topDiscard = state.discard[state.discard.length - 1];
+      // Rects are read before any state change, while the DOM still shows the table as the player left it.
+      const stockRect = rectOf("#stockPile .back-card");
+      const discardRect = rectOf("#discardPile .card");
+      const fanRect = fanOriginRect();
       if (aiShouldTakeDiscard(topDiscard)) {
         drawn = state.discard.pop();
         source = "discard";
@@ -2651,6 +3968,8 @@
         return;
       }
 
+      const drawRect = source === "discard" ? discardRect : stockRect;
+      const drawFace = source === "discard" ? createCardHtml(drawn, false, false) : backFaceHtml();
       state.aiHand.push(drawn);
       sortAiHand();
       const bestDiscard = chooseBestDiscard(state.aiHand, source === "discard" ? drawn.id : null);
@@ -2665,6 +3984,7 @@
       state.discard.push(bestDiscard.card);
       sortAiHand();
       state.lastAiAction = "AI drew from " + source + ", discarded " + cardText(bestDiscard.card) + ".";
+      const discardFace = createCardHtml(bestDiscard.card, false, false);
 
       const deadwood = bestDiscard.analysis.deadwoodScore;
       const ginNow = deadwood === 0;
@@ -2672,11 +3992,13 @@
       const knockNow = deadwood <= knockThreshold;
       if (ginNow) {
         finishRound("ai", true, deadwood, bestDiscard.analysis.melds);
+        flyAiMove(drawRect, drawFace, fanRect, discardFace);
         return;
       }
       if (knockNow) {
         state.lastAiAction += " AI knocks at " + deadwood + " deadwood.";
         finishRound("ai", false, deadwood, bestDiscard.analysis.melds);
+        flyAiMove(drawRect, drawFace, fanRect, discardFace);
         return;
       }
 
@@ -2686,12 +4008,20 @@
       state.drawnCardId = null;
       state.drawnCardSource = null;
       state.message = state.lastAiAction + " Your draw.";
+      playSfx("aiMove");
       renderAll();
+      flyAiMove(drawRect, drawFace, fanRect, discardFace);
     }
 
     function resetMatch() {
       clearAiTurnTimeout();
+      clearPresentation();
+      hideTrophy();
+      roundLog.length = 0;
+      coachIndex = 0;
       focusPausedAiTurn = false;
+      state.humanDiscardTakes = [];
+      state.aiTurns = 0;
       state.playerScore = 0;
       state.aiScore = 0;
       state.round = 0;
@@ -2742,9 +4072,25 @@
     function closeGuide() {
       el.guideOverlay.classList.remove("show");
       if (window.Suite && Suite.guide) Suite.guide.mark("turdrummy.html");
+      syncCoach();
       if (!state.roundOver && state.turn === "ai") {
         queueAiTurn(180);
       }
+    }
+
+    // Arrow keys move between hand cards in the order they are shown (Home/End jump to the ends).
+    function handleHandKeys(event) {
+      const buttons = Array.from(el.playerHand.querySelectorAll("button.card-button"));
+      const at = buttons.indexOf(event.target);
+      if (at === -1) return;
+      let to = null;
+      if (event.key === "ArrowRight") to = at + 1;
+      else if (event.key === "ArrowLeft") to = at - 1;
+      else if (event.key === "Home") to = 0;
+      else if (event.key === "End") to = buttons.length - 1;
+      if (to === null) return;
+      event.preventDefault();
+      if (buttons[to]) buttons[to].focus();
     }
 
     function startFirstRoundIfNeeded() {
@@ -2769,12 +4115,14 @@
       el.sortSuitBtn.addEventListener("click", () => {
         state.playerSortMode = "suit";
         sortPlayerHand();
+        playSfx("select");
         renderAll();
       });
 
       el.sortRankBtn.addEventListener("click", () => {
         state.playerSortMode = "rank";
         sortPlayerHand();
+        playSfx("select");
         renderAll();
       });
 
@@ -2803,16 +4151,106 @@
         closeGuide();
         startFirstRoundIfNeeded();
       });
+
+      if (el.soundToggleBtn) {
+        el.soundToggleBtn.addEventListener("click", () => {
+          if (!audioPlayer) return;
+          audioPlayer.unlock();
+          audioPlayer.setEnabled(!audioPlayer.isEnabled());
+          updateSoundToggleLabel();
+          if (audioPlayer.isEnabled()) playSfx("select");
+        });
+      }
+
+      el.playerHand.addEventListener("keydown", handleHandKeys);
+      el.difficultyBtn.addEventListener("click", cycleDifficulty);
+      el.coachNextBtn.addEventListener("click", () => coachEvent("next"));
+      el.coachSkipBtn.addEventListener("click", finishCoach);
+      el.trophyRematchBtn.addEventListener("click", () => {
+        hideTrophy();
+        resetMatch();
+        startFirstRoundIfNeeded();
+      });
+      el.trophyKeepBtn.addEventListener("click", hideTrophy);
+      el.roundBanner.addEventListener("click", () => skipPresentation());
+      document.addEventListener("keydown", (event) => {
+        if (event.code !== "Space" || !presentationActive) return;
+        event.preventDefault();
+        skipPresentation();
+      });
     }
+
+    function updateSoundToggleLabel() {
+      if (!el.soundToggleBtn) return;
+      const on = audioPlayer ? audioPlayer.isEnabled() : false;
+      el.soundToggleBtn.textContent = on ? "\u{1F50A} Sound On" : "\u{1F508} Sound Off";
+      el.soundToggleBtn.setAttribute("aria-pressed", String(on));
+    }
+
+    function playMoment(kind) {
+      const Moments = window.TurdRummyMoments;
+      if (!Moments || typeof Moments.buildTableState !== "function") {
+        throw new Error("TurdRummyMoments unavailable");
+      }
+      clearPresentation();
+      hideTrophy();
+      finishCoach();
+      el.guideOverlay.classList.remove("show");
+      roundLog.length = 0;
+      const table = Moments.buildTableState(kind);
+      state.initialized = true;
+      state.round = 4;
+      state.dealer = "player";
+      state.roundOver = false;
+      state.matchOver = false;
+      state.playerHand = table.playerHand.slice();
+      state.aiHand = table.aiHand.slice();
+      state.playerScore = table.playerScore;
+      state.aiScore = table.aiScore;
+      state.stock = [{ suit: "C", rank: 4, id: "C4-moment" }];
+      state.discard = [{ suit: "S", rank: 2, id: "S2-moment" }];
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.roundSummary = "";
+      state.lastAiAction = "QA moment: " + kind + ".";
+      state.message = state.lastAiAction;
+      const knockerHand = table.knocker === "player" ? state.playerHand : state.aiHand;
+      const analysis = analyzeHand(knockerHand);
+      finishRound(table.knocker, table.isGin, analysis.deadwoodScore, analysis.melds);
+    }
+
+    window.TurdRummyDev = {
+      playMoment,
+      skipPresentation,
+      auditHandCornerIndices() {
+        return window.TurdRummyHandVisibility
+          ? TurdRummyHandVisibility.auditHandCornerIndices(el.playerHand)
+          : { ok: false, failures: [{ id: "", reason: "visibility module missing" }] };
+      },
+      relayoutHand() {
+        layoutHand();
+      }
+    };
 
     function init() {
       loadStats();
       bindEvents();
+      updateSoundToggleLabel();
+      updateDifficultyLabel();
+      // The stats drawer starts open on wide screens and folded on phones, where the table needs the room.
+      if (window.matchMedia) el.tableDrawer.open = window.matchMedia("(min-width: 921px)").matches;
+      window.addEventListener("resize", scheduleHandLayout);
       const restoredTable = tryRestoreTable();
       if (!restoredTable) renderAll();
       const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen("turdrummy.html"));
       if (!skipGuide) openGuide();
       else el.guideOverlay.classList.remove("show");
+      syncCoach();
+      const momentParam = new URLSearchParams(window.location.search).get("moment");
+      if (momentParam) playMoment(momentParam);
     }
 
     window.addEventListener("blur", suspendAiForBackground);
@@ -2821,6 +4259,17 @@
       if (document.hidden) suspendAiForBackground();
       else resumeAiFromBackground();
     });
+
+    (function setupAudioUnlock() {
+      if (!audioPlayer) return;
+      const unlockOnce = () => {
+        audioPlayer.unlock();
+        window.removeEventListener("pointerdown", unlockOnce);
+        window.removeEventListener("keydown", unlockOnce);
+      };
+      window.addEventListener("pointerdown", unlockOnce, { once: true });
+      window.addEventListener("keydown", unlockOnce, { once: true });
+    })();
 
     init();
   
@@ -2836,10 +4285,13 @@
   _boss.className = 'tr-boss';
   _boss.textContent = '🚽';
   _boss.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(_boss);
+  // Round 3: the mascot lives in the bot's zone header and the meter in the hand header, so
+  // neither floats over the cards or the status line on a phone.
+  const _bossHost = document.querySelector('.zone--opponent .zone-header') || document.body;
+  _bossHost.appendChild(_boss);
   const _bubble = document.createElement('div');
   _bubble.className = 'tr-bubble';
-  document.body.appendChild(_bubble);
+  _bossHost.appendChild(_bubble);
   let _bubbleT = null;
   function bossSay(text, dur) {
     if (!text) return;
@@ -2868,7 +4320,7 @@
   const _meter = document.createElement('div');
   _meter.className = 'tr-deadwood';
   _meter.innerHTML = '<div class="label">Your deadwood</div><div class="bar"><div class="fill" id="trDeadwoodFill" style="width:0%"></div></div><div id="trDeadwoodValue">—</div>';
-  document.body.appendChild(_meter);
+  (document.querySelector('.zone--hand .zone-header') || document.body).appendChild(_meter);
 
   function updateDeadwood() {
     try {
@@ -2959,6 +4411,107 @@
   }
 
   setTimeout(() => { bossMood('🤖', 'bounce'); bossSay('Sit. Sort. Suffer.', 2400); }, 700);
+})();
+
+// ============================================================
+// === TurdRummy SFX + haptics + reduced-motion-aware confetti =
+// ============================================================
+(function () {
+  'use strict';
+
+  const prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  let canvas = null;
+  let ctx2d = null;
+  let particles = [];
+  let rafId = null;
+  let lastTs = 0;
+
+  function resizeCanvas() {
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function ensureCanvas() {
+    if (canvas || prefersReducedMotion) return canvas;
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.position = 'fixed';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '9996';
+    canvas.style.pointerEvents = 'none';
+    document.body.appendChild(canvas);
+    ctx2d = canvas.getContext('2d');
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return canvas;
+  }
+
+  function drawFrame(ts) {
+    if (!canvas || !ctx2d) return;
+    const dt = lastTs ? (ts - lastTs) / 1000 : 0;
+    lastTs = ts;
+    particles = window.TurdRummyFX ? TurdRummyFX.stepParticles(particles, dt) : [];
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    for (const p of particles) {
+      ctx2d.save();
+      ctx2d.translate(p.x, p.y);
+      ctx2d.rotate(p.rot);
+      ctx2d.fillStyle = p.color;
+      ctx2d.globalAlpha = Math.max(0, Math.min(1, p.life));
+      ctx2d.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx2d.restore();
+    }
+    if (particles.length > 0) {
+      rafId = window.requestAnimationFrame(drawFrame);
+    } else {
+      rafId = null;
+      lastTs = 0;
+    }
+  }
+
+  // One confetti burst for a round win, a bigger one for a match win. No-op
+  // (and no canvas is ever created) when the player prefers reduced motion.
+  function celebrate(big) {
+    if (prefersReducedMotion || !window.TurdRummyFX) return;
+    if (!ensureCanvas()) return;
+    const originX = window.innerWidth / 2;
+    const originY = window.innerHeight * 0.32;
+    particles = particles.concat(TurdRummyFX.createBurst(big ? 90 : 48, originX, originY));
+    if (!rafId) rafId = window.requestAnimationFrame(drawFrame);
+  }
+
+  function haptic(pattern) {
+    try {
+      if (window.navigator && typeof window.navigator.vibrate === 'function') {
+        window.navigator.vibrate(pattern);
+      }
+    } catch (err) { /* cosmetic only */ }
+  }
+
+  // Wrap setMessage a third time (same pattern the mascot block above uses)
+  // so big-moment audio/haptics/confetti react to the same status text
+  // without threading extra calls through every scoring branch.
+  if (typeof setMessage === 'function') {
+    const prevSetMessage = setMessage;
+    setMessage = function (text, summary) {
+      prevSetMessage(text, summary);
+      try {
+        const t = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
+        const last = setMessage._lastFx || ''; if (t === last) return; setMessage._lastFx = t;
+        if (t.includes('match winner: player'))        { playSfx('matchWin'); celebrate(true); haptic([20, 40, 20, 40, 60]); }
+        else if (t.includes('match winner: ai'))       { playSfx('matchLose'); haptic(30); }
+        else if (t.includes('you called gin'))         { playSfx('gin'); celebrate(false); haptic([18, 40, 24]); }
+        else if (t.includes('ai called gin'))          { playSfx('roundLose'); haptic(12); }
+        else if (t.includes('undercut! you'))          { playSfx('undercut'); celebrate(false); haptic([14, 30, 14]); }
+        else if (t.includes('undercut! ai'))           { playSfx('roundLose'); haptic(12); }
+        else if (t.includes('you knocked'))            { playSfx('knock'); haptic(18); }
+        else if (t.includes('ai knocked'))             { playSfx('roundLose'); haptic(10); }
+        else if (t.includes('round is a draw'))        { playSfx('invalid'); }
+      } catch (err) { /* cosmetic only */ }
+    };
+  }
 })();
 
 </script>
