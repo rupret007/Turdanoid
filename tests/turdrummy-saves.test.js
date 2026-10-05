@@ -32,292 +32,292 @@ const sharedSuite = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');
 const B3821B4_CONTINUE_ENTRY = {
   updatedAt: 1791178508301,
   snapshot: {
-    "kind": "turdrummy",
-    "v": 1,
-    "round": 1,
-    "dealer": "player",
-    "turn": "player",
-    "phase": "draw",
-    "playerScore": 0,
-    "aiScore": 0,
-    "stock": [
+    'kind': 'turdrummy',
+    'v': 1,
+    'round': 1,
+    'dealer': 'player',
+    'turn': 'player',
+    'phase': 'draw',
+    'playerScore': 0,
+    'aiScore': 0,
+    'stock': [
       {
-        "id": "D3-15",
-        "suit": "D",
-        "rank": 3
+        'id': 'D3-15',
+        'suit': 'D',
+        'rank': 3
       },
       {
-        "id": "S1-39",
-        "suit": "S",
-        "rank": 1
+        'id': 'S1-39',
+        'suit': 'S',
+        'rank': 1
       },
       {
-        "id": "S5-43",
-        "suit": "S",
-        "rank": 5
+        'id': 'S5-43',
+        'suit': 'S',
+        'rank': 5
       },
       {
-        "id": "C12-11",
-        "suit": "C",
-        "rank": 12
+        'id': 'C12-11',
+        'suit': 'C',
+        'rank': 12
       },
       {
-        "id": "D5-17",
-        "suit": "D",
-        "rank": 5
+        'id': 'D5-17',
+        'suit': 'D',
+        'rank': 5
       },
       {
-        "id": "D9-21",
-        "suit": "D",
-        "rank": 9
+        'id': 'D9-21',
+        'suit': 'D',
+        'rank': 9
       },
       {
-        "id": "D13-25",
-        "suit": "D",
-        "rank": 13
+        'id': 'D13-25',
+        'suit': 'D',
+        'rank': 13
       },
       {
-        "id": "H1-26",
-        "suit": "H",
-        "rank": 1
+        'id': 'H1-26',
+        'suit': 'H',
+        'rank': 1
       },
       {
-        "id": "S12-50",
-        "suit": "S",
-        "rank": 12
+        'id': 'S12-50',
+        'suit': 'S',
+        'rank': 12
       },
       {
-        "id": "H12-37",
-        "suit": "H",
-        "rank": 12
+        'id': 'H12-37',
+        'suit': 'H',
+        'rank': 12
       },
       {
-        "id": "C1-0",
-        "suit": "C",
-        "rank": 1
+        'id': 'C1-0',
+        'suit': 'C',
+        'rank': 1
       },
       {
-        "id": "C5-4",
-        "suit": "C",
-        "rank": 5
+        'id': 'C5-4',
+        'suit': 'C',
+        'rank': 5
       },
       {
-        "id": "S7-45",
-        "suit": "S",
-        "rank": 7
+        'id': 'S7-45',
+        'suit': 'S',
+        'rank': 7
       },
       {
-        "id": "C9-8",
-        "suit": "C",
-        "rank": 9
+        'id': 'C9-8',
+        'suit': 'C',
+        'rank': 9
       },
       {
-        "id": "D10-22",
-        "suit": "D",
-        "rank": 10
+        'id': 'D10-22',
+        'suit': 'D',
+        'rank': 10
       },
       {
-        "id": "H10-35",
-        "suit": "H",
-        "rank": 10
+        'id': 'H10-35',
+        'suit': 'H',
+        'rank': 10
       },
       {
-        "id": "D8-20",
-        "suit": "D",
-        "rank": 8
+        'id': 'D8-20',
+        'suit': 'D',
+        'rank': 8
       },
       {
-        "id": "C11-10",
-        "suit": "C",
-        "rank": 11
+        'id': 'C11-10',
+        'suit': 'C',
+        'rank': 11
       },
       {
-        "id": "H7-32",
-        "suit": "H",
-        "rank": 7
+        'id': 'H7-32',
+        'suit': 'H',
+        'rank': 7
       },
       {
-        "id": "C4-3",
-        "suit": "C",
-        "rank": 4
+        'id': 'C4-3',
+        'suit': 'C',
+        'rank': 4
       },
       {
-        "id": "D7-19",
-        "suit": "D",
-        "rank": 7
+        'id': 'D7-19',
+        'suit': 'D',
+        'rank': 7
       },
       {
-        "id": "H8-33",
-        "suit": "H",
-        "rank": 8
+        'id': 'H8-33',
+        'suit': 'H',
+        'rank': 8
       },
       {
-        "id": "S2-40",
-        "suit": "S",
-        "rank": 2
+        'id': 'S2-40',
+        'suit': 'S',
+        'rank': 2
       },
       {
-        "id": "C7-6",
-        "suit": "C",
-        "rank": 7
+        'id': 'C7-6',
+        'suit': 'C',
+        'rank': 7
       },
       {
-        "id": "C3-2",
-        "suit": "C",
-        "rank": 3
+        'id': 'C3-2',
+        'suit': 'C',
+        'rank': 3
       },
       {
-        "id": "D11-23",
-        "suit": "D",
-        "rank": 11
+        'id': 'D11-23',
+        'suit': 'D',
+        'rank': 11
       },
       {
-        "id": "C2-1",
-        "suit": "C",
-        "rank": 2
+        'id': 'C2-1',
+        'suit': 'C',
+        'rank': 2
       },
       {
-        "id": "S3-41",
-        "suit": "S",
-        "rank": 3
+        'id': 'S3-41',
+        'suit': 'S',
+        'rank': 3
       },
       {
-        "id": "H9-34",
-        "suit": "H",
-        "rank": 9
+        'id': 'H9-34',
+        'suit': 'H',
+        'rank': 9
       },
       {
-        "id": "H3-28",
-        "suit": "H",
-        "rank": 3
+        'id': 'H3-28',
+        'suit': 'H',
+        'rank': 3
       },
       {
-        "id": "S6-44",
-        "suit": "S",
-        "rank": 6
+        'id': 'S6-44',
+        'suit': 'S',
+        'rank': 6
       }
     ],
-    "discard": [
+    'discard': [
       {
-        "id": "H13-38",
-        "suit": "H",
-        "rank": 13
+        'id': 'H13-38',
+        'suit': 'H',
+        'rank': 13
       }
     ],
-    "playerHand": [
+    'playerHand': [
       {
-        "id": "C13-12",
-        "suit": "C",
-        "rank": 13
+        'id': 'C13-12',
+        'suit': 'C',
+        'rank': 13
       },
       {
-        "id": "D1-13",
-        "suit": "D",
-        "rank": 1
+        'id': 'D1-13',
+        'suit': 'D',
+        'rank': 1
       },
       {
-        "id": "D4-16",
-        "suit": "D",
-        "rank": 4
+        'id': 'D4-16',
+        'suit': 'D',
+        'rank': 4
       },
       {
-        "id": "D6-18",
-        "suit": "D",
-        "rank": 6
+        'id': 'D6-18',
+        'suit': 'D',
+        'rank': 6
       },
       {
-        "id": "D12-24",
-        "suit": "D",
-        "rank": 12
+        'id': 'D12-24',
+        'suit': 'D',
+        'rank': 12
       },
       {
-        "id": "H4-29",
-        "suit": "H",
-        "rank": 4
+        'id': 'H4-29',
+        'suit': 'H',
+        'rank': 4
       },
       {
-        "id": "H5-30",
-        "suit": "H",
-        "rank": 5
+        'id': 'H5-30',
+        'suit': 'H',
+        'rank': 5
       },
       {
-        "id": "H6-31",
-        "suit": "H",
-        "rank": 6
+        'id': 'H6-31',
+        'suit': 'H',
+        'rank': 6
       },
       {
-        "id": "H11-36",
-        "suit": "H",
-        "rank": 11
+        'id': 'H11-36',
+        'suit': 'H',
+        'rank': 11
       },
       {
-        "id": "S4-42",
-        "suit": "S",
-        "rank": 4
+        'id': 'S4-42',
+        'suit': 'S',
+        'rank': 4
       }
     ],
-    "aiHand": [
+    'aiHand': [
       {
-        "id": "C6-5",
-        "suit": "C",
-        "rank": 6
+        'id': 'C6-5',
+        'suit': 'C',
+        'rank': 6
       },
       {
-        "id": "C8-7",
-        "suit": "C",
-        "rank": 8
+        'id': 'C8-7',
+        'suit': 'C',
+        'rank': 8
       },
       {
-        "id": "C10-9",
-        "suit": "C",
-        "rank": 10
+        'id': 'C10-9',
+        'suit': 'C',
+        'rank': 10
       },
       {
-        "id": "D2-14",
-        "suit": "D",
-        "rank": 2
+        'id': 'D2-14',
+        'suit': 'D',
+        'rank': 2
       },
       {
-        "id": "H2-27",
-        "suit": "H",
-        "rank": 2
+        'id': 'H2-27',
+        'suit': 'H',
+        'rank': 2
       },
       {
-        "id": "S8-46",
-        "suit": "S",
-        "rank": 8
+        'id': 'S8-46',
+        'suit': 'S',
+        'rank': 8
       },
       {
-        "id": "S9-47",
-        "suit": "S",
-        "rank": 9
+        'id': 'S9-47',
+        'suit': 'S',
+        'rank': 9
       },
       {
-        "id": "S10-48",
-        "suit": "S",
-        "rank": 10
+        'id': 'S10-48',
+        'suit': 'S',
+        'rank': 10
       },
       {
-        "id": "S11-49",
-        "suit": "S",
-        "rank": 11
+        'id': 'S11-49',
+        'suit': 'S',
+        'rank': 11
       },
       {
-        "id": "S13-51",
-        "suit": "S",
-        "rank": 13
+        'id': 'S13-51',
+        'suit': 'S',
+        'rank': 13
       }
     ],
-    "selectedCardId": "D6-18",
-    "drawnCardId": null,
-    "drawnCardSource": null,
-    "playerSortMode": "suit",
-    "message": "AI drew from discard, discarded K♥. Your draw.",
-    "roundSummary": "",
-    "lastAiAction": "AI drew from discard, discarded K♥.",
-    "roundOver": false,
-    "matchOver": false,
-    "initialized": true
+    'selectedCardId': 'D6-18',
+    'drawnCardId': null,
+    'drawnCardSource': null,
+    'playerSortMode': 'suit',
+    'message': 'AI drew from discard, discarded K♥. Your draw.',
+    'roundSummary': '',
+    'lastAiAction': 'AI drew from discard, discarded K♥.',
+    'roundOver': false,
+    'matchOver': false,
+    'initialized': true
   }
 };
 
@@ -332,8 +332,8 @@ function bootWithSave(stored) {
     pretendToBeVisual: true,
     url: 'http://localhost/turdrummy.html',
     beforeParse(window) {
-      for (const src of coreSources) window.eval(src);
-      for (const [key, value] of Object.entries(stored)) window.localStorage.setItem(key, value);
+      for (const src of coreSources) {window.eval(src);}
+      for (const [key, value] of Object.entries(stored)) {window.localStorage.setItem(key, value);}
       window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
       window.Element.prototype.getBoundingClientRect = function () {
         return { left: 10, top: 10, width: 50, height: 70, right: 60, bottom: 80, x: 10, y: 10 };

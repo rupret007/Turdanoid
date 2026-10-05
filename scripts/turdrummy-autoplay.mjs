@@ -211,7 +211,9 @@ function createHarness({ browser, base, opts, cfg, name, outDir, report }) {
   const trace = (line) => { if (opts.trace) console.log(`[trace ${name}] ${line}`); };
 
   async function shot(tag) {
-    if (shots >= MAX_SHOTS) return;
+    // End-of-match and failure frames always get saved; routine frames stop at the cap.
+    const important = /trophy|match-over|stuck/.test(tag);
+    if (shots >= MAX_SHOTS && !important) return;
     shots += 1;
     seq += 1;
     await mkdir(outDir, { recursive: true });
