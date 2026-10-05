@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#121a11">
@@ -496,53 +496,62 @@
       .hud-card[data-dir] .v::before,.card-btn,.suit-btn,.btn{transition:none}
     }
 
-    /* === ce mascot + bonus banners === */
-    .ce-boss{position:fixed;right:max(12px,env(safe-area-inset-right) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9999;width:74px;height:74px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;font-size:54px;line-height:1;filter:drop-shadow(0 6px 16px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(150,255,197,.22));transition:transform .25s cubic-bezier(.2,1.6,.4,1);user-select:none}
-    .ce-boss.bounce{animation:ceBounce .55s ease}
-    .ce-boss.shake{animation:ceShake .35s ease}
-    .ce-boss.cheer{animation:ceCheer .7s ease}
-    @keyframes ceBounce{0%{transform:translateY(0)}30%{transform:translateY(-12px) scale(1.08)}60%{transform:translateY(2px) scale(.96)}100%{transform:translateY(0) scale(1)}}
-    @keyframes ceShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-4deg)}50%{transform:translateX(5px) rotate(4deg)}75%{transform:translateX(-3px) rotate(-2deg)}}
-    @keyframes ceCheer{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}50%{transform:translateY(-12px) rotate(8deg)}75%{transform:translateY(-6px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)}}
-    .ce-bubble{position:fixed;right:max(98px,env(safe-area-inset-right) + 92px);bottom:max(104px,env(safe-area-inset-bottom) + 96px);z-index:9998;max-width:240px;padding:10px 14px;font:600 13px/1.35 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#0f1914;background:var(--suite-paper,linear-gradient(180deg,#fffaf0,#fbe7c1));border:1px solid rgba(255,215,106,.7);border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 12px 28px rgba(0,0,0,.4),0 0 16px rgba(255,215,106,.18),inset 0 1px 0 #fff;opacity:0;transform:translateY(8px) scale(.92);transform-origin:bottom right;transition:opacity .22s ease,transform .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;letter-spacing:.01em}
-    .ce-bubble::after{content:"";position:absolute;right:-6px;bottom:14px;width:14px;height:14px;background:linear-gradient(135deg,#eef2ee,#ffffff);border-right:1px solid rgba(255,215,106,.7);border-bottom:1px solid rgba(255,215,106,.7);transform:rotate(-45deg)}
-    .ce-bubble.show{opacity:1;transform:translateY(0) scale(1)}
-    .ce-banner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:9997;font:900 clamp(20px,5vw,28px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 24px rgba(255,215,106,.95),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.06em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;white-space:nowrap;padding:6px 18px;border-radius:999px;background:radial-gradient(ellipse at 50% 50%,rgba(10,24,16,.72),rgba(10,24,16,0) 72%)}
-    .ce-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-    .ce-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7)}
-
-    /* Bot avatar tiles in the existing opp cards */
-    .ce-avatar{display:inline-block;width:32px;height:32px;line-height:30px;text-align:center;font-size:21px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.12),rgba(0,0,0,.55));border:1px solid rgba(255,255,255,.2);margin-right:6px;vertical-align:middle;box-shadow:0 0 0 2px rgba(0,0,0,.25),0 4px 10px rgba(0,0,0,.35);transition:transform .25s ease,filter .25s ease,box-shadow .3s ease,border-color .3s ease}
-    .opp-card.active .ce-avatar{border-color:rgba(255,236,170,.95);box-shadow:0 0 0 2px rgba(255,215,106,.85),0 0 18px rgba(255,215,106,.55),0 4px 10px rgba(0,0,0,.35);animation:suiteGlowPulse 1.4s ease-in-out infinite}
-    .opp-card.danger .ce-avatar{border-color:rgba(255,140,140,.8);box-shadow:0 0 0 2px rgba(255,110,110,.55),0 0 14px rgba(255,90,90,.4),0 4px 10px rgba(0,0,0,.35)}
-    .ce-avatar.angry{filter:hue-rotate(-25deg) saturate(1.4);transform:rotate(-12deg) scale(1.15)}
-    .ce-avatar.happy{transform:translateY(-3px) scale(1.12)}
-    .ce-avatar.shock{transform:scale(1.25);filter:brightness(1.3)}
-    .ce-action-cue{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.5);z-index:9996;font:900 clamp(28px,7vw,46px) 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#fff;text-shadow:0 0 28px rgba(255,215,106,.95),0 0 6px rgba(255,215,106,.6),0 4px 14px rgba(0,0,0,.7);text-align:center;letter-spacing:.1em;pointer-events:none;opacity:0;transition:opacity .25s ease,transform .35s cubic-bezier(.2,1.6,.4,1);text-transform:uppercase;padding:10px 26px;border-radius:999px;background:radial-gradient(ellipse at 50% 50%,rgba(10,24,16,.78),rgba(10,24,16,0) 74%);white-space:nowrap}
-    .ce-action-cue.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-    @media (prefers-reduced-motion: reduce) {
-    .opp-card.active .ce-avatar { animation: none; }
-  }
+    /* Round 1: The Dirty Deck card room. Geometry stays local to this game. */
+    :root{--ink:#f2f2df;--muted:#bdcfc8;--accent:#a3e5c0;--gold:#eeca79;--pile-w:88px;--pile-h:124px;--hand-w:82px;--hand-h:116px}
+    body{align-items:flex-start;padding:24px 20px;background:radial-gradient(ellipse at 50% 0,#214839 0,transparent 58%),repeating-linear-gradient(90deg,transparent 0 119px,#ffffff02 120px),#091b19}
+    body::before,body::after{display:none}
+    .shell{width:min(1100px,100%);padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;overflow:visible}
+    .shell::before{display:none}.shell.threat-edge{box-shadow:none}.shell.play-bump{animation:none}
+    .brand-kicker{font-size:10px;letter-spacing:.24em;color:var(--gold);font-weight:800;margin-bottom:3px}
+    .topbar{padding:0 4px;margin-bottom:16px}.topbar h1{font-size:clamp(24px,3vw,35px);letter-spacing:-.045em;text-transform:none;color:var(--ink);background:none;filter:none;position:relative}
+    .topbar h1::before{content:none}.brand-eight{display:inline-grid;place-items:center;margin-left:7px;font-size:22px;transform:rotate(10deg);border:1px solid #ecd9a8;border-radius:5px;width:27px;height:35px;color:var(--gold)}
+    .topbar p{font-size:12px;letter-spacing:.02em;margin-top:6px}.btn{min-height:44px;border-radius:8px;box-shadow:none;touch-action:manipulation}.actions{gap:6px}.actions .btn{font-size:11px;padding:8px 10px}
+    .hud{grid-template-columns:repeat(7,minmax(0,1fr));gap:0;background:#071a17;border:1px solid #52756866;border-radius:10px;margin:0 0 12px;padding:9px 0}
+    .hud-card,.hud-card.hot,.hud-card[data-turn="you"]{border:0;border-right:1px solid #ffffff15;background:none;box-shadow:none;border-radius:0;padding:0 6px}
+    .hud-card:last-child{border:0}.hud-card::after{display:none}.hud-card .k{opacity:1;color:#9aafa5;font-size:9px;letter-spacing:.12em}.hud-card .v{font-size:13px;margin-top:4px;text-shadow:none!important}
+    .hud-card .v.flash{animation:none}.hud-card[data-dir] .v::before{width:16px;height:16px;border:0;box-shadow:none}.hud-card.hot.pressure{animation:none}
+    .layout{display:flex;flex-direction:column;gap:14px;min-width:0}.table{width:100%;margin:0;padding:16px 22px 18px;border-radius:32px;border:7px solid #213831;outline:1px solid #a98a4766;min-height:0;gap:10px;box-shadow:inset 0 0 0 2px #b89b5466,inset 0 0 65px #001d19aa,0 18px 40px #0005;background:radial-gradient(ellipse at 50% 40%,#28705a,#174938 62%,#103c32)}
+    .table::before{inset:6px;border:1px dashed #d8ce8733;border-radius:21px;background:repeating-linear-gradient(25deg,#ffffff03 0 1px,transparent 1px 4px);z-index:-1}.table::after{display:none}
+    .turn-banner{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 3px;min-height:43px}.turn-banner strong{display:block;font-size:18px;letter-spacing:-.02em;color:#fff2ca}.turn-banner span#turnHint{display:block;font-size:12px;color:#dae8dc;margin-top:3px}.flow-badge{font-size:29px;color:var(--gold);width:42px;height:42px;border:1px solid #eeca7966;border-radius:50%;text-align:center;line-height:38px;flex-shrink:0}
+    .status{order:3;min-height:32px;padding:6px 10px;font-size:12px;border:0;border-radius:6px;background:#061e1b77;box-shadow:none;backdrop-filter:none;color:#d8e5d9;animation:none!important}.status::before{display:none}.status.hype{background:#061e1b77;box-shadow:none;color:#fff0c8}
+    .arena{height:348px;position:relative;flex-shrink:0}.opponents{display:contents}.opp-card{position:absolute;width:150px;display:flex;flex-direction:column;align-items:center;padding:8px 8px 0;border:1px solid transparent;border-radius:16px;background:transparent;box-shadow:none;overflow:visible;transition:background .2s,border-color .2s}
+    #oppCard1{left:3%;top:92px}#oppCard2{left:50%;top:0;transform:translateX(-50%)}#oppCard3{right:3%;top:92px}
+    .opp-card::before{display:none}.opp-card.active{background:#0b3128aa;border-color:#eeca7988;box-shadow:0 0 20px #eeca7915;transform:none}#oppCard2.active{transform:translateX(-50%)}.opp-card.active::after{content:"THINKING";font-size:8px;letter-spacing:.1em;top:-10px;left:50%;right:auto;transform:translateX(-50%);animation:none;white-space:nowrap}
+    .opp-card.danger{box-shadow:none;border-color:#ffad8e88}.opp-name{font-size:13px;margin-top:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis}.opp-meta{font-size:10px;margin-top:2px;white-space:nowrap}.opp-score{font-size:10px;color:#e7ce98;margin-top:3px}.ce-avatar{width:54px;height:54px;margin:0;border:1px solid #dbd0a544;background:#142f2c;display:block;overflow:hidden;box-shadow:0 4px 9px #0004}.ce-avatar svg{width:100%;height:100%;display:block}.opp-card.active .ce-avatar{animation:none;border-color:#eeca79;box-shadow:0 0 0 2px #eeca7933}
+    .opp-cards{height:48px;width:100%;position:relative;padding:0;margin-top:5px;display:block}.mini-back{position:absolute;left:calc(50% - 14px);top:0;width:28px;height:39px;margin:0;transform-origin:50% 120%;border-radius:4px;background:repeating-linear-gradient(45deg,#d3b86d33 0 1px,transparent 1px 5px),#173b35;box-shadow:inset 0 0 0 2px #dfd9b9,0 2px 4px #0008}.mini-back::after{content:"8";color:#eeca79;font-size:17px;font-family:Georgia,serif;font-weight:bold}
+    .table-stamp{position:absolute;left:50%;top:156px;transform:translate(-50%,-50%) rotate(-5deg);border:1px solid #dbe3b71a;border-radius:50%;width:340px;height:185px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#dbe3b71a;pointer-events:none}.table-stamp b{font-size:24px;letter-spacing:.13em}.table-stamp span{font-size:9px;letter-spacing:.3em;margin-top:8px}
+    .pile-row{position:absolute;left:50%;top:154px;transform:translateX(-50%);display:flex;gap:28px;width:max-content}.pile{padding:0;gap:4px;min-height:0}.pile h3{font-size:9px;letter-spacing:.16em;text-shadow:none}.pile h3::before,.pile h3::after{display:none}.pile-stack{margin:3px 0 4px}.pile-meta{font-size:10px;background:#092f2588;box-shadow:none;padding:3px 8px}.draw-back:not(:disabled){animation:none}.draw-back::after{content:"DIRTY DECK";font-size:6px;letter-spacing:.1em;bottom:12px}.draw-back{font-size:30px}
+    .suit-row{position:absolute;bottom:0;left:50%;transform:translateX(-50%);display:flex;gap:5px}.suit-chip{font-size:10px;padding:5px 9px;white-space:nowrap;border-color:#d4d1a633;background:#103c3266;box-shadow:none}.suit-chip.active{box-shadow:none;transform:none}
+    .hand-wrap{border:0;border-top:1px solid #d4d1a63d;border-radius:0;background:transparent;box-shadow:none;padding:10px 0 0}.hand-head{margin:0;gap:8px}.hand-head strong{font-size:11px;letter-spacing:.12em;white-space:nowrap;color:#fff0c8}.hand-head strong::before{content:none}.hand-head span{border:0;background:none;padding:0;font-size:11px}.hand-head strong span{font-size:12px}.hand-head #handRisk{margin-left:auto;color:#d9e5d9}.hand-head .btn{min-height:28px;font-size:10px;padding:4px 7px;border-color:#c6dbc344;color:#d9e5d9}.selection-note{display:block;font-size:11px;color:#bdd4c5;margin:5px 0 0;min-height:15px}
+    .hand-rail{padding:18px 7px 10px;min-height:148px;gap:10px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#b6cead55 transparent;touch-action:pan-x pan-y;scroll-snap-type:x proximity}.card-btn{scroll-snap-align:start;animation:none;font-size:16px}.card-btn.playable{animation:none;box-shadow:0 0 0 2px #a3e5c0,0 7px 10px #001d1980;transform:translateY(-3px)}.card-btn:not(.playable){opacity:1;filter:saturate(.65) brightness(.83)}.card-btn.selected,.card-btn.selected:hover:not(:disabled){transform:translateY(-9px);box-shadow:0 0 0 3px #eeca79,0 10px 16px #001d1980}.card-btn .center,.pile-card .center{font-size:34px}.card-btn>div:first-child,.pile-card>div:first-child,.card-btn .small,.pile-card .small{font-size:17px}.card-btn[data-face]:not([data-face=""])::after,.pile-card[data-face]:not([data-face=""])::after{font-size:7px;padding:3px 6px;bottom:8px;transform:translateX(-50%);letter-spacing:.04em}
+    .action-dock{order:2;margin:0;padding:0;position:static;background:none;border:0;box-shadow:none;grid-template-columns:1.6fr 1fr .8fr 1fr;gap:8px}.action-dock .btn{font-size:13px;min-height:46px;letter-spacing:0}.btn.hot{background:linear-gradient(#f2d896,#eac16a);border-color:#ffe4a5;box-shadow:0 3px 0 #987033}.btn:disabled{opacity:.4}
+    .sidebar{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0}.panel{border-radius:10px;background:#071a1788;border-color:#bdd4c526;padding:12px;box-shadow:none}.panel summary{cursor:pointer;font-size:12px;color:#dfebdd;min-height:24px;line-height:24px}.panel summary span{float:right;font-size:10px;color:#aabdac}.panel ul,.panel .history{margin-top:12px}.standings-panel{grid-column:1/-1}.panel h3{font-size:10px;color:#e4d1a1;letter-spacing:.16em;border:0;margin:0 0 10px;padding:0}#standingsText{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.score-line{display:flex;justify-content:space-between;gap:4px}.score-line strong{color:#e6ce92}.score-meter{height:4px;background:#ffffff15;border-radius:4px;margin-top:6px;overflow:hidden}.score-meter i{height:100%;display:block;background:#8bc8a7;border-radius:4px}.score-entry:first-child .score-meter i{background:#eeca79}#statsText{font-size:11px;color:#aabdac}
+    .table-event{position:absolute;top:104px;left:50%;transform:translateX(-50%);z-index:8;background:#092c25;border:1px solid #eeca7988;box-shadow:0 4px 12px #0003;color:#ffe0a0;border-radius:7px;padding:7px 12px;text-align:center;white-space:nowrap;pointer-events:none;font-size:12px;opacity:0;transition:opacity .15s}.table-event.show{opacity:1}.table-event b{letter-spacing:.07em}.table-event small{display:block;font-size:10px;color:#d6e7d7;margin-top:3px}
+    .overlay{z-index:10020;background:#061714ed;overflow:auto;padding:20px}.overlay-card{width:min(520px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;padding:26px;border-radius:18px;border-color:#eeca7966;background:radial-gradient(ellipse at 50% 0,#204a3b,transparent 70%),#102922;box-shadow:0 25px 90px #0008}.overlay-card h2{font-size:25px;letter-spacing:-.035em;text-transform:none;color:#f4ecd3;text-shadow:none}.overlay-card p{font-size:13px;line-height:1.6}.overlay-card p strong{color:#f2dfa8}.overlay-actions{gap:9px;margin-top:18px}.overlay-actions .btn{flex:1;font-size:12px;white-space:nowrap}.guide-brand{font-family:Georgia,serif;font-size:50px;color:var(--gold);line-height:1;display:flex;align-items:center;gap:12px;margin-bottom:14px}.guide-brand span{font:700 10px/1.5 'Trebuchet MS',sans-serif;letter-spacing:.23em;max-width:130px}.guide-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:20px 0}.guide-cards>div{border:1px solid #e3dab9;border-radius:8px;background:linear-gradient(135deg,#fffae7,#dedfc9);color:#143c2f;padding:12px 5px 10px;text-align:center;box-shadow:0 6px 12px #0003;transform:rotate(-3deg)}.guide-cards>div:nth-child(even){transform:rotate(3deg)}.guide-cards b{font:700 34px Georgia,serif;display:block}.guide-cards span{font-size:8px;font-weight:bold;letter-spacing:.07em;display:block;margin:5px 0}.guide-cards small{font-size:9px;line-height:1.4;display:block}.guide-cards>div:last-child{background:linear-gradient(140deg,#bde4d4,#e3c4e3,#f2d393)}.guide-keys{font-size:10px!important;color:#b7cabd}.guide-scoring{border-top:1px solid #ffffff1c;padding-top:12px}
+    #suitChooser .overlay-card{text-align:center}.suit-grid{width:276px;max-width:100%;height:290px;position:relative;display:block;margin:8px auto 18px}.suit-btn{position:absolute;width:88px;height:92px;min-height:0;gap:3px;border-radius:17px;padding:8px}.suit-btn[data-suit="S"]{top:0;left:calc(50% - 44px)}.suit-btn[data-suit="H"]{right:0;top:98px}.suit-btn[data-suit="D"]{bottom:0;left:calc(50% - 44px)}.suit-btn[data-suit="C"]{left:0;top:98px}.suit-btn .suit-name{font-size:9px;opacity:1;letter-spacing:.06em}.suit-btn .suit-glyph{font-size:30px}.suit-count{font-size:9px;color:#234436}.suit-btn.recommended{box-shadow:0 0 0 3px #eeca79,0 5px 16px #0004}.wheel-center{position:absolute;top:112px;left:calc(50% - 30px);width:60px;height:60px;line-height:58px;font-family:Georgia,serif;font-size:48px;color:#eeca79;border:1px solid #eeca7955;border-radius:50%}
+    button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #fff2b8;outline-offset:4px}.card-btn:focus-visible{outline-color:#fff2b8;outline-offset:3px}.ce-skip{position:fixed;top:-90px;left:12px;background:#ffe2a3;color:#172c22;padding:12px;z-index:11000}.ce-skip:focus{top:12px}
+    @media(min-width:761px){.hand-rail{justify-content:safe center}.table{padding-top:18px}.arena{margin:0 30px}.hand-wrap{margin:0 35px}.action-dock{margin:0 35px}.status{margin:0 35px}}
+    @media(max-width:760px){body{padding:12px 10px}.shell{width:100%;padding:0;border-radius:0}.topbar{flex-wrap:nowrap;gap:8px;margin:0 0 12px}.topbar>div:first-child{min-width:0}.topbar h1{font-size:26px;white-space:nowrap}.brand-kicker{font-size:8px;letter-spacing:.18em}.brand-eight{font-size:18px;width:22px;height:29px;margin-left:2px}.topbar p{font-size:10px}.mobile-menu{width:auto;align-self:center;flex-shrink:0}.mobile-menu details{padding:4px 8px;border-radius:8px;background:#0a241d;position:relative}.mobile-menu summary{font-size:10px;letter-spacing:0;min-height:34px;line-height:22px}.mobile-menu-actions{position:absolute;right:0;top:100%;width:250px;z-index:30;padding:10px;background:#0a241d;border:1px solid #809780;border-radius:8px}.hud{padding:8px 0;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:9px}.hud-card:nth-child(4),.hud-card:nth-child(6),.hud-card:nth-child(7){display:none}.hud-card:nth-child(5){border:0}.hud-card .k{font-size:8px}.hud-card .v{font-size:11px}.table{border-width:4px;padding:12px 10px 10px;border-radius:22px;gap:8px}.table::before{border-radius:15px;inset:5px}.turn-banner strong{font-size:16px}.turn-banner span#turnHint{font-size:10px}.flow-badge{width:32px;height:32px;font-size:25px;line-height:28px}.arena{height:300px}.opp-card{width:100px;padding:6px 1px 0;border-radius:12px}#oppCard1{left:0;top:15px}#oppCard3{right:0;top:15px}#oppCard2{top:0}.ce-avatar{width:43px;height:43px}.opp-name{font-size:12px}.opp-meta,.opp-score{font-size:9px}.opp-cards{height:37px;transform:scale(.75)}.mini-back{width:23px;height:33px;left:calc(50% - 11px)}.table-stamp{width:220px;height:170px;top:182px}.table-stamp b{font-size:14px}.table-stamp span{font-size:7px}.pile-row{top:139px;gap:28px}.pile h3{font-size:8px}.pile-meta{font-size:9px}.pile-stack{margin:2px 0 3px}:root{--pile-w:73px;--pile-h:101px;--hand-w:74px;--hand-h:106px}.suit-row{gap:4px;bottom:0}.suit-chip{font-size:9px;padding:4px 7px}.hand-rail{min-height:137px;padding:16px 5px 10px;gap:9px}.hand-head strong{font-size:10px;letter-spacing:.04em}.hand-head #handRisk{font-size:10px}.hand-head .btn{font-size:9px}.selection-note{font-size:10px}.action-dock{gap:5px}.action-dock .btn{min-height:46px;font-size:11px;padding:8px 3px}.status{font-size:10px;min-height:30px;line-height:1.4}.card-btn>div:first-child,.pile-card>div:first-child,.card-btn .small,.pile-card .small{font-size:15px}.card-btn[data-face]:not([data-face=""])::after,.pile-card[data-face]:not([data-face=""])::after{font-size:6px;padding:3px 5px}.sidebar{gap:8px}.panel{padding:10px}.panel summary{font-size:11px}.panel summary span{display:none}#standingsText{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}.score-line{font-size:11px}.table-event{top:114px;font-size:10px;padding:5px 10px}.table-event small{font-size:9px}}
+    @media(max-width:360px){body{padding:10px 7px}.topbar h1{font-size:23px}.topbar p{font-size:9px}.brand-eight{display:none}.table{padding-left:7px;padding-right:7px}.arena{height:291px}.opp-card{width:83px}.ce-avatar{width:37px;height:37px}.opp-cards{transform:scale(.8);margin-top:0}.opp-name{font-size:11px}.opp-meta,.opp-score{font-size:8px}#oppCard1,#oppCard3{top:10px}.pile-row{top:131px}.suit-chip{font-size:8px;padding:4px 6px}.hand-head{gap:4px}.hand-head #handRisk{font-size:9px}.overlay{padding:12px}.overlay-card{padding:18px;max-height:calc(100dvh - 24px)}.overlay-card h2{font-size:23px}.guide-cards{gap:5px}.guide-cards small{font-size:8px}.guide-cards span{font-size:7px}.suit-grid{width:254px}.suit-btn{width:80px}.suit-btn[data-suit="S"],.suit-btn[data-suit="D"]{left:calc(50% - 40px)}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.card-btn.selected,.card-btn.playable,.card-btn:hover:not(:disabled){transform:none}.table-event{transition:none}.opp-card.active{transform:none}#oppCard2.active{transform:translateX(-50%)}}
 </style>
 </head>
-<body class="suite-ambient suite-no-zoom">
-  <div class="overlay" id="welcomeGuide">
+<body class="suite-ambient">
+  <a class="ce-skip" href="#playTable">Skip to card table</a>
+  <div class="overlay" id="welcomeGuide" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <div class="overlay-card">
-      <h2>Crappy Eights</h2>
-      <p>Uno-style chaos using a standard deck: match suit/rank, weaponize action cards, and dump your hand first.</p>
-      <ul>
-        <li><strong>2:</strong> Next player draws 2 and loses turn.</li>
-        <li><strong>J:</strong> Skip next player.</li>
-        <li><strong>Q:</strong> Reverse direction.</li>
-        <li><strong>8:</strong> Wild card, choose any suit.</li>
-      </ul>
-      <ul>
-        <li><strong>Play Selected:</strong> P</li>
-        <li><strong>Draw:</strong> D</li>
-        <li><strong>Smart Move:</strong> A</li>
-        <li><strong>Sound Toggle:</strong> M</li>
-      </ul>
-      <p>Win rounds to score points from opponents' leftover cards. First to 200 wins the match.</p>
+      <div class="guide-brand" aria-hidden="true">8<span>THE SEWER SOCIAL CLUB</span></div>
+      <h2 id="guideTitle">Good cards. Dirty tricks.</h2>
+      <p>Empty your hand before three sewer regulars do. Match the pile's <strong>suit or rank</strong>, or throw a wild 8.</p>
+      <div class="guide-cards" aria-label="Action cards">
+        <div><b>2</b><span>DRAW TWO</span><small>Next player draws 2<br>and misses a turn</small></div>
+        <div><b>J</b><span>SKIP</span><small>Next player<br>sits this one out</small></div>
+        <div><b>Q</b><span>REVERSE</span><small>Send play in<br>the other direction</small></div>
+        <div><b>8</b><span>WILD</span><small>Pick the suit.<br>Change your luck.</small></div>
+      </div>
+      <p><strong>Tap a lit card, then Play Selected.</strong> Tap it again to play quickly. No match? Draw once, then play or pass.</p>
+      <p class="guide-scoring">First to <strong>200 points</strong> wins. Round winners collect everyone's leftovers. An unplayed 8 costs 50!</p>
+      <p class="guide-keys">← → Browse cards · P Play · D Draw · A Smart · M Sound</p>
       <div class="overlay-actions">
         <button class="btn hot" id="quickStartBtn">Quick Start</button>
         <button class="btn subtle" id="closeGuideBtn">Review Then Start</button>
@@ -550,7 +559,7 @@
     </div>
   </div>
 
-  <div class="overlay" id="roundOverlay">
+  <div class="overlay" id="roundOverlay" role="dialog" aria-modal="true" aria-labelledby="roundTitle">
     <div class="overlay-card" id="roundOverlayCard" data-tone="victory">
       <div class="overlay-kicker" id="roundKicker">Round Riot</div>
       <h2 id="roundTitle">Round Over</h2>
@@ -567,24 +576,25 @@
     </div>
   </div>
 
-  <div class="overlay" id="suitChooser">
+  <div class="overlay" id="suitChooser" role="dialog" aria-modal="true" aria-labelledby="suitTitle">
     <div class="overlay-card">
-      <h2>Choose Wild Suit</h2>
+      <div class="overlay-kicker">Change the current</div><h2 id="suitTitle">Choose Wild Suit</h2>
       <p>Your 8 is wild. Pick the suit that helps your hand.</p>
-      <div class="suit-grid">
+      <div class="suit-grid"><div class="wheel-center" aria-hidden="true">8</div>
         <button class="suit-btn" data-suit="S"><span class="suit-name">Spades</span> <span class="suit-glyph">&#9824;</span></button>
         <button class="suit-btn red" data-suit="H"><span class="suit-name">Hearts</span> <span class="suit-glyph">&#9829;</span></button>
         <button class="suit-btn red" data-suit="D"><span class="suit-name">Diamonds</span> <span class="suit-glyph">&#9830;</span></button>
         <button class="suit-btn" data-suit="C"><span class="suit-name">Clubs</span> <span class="suit-glyph">&#9827;</span></button>
       </div>
+      <button class="btn subtle" id="cancelSuitBtn">Back to hand</button>
     </div>
   </div>
 
   <div class="shell">
     <div class="topbar">
       <div>
-        <h1>Crappy Eights</h1>
-        <p>Crazy Eights meets Uno pacing, except this table believes hygiene is for quitters.</p>
+        <div class="brand-kicker">THE SEWER SOCIAL CLUB</div><h1>Crappy Eights<span class="brand-eight" aria-hidden="true">8</span></h1>
+        <p>Good cards. Dirty tricks. First to 200.</p>
       </div>
       <div class="actions">
         <button class="btn subtle" onclick="location.href='./'">&#x1F3E0; Hub</button>
@@ -616,15 +626,19 @@
     </div>
 
     <div class="layout">
-      <section class="table" data-motto="House Rule: groan loudly every time somebody throws an 8">
-        <div class="status" id="statusText">Deal in progress. Match suit, sling chaos, and pretend this smell is strategic.</div>
+      <section class="table" id="playTable" tabindex="-1" aria-label="Crappy Eights card table">
+        <div class="turn-banner"><div><strong id="turnPrompt">Your move</strong><span id="turnHint">Match suit or rank.</span></div><span id="flowBadge" class="flow-badge">↻</span></div>
+        <div class="status" id="statusText" role="status" aria-live="polite" aria-atomic="true">Deal in progress. Match suit, sling chaos, and pretend this smell is strategic.</div>
+        <div class="arena">
+        <div class="table-stamp" aria-hidden="true"><b>THE DIRTY DECK</b><span>EST. IN THE SEWER</span></div>
+        <div class="table-event" id="tableEvent" aria-hidden="true"></div>
         <div class="opponents">
           <div class="opp-card" id="oppCard1"><div class="opp-name" id="oppName1">Bot 1</div><div class="opp-meta" id="oppMeta1">Cards: 0</div><div class="opp-cards" id="oppBacks1"></div></div>
           <div class="opp-card" id="oppCard2"><div class="opp-name" id="oppName2">Bot 2</div><div class="opp-meta" id="oppMeta2">Cards: 0</div><div class="opp-cards" id="oppBacks2"></div></div>
           <div class="opp-card" id="oppCard3"><div class="opp-name" id="oppName3">Bot 3</div><div class="opp-meta" id="oppMeta3">Cards: 0</div><div class="opp-cards" id="oppBacks3"></div></div>
         </div>
         <div class="pile-row">
-          <div class="pile"><h3>Draw Pile</h3><div class="pile-stack draw-stack"><button class="draw-back" id="drawPileBtn" title="Draw">&#x1F4A9;</button></div><div class="pile-meta" id="drawMeta">0 cards</div></div>
+          <div class="pile"><h3>Draw Pile</h3><div class="pile-stack draw-stack"><button class="draw-back" id="drawPileBtn" title="Draw" aria-label="Draw one card">&#x1F4A9;</button></div><div class="pile-meta" id="drawMeta">0 cards</div></div>
           <div class="pile"><h3>Discard Pile</h3><div class="pile-stack discard-stack"><div class="pile-card" id="discardCard"><div>A</div><div class="center">&#9827;</div><div class="small">A<br>&#9827;</div></div></div><div class="pile-meta" id="discardMeta">Top card</div></div>
         </div>
         <div class="suit-row" id="suitRow">
@@ -633,9 +647,11 @@
           <div class="suit-chip" data-suit-chip="D">Diamonds &#9830;</div>
           <div class="suit-chip" data-suit-chip="C">Clubs &#9827;</div>
         </div>
+        </div>
         <div class="hand-wrap">
-          <div class="hand-head"><strong>Your Hand</strong><span id="selectionText">No card selected</span></div>
-          <div class="hand-rail" id="playerHand"></div>
+          <div class="hand-head"><strong>Your Hand <span id="handCount"></span></strong><span id="handRisk" title="Points opponents collect if they go out">0 pts at risk</span><button class="btn subtle" id="sortHandBtn">Sort: Suit</button></div>
+          <span id="selectionText" class="selection-note">No card selected</span>
+          <div class="hand-rail" id="playerHand" role="group" aria-label="Your cards. Arrow keys browse. Tap twice or press P to play."></div>
         </div>
         <div class="action-dock">
           <button class="btn hot" id="playBtn">Play Selected</button>
@@ -645,8 +661,7 @@
         </div>
       </section>
       <aside class="sidebar">
-        <div class="panel">
-          <h3><span class="h-ico">&#x1F4DC;</span>Quick Rules</h3>
+        <details class="panel"><summary>Quick Rules <span>2 · J · Q · 8</span></summary>
           <ul>
             <li>Match rank or suit with the top discard card.</li>
             <li>8 is wild: choose any suit.</li>
@@ -654,14 +669,32 @@
             <li>J skips next player, Q reverses direction.</li>
             <li>Winner gets points from everyone else's leftover cards.</li>
           </ul>
-        </div>
-        <div class="panel"><h3><span class="h-ico">&#x1F4DD;</span>Round Log</h3><div class="history" id="historyText">No plays yet.</div></div>
-        <div class="panel"><h3><span class="h-ico">&#x1F3C6;</span>Standings</h3><div id="standingsText">-</div><div style="margin-top:8px;opacity:.9;" id="statsText">Match stats loading...</div></div>
+        </details>
+        <details class="panel"><summary>Round Log <span>Every dirty trick</span></summary><div class="history" id="historyText">No plays yet.</div></details>
+        <div class="panel standings-panel"><h3><span class="h-ico">&#x1F3C6;</span>Race to 200</h3><div id="standingsText">-</div><div style="margin-top:8px;opacity:.9;" id="statsText">Match stats loading...</div></div>
       </aside>
     </div>
   </div>
 
+  <script src="games/crapeights-ai.js"></script>
+  <script src="games/crapeights-presentation.js"></script>
+  <script src="games/crapeights-table.js"></script>
   <script>
+    // Graceful base play if optional enhancement scripts are unavailable.
+    const CrapeightsAI = window.CrapeightsAI || {
+      createMemory: () => ({}), observe: () => {},
+      chooseCard: ({ playableCards }) => playableCards.find(card => card.rank !== '8') || playableCards[0],
+      chooseSuit: (hand, id) => ['S','H','D','C'].sort((a,b) => hand.filter(c => c.id !== id && c.suit === b).length - hand.filter(c => c.id !== id && c.suit === a).length)[0]
+    };
+    const CrapeightsPresentation = window.CrapeightsPresentation || {
+      createAudio: () => ({ unlock() {}, play() {}, syncMute() {} }), flyCard() {}, celebrate() {}, clearEffects() {}
+    };
+    const CrapeightsTable = window.CrapeightsTable || {
+      cardLabel: (card) => `${card.rank} of ${suitName(card.suit)}`,
+      handPoints: (hand) => hand.reduce((sum,card) => sum + cardPoints(card), 0),
+      fanLayout: () => [], focusIndex: (index,key,count) => (index + 1) % count,
+      turnHint: ({ human, name }) => ({ title: human ? 'Your move' : `${name} is thinking`, detail: 'Match suit or rank. Eights are wild.' })
+    };
     const MATCH_TARGET = 200;
     const STARTING_HAND = 7;
     const STORAGE = { stats: 'crapeightsStats', sound: 'crapeightsSoundOn_v1' };
@@ -737,7 +770,11 @@
     let focusSuspendedRound = false;
     let resumeHumanAutoPassAfterFocus = false;
     let soundEnabled = true;
-    let audioCtx = null;
+    const tableAudio = CrapeightsPresentation.createAudio({ readLocalEnabled: () => soundEnabled });
+    let aiMemory = CrapeightsAI.createMemory();
+    let sortMode = 'suit';
+    let eventTimer = null;
+    let dialogReturnFocus = null;
     let nextCardId = 1;
     let lastOverlay = null;
     let stats = readObject(STORAGE.stats, { matchesPlayed: 0, matchesWon: 0, roundsPlayed: 0, roundsWon: 0, bestRoundPoints: 0 });
@@ -769,48 +806,13 @@
       document.querySelectorAll('[data-sound-toggle]').forEach((btn) => { btn.textContent = soundEnabled ? '\u{1F50A} Sound On' : '\u{1F508} Sound Off'; });
     }
 
-    function ensureAudio() {
-      if (audioCtx) return audioCtx;
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return null;
-      try { audioCtx = new Ctx(); } catch (err) { audioCtx = null; }
-      return audioCtx;
-    }
-
-    function unlockAudio() {
-      if (!soundEnabled) return;
-      const ctx = ensureAudio();
-      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-    }
-
-    function playSfx(type) {
-      if (!soundEnabled) return;
-      const ctx = ensureAudio();
-      if (!ctx || ctx.state !== 'running') return;
-      const map = {
-        deal: [540, 0.08, 'triangle', 0.045], play: [470, 0.06, 'triangle', 0.035], draw: [290, 0.08, 'square', 0.035],
-        wild: [820, 0.1, 'triangle', 0.05], reverse: [680, 0.08, 'sawtooth', 0.046], skip: [360, 0.08, 'triangle', 0.038],
-        penalty: [170, 0.12, 'sawtooth', 0.048], win: [980, 0.16, 'triangle', 0.058], lose: [140, 0.18, 'sawtooth', 0.055]
-      };
-      const p = map[type] || map.play;
-      try {
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = p[2];
-        osc.frequency.setValueAtTime(p[0], now);
-        gain.gain.setValueAtTime(p[3], now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + p[1]);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + p[1]);
-      } catch (err) {}
-    }
+    function unlockAudio() { tableAudio.unlock(); }
+    function playSfx(type) { tableAudio.play(type); }
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
       saveSoundPref();
+      tableAudio.syncMute();
       updateSoundButtons();
       if (soundEnabled) {
         unlockAudio();
@@ -948,30 +950,53 @@
       if (ui.discardMeta) ui.discardMeta.textContent = top.rank === '8' ? `Wild -> ${suitName(activeSuit)}` : `Top: ${top.rank}${suitGlyph(top.suit)}`;
     }
 
+    function seatPortrait(index) {
+      const palettes = [['#d7b27c','#6b533e'],['#8dc999','#3f7962'],['#b9c4d3','#566f87']];
+      const [skin, shade] = palettes[index];
+      const ears = index === 0 ? '<circle cx="18" cy="21" r="11"/><circle cx="46" cy="21" r="11"/>' : index === 1 ? '<circle cx="19" cy="22" r="10"/><circle cx="45" cy="22" r="10"/>' : '<path d="M22 22 27 7 35 21 44 15 43 32Z"/>';
+      return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#102c26"/><path d="M7 64Q9 43 32 44Q55 43 57 64" fill="${shade}"/><g fill="${skin}">${ears}<ellipse cx="32" cy="33" rx="20" ry="19"/></g><path d="M13 30Q32 43 51 30L48 43Q32 54 16 43Z" fill="${shade}"/><ellipse cx="23" cy="30" rx="6" ry="7" fill="#ffefd0"/><ellipse cx="41" cy="30" rx="6" ry="7" fill="#ffefd0"/><circle cx="25" cy="31" r="2.4" fill="#152c26"/><circle cx="39" cy="31" r="2.4" fill="#152c26"/><path d="M26 39Q32 35 38 39L32 44Z" fill="#edbd80"/><path d="M24 47Q32 51 40 47" fill="none" stroke="#112b24" stroke-width="2"/><path d="M17 59 25 54 32 60 39 54 47 59" fill="none" stroke="#f4deb1" stroke-width="2"/></svg>`;
+    }
+
     function renderOpponent(index) {
       const player = players[index + 1];
       if (!player) return;
-      if (ui.oppNames[index]) ui.oppNames[index].textContent = player.name;
-      if (ui.oppMetas[index]) ui.oppMetas[index].textContent = `Cards: ${player.hand.length}${player.hand.length <= 2 ? ' (Danger)' : ''}`;
-      if (ui.oppCards[index]) ui.oppCards[index].classList.toggle('active', roundActive && currentPlayer === index + 1);
-      if (ui.oppCards[index]) ui.oppCards[index].classList.toggle('danger', player.hand.length <= 2);
-      if (ui.oppBacks[index]) {
-        const fakeCount = Math.min(8, Math.max(1, player.hand.length));
-        ui.oppBacks[index].innerHTML = '';
-        for (let i = 0; i < fakeCount; i++) {
-          const d = document.createElement('div');
-          d.className = 'mini-back';
-          ui.oppBacks[index].appendChild(d);
-        }
+      const seat = ui.oppCards[index];
+      if (!seat.querySelector('.ce-avatar')) {
+        const avatar = document.createElement('span');
+        avatar.className = 'ce-avatar'; avatar.id = 'ceAvatar' + index;
+        avatar.setAttribute('aria-hidden', 'true'); avatar.innerHTML = seatPortrait(index);
+        seat.prepend(avatar);
+        const score = document.createElement('div'); score.className = 'opp-score';
+        seat.insertBefore(score, ui.oppBacks[index]);
+      }
+      ui.oppNames[index].textContent = player.name;
+      ui.oppMetas[index].textContent = `${player.hand.length} card${player.hand.length === 1 ? '' : 's'}${player.hand.length <= 2 ? ' · DANGER' : ''}`;
+      seat.querySelector('.opp-score').textContent = `${player.score} / ${MATCH_TARGET} pts`;
+      seat.classList.toggle('active', roundActive && currentPlayer === index + 1);
+      seat.classList.toggle('danger', player.hand.length <= 2);
+      seat.setAttribute('aria-label', `${player.name}, ${player.hand.length} cards, ${player.score} points${currentPlayer === index + 1 ? ', current turn' : ''}`);
+      const backs = ui.oppBacks[index];
+      if (backs.dataset.count !== String(player.hand.length)) {
+        backs.replaceChildren(); backs.dataset.count = String(player.hand.length); backs.setAttribute('aria-hidden', 'true');
+        CrapeightsTable.fanLayout(player.hand.length).forEach(({ x, y, angle }) => {
+          const back = document.createElement('div'); back.className = 'mini-back';
+          back.style.transform = `translate(${x}px,${y}px) rotate(${angle}deg)`; backs.appendChild(back);
+        });
       }
     }
 
     function updateStandings() {
       if (ui.standingsText) {
-        ui.standingsText.textContent = '';
-        players.forEach((p, index) => {
-          if (index) ui.standingsText.appendChild(document.createElement('br'));
-          ui.standingsText.appendChild(document.createTextNode(`${p.name}: ${p.score} / ${MATCH_TARGET}`));
+        ui.standingsText.replaceChildren();
+        players.forEach((p) => {
+          const entry = document.createElement('div'); entry.className = 'score-entry';
+          const line = document.createElement('div'); line.className = 'score-line';
+          const name = document.createElement('span'); name.textContent = p.name;
+          const score = document.createElement('strong'); score.textContent = String(p.score);
+          line.append(name, score);
+          const meter = document.createElement('div'); meter.className = 'score-meter'; meter.setAttribute('aria-hidden', 'true');
+          const fill = document.createElement('i'); fill.style.width = `${Math.min(100, p.score / MATCH_TARGET * 100)}%`;
+          meter.append(fill); entry.append(line, meter); ui.standingsText.append(entry);
         });
       }
       if (ui.statsText) {
@@ -1008,7 +1033,7 @@
       if (ui.suitText) ui.suitText.dataset.suit = activeSuit;
       [ui.roundText, ui.turnText, ui.deckText, ui.suitText, ui.youCardsText, ui.leaderText].forEach((el) => {
         if (!el) return;
-        if (el.dataset.prev !== undefined && el.dataset.prev !== el.textContent) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+        if (el.dataset.prev !== undefined && el.dataset.prev !== el.textContent) el.classList.add('flash');
         el.dataset.prev = el.textContent;
       });
       if (ui.drawMeta) ui.drawMeta.textContent = `${deck.length} cards`;
@@ -1017,16 +1042,17 @@
         const selected = hand.find((c) => c.id === selectedCardId);
         ui.selectionText.textContent = selected ? `Selected: ${selected.rank}${suitGlyph(selected.suit)}` : 'No card selected';
       }
-      if (ui.drawPileBtn) ui.drawPileBtn.disabled = !isHumanTurn() || hasDrawnThisTurn || !!pendingWildCard;
+      if (ui.drawPileBtn) ui.drawPileBtn.disabled = !isHumanTurn() || hasDrawnThisTurn || !!pendingWildCard || onboardingOpen || focusSuspendedRound;
       updateSuitChips();
       updateStandings();
+      updateTableGuidance();
     }
 
     function updateActionButtons() {
       const hand = players[0] ? players[0].hand : [];
       const selected = hand.find((c) => c.id === selectedCardId);
       const selectedPlayable = !!selected && isPlayable(selected);
-      const humanTurn = isHumanTurn();
+      const humanTurn = isHumanTurn() && !onboardingOpen && !focusSuspendedRound;
       if (ui.playBtn) ui.playBtn.disabled = !humanTurn || !selectedPlayable || !!pendingWildCard;
       if (ui.drawBtn) ui.drawBtn.disabled = !humanTurn || hasDrawnThisTurn || !!pendingWildCard;
       if (ui.passBtn) ui.passBtn.disabled = !humanTurn || !hasDrawnThisTurn || !!pendingWildCard;
@@ -1037,31 +1063,42 @@
     function renderPlayerHand() {
       const hand = players[0] ? players[0].hand : [];
       if (!ui.playerHand) return;
-      ui.playerHand.innerHTML = '';
+      const focusId = document.activeElement?.dataset.cardId;
+      const scrollLeft = ui.playerHand.scrollLeft;
+      const existing = new Map([...ui.playerHand.querySelectorAll('[data-card-id]')].map(el => [Number(el.dataset.cardId), el]));
+      const ordered = [...hand].sort((a, b) => sortMode === 'suit'
+        ? SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank)
+        : RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank) || SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit));
+      const fragment = document.createDocumentFragment();
       let dealtInThisRender = 0;
-      hand.forEach((card) => {
-        const btn = document.createElement('button');
+      ordered.forEach((card) => {
+        const btn = existing.get(card.id) || document.createElement('button');
         const styleMeta = cardStyleMeta(card);
-        btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${isPlayable(card) ? ' playable suite-playable-pulse' : ''}${card.id === selectedCardId ? ' selected' : ''}`;
-        btn.dataset.face = styleMeta.face;
-        btn.dataset.badge = styleMeta.badge;
-        btn.dataset.suit = card.suit;
-        btn.dataset.rank = card.rank;
+        const playable = isPlayable(card);
+        const selected = card.id === selectedCardId;
+        btn.className = `card-btn${isRedSuit(card.suit) ? ' red' : ''}${playable ? ' playable' : ''}${selected ? ' selected' : ''}`;
+        btn.dataset.cardId = card.id; btn.dataset.face = styleMeta.face; btn.dataset.badge = styleMeta.badge;
+        btn.dataset.suit = card.suit; btn.dataset.rank = card.rank;
+        btn.setAttribute('aria-label', CrapeightsTable.cardLabel(card, playable, selected));
+        btn.setAttribute('aria-pressed', String(selected));
+        btn.setAttribute('aria-disabled', String(!isHumanTurn() || onboardingOpen || !!pendingWildCard || focusSuspendedRound));
         if (!dealtCardIds.has(card.id)) { dealtCardIds.add(card.id); btn.classList.add('dealt'); btn.style.animationDelay = `${dealtInThisRender++ * 45}ms`; }
-        btn.innerHTML = `<div>${card.rank}</div><div class="center">${suitGlyph(card.suit)}</div><div class="small">${card.rank}<br>${suitGlyph(card.suit)}</div>`;
-        btn.addEventListener('click', () => {
-          if (!isHumanTurn() || pendingWildCard) return;
-          selectedCardId = selectedCardId === card.id ? null : card.id;
-          updateAll();
-        });
-        ui.playerHand.appendChild(btn);
+        if (!existing.has(card.id)) {
+          btn.innerHTML = `<div aria-hidden="true">${card.rank}</div><div class="center" aria-hidden="true">${suitGlyph(card.suit)}</div><div class="small" aria-hidden="true">${card.rank}<br>${suitGlyph(card.suit)}</div>`;
+          btn.addEventListener('click', () => {
+            if (!isHumanTurn() || pendingWildCard || onboardingOpen || focusSuspendedRound) return;
+            unlockAudio();
+            if (selectedCardId === card.id && isPlayable(card)) { playSelectedCard(); return; }
+            selectedCardId = card.id;
+            if (!isPlayable(card)) setStatus(`Match ${suitName(activeSuit)} or ${topCard().rank}. That card cannot play yet.`, false);
+            updateAll();
+          });
+        }
+        fragment.appendChild(btn);
       });
-      if (hand.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'panel';
-        empty.textContent = 'No cards in hand.';
-        ui.playerHand.appendChild(empty);
-      }
+      ui.playerHand.replaceChildren(fragment);
+      if (focusId) ui.playerHand.querySelector(`[data-card-id="${focusId}"]`)?.focus({ preventScroll: true });
+      ui.playerHand.scrollLeft = scrollLeft;
     }
 
     function copyEightsCard(card) {
@@ -1101,6 +1138,7 @@
       if (!snap || snap.kind !== 'crapeights' || snap.v !== 1) return false;
       if (!Array.isArray(snap.players) || snap.players.length !== 4) return false;
       if (!Array.isArray(snap.deck) || !Array.isArray(snap.discard)) return false;
+      aiMemory = CrapeightsAI.createMemory();
       players = snap.players.map((player, index) => ({
         name: player.name,
         human: index === 0,
@@ -1165,31 +1203,12 @@
     }
 
     function chooseBestSuit(hand, excludeId) {
-      const counts = { S: 0, H: 0, D: 0, C: 0 };
-      hand.forEach((card) => { if (card.id !== excludeId) counts[card.suit] += 1; });
-      return SUITS.reduce((best, suit) => counts[suit] > counts[best] ? suit : best, 'C');
+      return CrapeightsAI.chooseSuit(hand, excludeId, { nextPlayerIndex: getNextPlayerIndex(currentPlayer), memory: aiMemory });
     }
 
     function chooseBestCard(playerIndex, playableCards) {
-      const player = players[playerIndex];
-      const nextIndex = getNextPlayerIndex(playerIndex);
-      const threat = players[nextIndex].hand.length <= 2;
-      const suitCounts = { S: 0, H: 0, D: 0, C: 0 };
-      player.hand.forEach((card) => { suitCounts[card.suit] += 1; });
-      let best = playableCards[0];
-      let bestScore = -999;
-      playableCards.forEach((card) => {
-        let score = 0;
-        if (card.rank === '2') score += threat ? 80 : 30;
-        if (card.rank === 'J') score += threat ? 70 : 24;
-        if (card.rank === 'Q') score += threat ? 58 : 20;
-        if (card.rank === '8') score += player.hand.length > 4 ? 8 : -18;
-        score += suitCounts[card.suit] * 2;
-        if (card.suit === activeSuit) score += 3;
-        score += cardPoints(card) / 20;
-        if (score > bestScore) { bestScore = score; best = card; }
-      });
-      return best;
+      return CrapeightsAI.chooseCard({ hand: players[playerIndex].hand, playableCards, playerIndex,
+        counts: players.map(player => player.hand.length), direction, activeSuit, topCard: topCard(), memory: aiMemory });
     }
 
     function clearAiTimer() { if (aiTurnTimeoutId) { clearTimeout(aiTurnTimeoutId); aiTurnTimeoutId = null; } }
@@ -1215,7 +1234,10 @@
           resumeHumanAutoPassAfterFocus = true;
           return;
         }
-        if (roundActive && !onboardingOpen && isHumanTurn()) advanceTurn();
+        if (roundActive && !onboardingOpen && isHumanTurn()) {
+          CrapeightsAI.observe(aiMemory, { playerIndex: currentPlayer, type: 'pass', suit: activeSuit });
+          advanceTurn();
+        }
       }, delayMs);
     }
 
@@ -1261,19 +1283,41 @@
       clearAiTimer();
       resumeHumanAutoPassAfterFocus = resumeHumanAutoPassAfterFocus || humanAutoPassTimeoutId !== null;
       clearHumanAutoPassTimer();
+      updateActionButtons(); syncDialogFocus(ui.welcomeGuide);
     }
 
     function hideWelcomeGuide() {
       if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none';
       onboardingOpen = false;
+      syncDialogFocus();
       if (window.Suite && Suite.guide) Suite.guide.mark('crapeights.html');
       if (resumeHumanAutoPassAfterFocus && isHumanTurn()) {
         queueHumanAutoPass(220);
         if (!focusSuspendedRound && !document.hidden) resumeHumanAutoPassAfterFocus = false;
       } else scheduleTurnIfNeeded();
     }
-    function showSuitChooser(card) { pendingWildCard = card; if (ui.suitChooser) ui.suitChooser.style.display = 'flex'; setStatus('Pick a suit for your wild 8.', true); updateActionButtons(); }
-    function hideSuitChooser() { pendingWildCard = null; if (ui.suitChooser) ui.suitChooser.style.display = 'none'; updateActionButtons(); }
+    function showSuitChooser(card) {
+      pendingWildCard = card;
+      if (ui.suitChooser) ui.suitChooser.style.display = 'flex';
+      const best = chooseBestSuit(players[0].hand, card.id);
+      document.querySelectorAll('.suit-btn').forEach(btn => {
+        const suit = btn.dataset.suit;
+        const count = players[0].hand.filter(c => c.id !== card.id && c.rank !== '8' && c.suit === suit).length;
+        let label = btn.querySelector('.suit-count');
+        if (!label) { label = document.createElement('span'); label.className = 'suit-count'; btn.append(label); }
+        label.textContent = `${count} in hand${suit === best ? ' · Best' : ''}`;
+        btn.classList.toggle('recommended', suit === best);
+        btn.setAttribute('aria-label', `${suitName(suit)}, ${count} remaining${suit === best ? ', recommended' : ''}`);
+      });
+      setStatus('Pick a suit for your wild 8.', true);
+      updateActionButtons(); syncDialogFocus(ui.suitChooser);
+      persistTable();
+    }
+    function hideSuitChooser() {
+      pendingWildCard = null;
+      if (ui.suitChooser) ui.suitChooser.style.display = 'none';
+      updateActionButtons(); syncDialogFocus();
+    }
 
     function showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker) {
       lastOverlay = {
@@ -1298,12 +1342,14 @@
       }
       if (ui.nextRoundBtn) ui.nextRoundBtn.style.display = matchFinished ? 'none' : 'inline-flex';
       if (ui.roundOverlay) ui.roundOverlay.style.display = 'flex';
+      syncDialogFocus(ui.roundOverlay);
       persistTable();
     }
 
     function hideRoundOverlay() {
       lastOverlay = null;
       if (ui.roundOverlay) ui.roundOverlay.style.display = 'none';
+      syncDialogFocus();
       persistTable();
     }
 
@@ -1351,7 +1397,7 @@
         if (document.hidden) { suspendRoundForBackground(); return; }
         if (focusSuspendedRound) return;
         runAiTurn();
-      }, 600);
+      }, 760);
     }
 
     function advanceTurn() {
@@ -1391,17 +1437,6 @@
       setStatus(summary, true);
       addHistory(summary);
       playSfx(winnerIndex === 0 ? 'win' : 'lose');
-      try {
-        if (window.Suite) {
-          if (winnerIndex === 0) {
-            Suite.hype(matchFinished ? (Suite.quip('win') || 'CHAMPION!') : (Suite.quip('streak') || 'ROUND WIN'));
-            Suite.win();
-          } else {
-            Suite.hype(matchFinished ? (Suite.quip('lose') || 'OUTPLAYED') : (Suite.quip('lose_s') || 'ROUND LOST'));
-            if (matchFinished) Suite.fart();
-          }
-        }
-      } catch (e) {}
       updateAll();
       const tone = winnerIndex === 0
         ? (matchFinished ? 'match-win' : 'victory')
@@ -1417,16 +1452,20 @@
           ? `${winner.name} just left you with the full sewer lecture.`
           : `${winner.name} swiped the round and acted like it was all skill.`);
       showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker);
+      if (winnerIndex === 0) CrapeightsPresentation.celebrate({ target: ui.roundOverlayCard });
     }
 
     function playCardById(playerIndex, cardId, forcedSuit) {
       const player = players[playerIndex];
-      if (!player) return false;
+      if (!player || !roundActive || playerIndex !== currentPlayer || onboardingOpen || focusSuspendedRound) return false;
       const idx = player.hand.findIndex((card) => card.id === cardId);
       if (idx < 0) return false;
       const card = player.hand[idx];
       if (!isPlayable(card)) { if (player.human) setStatus('That card does not match suit or rank.', true); return false; }
       if (card.rank === '8' && !forcedSuit && player.human) { showSuitChooser(card); return false; }
+      if (forcedSuit && !SUITS.includes(forcedSuit)) return false;
+      const flightSource = (player.human ? ui.playerHand.querySelector(`[data-card-id="${card.id}"]`) : ui.oppBacks[playerIndex - 1])?.getBoundingClientRect();
+      const targetIndex = getNextPlayerIndex(playerIndex);
 
       player.hand.splice(idx, 1);
       discard.push(card);
@@ -1441,28 +1480,24 @@
       if (player.hand.length === 1) detail += ` ${player.name} has one card left.`;
       setStatus(detail, true);
       addHistory(detail);
+      CrapeightsAI.observe(aiMemory, { playerIndex, type: 'play', suit: activeSuit, rank: card.rank });
+      CrapeightsPresentation.flyCard({ source: flightSource, target: ui.discardCard, card });
+      showTableAction(card, playerIndex, targetIndex);
       if (player.hand.length === 0) { endRound(playerIndex); return true; }
-      if (player.human) {
-        const shell = document.querySelector('.shell');
-        if (shell) {
-          shell.classList.remove('play-bump');
-          void shell.offsetWidth;
-          shell.classList.add('play-bump');
-        }
-        try {
-          if (navigator.vibrate) navigator.vibrate(card.rank === '2' || card.rank === 'J' ? 16 : 8);
-        } catch (e) {}
+      if (player.human && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        try { if (navigator.vibrate) navigator.vibrate(card.rank === '2' || card.rank === 'J' ? 16 : 8); } catch (e) {}
       }
       advanceTurn();
       return true;
     }
 
     function drawForHuman() {
-      if (!isHumanTurn() || hasDrawnThisTurn || pendingWildCard) return;
+      if (!isHumanTurn() || hasDrawnThisTurn || pendingWildCard || onboardingOpen || focusSuspendedRound) return;
       unlockAudio();
       clearHumanAutoPassTimer();
       const player = players[currentPlayer];
       const drawn = drawOneCard(player);
+      CrapeightsPresentation.flyCard({ source: ui.drawPileBtn, target: ui.playerHand });
       hasDrawnThisTurn = true;
       selectedCardId = null;
       playSfx('draw');
@@ -1486,15 +1521,16 @@
     }
 
     function passHumanTurn() {
-      if (!isHumanTurn() || !hasDrawnThisTurn || pendingWildCard) return;
+      if (!isHumanTurn() || !hasDrawnThisTurn || pendingWildCard || onboardingOpen || focusSuspendedRound) return;
       clearHumanAutoPassTimer();
       setStatus('You passed after drawing.', true);
       addHistory('You passed.');
+      CrapeightsAI.observe(aiMemory, { playerIndex: currentPlayer, type: 'pass', suit: activeSuit });
       advanceTurn();
     }
 
     function playSelectedCard() {
-      if (!isHumanTurn() || pendingWildCard) return;
+      if (!isHumanTurn() || pendingWildCard || onboardingOpen || focusSuspendedRound) return;
       if (!selectedCardId) { setStatus('Select a card first.', true); return; }
       unlockAudio();
       clearHumanAutoPassTimer();
@@ -1502,7 +1538,7 @@
     }
 
     function smartMove() {
-      if (!isHumanTurn() || pendingWildCard) return;
+      if (!isHumanTurn() || pendingWildCard || onboardingOpen || focusSuspendedRound) return;
       unlockAudio();
       clearHumanAutoPassTimer();
       const player = players[currentPlayer];
@@ -1520,12 +1556,14 @@
       const playable = getPlayableCards(player.hand);
       if (playable.length === 0) {
         const drawn = drawOneCard(player);
+        CrapeightsPresentation.flyCard({ source: ui.drawPileBtn, target: ui.oppBacks[currentPlayer - 1] });
         playSfx('draw');
         if (drawn && isPlayable(drawn)) {
           const forcedSuit = drawn.rank === '8' ? chooseBestSuit(player.hand, drawn.id) : null;
           playCardById(currentPlayer, drawn.id, forcedSuit);
           return;
         }
+        CrapeightsAI.observe(aiMemory, { playerIndex: currentPlayer, type: 'pass', suit: activeSuit });
         const msg = `${player.name} drew and passed.`;
         setStatus(msg, true);
         addHistory(msg);
@@ -1544,6 +1582,11 @@
       resumeHumanAutoPassAfterFocus = false;
       hideSuitChooser();
       hideRoundOverlay();
+      aiMemory = CrapeightsAI.createMemory();
+      dealtCardIds.clear();
+      clearTimeout(eventTimer);
+      document.getElementById('tableEvent').classList.remove('show');
+      CrapeightsPresentation.clearEffects();
       deck = buildDeck();
       discard = [];
       activeSuit = 'C';
@@ -1586,10 +1629,70 @@
     }
 
     function handleSuitChoice(suit) {
-      if (!pendingWildCard || !isHumanTurn()) return;
+      if (!pendingWildCard || !isHumanTurn() || onboardingOpen || focusSuspendedRound || !SUITS.includes(suit)) return;
       const cardId = pendingWildCard.id;
       hideSuitChooser();
       playCardById(currentPlayer, cardId, suit);
+    }
+
+    function updateTableGuidance() {
+      const hand = players[0]?.hand || [];
+      const selected = hand.find(card => card.id === selectedCardId && isPlayable(card));
+      const hint = CrapeightsTable.turnHint({ human: isHumanTurn(), active: roundActive,
+        name: players[currentPlayer]?.name || 'The table', suit: activeSuit, rank: topCard()?.rank,
+        playableCount: getPlayableCards(hand).length, drawn: hasDrawnThisTurn, selected });
+      document.getElementById('turnPrompt').textContent = hint.title;
+      document.getElementById('turnHint').textContent = hint.detail;
+      document.getElementById('handCount').textContent = `· ${hand.length}`;
+      document.getElementById('handRisk').textContent = `${CrapeightsTable.handPoints(hand)} pts at risk`;
+      const flow = document.getElementById('flowBadge');
+      flow.textContent = direction === 1 ? '↻' : '↺';
+      flow.setAttribute('aria-label', direction === 1 ? 'Clockwise' : 'Counterclockwise');
+    }
+
+    function showTableAction(card, playerIndex, targetIndex) {
+      const events = {
+        '2': ['+2 · EXTRA PAPER', `${players[targetIndex].name} draws 2 & misses a turn`],
+        J: ['SKIP · SEAT TAKEN', `${players[targetIndex].name} sits this one out`],
+        Q: ['REVERSE · WRONG PIPE', direction === 1 ? 'Play now moves clockwise' : 'Play now moves counterclockwise'],
+        '8': [`WILD · ${suitName(activeSuit).toUpperCase()} ${suitGlyph(activeSuit)}`, `${players[playerIndex].name} changes the current`]
+      };
+      const event = events[card.rank];
+      const el = document.getElementById('tableEvent');
+      clearTimeout(eventTimer);
+      el.replaceChildren(); el.classList.remove('show');
+      if (!event) return;
+      const title = document.createElement('b'); title.textContent = event[0];
+      const detail = document.createElement('small'); detail.textContent = event[1];
+      el.append(title, detail); el.classList.add('show');
+      eventTimer = setTimeout(() => el.classList.remove('show'), 1900);
+    }
+
+    function currentDialog() {
+      return [ui.welcomeGuide, ui.suitChooser, ui.roundOverlay].find(el => el?.style.display === 'flex') || null;
+    }
+
+    function syncDialogFocus(opening) {
+      const modal = currentDialog();
+      document.querySelector('.shell').inert = !!modal;
+      if (opening) {
+        if (!dialogReturnFocus) dialogReturnFocus = document.activeElement;
+        const target = opening.querySelector('.recommended, button:not([disabled])');
+        target?.focus({ preventScroll: true });
+      } else if (!modal && dialogReturnFocus) {
+        const target = dialogReturnFocus.isConnected ? dialogReturnFocus : ui.drawBtn;
+        dialogReturnFocus = null;
+        target?.focus({ preventScroll: true });
+      } else if (modal && !modal.contains(document.activeElement)) {
+        modal.querySelector('button:not([disabled])')?.focus({ preventScroll: true });
+      }
+    }
+
+    function trapDialogTab(event, modal) {
+      const buttons = [...modal.querySelectorAll('button:not([disabled]),a[href]')].filter(el => el.style.display !== 'none');
+      const index = buttons.indexOf(document.activeElement);
+      if (event.shiftKey && index <= 0) { event.preventDefault(); buttons.at(-1)?.focus(); }
+      else if (!event.shiftKey && (index < 0 || index === buttons.length - 1)) { event.preventDefault(); buttons[0]?.focus(); }
     }
 
     function wireEvents() {
@@ -1605,15 +1708,43 @@
       if (ui.nextRoundBtn) ui.nextRoundBtn.addEventListener('click', () => { hideRoundOverlay(); roundNumber++; startRound(); });
       if (ui.newMatchOverlayBtn) ui.newMatchOverlayBtn.addEventListener('click', requestFreshMatch);
       document.querySelectorAll('[data-suit]').forEach((btn) => btn.addEventListener('click', () => handleSuitChoice(btn.getAttribute('data-suit'))));
+      document.getElementById('cancelSuitBtn').addEventListener('click', () => { hideSuitChooser(); updateAll(); });
+      document.getElementById('sortHandBtn').addEventListener('click', () => {
+        sortMode = sortMode === 'suit' ? 'rank' : 'suit';
+        document.getElementById('sortHandBtn').textContent = `Sort: ${sortMode === 'suit' ? 'Suit' : 'Rank'}`;
+        renderPlayerHand();
+      });
+      document.addEventListener('pointerdown', (e) => { if (e.isTrusted) unlockAudio(); }, { passive: true });
       document.addEventListener('keydown', (e) => {
-        if (onboardingOpen) {
-          if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); hideWelcomeGuide(); }
+        if (e.isTrusted) unlockAudio();
+        if (e.altKey || e.ctrlKey || e.metaKey || e.target.matches?.('input,select,textarea')) return;
+        const modal = currentDialog();
+        if (modal) {
+          if (e.code === 'Tab') { trapDialogTab(e, modal); return; }
+          if (e.code === 'Escape') {
+            e.preventDefault();
+            if (onboardingOpen) hideWelcomeGuide();
+            else if (pendingWildCard) { hideSuitChooser(); updateAll(); }
+            return;
+          }
+          if (onboardingOpen && (e.code === 'Enter' || e.code === 'Space') && !e.target.closest?.('button')) {
+            e.preventDefault(); hideWelcomeGuide();
+          }
           return;
         }
-        unlockAudio();
+        const cards = [...ui.playerHand.querySelectorAll('[data-card-id]')];
+        const focused = cards.indexOf(document.activeElement);
+        if (focused >= 0 && ['ArrowLeft','ArrowRight','Home','End'].includes(e.code)) {
+          e.preventDefault();
+          const next = cards[CrapeightsTable.focusIndex(focused, e.code, cards.length)];
+          next.focus({ preventScroll: true }); next.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+          return;
+        }
+        // Let Enter/Space activate the focused native control once.
+        if ((e.code === 'Enter' || e.code === 'Space') && e.target.closest?.('button,summary,a')) return;
         if (e.code === 'KeyM') { e.preventDefault(); toggleSound(); return; }
         if (e.code === 'KeyH') { e.preventDefault(); showWelcomeGuide(); return; }
-        if (!isHumanTurn() || pendingWildCard) return;
+        if (!isHumanTurn() || pendingWildCard || focusSuspendedRound) return;
         if (e.code === 'KeyD') { e.preventDefault(); drawForHuman(); return; }
         if (e.code === 'KeyP') { e.preventDefault(); playSelectedCard(); return; }
         if (e.code === 'KeyA' || e.code === 'Enter') { e.preventDefault(); smartMove(); return; }
@@ -1643,150 +1774,6 @@
 
     init();
   
-
-// ============================================================
-// === Crappy Eights bot personality + action callouts =======
-// ============================================================
-(function () {
-  'use strict';
-
-  // ---- Mascot DOM ----
-  const _boss = document.createElement('div');
-  _boss.className = 'ce-boss';
-  _boss.textContent = '🚽';
-  _boss.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(_boss);
-  const _bubble = document.createElement('div');
-  _bubble.className = 'ce-bubble';
-  document.body.appendChild(_bubble);
-  let _bubbleT = null;
-  function bossSay(text, dur) {
-    if (!text) return;
-    _bubble.textContent = text;
-    _bubble.classList.remove('show'); void _bubble.offsetWidth;
-    _bubble.classList.add('show');
-    clearTimeout(_bubbleT);
-    _bubbleT = setTimeout(() => _bubble.classList.remove('show'), dur || 2400);
-  }
-  function bossMood(emoji, anim) {
-    _boss.textContent = emoji;
-    if (anim) { _boss.classList.remove('bounce','shake','cheer'); void _boss.offsetWidth; _boss.classList.add(anim); }
-  }
-  function showBanner(text, cold) {
-    let el = document.getElementById('ceBanner');
-    if (!el) { el = document.createElement('div'); el.id = 'ceBanner'; el.className = 'ce-banner'; document.body.appendChild(el); }
-    el.textContent = text;
-    el.classList.toggle('cold', !!cold);
-    el.classList.remove('show'); void el.offsetWidth;
-    el.classList.add('show');
-    clearTimeout(showBanner._t);
-    showBanner._t = setTimeout(() => el.classList.remove('show'), 1700);
-  }
-
-  // Bot avatar emojis (stable for the session)
-  const BOT_FACES = ['🐔', '🦝', '🐸', '🦆', '🐢', '🦦', '🐹'];
-  const _botFaces = [];
-  function getBotFaces() {
-    if (_botFaces.length) return _botFaces;
-    const shuffled = BOT_FACES.slice().sort(() => Math.random() - 0.5);
-    for (let i = 0; i < 3; i++) _botFaces.push(shuffled[i]);
-    return _botFaces;
-  }
-  function ensureAvatars() {
-    try {
-      const faces = getBotFaces();
-      for (let i = 0; i < 3; i++) {
-        const nameEl = document.getElementById('oppName' + (i + 1));
-        if (!nameEl || nameEl.dataset.avatared === '1') continue;
-        const av = document.createElement('span');
-        av.className = 'ce-avatar';
-        av.id = 'ceAvatar' + i;
-        av.textContent = faces[i];
-        nameEl.parentNode.insertBefore(av, nameEl);
-        nameEl.dataset.avatared = '1';
-      }
-    } catch (e) {}
-  }
-  function pulseAvatar(idx, mood) {
-    const av = document.getElementById('ceAvatar' + idx);
-    if (!av) return;
-    av.classList.remove('angry','happy','shock'); void av.offsetWidth;
-    if (mood) av.classList.add(mood);
-    clearTimeout(av._t);
-    av._t = setTimeout(() => av.classList.remove(mood), 1100);
-  }
-
-  // Big center action-card cue
-  function actionCue(emoji, text) {
-    let el = document.getElementById('ceActionCue');
-    if (!el) { el = document.createElement('div'); el.id = 'ceActionCue'; el.className = 'ce-action-cue'; document.body.appendChild(el); }
-    el.innerHTML = (emoji ? emoji + ' ' : '') + text;
-    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(actionCue._t);
-    actionCue._t = setTimeout(() => el.classList.remove('show'), 900);
-  }
-
-  const QUIPS = {
-    twoCard: ["draw two, sucker", "extra paper for you", "enjoy the gift"],
-    skip:    ["sit it out", "you snooze", "denied"],
-    reverse: ["psych! my way now", "u-turn buddy", "wrong way"],
-    wild:    ["WILD!", "I pick the smell", "any color goes"],
-    win:     ["GG", "👑 me", "easy money"],
-    lose:    ["awww", "fine. you got us.", "next time"],
-    bot_win: ["the bots win again", "bot supremacy", "humans = mid"]
-  };
-  const pick = k => (QUIPS[k] || [''])[Math.floor(Math.random() * (QUIPS[k] || ['']).length)];
-
-  // Wrap playCardById to detect action-card play and react
-  if (typeof playCardById === 'function') {
-    const _orig = playCardById;
-    playCardById = function (playerIndex, cardId, forcedSuit) {
-      // Fish out card rank from the cardId string (rank-suit-id format like 'A-S-3')
-      let rank = '';
-      try {
-        const card = (typeof players !== 'undefined' && players[playerIndex] && players[playerIndex].hand)
-          ? players[playerIndex].hand.find(c => c.id === cardId) : null;
-        if (card) rank = String(card.rank);
-      } catch (e) {}
-      const ret = _orig(playerIndex, cardId, forcedSuit);
-      try {
-        const isHuman = playerIndex === 0;
-        if (rank === '2') {
-          actionCue('🧻', 'DRAW TWO!');
-          if (!isHuman) bossSay(pick('twoCard'), 2000);
-          for (let i = 1; i < 4; i++) pulseAvatar(i - 1, isHuman ? 'angry' : 'happy');
-        } else if (rank === 'J') {
-          actionCue('⛔', 'SKIP!');
-          if (!isHuman) bossSay(pick('skip'), 2000);
-        } else if (rank === 'Q') {
-          actionCue('🔄', 'REVERSE!');
-          if (!isHuman) bossSay(pick('reverse'), 2000);
-        } else if (rank === '8') {
-          actionCue('🌀', 'WILD!');
-          if (!isHuman) bossSay(pick('wild'), 2000);
-        }
-      } catch (e) {}
-      return ret;
-    };
-  }
-
-  // Wrap endRound for win/lose mascot
-  if (typeof endRound === 'function') {
-    const _orig = endRound;
-    endRound = function (winnerIndex) {
-      _orig(winnerIndex);
-      if (winnerIndex === 0) { bossMood('🏆', 'cheer'); bossSay(pick('win'), 2800); }
-      else                   { bossMood('🤖', 'bounce'); bossSay(pick('bot_win'), 2800); pulseAvatar(winnerIndex - 1, 'happy'); }
-    };
-  }
-
-  // Inject avatars right after the opp cards exist
-  setTimeout(ensureAvatars, 400);
-  setTimeout(ensureAvatars, 1600); // re-attempt in case of slow render
-
-  // Greeting
-  setTimeout(() => { bossMood('🤖', 'bounce'); bossSay('Three bots. Zero mercy.', 2400); }, 700);
-})();
 
 </script>
 </body>
