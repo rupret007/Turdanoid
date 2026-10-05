@@ -12,7 +12,8 @@ import {
   clampMinBallSpeed,
   decayShake,
   bumpShake,
-  ballDangerRatio
+  ballDangerRatio,
+  prefersReducedMotion
 } from '../games/suite-feel.js';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,6 +29,12 @@ function htmlNumericConst(source, name) {
 }
 
 describe('suite-feel', () => {
+  it('prefersReducedMotion reads matchMedia', () => {
+    expect(prefersReducedMotion(() => ({ matches: true }))).toBe(true);
+    expect(prefersReducedMotion(() => ({ matches: false }))).toBe(false);
+    expect(prefersReducedMotion(() => null)).toBe(false);
+  });
+
   it('documents TurdAnoid combo window used in TurdAnoid.html step()', () => {
     expect(TURDANOID_FEEL.comboWindowFrames).toBe(105);
   });
