@@ -67,16 +67,59 @@ Re-read the round-0 conductor audit and current live page, AI, presentation help
 
 ## Round 2 targets
 
-- [ ] Fitted arced hand, larger readable cards, selected lift, clear legality, every card reachable with 44px targets; large hands use additional fan rows instead of horizontal clipping.
-- [ ] Desktop table fills available viewport; rules/log/standings/settings live in an accessible drawer.
-- [ ] Three blinking/bobbing characters, speech/reactions, active-seat ring and thinking card tease.
-- [ ] Targeted two-card penalty flight/counter, Skip stamp, Reverse swirl, wild bloom/pile wash, ONE LEFT alert; reduced-motion equivalents.
-- [ ] Leftover-card scoring receipt, points collection, match trophy/confetti and separate display-only round-2 stats.
-- [ ] Easy / Normal / Sharp selector persisted in a new key; Normal remains existing fair AI; difficulty decision tests.
-- [ ] Unit tests for fan geometry, effects/motion/stats, difficulty and actual page integration; unchanged old v1 save fixture still loads.
-- [ ] Full-round Playwright autoplay at 390 and 1280, screenshots/error/stuck-turn evidence, extra 320px layout coverage.
-- [ ] Full Vitest, lint and Chromium smoke on8154 PASS; local logical commits and final evidence.
+- [x] Fitted arced hand, larger readable cards, selected lift, clear legality, every card reachable with 44px targets; large hands use additional fan rows instead of horizontal clipping.
+- [x] Desktop table fills available viewport; rules/log/standings/settings live in an accessible drawer.
+- [x] Three blinking/bobbing characters, speech/reactions, active-seat ring and thinking card tease.
+- [x] Targeted two-card penalty flight/counter, Skip stamp, Reverse swirl, wild bloom/pile wash, ONE LEFT alert; reduced-motion equivalents.
+- [x] Leftover-card scoring receipt, points collection, match trophy/confetti and separate display-only round-2 stats.
+- [x] Easy / Normal / Sharp selector persisted in a new key; Normal remains existing fair AI; difficulty decision tests.
+- [x] Unit tests for fan geometry, effects/motion/stats, difficulty and actual page integration; unchanged old v1 save fixture still loads.
+- [x] Full-round Playwright autoplay at 390 and 1280, screenshots/error/stuck-turn evidence, extra 320px layout coverage.
+- [x] Run all required checks and commit locally: full Vitest 347 tests PASS, Chromium smoke on 8154 PASS, lint exit PASS with four pre-existing other-lane warnings; Crappy Eights files are clean.
 
 ## Round 2 scope interpretation / Needs shared change
 
-The explicit workflow authorizes this lane document and round-2 focus authorizes `scripts/crapeights-autoplay.mjs`, in addition to the listed game files. The hard rule forbids writing outside this worktree, so autoplay evidence will be saved inside `docs/1000x/crapeights-autoplay/`. The conductor must copy these artifacts to its requested external `reviews/turdanoid-1000x/r2/crapeights-autoplay/` directory. The round-0 external audit was read only as expressly requested. No shared runtime change is planned.
+The explicit workflow authorizes this lane document and round-2 focus authorizes `scripts/crapeights-autoplay.mjs`, in addition to the listed game files. The hard rule forbids writing outside this worktree, so autoplay evidence is saved inside `docs/1000x/crapeights-autoplay/`. The conductor must copy these artifacts to its requested external `reviews/turdanoid-1000x/r2/crapeights-autoplay/` directory. The round-0 external audit was read only as expressly requested. No shared runtime change is planned.
+
+## Round 2 validation
+
+- **PASS — full unit suite:** `npx vitest run --maxWorkers=1 --testTimeout=30000`, 24 files / 347 tests. Serial execution and longer per-test timeout accommodate simultaneous work on this host; no skipped tests. Includes unchanged b3821b4 v1 fixture, old completed receipts without duplicated stats, drawer focus/pause behavior and Smart-after-draw regression.
+- **PASS — lint exit / lane clean:** `npm run lint`, zero errors and zero Crappy Eights warnings. The same four pre-existing Crapjack warnings listed above remain outside this lane's ownership.
+- **PASS — full-round autoplay:** `PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs --rounds 2`, two complete rounds at 390×844 and two at 1280×900. 28 Smart actions, 8 Draw actions, 5 Pass actions; zero console/page errors, 10-second stalls, horizontal overflow, clipped hand cards or under-44px hand boxes. Report and screenshots are in `docs/1000x/crapeights-autoplay/`. Initial harness 1.5s click timeout caused false failures under host load; the committed harness allows 5s and recognizes actions that already changed the state.
+- **PASS — full Chromium smoke:** `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8154` reports **Browser smoke checks passed**. No smoke assertions were changed.
+- **PASS — default AI compatibility:** Normal decisions and suit choices matched the previous committed AI over 1,000 seeded public states. Difficulty tests additionally cover legal deterministic play, Easy simplicity, Sharp wild preservation, emergency point shedding and future Draw-Two routes.
+- **NOT RUN — physical phone / listening / measured phone frame rate:** browser checks cover geometry, actual touch input, mute gating and motion cancellation; hardware evaluation remains for the conductor.
+
+### Round 2 implementation details
+
+The fitted hand uses bounded deterministic geometry with at least 48px horizontal spacing and 84px cards on phones (up to 100px desktop). Extra rows retain readable faces and visible tap lanes; selected/focused cards lift 28px. The table owns desktop space, while an inert-background dialog pauses play for rules, standings, log and difficulty. New storage keys are `crapeights_difficulty_v1` and `crapeights_stats_v1`; no fields were added to existing snapshots. Personal upgrade stats are display-only.
+
+Blink/bob animation, thinking card tease, reaction speech and action stamps use bounded local effects. Draw Two flies two cards into its actual recipient; Skip stamps the skipped seat; Reverse orbits arrows; wilds bloom the suit wheel and wash the pile. The receipt reconstructs all leftover cards from the existing hands, preserving exact scoring; loading a finished old save does not count another round. All new dynamic effects gate/cancel motion and preserve text equivalents. Existing layered synthesized audio and mute/gesture safeguards remain intact.
+
+### Round 2 final layout checks
+
+- Desktop controls are visible at 1280×800, 1280×900 and 1280×1000; center-seat fans, piles and suit indicators have separate space. A compact header, sideways center-seat fan and shallower hand support short desktops without shrinking tap targets. Final desktop captures fit exactly within both 800px and 900px viewport heights.
+- At 320×740 and 390×844, there is no horizontal overflow. Every card in a 20-card hand stays within the viewport and the last row is vertically reachable. The 320px phone requires vertical scrolling for the dock; the 390px opening dock is visible. Redundant phone suit chips are hidden to reveal the pile counts; the active suit remains in the HUD and turn guidance.
+- Drawer focus/inert behavior and wild-wheel selection pass at all three widths. Dynamic reduced motion reaches zero running animations and removes transient effects, including at 320px. Speech/text remains.
+- Screenshots are local artifacts. Earlier `spot-*` shots document issues discovered; `spot-final-*` shots show the short-desktop fixes. Fresh final phone captures include the suit-row cleanup.
+
+### Remaining shared work
+
+The fixed shared Hub pill can cover a small part of the lower-left hand/control area on short phone screens. Its existing accessible Hub route and smoke contract are retained; the shared lane should provide an in-flow or safe-area-aware placement across card games. Copy the local autoplay artifacts to the conductor's requested external review directory. The four pre-existing Crapjack lint warnings also remain the owning lane's responsibility.
+
+### Round 2 local commits
+
+- `74733f8` — follow-up audit and measurable targets.
+- `6d8ab04` / `ef5baa2` — foreground real-input autoplay and timeout handling.
+- `db380ac` — fair difficulty levels and decision coverage.
+- `081ec02` — bounded reactions, receipt and display-only stats helpers.
+- `86f9e9b` — fitted fans, living table, drawer integration and save/input regressions.
+- `a6a0273` — short desktop composition and phone pile-label cleanup.
+- Final evidence commit contains this completed report, full-round timelines and inspected screenshots. No push, PR, release, tag, shared engine or existing save-format changes.
+
+
+### Final review artifacts
+
+- [390px opening](crapeights-autoplay/390-opening.png) and [desktop opening](crapeights-autoplay/1280-opening.png)
+- [320px final table](crapeights-autoplay/spot-final-320.png) and [800px-high desktop](crapeights-autoplay/spot-final-1280.png)
+- [Round scoring receipt](crapeights-autoplay/390-round-2-receipt.png) and [full autoplay report](crapeights-autoplay/report.json)
