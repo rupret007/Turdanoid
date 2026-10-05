@@ -14,6 +14,11 @@
 <script src="games/turdanoid-brick-core.js"></script>
 <script src="games/turdanoid-audio-core.js"></script>
 <script src="games/turdanoid-levels-core.js"></script>
+<script src="games/turdanoid-worlds-core.js"></script>
+<script src="games/turdanoid-brick-sprite-core.js"></script>
+<script src="games/turdanoid-shards-core.js"></script>
+<script src="games/turdanoid-boss-core.js"></script>
+<script src="games/turdanoid-coach-core.js"></script>
 <script src="assets/turdsuite.js"></script>
 <style>
   :root{
@@ -128,6 +133,13 @@
   @media (prefers-reduced-motion:reduce){
     #titleScreen h1,#mobileLaunch.show,.chip,.hud .col.critical{animation:none}
   }
+  #coachOverlay{position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  #coachOverlay.show{display:flex}
+  #coachCard{max-width:400px;text-align:center;padding:22px 20px;border-radius:16px;border:1px solid rgba(158,255,200,.35);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),rgba(4,16,12,.88);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+  #coachCard h2{font-size:clamp(20px,5vw,26px);color:var(--gold);margin-bottom:8px}
+  #coachCard p{font-size:15px;line-height:1.45;opacity:.92;margin-bottom:16px}
+  #coachCard button{padding:12px 28px;font-size:15px;font-weight:800}
+  #coachStep{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.65;margin-bottom:6px}
 </style>
 </head>
 <body data-suite-no-bg="1">
@@ -152,6 +164,14 @@
     <div id="powers"></div>
     <div id="toast"></div>
     <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
+    <div id="coachOverlay" role="dialog" aria-labelledby="coachTitle" aria-modal="true">
+      <div id="coachCard">
+        <div id="coachStep">1 / 3</div>
+        <h2 id="coachTitle">Move the seat</h2>
+        <p id="coachBody">Drag anywhere below the HUD, or use ← / → keys.</p>
+        <button id="btnCoachNext" type="button">Next</button>
+      </div>
+    </div>
 
     <!-- Title screen -->
     <div class="overlay show" id="titleScreen">
@@ -164,6 +184,7 @@
       </div>
       <button id="btnStart">START FLUSHING</button>
       <div class="menu-secondary">
+        <button id="btnBoss" type="button">Boss Flush</button>
         <button id="btnHowTo">How To Play</button>
         <button id="btnHub" onclick="location.href='./'">🏠 Game Hub</button>
       </div>
@@ -206,6 +227,9 @@
         <div class="stat"><span class="l">Score</span><span class="v" id="endScore">0</span></div>
         <div class="stat"><span class="l">Level</span><span class="v" id="endLevel">1</span></div>
         <div class="stat"><span class="l">Best</span><span class="v" id="endBest">0</span></div>
+        <div class="stat"><span class="l">Bricks</span><span class="v" id="endBricks">0</span></div>
+        <div class="stat"><span class="l">Max combo</span><span class="v" id="endCombo">0</span></div>
+        <div class="stat"><span class="l">Time</span><span class="v" id="endTime">0:00</span></div>
       </div>
       <button id="btnRestart">PLAY AGAIN</button>
       <div class="menu-secondary">
@@ -236,9 +260,15 @@ let state = 'title'; // title | playing | paused | gameover | win
 const STORAGE_KEY = 'turdanoid_v2_best';
 const SOUND_KEY = 'turdanoid_v2_sound';
 const AMBIENT_KEY = 'turdanoid_v3_ambient';
+const HAPTIC_KEY = 'turdanoid_v3_haptic';
+const BOSS_BEST_KEY = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss.BOSS_BEST_KEY : 'turdanoid_boss_best_v1';
 let best = parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);
+let bossBest = parseInt(localStorage.getItem(BOSS_BEST_KEY)||'0',10);
 let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
-let ambientOn = localStorage.getItem(AMBIENT_KEY) !== '0';
+let ambientOn = localStorage.getItem(AMBIENT_KEY) === '1';
+let hapticOn = localStorage.getItem(HAPTIC_KEY) !== '0';
+let gameMode = 'classic';
+let runStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
 
 /* ---- Game state ---- */
 let score=0, level=1, lives=3, comboHits=0, comboTimer=0;
@@ -268,11 +298,27 @@ let wallPattern = null;   // pre-rendered sewer brick wall (rebuilt on resize)
 let bgDrips = [];         // slime drips hanging from the top edge
 let lastRenderTime = 0;
 let levelIntro = 0;
+let clearParty = null;
+let shards = [];
+let impactRings = [];
+let confettiBits = [];
+let boss = null;
+let sludges = [];
+const brickSpriteCache = new Map();
 const FX_MAX = 160;
+const HUD_DRAG_TOP = 56;
 const FX = typeof TurdanoidFX !== 'undefined' ? TurdanoidFX : null;
 const BRICK_ART = typeof TurdanoidBrick !== 'undefined' ? TurdanoidBrick : null;
+const BRICK_SPRITE = typeof TurdanoidBrickSprite !== 'undefined' ? TurdanoidBrickSprite : null;
+const TWORLDS = typeof TurdanoidWorlds !== 'undefined' ? TurdanoidWorlds : null;
+const TSHARDS = typeof TurdanoidShards !== 'undefined' ? TurdanoidShards : null;
+const TBOSS = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss : null;
+const TCOACH = typeof TurdanoidCoach !== 'undefined' ? TurdanoidCoach : null;
 const TAUDIO = typeof TurdanoidAudio !== 'undefined' ? TurdanoidAudio : null;
 const TLEVELS = typeof TurdanoidLevels !== 'undefined' ? TurdanoidLevels : null;
+let titleDemoBall = { x: 0, y: 0, vx: 2.2, vy: -1.8, r: 9 };
+let titleDemoReady = false;
+let coachStep = 0;
 
 /* ---- Funny copy ---- */
 const HYPE_LINES = [
@@ -378,25 +424,36 @@ function startAmbient(){
     lfo.type = 'sine'; lfo.frequency.value = 0.07; lg.gain.value = 6;
     lfo.connect(lg).connect(osc.frequency);
     g.gain.value = 0.0001;
-    g.gain.exponentialRampToValueAtTime(0.018, a.currentTime + 1.2);
+    g.gain.exponentialRampToValueAtTime(0.006, a.currentTime + 1.2);
     osc.connect(g).connect(a.destination);
     osc.start(); lfo.start();
     ambientNodes = { osc, lfo, gain: g };
   }catch(e){}
 }
+function playProfile(name){
+  if(!soundOn) return;
+  if(TAUDIO){
+    const p = TAUDIO.sfxProfile(name);
+    beep(p.freq, p.dur, p.type, p.vol, p.slide || 0);
+    return;
+  }
+  beep(380, 0.04, 'square', 0.04);
+}
 const sfx = {
-  hit:   ()=>beep(700, 0.05, 'square', 0.05, -200),
+  hit:   ()=>playProfile('paddle'),
   brick: ()=>beep(520+Math.random()*200, 0.06, 'square', 0.06, 80),
   break: ()=>{ beep(300,0.08,'sawtooth',0.07,-150); beep(180,0.12,'sawtooth',0.05,-90); },
-  power: ()=>{ beep(660,0.08,'triangle',0.07); setTimeout(()=>beep(990,0.1,'triangle',0.07),60); },
+  power: ()=>{ playProfile('power'); setTimeout(()=>beep(990,0.1,'triangle',0.07),60); },
   bad:   ()=>{ beep(180,0.18,'sawtooth',0.07,-100); },
   life:  ()=>{ beep(523,0.1,'triangle',0.08); setTimeout(()=>beep(659,0.1,'triangle',0.08),100); setTimeout(()=>beep(784,0.16,'triangle',0.09),200); },
-  death: ()=>{ fart(); setTimeout(()=>beep(120,0.4,'sawtooth',0.08,-80),120); },
-  win:   ()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.18,'triangle',0.08),i*120)); },
+  death: ()=>{ playProfile('lifeLost'); fart(); setTimeout(()=>playProfile('gameOver'),120); },
+  win:   ()=>{ playProfile('clear'); [659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,0.14,'triangle',0.07),i*100)); },
   laser: ()=>beep(1200,0.04,'square',0.04,-600),
   combo: (n)=>beep(TAUDIO ? TAUDIO.comboHitFrequency(n) : 440 + n*30, 0.06, 'square', 0.05, 80),
   launch:()=>beep(440,0.1,'triangle',0.08,200),
-  bounce:()=>beep(380,0.04,'square',0.04,80),
+  bounce:()=>playProfile('wall'),
+  metal: ()=>playProfile('metal'),
+  gold:  ()=>playProfile('gold'),
 };
 
 /* ---- DOM helpers ---- */
@@ -544,7 +601,106 @@ const FEEL_PADDLE_ENGLISH = 1.12;
 const FEEL_SHAKE_DECAY = 0.6;
 const FEEL_HIT_STOP_BREAK = 2;
 const FEEL_BALL_DANGER_START = 0.68;
-function tryLightHaptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+function tryLightHaptic(ms){
+  if(!hapticOn || (reducedMotion && reducedMotion.matches)) return;
+  try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){}
+}
+function spawnImpactRing(x,y,col){
+  if(FX && !FX.allowJuiceEffects(reducedMotion)) return;
+  impactRings.push({ x, y, r: 6, life: 14, col: col || '#9effc8' });
+}
+function formatRunTime(ms){
+  const s = Math.max(0, Math.floor((ms || 0) / 1000));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}
+function getBrickSpriteCanvas(b){
+  if(!BRICK_SPRITE) return null;
+  const stage = BRICK_ART ? BRICK_ART.crackStage(b.hp, b.maxHp) : 0;
+  const key = BRICK_SPRITE.spriteKey(b.material, stage, b.metal, b.w, b.h);
+  if(brickSpriteCache.has(key)) return brickSpriteCache.get(key);
+  const scale = Math.max(1, Math.min(2, DPR));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(b.w * scale));
+  c.height = Math.max(1, Math.round(b.h * scale));
+  const pc = c.getContext('2d');
+  if(!pc) return null;
+  pc.setTransform(scale, 0, 0, scale, 0, 0);
+  BRICK_SPRITE.paintBrickSprite(pc, b.w, b.h, {
+    material: b.material, crackStage: stage, metal: b.metal, c1: b.c1, c2: b.c2, glow: b.glow
+  });
+  brickSpriteCache.set(key, c);
+  return c;
+}
+function spawnConfetti(n){
+  const count = FX ? FX.confettiCount(n, reducedMotion) : n;
+  for(let i=0;i<count;i++){
+    confettiBits.push({
+      x: Math.random()*W, y: -10 - Math.random()*40,
+      vx: (Math.random()-0.5)*3, vy: 2 + Math.random()*3,
+      rot: Math.random()*6, vr: (Math.random()-0.5)*0.2,
+      life: 50 + Math.random()*40,
+      col: ['#9effc8','#ffd76a','#ff7ab6','#7ae6ff'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+function drawTitleAttract(rts){
+  if(!titleDemoReady){
+    titleDemoBall.x = W * 0.22;
+    titleDemoBall.y = H * 0.38;
+    titleDemoReady = true;
+  }
+  const top = H * 0.12;
+  const demoH = H * 0.42;
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = 'rgba(6,20,26,.75)';
+  roundRect(ctx, W*0.06, top, W*0.88, demoH, 16); ctx.fill();
+  const cols = 7, bw = (W*0.8)/cols - 4;
+  for(let r=0;r<3;r++){
+    for(let c=0;c<cols;c++){
+      const bx = W*0.1 + c*(bw+4) + (r%2)*(bw*0.5), by = top + 24 + r*(bw*0.55);
+      ctx.fillStyle = r===0 ? '#7ae6ff' : (r===1 ? '#ffd76a' : '#9effc8');
+      roundRect(ctx, bx, by, bw, bw*0.45, 4); ctx.fill();
+    }
+  }
+  titleDemoBall.x += titleDemoBall.vx * rts;
+  titleDemoBall.y += titleDemoBall.vy * rts;
+  if(titleDemoBall.x < W*0.12 || titleDemoBall.x > W*0.88) titleDemoBall.vx *= -1;
+  if(titleDemoBall.y < top + 20) titleDemoBall.vy = Math.abs(titleDemoBall.vy);
+  if(titleDemoBall.y > top + demoH - 40){
+    titleDemoBall.y = top + demoH - 40;
+    titleDemoBall.vy = -Math.abs(titleDemoBall.vy);
+  }
+  ctx.fillStyle = 'rgba(158,255,200,.5)';
+  roundRect(ctx, W*0.15, top + demoH - 28, W*0.7, 10, 5); ctx.fill();
+  ctx.fillStyle = '#8a5a30';
+  ctx.shadowColor = '#9effc8'; ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.arc(titleDemoBall.x, titleDemoBall.y, titleDemoBall.r, 0, 6.283); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+function maybeShowCoach(){
+  if(!TCOACH || TCOACH.coachSeen(localStorage)) return;
+  coachStep = 0;
+  updateCoachCard();
+  $('coachOverlay').classList.add('show');
+}
+function updateCoachCard(){
+  const steps = TCOACH ? TCOACH.STEPS : [];
+  const s = steps[coachStep];
+  if(!s) return;
+  $('coachStep').textContent = `${coachStep + 1} / ${steps.length}`;
+  $('coachTitle').textContent = s.title;
+  $('coachBody').textContent = s.body;
+  $('btnCoachNext').textContent = coachStep >= steps.length - 1 ? 'Let\'s go!' : 'Next';
+}
+function advanceCoach(){
+  const steps = TCOACH ? TCOACH.STEPS : [];
+  if(coachStep < steps.length - 1){ coachStep++; updateCoachCard(); return; }
+  $('coachOverlay').classList.remove('show');
+  if(TCOACH) TCOACH.markCoachSeen(localStorage);
+}
 function ballDangerRatio(){
   const threshold = H * FEEL_BALL_DANGER_START;
   let max = 0;
@@ -624,6 +780,17 @@ function newLevel(){
   const bw = (W - padX*2)/cols - 6;
   const bh = Math.max(16, Math.min(26, H*0.028));
   const pat = PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
+  brickSpriteCache.clear();
+  if(gameMode === 'boss'){
+    spawnBossFight();
+    if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW;
+    paddle.x = Math.max(paddle.w/2, Math.min(W - paddle.w/2, paddle.x));
+    balls = [ newBall(true) ];
+    waitingLaunch = true;
+    btnLaunch.classList.add('show');
+    levelIntro = 1;
+    return;
+  }
 
   function add(c,r,hp){
     const x = padX + c*(bw+6) + 3;
@@ -667,7 +834,15 @@ function newLevel(){
     const metal = Math.min(7, Math.floor((level - 5) * 0.55));
     for(let i=0;i<metal;i++){
       const b = bricks[Math.floor(Math.random()*bricks.length)];
-      if(b){ b.hp = Math.min(5, b.hp + 2); b.metal = true; }
+      if(b){
+        b.hp = Math.min(5, b.hp + 2);
+        b.metal = true;
+        b.material = 'metal';
+        if(BRICK_ART && BRICK_ART.MATERIAL_PALETTES.metal){
+          const pal = BRICK_ART.MATERIAL_PALETTES.metal;
+          b.c1 = pal[0]; b.c2 = pal[1]; b.glow = pal[2];
+        }
+      }
     }
   }
   if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW;
@@ -676,9 +851,18 @@ function newLevel(){
   waitingLaunch = true;
   btnLaunch.classList.add('show');
   levelIntro = 1;
-  const introMsg = `Level ${level}, ${pat}`;
+  const introMsg = TWORLDS ? TWORLDS.levelIntroLine(level, pat) : `Level ${level}, ${pat}`;
   setHype(introMsg, 90);
   announce(introMsg);
+}
+
+function spawnBossFight(){
+  bricks = [];
+  const maxHp = TBOSS ? TBOSS.MAX_HP : 120;
+  boss = { x: W/2, y: 92, w: Math.min(220, W*0.5), h: 52, hp: maxHp, maxHp, cd: 0, phase: 1 };
+  sludges = [];
+  setHype('Boss Flush — Sewer King', 120);
+  announce('Boss Flush. Dodge the sludge!');
 }
 
 function brickColors(r, rows){
@@ -708,6 +892,7 @@ function pointerDown(x,y){
 }
 function pointerMove(x,y){
   pointerX = x;
+  if(pointerFromTouch && y < HUD_DRAG_TOP) return;
   if(state==='playing' && paddle){
     // Reverse controls power-up: mirror across center.
     const target = activePowers.reverse ? (W - x) : x;
@@ -823,9 +1008,19 @@ function updatePowers(){
 
 /* ---- Flow ---- */
 function startGame(){
+  gameMode = 'classic';
+  beginRun();
+}
+function startBossGame(){
+  gameMode = 'boss';
+  beginRun();
+}
+function beginRun(){
   resize();
   paddle = newPaddle();
   score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0;
+  runStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
+  shards = []; impactRings = []; confettiBits = []; clearParty = null; boss = null; sludges = [];
   activePowers = {};
   cancelLevelTransition();
   newLevel();
@@ -833,9 +1028,10 @@ function startGame(){
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow);
   updateHud(); updatePowers();
   audio();
-  startAmbient();
+  if(ambientOn) startAmbient();
   sfx.launch();
-  announce('Game started. Break every brick.');
+  announce(gameMode === 'boss' ? 'Boss Flush started.' : 'Game started. Break every brick.');
+  maybeShowCoach();
 }
 function showOverlay(el){ el.classList.add('show'); }
 function hideOverlay(el){ el.classList.remove('show'); }
@@ -855,6 +1051,7 @@ function cancelLevelTransition(){
 }
 function quitToMenu(){
   state='title'; paused=false; running=false;
+  titleDemoReady = false;
   stopAmbient();
   cancelLevelTransition();
   hideOverlay(tPause); hideOverlay(tEnd);
@@ -865,20 +1062,30 @@ function gameOver(won){
   state = won?'win':'gameover';
   running=false;
   cancelLevelTransition();
-  best = Math.max(best, score);
-  localStorage.setItem(STORAGE_KEY, best);
-  $('endTitle').firstChild.textContent = won?'You Win!':'Flushed.';
-  $('endSub').textContent = won?'sewer royalty':'better luck next plunge';
+  if(gameMode === 'boss'){
+    bossBest = Math.max(bossBest, score);
+    localStorage.setItem(BOSS_BEST_KEY, String(bossBest));
+  } else {
+    best = Math.max(best, score);
+    localStorage.setItem(STORAGE_KEY, String(best));
+  }
+  $('endTitle').firstChild.textContent = won ? (gameMode==='boss' ? 'King Flushed!' : 'You Win!') : 'Flushed.';
+  $('endSub').textContent = won ? (gameMode==='boss' ? 'sewer royalty' : 'sewer royalty') : 'better luck next plunge';
   $('endQuip').textContent = (won?WIN_QUIPS:GAME_OVER_QUIPS)[Math.floor(Math.random()*(won?WIN_QUIPS:GAME_OVER_QUIPS).length)];
   $('endScore').textContent = score.toLocaleString();
-  $('endLevel').textContent = level;
-  $('endBest').textContent = best.toLocaleString();
+  $('endLevel').textContent = gameMode==='boss' ? 'Boss' : level;
+  $('endBest').textContent = (gameMode==='boss' ? bossBest : best).toLocaleString();
+  $('endBricks').textContent = String(runStats.bricks || 0);
+  $('endCombo').textContent = String(runStats.maxCombo || 0);
+  $('endTime').textContent = formatRunTime(Date.now() - (runStats.startedAt || Date.now()));
   showOverlay(tEnd);
   won ? sfx.win() : sfx.death();
 }
 function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
 
 $('btnStart').addEventListener('click', startGame);
+$('btnBoss').addEventListener('click', startBossGame);
+$('btnCoachNext').addEventListener('click', advanceCoach);
 $('btnHowTo').addEventListener('click', ()=>{ hideOverlay(tTitle); showOverlay(tHow); });
 $('btnHowBack').addEventListener('click', ()=>{ hideOverlay(tHow); showOverlay(tTitle); });
 $('btnResume').addEventListener('click', doResume);
@@ -899,12 +1106,12 @@ function launch(){
 // Goofier and more powerful options unlock later so players keep discovering things.
 const POWERS = [
   // ---- Standard Arkanoid kit (level 1+) ----
-  {t:'enlarge', e:'📏',  col:'#9effc8', unlock:1, weight:3},
-  {t:'slow',    e:'🐌',  col:'#7ae6ff', unlock:1, weight:2},
-  {t:'catch',   e:'🧲',  col:'#ffd76a', unlock:1, weight:2},
-  {t:'multi',   e:'🌀',  col:'#b290ff', unlock:1, weight:2},
-  {t:'life',    e:'❤️', col:'#ff7ab6', unlock:1, weight:0.6},
-  {t:'laser',   e:'🔫',  col:'#ff7ab6', unlock:1, weight:2.5},
+  {t:'enlarge', e:'📏', lab:'BG', col:'#9effc8', unlock:1, weight:3},
+  {t:'slow',    e:'🐌', lab:'SL', col:'#7ae6ff', unlock:1, weight:2},
+  {t:'catch',   e:'🧲', lab:'CT', col:'#ffd76a', unlock:1, weight:2},
+  {t:'multi',   e:'🌀', lab:'MB', col:'#b290ff', unlock:1, weight:2},
+  {t:'life',    e:'❤️', lab:'+1', col:'#ff7ab6', unlock:1, weight:0.6},
+  {t:'laser',   e:'🔫', lab:'LZ', col:'#ff7ab6', unlock:1, weight:2.5},
   // ---- Themed combat (level 2+) ----
   {t:'paper',   e:'🧻',  col:'#ffffff', unlock:2, weight:2},
   {t:'shield',  e:'🛡️', col:'#7ae6ff', unlock:2, weight:1.4},
@@ -944,7 +1151,7 @@ function maybeDrop(x,y){
     let total = 0; for(const p of arr) total += (p.weight||1);
     let roll = Math.random()*total, p = arr[0];
     for(const item of arr){ roll -= (item.weight||1); if(roll <= 0){ p = item; break; } }
-    powerups.push({x,y,vy:1.6+level*0.05, t:p.t, e:p.e, col:p.col, bad:!!p.bad, wob:Math.random()*Math.PI*2});
+    powerups.push({x,y,vy:1.6+level*0.05, t:p.t, e:p.e, lab:p.lab||p.t.slice(0,2).toUpperCase(), col:p.col, bad:!!p.bad, wob:Math.random()*Math.PI*2, spin:Math.random()*6});
   }
 }
 function applyPower(p){
@@ -1062,6 +1269,7 @@ function spawnStinkCloud(){
   }
   fart();
 }
+const BALL_HUES = ['#8a5a30','#7ae6ff','#ff7ab6','#ffd76a'];
 function spawnMulti(){
   const src = balls[0]; if(!src) return;
   for(let i=0;i<2;i++){
@@ -1071,7 +1279,8 @@ function spawnMulti(){
       x:src.x,y:src.y,r:src.r,
       vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,
       speed:src.speed,baseSpeed:src.baseSpeed,
-      stuck:false,fire:src.fire,ghost:src.ghost||0,trail:[]
+      stuck:false,fire:src.fire,ghost:src.ghost||0,trail:[],
+      ballHue: BALL_HUES[(balls.length + i) % BALL_HUES.length]
     });
   }
 }
@@ -1112,7 +1321,13 @@ function detonate(){
 // Brick death: particle burst + a spinning, falling "husk" of the brick that
 // shrinks and fades instead of vanishing instantly.
 function killBrick(b){
+  runStats.bricks = (runStats.bricks || 0) + 1;
   spawnBrickBits(b);
+  if(TSHARDS && FX && FX.allowJuiceEffects(reducedMotion)){
+    const cap = TSHARDS.shardCap(12, reducedMotion, FX);
+    const more = TSHARDS.spawnShardsFromBrick(b, cap);
+    shards.push(...more);
+  }
   spawnSmoke(b.x+b.w/2, b.y+b.h/2, 4, '128,150,124');
   dyingBricks.push({
     x: b.x, y: b.y, w: b.w, h: b.h, c1: b.c1, c2: b.c2, glow: b.glow,
@@ -1209,6 +1424,7 @@ function step(dt){
     paddle.x += (paddle.aimX - paddle.x) * t;
   }
   if(paddle.recoil > 0) paddle.recoil = Math.max(0, paddle.recoil - 0.8*ts);
+  if(paddle.squash > 0) paddle.squash = Math.max(0, paddle.squash - 0.14*ts);
   // Auto-fire while held: easier on phones than tap-spamming.
   if(pointerActive) fireAll();
   let speedPowersChanged = false;
@@ -1230,6 +1446,7 @@ function step(dt){
   if(speedPowersChanged) syncTimedBallSpeeds();
 
   if(comboTimer>0){ comboTimer -= ts; if(comboTimer<=0){ comboTimer=0; comboHits=0; } }
+  runStats.maxCombo = Math.max(runStats.maxCombo || 0, comboHits);
 
   if(shake>0) shake = Math.max(0, shake - FEEL_SHAKE_DECAY*ts);
   if(flash>0) flash = Math.max(0, flash - 0.05*ts);
@@ -1245,7 +1462,31 @@ function step(dt){
     if(b.fire>0) b.fire -= ts;
     if(b.squash > 0) b.squash = Math.max(0, b.squash - 0.12*ts);
 
-    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    if(gameMode === 'boss' && boss){
+      b.bossCd = (b.bossCd || 0) - ts;
+      const bx0 = boss.x - boss.w/2, bx1 = boss.x + boss.w/2, by0 = boss.y, by1 = boss.y + boss.h;
+      if(b.bossCd <= 0 && b.x > bx0 && b.x < bx1 && b.y + b.r > by0 && b.y - b.r < by1){
+        b.bossCd = 10;
+        b.vy = -Math.abs(b.vy);
+        const dmg = b.fire > 0 ? 2 : 1;
+        boss.hp -= dmg;
+        const pts = TBOSS ? TBOSS.bossHitScore(boss.phase || 1) : 100;
+        score += pts;
+        floatText('+'+pts, boss.x, boss.y, '#ffd76a');
+        sfx.brick();
+        spawnImpactRing(b.x, b.y, '#ff9d74');
+        shake = Math.max(shake, 5);
+        if(boss.hp <= 0){
+          boss = null;
+          spawnConfetti(90);
+          flash = 1;
+          gameOver(true);
+          return;
+        }
+      }
+    }
+
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,'#9effc8'); spawnHitSpark(b.x,b.y,'#9effc8'); }
     if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
     if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; clampMinBallSpeed(b); sfx.bounce(); spawnHitSpark(b.x,b.y,'#9effc8'); }
 
@@ -1258,8 +1499,9 @@ function step(dt){
       b.y = paddle.y - b.r - 1;
       b.squash = 1; b.squashAng = Math.PI/2;
       paddle.recoil = Math.min(8, (paddle.recoil||0) + 5);
+      paddle.squash = 1;
       if(activePowers.sticky){ b.stuck = true; waitingLaunch = true; btnLaunch.classList.add('show'); }
-      sfx.hit(); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
+      sfx.hit(); spawnImpactRing(b.x,b.y+b.r,'#9effc8'); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
       shake = Math.max(shake, 4);
     }
 
@@ -1296,8 +1538,11 @@ function step(dt){
           score += earned;
           if(comboHits>=4) showCombo(comboHits);
           floatText('+'+earned, br.x+br.w/2, br.y, '#ffd76a');
-          sfx.brick();
+          if(br.metal) sfx.metal();
+          else if(br.material === 'gold') sfx.gold();
+          else sfx.brick();
           sfx.combo(comboHits);
+          spawnImpactRing(br.x+br.w/2, br.y+br.h/2, br.c1);
           spawnHitSpark(b.x,b.y,br.c1);
         }
         if(br.hp<=0){
@@ -1453,14 +1698,64 @@ function step(dt){
     if(d.t >= d.max) dyingBricks.splice(i,1);
   }
 
-  if(bricks.length === 0 && !levelTransition){
+  for(let i=shards.length-1;i>=0;i--){
+    const ok = TSHARDS ? TSHARDS.stepShard(shards[i], ts) : false;
+    if(!ok) shards.splice(i,1);
+  }
+
+  if(gameMode === 'boss' && boss){
+    boss.phase = TBOSS ? TBOSS.phaseForHp(boss.hp, boss.maxHp) : 1;
+    boss.cd -= ts;
+    const interval = TBOSS ? TBOSS.sludgeIntervalFrames(boss.phase) : 70;
+    if(boss.cd <= 0){
+      boss.cd = interval;
+      sludges.push({
+        x: boss.x + (Math.random()-0.5)*boss.w*0.7,
+        y: boss.y + boss.h,
+        vy: 1.2 + boss.phase*0.35,
+        r: 9 + boss.phase*2
+      });
+    }
+    for(let i=sludges.length-1;i>=0;i--){
+      const sl = sludges[i];
+      sl.y += sl.vy * ts;
+      if(sl.y > H + 20){ sludges.splice(i,1); continue; }
+      if(sl.y + sl.r >= paddle.y && Math.abs(sl.x - paddle.x) < paddle.w/2 + sl.r + 4){
+        sludges.splice(i,1);
+        if(activePowers.shield){
+          activePowers.shield = Math.max(0, activePowers.shield - 30);
+          floatText('BLOCKED', paddle.x, paddle.y - 24, '#7ae6ff');
+        } else {
+          lives--;
+          sfx.death();
+          shake = Math.max(shake, 10);
+          tryLightHaptic(28);
+          if(lives <= 0){ gameOver(false); return; }
+          balls = [ newBall(true) ];
+          waitingLaunch = true;
+          btnLaunch.classList.add('show');
+        }
+      }
+    }
+  }
+
+  if(clearParty){
+    clearParty.t += ts;
+    if(clearParty.t > 45) clearParty = null;
+  }
+
+  if(bricks.length === 0 && !levelTransition && gameMode !== 'boss'){
     levelTransition = true;
-    score += 200 + level*50;
+    const bonus = 200 + level*50;
+    score += bonus;
+    const stars = lives >= 3 ? 3 : (lives >= 2 ? 2 : 1);
+    clearParty = { t: 0, stars, bonus };
     const clearMsg = `Level ${level} clear!`;
-    setHype(`LEVEL ${level} CLEAR!`, 90);
-    announce(clearMsg + ` Bonus ${200 + level*50} points.`);
-    floatText('+'+(200+level*50), W/2, H/2, '#9effc8');
+    setHype(`LEVEL ${level} CLEAR! ${'★'.repeat(stars)}`, 90);
+    announce(clearMsg + ` Bonus ${bonus} points. ${stars} stars.`);
+    floatText('+'+bonus, W/2, H/2, '#9effc8');
     flash = Math.max(flash, 0.6);
+    spawnConfetti(70);
     sfx.win();
     level++;
     if(level > 30){ levelTransition = false; gameOver(true); return; }
@@ -1491,9 +1786,11 @@ function render(){
   ctx.translate(shakeOff.sx, shakeOff.sy);
   const parallaxMul = FX ? FX.parallaxSpeedFactor(reducedMotion) : 1;
 
+  const world = TWORLDS ? TWORLDS.worldForLevel(level) : null;
+  const sky = world ? world.sky : ['#06141a','#0e2730','#15394a'];
   const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, '#06141a');
-  g.addColorStop(0.5, '#0e2730');
+  g.addColorStop(0, sky[0]);
+  g.addColorStop(0.5, sky[1]);
   g.addColorStop(1, `rgb(${20+stink*40},${50+stink*30},${64+stink*30})`);
   ctx.fillStyle = g;
   ctx.fillRect(0,0,W,H);
@@ -1654,6 +1951,14 @@ function render(){
   ctx.strokeRect(4.5,4.5,W-9,H-9);
 
   for(const b of bricks){ drawBrick(b); }
+  if(boss) drawBoss(boss);
+  for(const sl of sludges){
+    ctx.fillStyle = 'rgba(60,90,40,.85)';
+    ctx.beginPath(); ctx.arc(sl.x, sl.y, sl.r, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(140,200,90,.5)';
+    ctx.beginPath(); ctx.arc(sl.x - sl.r*0.2, sl.y - sl.r*0.2, sl.r*0.35, 0, 6.283); ctx.fill();
+  }
+  for(const s of shards) drawShard(s);
   for(const d of dyingBricks){ drawDyingBrick(d); }
   for(const p of powerups){ drawPowerup(p); }
   for(const l of lasers){
@@ -1685,6 +1990,29 @@ function render(){
   }
   drawPaddle();
   for(const b of balls) drawBall(b);
+  for(const ring of impactRings){
+    ring.life -= rts;
+    ring.r += 1.8 * rts;
+    if(ring.life <= 0) continue;
+    ctx.strokeStyle = ring.col;
+    ctx.globalAlpha = Math.max(0, ring.life / 14) * 0.7;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, 6.283); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  for(let i=impactRings.length-1;i>=0;i--){ if(impactRings[i].life <= 0) impactRings.splice(i,1); }
+  for(const c of confettiBits){
+    c.x += c.vx * rts; c.y += c.vy * rts; c.vy += 0.08 * rts; c.rot += c.vr * rts; c.life -= rts;
+    if(c.life <= 0) continue;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.globalAlpha = Math.max(0, c.life / 60);
+    ctx.fillStyle = c.col;
+    ctx.fillRect(-3, -2, 6, 4);
+    ctx.restore();
+  }
+  for(let i=confettiBits.length-1;i>=0;i--){ if(confettiBits[i].life <= 0) confettiBits.splice(i,1); }
 
   for(const p of particles){
     if(p.shock){
@@ -1788,17 +2116,78 @@ function render(){
     ctx.strokeStyle = 'rgba(158,255,200,.55)'; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#9effc8';
     ctx.shadowColor = '#9effc8'; ctx.shadowBlur = 16;
-    ctx.fillText(banner, W/2, 114);
+    ctx.fillText(banner, W/2, 102);
+    if(world){
+      ctx.font = 'bold 12px Trebuchet MS, system-ui, sans-serif';
+      ctx.fillStyle = '#ffd76a';
+      ctx.fillText(world.name, W/2, 122);
+    }
     ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  if(state === 'title'){
+    drawTitleAttract(rts);
+  }
+
+  if(clearParty && clearParty.t > 0){
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, clearParty.t / 12);
+    ctx.font = 'bold 20px Trebuchet MS, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillText('★'.repeat(clearParty.stars || 1), W/2, H*0.42);
+    ctx.fillStyle = '#9effc8';
+    ctx.fillText(`+${clearParty.bonus} CLEAR`, W/2, H*0.46);
     ctx.restore();
   }
 
   ctx.restore();
 }
 
+function drawShard(s){
+  ctx.save();
+  ctx.globalAlpha = s.alpha != null ? s.alpha : 1;
+  ctx.translate(s.x, s.y);
+  ctx.rotate(s.rot);
+  const g = ctx.createLinearGradient(0, -s.h/2, 0, s.h/2);
+  g.addColorStop(0, s.c1);
+  g.addColorStop(1, s.c2);
+  ctx.fillStyle = g;
+  ctx.fillRect(-s.w/2, -s.h/2, s.w, s.h);
+  ctx.restore();
+}
+
+function drawBoss(b){
+  const x = b.x - b.w/2, y = b.y;
+  ctx.fillStyle = 'rgba(0,0,0,.35)';
+  roundRect(ctx, x+3, y+4, b.w, b.h, 12); ctx.fill();
+  const g = ctx.createLinearGradient(x, y, x, y+b.h);
+  g.addColorStop(0, '#6a4a20');
+  g.addColorStop(0.5, '#3a2810');
+  g.addColorStop(1, '#1a1008');
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, b.w, b.h, 12); ctx.fill();
+  ctx.font = 'bold 14px Trebuchet MS, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd76a';
+  ctx.fillText('SEWER KING', b.x, y + b.h*0.55);
+  const barW = b.w - 16, barX = x + 8, barY = y - 10;
+  ctx.fillStyle = 'rgba(0,0,0,.5)';
+  roundRect(ctx, barX, barY, barW, 6, 3); ctx.fill();
+  const pct = Math.max(0, b.hp / b.maxHp);
+  ctx.fillStyle = '#ff7ab6';
+  roundRect(ctx, barX, barY, barW * pct, 6, 3); ctx.fill();
+}
+
 function drawBrick(b){
   b.wob += 0.04;
   const px = b.x, py = b.y, pw = b.w, ph = b.h;
+  const spr = getBrickSpriteCanvas(b);
+  if(spr){
+    ctx.drawImage(spr, px, py, pw, ph);
+    return;
+  }
   const dmg = 1 - b.hp/b.maxHp;
   // Soft drop shadow under each brick
   ctx.fillStyle = 'rgba(0,0,0,.28)';
@@ -1900,7 +2289,24 @@ function drawDyingBrick(d){
 }
 
 function drawPaddle(){
+  const sq = Math.min(1, paddle.squash || 0);
   const x = paddle.x - paddle.w/2, y = paddle.y + (paddle.recoil||0), w = paddle.w, h = paddle.h;
+  ctx.save();
+  if(sq > 0){
+    ctx.translate(paddle.x, y + h/2);
+    ctx.scale(1 + sq*0.12, 1 - sq*0.1);
+    ctx.translate(-paddle.x, -(y + h/2));
+  }
+  const powerGlow = activePowers.fire || activePowers.laser || activePowers.gold || activePowers.plunger;
+  if(powerGlow){
+    ctx.shadowColor = activePowers.fire ? '#ff9d74' : (activePowers.gold ? '#ffd76a' : '#9effc8');
+    ctx.shadowBlur = 16;
+    roundRect(ctx, x-2, y-2, w+4, h+4, h/2+2);
+    ctx.strokeStyle = 'rgba(255,255,255,.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
   // Shield aura — full bottom band
   if(activePowers.shield){
     const sg = ctx.createLinearGradient(0, paddle.y+paddle.h, 0, H);
@@ -1983,6 +2389,7 @@ function drawPaddle(){
     ctx.fillRect(x+5, y-6, 2, 1);
     ctx.fillRect(x+w-7, y-6, 2, 1);
   }
+  ctx.restore();
 }
 
 function drawBall(b){
@@ -2034,6 +2441,10 @@ function drawBall(b){
     grd.addColorStop(0.25, '#ffd28a');
     grd.addColorStop(0.6, '#ff7a3c');
     grd.addColorStop(1, '#7a2810');
+  } else if(b.ballHue){
+    grd.addColorStop(0, b.ballHue);
+    grd.addColorStop(0.5, '#553318');
+    grd.addColorStop(1, '#2e1a0c');
   } else {
     grd.addColorStop(0, '#c89466');
     grd.addColorStop(0.4, '#8a5a30');
@@ -2071,6 +2482,7 @@ function drawBall(b){
 
 function drawPowerup(p){
   const t = performance.now() * 0.003;
+  p.spin = (p.spin || 0) + 0.04;
   const y = p.y + Math.sin(p.wob)*2;
   // Pulsing halo behind capsule
   const haloR = 22 + Math.sin(p.wob*1.5)*3;
@@ -2108,6 +2520,10 @@ function drawPowerup(p){
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(p.e, 0, 0);
   ctx.restore();
+  ctx.font = 'bold 9px Trebuchet MS, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(p.lab || '', p.x, y + 18);
   ctx.textBaseline='alphabetic';
 }
 

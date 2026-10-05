@@ -43,7 +43,9 @@
   }
 
   function stepShard(s, ts, gravity = 0.22) {
-    if (!s) return false;
+    if (!s) {
+      return false;
+    }
     s.x += s.vx * ts;
     s.y += s.vy * ts;
     s.vy += gravity * ts;

@@ -19,7 +19,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ### Overview
 
-TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels, 19 power-ups, and a unique "stink" mechanic. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
+TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels across five themed worlds (six levels each), 19 power-ups, optional **Boss Flush** (separate best score: `turdanoid_boss_best_v1`), and a unique "stink" mechanic. Classic campaign best remains `turdanoid_v2_best`. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
 
 ### Controls
 

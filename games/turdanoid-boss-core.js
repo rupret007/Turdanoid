@@ -7,15 +7,23 @@
 
   function phaseForHp(hp, maxHp) {
     const ratio = hp / Math.max(1, maxHp || MAX_HP);
-    if (ratio > 0.66) return 1;
-    if (ratio > 0.33) return 2;
+    if (ratio > 0.66) {
+      return 1;
+    }
+    if (ratio > 0.33) {
+      return 2;
+    }
     return 3;
   }
 
   /** Frames between sludge drops; lower = harder. */
   function sludgeIntervalFrames(phase) {
-    if (phase >= 3) return 42;
-    if (phase === 2) return 58;
+    if (phase >= 3) {
+      return 42;
+    }
+    if (phase === 2) {
+      return 58;
+    }
     return 78;
   }
 

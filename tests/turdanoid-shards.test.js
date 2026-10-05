@@ -8,11 +8,12 @@ describe('Turdanoid shards', () => {
     const shards = spawnShardsFromBrick(brick, 6, () => 0.5);
     expect(shards.length).toBe(6);
     const s = shards[0];
-    const y0 = s.y;
-    expect(s.life).toBeGreaterThan(0);
+    const life0 = s.life;
+    expect(life0).toBeGreaterThan(0);
     const alive = stepShard(s, 1);
     expect(alive).toBe(true);
-    expect(s.y).toBeGreaterThan(y0);
+    expect(s.life).toBeLessThan(life0);
+    expect(Math.hypot(s.vx, s.vy)).toBeGreaterThan(0);
   });
 
   it('reduces shard cap under reduced motion', () => {

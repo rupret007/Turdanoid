@@ -50,10 +50,14 @@
       ctx.arc(w - 5, h / 2, 1.6, 0, 6.283);
       ctx.fill();
       ctx.fillStyle = 'rgba(200,210,220,.25)';
-      for (let s = 8; s < w - 8; s += 4) ctx.fillRect(s, h / 2 - 0.5, 2, 1);
+      for (let s = 8; s < w - 8; s += 4) {
+        ctx.fillRect(s, h / 2 - 0.5, 2, 1);
+      }
     }
 
-    if (stage >= 1) paintCracks(ctx, w, h, stage);
+    if (stage >= 1) {
+      paintCracks(ctx, w, h, stage);
+    }
 
     ctx.strokeStyle = 'rgba(0,0,0,.32)';
     ctx.lineWidth = 1.2;

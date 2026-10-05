@@ -13,15 +13,17 @@
   function coachSeen(storage) {
     try {
       return storage && storage.getItem(COACH_STORAGE_KEY) === '1';
-    } catch (e) {
+    } catch {
       return true;
     }
   }
 
   function markCoachSeen(storage) {
     try {
-      if (storage) storage.setItem(COACH_STORAGE_KEY, '1');
-    } catch (e) { /* ignore */ }
+      if (storage) {
+        storage.setItem(COACH_STORAGE_KEY, '1');
+      }
+    } catch { /* ignore */ }
   }
 
   root.TurdanoidCoach = {
