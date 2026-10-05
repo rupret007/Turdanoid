@@ -3,8 +3,11 @@ import {
   crackStage,
   assignBrickStyle,
   pickMaterial,
+  brickColors,
+  distinctRowHueCount,
   MATERIALS
 } from '../games/turdanoid-brick.js';
+import { spriteKey } from '../games/turdanoid-brick-sprite.js';
 import { shouldPlaceBrick, allPatternNames, EXTRA_PATTERN_NAMES } from '../games/turdanoid-levels.js';
 
 describe('Turdanoid brick art', () => {
@@ -28,6 +31,27 @@ describe('Turdanoid brick art', () => {
 
   it('can pick porcelain on top rows at higher levels', () => {
     expect(pickMaterial(0, 2, 8, () => 0)).toBe('porcelain');
+  });
+
+  it('uses rainbow row hues for sewer bricks (not one flat mint)', () => {
+    const top = brickColors(0, 6, 'sewer', 0, 0);
+    const mid = brickColors(3, 6, 'sewer', 0, 0);
+    const bot = brickColors(5, 6, 'sewer', 0, 0);
+    expect(top.c1).not.toBe(mid.c1);
+    expect(mid.c1).not.toBe(bot.c1);
+    expect(distinctRowHueCount(6, 0)).toBeGreaterThanOrEqual(4);
+  });
+
+  it('rotates row hues per world index', () => {
+    const w0 = brickColors(0, 6, 'sewer', 0, 0);
+    const w2 = brickColors(0, 6, 'sewer', 0, 2);
+    expect(w0.c1).not.toBe(w2.c1);
+  });
+
+  it('sprite cache keys include brick fill colors', () => {
+    const a = spriteKey('sewer', 0, false, 40, 18, '#ff0000', '#880000');
+    const b = spriteKey('sewer', 0, false, 40, 18, '#00ff00', '#008800');
+    expect(a).not.toBe(b);
   });
 });
 

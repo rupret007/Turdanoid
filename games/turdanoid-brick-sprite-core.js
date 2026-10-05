@@ -2,11 +2,13 @@
 (function attachTurdanoidBrickSprite(root) {
   'use strict';
 
-  function spriteKey(material, crackStage, metal, w, h) {
+  function spriteKey(material, crackStage, metal, w, h, c1, c2) {
     const m = material || 'sewer';
     const c = Math.max(0, Math.min(3, crackStage | 0));
     const met = metal ? 1 : 0;
-    return `${m}|${c}|${met}|${Math.round(w)}|${Math.round(h)}`;
+    const top = c1 || '#7af1c4';
+    const bot = c2 || '#3aa97c';
+    return `${m}|${c}|${met}|${Math.round(w)}|${Math.round(h)}|${top}|${bot}`;
   }
 
   function paintBrickSprite(ctx, w, h, opts) {
@@ -18,15 +20,16 @@
     const glow = opts.glow || 'rgba(122,241,196,.45)';
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,.28)';
-    roundRect(ctx, 1, h - 2, w, 3, 2);
+    ctx.fillStyle = 'rgba(0,0,0,.42)';
+    roundRect(ctx, 1, h - 1, w, 4, 2);
     ctx.fill();
 
     ctx.shadowColor = glow;
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 10;
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, c1);
-    g.addColorStop(0.55, c1);
+    g.addColorStop(0.42, c1);
+    g.addColorStop(0.72, c2);
     g.addColorStop(1, c2);
     ctx.fillStyle = g;
     roundRect(ctx, 0, 0, w, h, 5);
@@ -34,24 +37,40 @@
     ctx.shadowBlur = 0;
 
     paintMaterialTexture(ctx, w, h, material);
-    const topGrad = ctx.createLinearGradient(0, 0, 0, h * 0.5);
-    topGrad.addColorStop(0, 'rgba(255,255,255,.6)');
+    const topGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+    topGrad.addColorStop(0, 'rgba(255,255,255,.78)');
+    topGrad.addColorStop(0.35, 'rgba(255,255,255,.28)');
     topGrad.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = topGrad;
-    roundRect(ctx, 1.5, 1, w - 3, h * 0.48, 4);
+    roundRect(ctx, 1.5, 1, w - 3, h * 0.52, 4);
     ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.48)';
+    ctx.fillRect(2, h - 3, w - 4, 2.5);
+    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(3, 2.5);
+    ctx.lineTo(w - 3, 2.5);
+    ctx.stroke();
 
     if (metal) {
-      ctx.fillStyle = 'rgba(255,255,255,.55)';
+      const mg = ctx.createLinearGradient(0, 0, w, h);
+      mg.addColorStop(0, 'rgba(255,255,255,.55)');
+      mg.addColorStop(0.5, 'rgba(180,195,210,.2)');
+      mg.addColorStop(1, 'rgba(60,70,85,.35)');
+      ctx.fillStyle = mg;
+      roundRect(ctx, 2, 2, w - 4, h - 4, 4);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
       ctx.beginPath();
-      ctx.arc(5, h / 2, 1.6, 0, 6.283);
+      ctx.arc(5, h / 2, 2, 0, 6.283);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(w - 5, h / 2, 1.6, 0, 6.283);
+      ctx.arc(w - 5, h / 2, 2, 0, 6.283);
       ctx.fill();
-      ctx.fillStyle = 'rgba(200,210,220,.25)';
-      for (let s = 8; s < w - 8; s += 4) {
-        ctx.fillRect(s, h / 2 - 0.5, 2, 1);
+      ctx.fillStyle = 'rgba(220,230,240,.35)';
+      for (let s = 8; s < w - 8; s += 3) {
+        ctx.fillRect(s, h / 2 - 0.5, 2.5, 1);
       }
     }
 
@@ -105,18 +124,25 @@
       }
     } else if (material === 'gold') {
       const sg = ctx.createLinearGradient(0, 0, w, h);
-      sg.addColorStop(0, 'rgba(255,240,180,.45)');
-      sg.addColorStop(0.5, 'rgba(255,215,106,.15)');
-      sg.addColorStop(1, 'rgba(180,120,20,.35)');
+      sg.addColorStop(0, 'rgba(255,250,200,.75)');
+      sg.addColorStop(0.35, 'rgba(255,220,90,.55)');
+      sg.addColorStop(0.7, 'rgba(220,160,30,.45)');
+      sg.addColorStop(1, 'rgba(140,90,10,.5)');
       ctx.fillStyle = sg;
       roundRect(ctx, 2, 2, w - 4, h - 4, 4);
       ctx.fill();
+      ctx.strokeStyle = 'rgba(255,240,180,.65)';
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, 3, 3, w - 6, h - 6, 3);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      ctx.fillRect(4, 4, w * 0.35, 2);
     }
   }
 
   function paintCracks(ctx, w, h, stage) {
-    ctx.strokeStyle = 'rgba(0,0,0,.45)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.35;
+    ctx.strokeStyle = 'rgba(0,0,0,.55)';
     ctx.beginPath();
     ctx.moveTo(w * 0.3, 2);
     ctx.lineTo(w * 0.32, h * 0.5);
@@ -129,9 +155,22 @@
     if (stage >= 3) {
       ctx.moveTo(w * 0.45, 4);
       ctx.lineTo(w * 0.4, h - 2);
-      ctx.strokeStyle = 'rgba(40,0,0,.5)';
+      ctx.moveTo(w * 0.55, h * 0.35);
+      ctx.lineTo(w * 0.72, h * 0.62);
     }
     ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.31, 3);
+    ctx.lineTo(w * 0.29, h - 4);
+    ctx.stroke();
+    if (stage >= 3) {
+      ctx.fillStyle = 'rgba(30,10,10,.25)';
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.5, w * 0.12, 0, 6.283);
+      ctx.fill();
+    }
   }
 
   function roundRect(c, x, y, rw, rh, r) {

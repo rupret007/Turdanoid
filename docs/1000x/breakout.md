@@ -1,46 +1,37 @@
 # TurdAnoid 1000x — breakout lane
 
-Round 3: quality, playtest harness, polish (extends rounds 1–2).
+Round 4: in-play visual pop (rendering only; HP/scoring/levels unchanged).
 
-## Honest audit (round 3)
+## Honest audit (round 4)
 
-| Area | Round-2 | Round-3 |
-|------|---------|---------|
-| Gameplay | Boss + worlds | Level-clear **score tally** (skippable); horizontal-rail ball nudge |
-| Feel | Shards, confetti | Tally pacing; boss **phase announcer** (aria-live) |
-| Graphics | Material sprites | HUD legibility @320px; power capsule label stroke |
-| Animation | Clear party | End-screen stat stagger; animated clear bonus count-up |
-| Audio | SFX profiles | Unchanged (mute-safe) |
-| HUD | Run stats | Tighter mobile chips; less overlap with pause buttons |
-| Mobile/touch | HUD-relative drag | Unchanged |
-| A11y | Coach | `:focus-visible` rings; Enter on title/pause/end; boss phase messages |
-| Perf | Sprite cache | **Device-tier** particle/shard/confetti caps (`turdanoid-perf-core.js`) |
-| Onboarding | Coach | Keyboard path title → play → pause → game over |
-| Playtest | Manual | **`scripts/turdanoid-autoplay.mjs`** + screenshots |
+| Area | Round-3 | Round-4 focus |
+|------|---------|---------------|
+| Gameplay | Tally, nudge | Unchanged |
+| Feel | Coach, perf caps | Brick chip puff + hit flash; impact rings on all wall hits |
+| Graphics | Title great; **in-play wall flat mint** | Rainbow rows per world; stronger brick bevel; gold/metal read; world wall tint |
+| Animation | Clear party | Ball glow/trail; paddle plunger redesign; brick white flash on hit |
+| Audio | Mute-safe | Unchanged |
+| HUD | Mobile chips | Unchanged |
+| Mobile/touch | HUD drag | Ball/paddle/bricks readability @320–390 |
+| A11y | aria-live | Unchanged |
+| Perf | Device tiers | Sprite cache keyed by color (correctness + no wrong tints) |
+| Onboarding | Coach | Unchanged |
+| Playtest | r3 autoplay | r4 screenshots @390 + 1280 |
 
-## Checklist (round 3)
+**Root cause (r3):** `brickColors` always applied `MATERIAL_PALETTES.sewer` for ~75% of bricks, and sprite cache keys omitted `c1`/`c2` so the first mint sprite was reused for the whole wall.
 
-- [x] Self-playtest Playwright harness (`scripts/turdanoid-autoplay.mjs`) → `conductor/reviews/turdanoid-1000x/r3/breakout-autoplay/`
-- [x] Screenshot-driven HUD/power readability tweaks
-- [x] Level-clear animated tally (bricks, combo, time, lives stars) — Space/tap skip
-- [x] Game-over stat card entrance polish
-- [x] Perf caps by DPR / `hardwareConcurrency`; pool trimming in hot loop
-- [x] Scoring compat vitest (`tests/turdanoid-scoring-compat.test.js`) pins b3821b4 formulas + `turdanoid_v2_best` contract
-- [x] Keyboard/focus flow + boss phase announcer
-- [x] Horizontal-loop softlock mitigation (`FEEL_MIN_BALL_VERTICAL` / `nudgeBallOffHorizontalRail`)
+## Checklist (round 4)
+
+- [x] Row/world rainbow brick hues (≥4 distinct hues per wall); special materials unchanged
+- [x] Stronger brick sprites: bevel, specular, bottom lip, visible cracks, gold/metal
+- [x] Sprite cache keys include fill colors
+- [x] Ball: larger draw radius (`BALL_VISUAL_SCALE`), glow halo, brighter trail
+- [x] Paddle: red plunger cup + teal rim + handle; power glow retained
+- [x] Per-world `playWallTint` behind brick field in play
+- [x] Hit feedback: brick flash-white, chip puff, modest shake; impact ring on hits
+- [x] Unit tests for row hues, world rotation, sprite keys
+- [x] Autoplay screenshots → `conductor/reviews/turdanoid-1000x/r4/breakout-autoplay/`
 - [ ] Shared `SuiteAudio` mixer (shared lane)
-
-## Autoplay findings (2026-10-05, port 8153)
-
-| Session | Avg FPS | Min FPS | Console | Stuck-ball heuristic | H-loop |
-|---------|---------|---------|---------|----------------------|--------|
-| Classic 390×844 | 57.1 | 227* | 0 | 1 brief | 0 |
-| Classic 1280×800 | 68.9 | 200* | 0 | 0 | 0 |
-| Boss 390×844 | 70.0 | 179* | 0 | 0 | 0 (state `gameover`, score 840) |
-
-\*Min FPS from single-frame rAF spikes (tab compositor), not sustained drops.
-
-No console errors in any session. Boss run completed a full fight (player died). One classic-mobile stuck heuristic fired during a tight horizontal segment; post-fix nudge keeps `horizontalLoops: 0`.
 
 ## Needs shared change
 
@@ -50,7 +41,7 @@ No console errors in any session. Boss run completed a full fight (player died).
 
 | Check | Result |
 |-------|--------|
-| `npx vitest run` | PASS (300/300; use `--maxWorkers=1` if parallel runs time out on loaded CI) |
-| `npm run lint` | PASS (warnings only, pre-existing) |
-| `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8151` | PASS |
-| `node scripts/turdanoid-autoplay.mjs 8153` | PASS (see table above) |
+| `npx vitest run` | (see round 4 report) |
+| `npm run lint` | (see round 4 report) |
+| `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8151` | (see round 4 report) |
+| `node scripts/turdanoid-autoplay.mjs 8151 …/r4/breakout-autoplay/` | (see round 4 report) |

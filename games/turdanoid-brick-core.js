@@ -15,13 +15,18 @@
   };
 
   const ROW_PALETTES = [
-    ['#7af1c4', '#3aa97c', 'rgba(122,241,196,.45)'],
-    ['#7ae6ff', '#2c8aaa', 'rgba(122,230,255,.45)'],
-    ['#ffd76a', '#bf8a13', 'rgba(255,215,106,.45)'],
-    ['#ff9d74', '#a64b21', 'rgba(255,157,116,.45)'],
-    ['#ff7ab6', '#a3306e', 'rgba(255,122,182,.45)'],
-    ['#b290ff', '#5b3eb8', 'rgba(178,144,255,.45)']
+    ['#5dffb8', '#1e9a62', 'rgba(93,255,184,.55)'],
+    ['#5ce8ff', '#1580b0', 'rgba(92,232,255,.55)'],
+    ['#ffe04a', '#c87800', 'rgba(255,224,74,.55)'],
+    ['#ff8a4a', '#b03810', 'rgba(255,138,74,.55)'],
+    ['#ff5aa8', '#a01868', 'rgba(255,90,168,.55)'],
+    ['#a878ff', '#4820b0', 'rgba(168,120,255,.55)']
   ];
+
+  /** Rotates rainbow rows per campaign world so walls read differently in play. */
+  const WORLD_ROW_ROTATIONS = [0, 1, 2, 3, 4];
+
+  const DISTINCT_MATERIALS = new Set(['metal', 'gold', 'porcelain', 'slime', 'candy', 'tar']);
 
   /**
    * 0 = pristine, 3 = heavily cracked (hp nearly gone).
@@ -61,29 +66,51 @@
     return 'sewer';
   }
 
-  function brickColors(row, rows, material) {
-    if (material && MATERIAL_PALETTES[material]) {
+  function rowPaletteIndex(row, rows, col, worldIndex) {
+    const bands = ROW_PALETTES.length;
+    const rowBand = Math.min(bands - 1, Math.floor((row / Math.max(1, rows - 1)) * bands));
+    const rot = WORLD_ROW_ROTATIONS[Math.abs(worldIndex | 0) % WORLD_ROW_ROTATIONS.length] || 0;
+    const zig = (col % 2) * (rows > 4 ? 1 : 0);
+    return (rowBand + rot + zig) % bands;
+  }
+
+  function brickColors(row, rows, material, col = 0, worldIndex = 0) {
+    if (material && DISTINCT_MATERIALS.has(material) && MATERIAL_PALETTES[material]) {
       const p = MATERIAL_PALETTES[material];
       return { c1: p[0], c2: p[1], glow: p[2], material };
     }
-    const t = row / Math.max(1, rows - 1);
-    const i = Math.min(ROW_PALETTES.length - 1, Math.floor(t * ROW_PALETTES.length));
-    const pal = ROW_PALETTES[i];
-    return { c1: pal[0], c2: pal[1], glow: pal[2], material: 'sewer' };
+    const pal = ROW_PALETTES[rowPaletteIndex(row, rows, col, worldIndex)];
+    return { c1: pal[0], c2: pal[1], glow: pal[2], material: material || 'sewer' };
   }
 
-  function assignBrickStyle(row, rows, col, level, rng) {
+  function assignBrickStyle(row, rows, col, level, rng, worldIndex = 0) {
     const material = pickMaterial(row, col, level, rng);
-    const colors = brickColors(row, rows, material);
+    const colors = brickColors(row, rows, material, col, worldIndex);
     return colors;
+  }
+
+  function distinctRowHueCount(rows, worldIndex = 0) {
+    const seen = new Set();
+    const cols = 10;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const { c1 } = brickColors(r, rows, 'sewer', c, worldIndex);
+        seen.add(c1);
+      }
+    }
+    return seen.size;
   }
 
   root.TurdanoidBrick = {
     MATERIALS,
     MATERIAL_PALETTES,
+    ROW_PALETTES,
+    WORLD_ROW_ROTATIONS,
     crackStage,
     pickMaterial,
+    rowPaletteIndex,
     brickColors,
-    assignBrickStyle
+    assignBrickStyle,
+    distinctRowHueCount
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
