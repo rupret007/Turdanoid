@@ -19,7 +19,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ### Overview
 
-TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels, 19 power-ups, and a unique "stink" mechanic. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
+TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels across five themed worlds (six levels each), 19 power-ups, optional **Boss Flush** (separate best score: `turdanoid_boss_best_v1`), and a unique "stink" mechanic. Classic campaign best remains `turdanoid_v2_best`. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
 
 ### Controls
 
@@ -27,7 +27,7 @@ TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 le
 - **Space**: Start / Launch / Fire
 - **A/D or Arrow Keys**: Move paddle
 - **R**: Restart
-- **P / Esc**: Pause/Resume
+- **P / Esc**: Pause/Resume (pause overlay shows control reminders)
 
 ### Scoring
 
@@ -37,7 +37,7 @@ TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 le
 | Brick destroyed | +5 × level |
 | Combo multiplier | +0.5× per 4 combo hits |
 | 💰 Gold Rush | 2× all brick points |
-| Level clear bonus | 200 + level × 50 |
+| Level clear bonus | 200 + level × 50 (shown on an animated tally screen; Space/tap to skip) |
 
 ### Power-Ups
 
@@ -67,7 +67,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 ### Level Progression
 
-- **30 total levels**, 13 rotating wall patterns
+- **30 total levels**, 18 rotating wall patterns (13 classics + 5 new: Fortress, Ring, Columns, Plunger X, Drip Wall)
 - Brick HP ramps up from level 3; metal bricks appear at level 6+
 - Ball and paddle speed scale with level (capped)
 - Enlarge and Shrink last until their timers die, including across a wall clear. Losing a life still resets the paddle
