@@ -212,4 +212,48 @@ describe('Crappy Eights bounded reactions', () => {
     expect(harness.animations).toHaveLength(0);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('finishes an in-progress receipt immediately when reduced motion is enabled', () => {
+    const harness = documentHarness();
+    const query = { matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    vi.stubGlobal('matchMedia', () => query);
+    const effects = controller(harness);
+    const container = harness.element();
+    const receipt = Effects.scoringReceipt([{ hand: [] }, { name: 'Pip', hand: [{ rank: '8', suit: 'H' }, { rank: 'Q', suit: 'C' }, { rank: 'A', suit: 'S' }] }], 0);
+    effects.renderReceipt(container, receipt);
+    const counter = container.children[2].children[1];
+    expect(counter.textContent).toBe('+0');
+    vi.advanceTimersByTime(250);
+    expect(counter.textContent).toBe('+50');
+    expect(harness.presentation.flyCard).toHaveBeenCalledTimes(1);
+    query.matches = true;
+    query.addEventListener.mock.calls[0][1]({ matches: true });
+    expect(counter.textContent).toBe('+61');
+    expect(vi.getTimerCount()).toBe(0);
+    expect(harness.animations.every(animation => animation.cancel.mock.calls.length === 1)).toBe(true);
+    query.matches = false;
+    vi.runAllTimers();
+    expect(harness.presentation.flyCard).toHaveBeenCalledTimes(1);
+    expect(counter.textContent).toBe('+61');
+  });
+
+  it('cancels stale receipt work when replaced or cleared', () => {
+    const harness = documentHarness();
+    const effects = controller(harness);
+    const container = harness.element();
+    const first = Effects.scoringReceipt([{ hand: [] }, { name: 'Pip', hand: [{ rank: '8', suit: 'H' }, { rank: 'Q', suit: 'C' }] }], 0);
+    const second = Effects.scoringReceipt([{ hand: [] }, { name: 'Flo', hand: [{ rank: '2', suit: 'S' }] }], 0);
+    effects.renderReceipt(container, first);
+    effects.renderReceipt(container, second);
+    vi.runAllTimers();
+    expect(container.children[2].children[1].textContent).toBe('+2');
+    expect(harness.presentation.flyCard).toHaveBeenCalledTimes(1);
+    expect(harness.presentation.flyCard.mock.calls[0][0].card.rank).toBe('2');
+    effects.renderReceipt(container, first);
+    effects.clear();
+    expect(container.children[2].children[1].textContent).toBe('+60');
+    expect(vi.getTimerCount()).toBe(0);
+    vi.runAllTimers();
+    expect(harness.presentation.flyCard).toHaveBeenCalledTimes(1);
+  });
 });

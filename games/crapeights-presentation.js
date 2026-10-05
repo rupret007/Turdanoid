@@ -15,7 +15,7 @@
   function effectPolicy(reducedMotion) {
     const quiet = reduced(reducedMotion);
     return {
-      flightDuration: quiet ? 0 : 320,
+      flightDuration: quiet ? 0 : 260,
       celebrationDuration: quiet ? 0 : 900,
       particleCount: quiet ? 0 : 18,
       maxFlights: 4
@@ -28,6 +28,9 @@
 
   // [frequency, delay, duration, volume, waveform, final frequency]
   const SCORES = {
+    select: [[660, 0, 0.045, 0.045, 'sine', 790]],
+    pass: [[320, 0, 0.075, 0.055, 'triangle', 230]],
+    ui: [[540, 0, 0.05, 0.04, 'sine', 620]],
     deal: [[510, 0, 0.055, 0.11, 'triangle', 290]],
     play: [[380, 0, 0.07, 0.13, 'triangle', 175], [920, 0.025, 0.045, 0.045, 'sine']],
     draw: [[240, 0, 0.08, 0.095, 'triangle', 410]],

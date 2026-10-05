@@ -115,6 +115,7 @@
     const animations = new Set();
     const transients = new Set();
     const bubbles = new Map();
+    const receiptTallies = new Map();
     let overlay = null;
     let thinkingIndex = -1;
     let disposed = false;
@@ -269,8 +270,17 @@
       }
     }
 
+    function settleReceipt(container) {
+      const tally = receiptTallies.get(container);
+      if (!tally) { return; }
+      tally.timers.forEach(timer => { clearTimeout(timer); timers.delete(timer); });
+      tally.counter.textContent = `+${tally.total}`;
+      receiptTallies.delete(container);
+    }
+
     function renderReceipt(container, receipt) {
       if (!container || !doc || disposed) { return; }
+      settleReceipt(container);
       container.replaceChildren();
       container.className = 'ce-receipt';
       container.setAttribute('aria-label', `Scoring receipt: ${receipt.total} points collected from leftover cards`);
@@ -311,20 +321,25 @@
       if (isReduced() || !visualCards.length) { return; }
       counter.textContent = '+0';
       let tally = 0;
+      const pending = { counter, total: receipt.total, timers: new Set() };
+      receiptTallies.set(container, pending);
       visualCards.forEach(({ node, card }, index) => {
-        later(() => {
-          if (!container.isConnected) { return; }
+        const timer = later(() => {
+          pending.timers.delete(timer);
+          if (!container.isConnected || isReduced()) { settleReceipt(container); return; }
           tally += card.points;
           counter.textContent = `+${tally}`;
-          if (isReduced()) { return; }
+          if (!pending.timers.size) { receiptTallies.delete(container); }
           animate(node, [{ transform: 'perspective(180px) rotateY(90deg)', opacity: 0.2 }, { transform: 'perspective(180px) rotateY(0deg)', opacity: 1 }], { duration: 260, easing: 'ease-out' });
           presentation.flyCard?.({ source: node, target: counter, card });
           animate(counter, [{ transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 180, easing: 'ease-out' });
         }, 250 + index * motionPolicy(false).receiptStep);
+        pending.timers.add(timer);
       });
     }
 
     function stopMotion() {
+      receiptTallies.forEach((_, container) => settleReceipt(container));
       animations.forEach(animation => animation.cancel());
       animations.clear();
       transients.forEach(node => node.remove());

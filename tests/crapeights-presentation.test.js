@@ -82,7 +82,7 @@ describe('Crappy Eights presentation policy', () => {
 
   it('disables travel and celebrations for reduced motion including dynamic preference changes', () => {
     let reduceMotion = false;
-    expect(Presentation.effectPolicy(() => reduceMotion)).toMatchObject({ flightDuration: 320, particleCount: 18, maxFlights: 4 });
+    expect(Presentation.effectPolicy(() => reduceMotion)).toMatchObject({ flightDuration: 260, particleCount: 18, maxFlights: 4 });
     reduceMotion = true;
     expect(Presentation.effectPolicy(() => reduceMotion)).toMatchObject({ flightDuration: 0, particleCount: 0, celebrationDuration: 0 });
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
@@ -91,6 +91,30 @@ describe('Crappy Eights presentation policy', () => {
 });
 
 describe('Crappy Eights synthesized audio', () => {
+  it.each(['select', 'pass', 'ui'])('gives %s immediate, brief feedback only after a gesture and while enabled', type => {
+    const { doc } = documentHarness();
+    const harness = audioHarness();
+    let localEnabled = true;
+    const audio = Presentation.createAudio({ readLocalEnabled: () => localEnabled });
+    expect(audio.play(type)).toBe(false);
+    expect(harness.constructor).not.toHaveBeenCalled();
+    audio.unlock();
+    expect(audio.play(type)).toBe(true);
+    expect(harness.oscillators).toHaveLength(1);
+    const voice = harness.oscillators[0];
+    expect(voice.start.mock.calls[0][0]).toBeCloseTo(1.008);
+    expect(voice.stop.mock.calls[0][0] - voice.start.mock.calls[0][0]).toBeLessThan(0.12);
+    localEnabled = false;
+    expect(audio.play(type)).toBe(false);
+    localEnabled = true;
+    globalThis.localStorage.getItem.mockImplementation(key => key === 'turdsuite_muted' ? '1' : null);
+    expect(audio.play(type)).toBe(false);
+    globalThis.localStorage.getItem.mockReturnValue(null);
+    doc.hidden = true;
+    expect(audio.play(type)).toBe(false);
+    expect(harness.oscillators).toHaveLength(1);
+  });
+
   it('never creates audio before a gesture or when either mute setting blocks playback', () => {
     documentHarness();
     const harness = audioHarness();

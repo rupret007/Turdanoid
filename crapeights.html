@@ -607,11 +607,11 @@
     </div>
   </div>
 
-  <div class="overlay" id="roundOverlay" role="dialog" aria-modal="true" aria-labelledby="roundTitle">
+  <div class="overlay" id="roundOverlay" role="dialog" aria-modal="true" aria-labelledby="roundTitle" aria-describedby="roundSummary">
     <div class="overlay-card" id="roundOverlayCard" data-tone="victory">
       <div class="round-trophy" id="roundTrophy" aria-label="Sewer Crown trophy"><svg viewBox="0 0 120 100" aria-hidden="true"><path d="M33 15H87V40Q87 67 60 73Q33 67 33 40Z" fill="#f0c960" stroke="#fff0b0" stroke-width="3"/><path d="M33 23H16V35Q16 53 37 53M87 23H104V35Q104 53 83 53" fill="none" stroke="#dfb45d" stroke-width="8"/><path d="M55 72H65V86H83V96H37V86H55Z" fill="#c79a43"/><text x="60" y="51" text-anchor="middle" font-family="Georgia,serif" font-size="34" fill="#684e1d">8</text><path d="M48 9 46 0 58 6 68 0 72 9" fill="#ffedac"/></svg></div><div class="overlay-kicker" id="roundKicker">Round Riot</div>
       <h2 id="roundTitle">Round Over</h2>
-      <p id="roundSummary">Summary</p>
+      <p id="roundSummary" role="status" aria-live="polite" aria-atomic="true">Summary</p>
       <div id="roundReceipt" aria-label="Leftover card scoring receipt"></div>
       <p class="overlay-flavor" id="roundFlavor">Somebody definitely made a scene.</p>
       <div class="panel" style="margin-top:8px;">
@@ -1135,6 +1135,7 @@
       const hand = players[0] ? players[0].hand : [];
       if (!ui.playerHand) return;
       const focusId = document.activeElement?.dataset.cardId;
+      const focusIndex = [...ui.playerHand.children].indexOf(document.activeElement);
       const geometry = window.CrapeightsHand?.layout(hand.length, ui.playerHand.clientWidth || 300, window.innerWidth > 760 && window.innerHeight <= 900);
       if (geometry) {
         ui.playerHand.style.height = `${geometry.height}px`;
@@ -1171,6 +1172,7 @@
             unlockAudio();
             if (selectedCardId === card.id && isPlayable(card)) { playSelectedCard(); return; }
             selectedCardId = card.id;
+            playSfx('select');
             if (!isPlayable(card)) setStatus(`Match ${suitName(activeSuit)} or ${topCard().rank}. That card cannot play yet.`, false);
             updateAll();
           });
@@ -1178,7 +1180,11 @@
         fragment.appendChild(btn);
       });
       ui.playerHand.replaceChildren(fragment);
-      if (focusId) ui.playerHand.querySelector(`[data-card-id="${focusId}"]`)?.focus({ preventScroll: true });
+      if (focusId) {
+        const nextFocus = ui.playerHand.querySelector(`[data-card-id="${focusId}"]`)
+          || ui.playerHand.children[Math.min(Math.max(0, focusIndex), ordered.length - 1)];
+        nextFocus?.focus({ preventScroll: true });
+      }
 
     }
 
@@ -1360,6 +1366,7 @@
     }
 
     function showWelcomeGuide() {
+      playSfx('ui');
       if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'flex';
       onboardingOpen = true;
       clearAiTimer();
@@ -1370,6 +1377,7 @@
     }
 
     function hideWelcomeGuide() {
+      playSfx('ui');
       if (ui.welcomeGuide) ui.welcomeGuide.style.display = 'none';
       onboardingOpen = false;
       syncDialogFocus();
@@ -1380,6 +1388,7 @@
       } else scheduleTurnIfNeeded();
     }
     function showSuitChooser(card) {
+      playSfx('ui');
       clearHumanAutoPassTimer();
       pendingWildCard = card;
       if (ui.suitChooser) ui.suitChooser.style.display = 'flex';
@@ -1625,6 +1634,8 @@
 
     function passHumanTurn() {
       if (!isHumanTurn() || !hasDrawnThisTurn || pendingWildCard || onboardingOpen || drawerOpen || focusSuspendedRound) return;
+      unlockAudio();
+      playSfx('pass');
       clearHumanAutoPassTimer();
       setStatus('You passed after drawing.', true);
       addHistory('You passed.');
@@ -1800,6 +1811,7 @@
     }
 
     function openTableDrawer() {
+      playSfx('ui');
       drawerOpen = true;
       clearAiTimer();
       tableEffects?.setThinking(-1);
@@ -1809,6 +1821,7 @@
       updateDifficulty(); updateActionButtons(); syncDialogFocus(document.getElementById('tableDrawer'));
     }
     function closeTableDrawer() {
+      playSfx('ui');
       drawerOpen = false;
       document.getElementById('tableDrawer').style.display = 'none';
       syncDialogFocus();
@@ -1827,6 +1840,7 @@
       document.getElementById('tableDrawerBtn').addEventListener('click', openTableDrawer);
       document.getElementById('closeDrawerBtn').addEventListener('click', closeTableDrawer);
       document.getElementById('aiDifficulty').addEventListener('change', event => {
+        playSfx('ui');
         aiDifficulty = CrapeightsAI.normalizeDifficulty?.(event.target.value) || 'normal';
         try { localStorage.setItem('crapeights_difficulty_v1', aiDifficulty); } catch (e) {}
         updateDifficulty();
@@ -1846,8 +1860,9 @@
       if (ui.nextRoundBtn) ui.nextRoundBtn.addEventListener('click', () => { hideRoundOverlay(); roundNumber++; startRound(); });
       if (ui.newMatchOverlayBtn) ui.newMatchOverlayBtn.addEventListener('click', requestFreshMatch);
       document.querySelectorAll('[data-suit]').forEach((btn) => btn.addEventListener('click', () => handleSuitChoice(btn.getAttribute('data-suit'))));
-      document.getElementById('cancelSuitBtn').addEventListener('click', () => { hideSuitChooser(); updateAll(); });
+      document.getElementById('cancelSuitBtn').addEventListener('click', () => { playSfx('ui'); hideSuitChooser(); updateAll(); });
       document.getElementById('sortHandBtn').addEventListener('click', () => {
+        playSfx('select');
         sortMode = sortMode === 'suit' ? 'rank' : 'suit';
         document.getElementById('sortHandBtn').textContent = `Sort: ${sortMode === 'suit' ? 'Suit' : 'Rank'}`;
         renderPlayerHand();
