@@ -16,6 +16,8 @@
   <script src="games/turdrummy-meld-core.js"></script>
   <script src="games/turdrummy-motion-core.js"></script>
   <script src="games/turdrummy-coach-core.js"></script>
+  <script src="games/turdrummy-presentation-core.js"></script>
+  <script src="games/turdrummy-moment-fixtures-core.js"></script>
   <title>TurdRummy - Gin Rummy</title>
   <style>
     :root {
@@ -98,7 +100,7 @@
     }
 
     .app {
-      width: min(1100px, 100%);
+      width: min(1280px, 100%);
       min-height: calc(100vh - 16px);
       border: 1px solid var(--panel-border);
       border-radius: 18px;
@@ -1341,9 +1343,50 @@
        readout row, so reserve its footprint on the row. The app is centered at 1100px, so the
        indent shrinks as the viewport grows: 155px - appLeft, where appLeft = max(8px, (100vw - 1100px) / 2). */
     @media (min-width: 921px) {
+      :root {
+        --card-w: 68px;
+        --back-h: 72px;
+      }
+
+      .table-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) min(272px, 26vw);
+        align-items: stretch;
+        min-height: 0;
+      }
+
+      .table {
+        margin: 8px 0 8px 12px;
+      }
+
+      .tr-drawer--side {
+        margin: 8px 12px 8px 0;
+        align-self: stretch;
+        max-height: none;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .tr-drawer--side > summary {
+        flex-shrink: 0;
+      }
+
+      .tr-drawer--side .tr-drawer-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
+
       .melds {
-        padding-left: 176px;
-        padding-left: clamp(0px, calc(155px - max(8px, (100vw - 1100px) / 2)), 176px);
+        padding-left: 0;
+      }
+    }
+
+    @media (min-width: 921px) and (max-height: 860px) {
+      :root {
+        --card-w: 62px;
+        --back-h: 66px;
       }
     }
 
@@ -1490,7 +1533,12 @@
     }
     /* === Round 2: table drawer, coach, banners, trophy, flights ================ */
 
-    /* Secondary panels (melds, log, stats) live in a drawer under the hand. */
+    /* Table + side drawer: felt is the hero on desktop; phones keep a fold-under drawer. */
+    .table-stage {
+      min-height: 0;
+      display: block;
+    }
+
     .tr-drawer {
       border: 1px solid rgba(158, 255, 200, 0.16);
       border-radius: 14px;
@@ -1675,8 +1723,20 @@
     }
 
     .round-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .round-banner.show.is-skippable {
+      pointer-events: auto;
+      cursor: pointer;
+    }
     .round-banner.defeat { border-color: rgba(255, 157, 157, 0.5); }
     .round-banner.draw { border-color: rgba(122, 230, 255, 0.5); }
+
+    .rb-skip-hint {
+      margin-top: 8px;
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
 
     .rb-title {
       font-size: 1.1rem;
@@ -1754,11 +1814,44 @@
       .trophy-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    /* 320px phones: trim the table frame so the hand keeps its width. */
+    /* 320px phones: one tight HUD row + trim the table frame so the hand keeps its width. */
     @media (max-width: 360px) {
+      .status {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 2px 3px;
+        padding: 2px 4px;
+      }
+
+      .stat {
+        padding: 2px 4px 2px 5px;
+        border-radius: 8px;
+      }
+
+      .stat-label .lbl-full { display: none; }
+      .stat-label .lbl-short { display: inline; }
+
+      .stat-label {
+        font-size: 0.5rem;
+        letter-spacing: 0.05em;
+        margin-bottom: 0;
+        line-height: 1.05;
+      }
+
+      .stat-value {
+        font-size: 0.76rem;
+        line-height: 1.1;
+      }
+
+      .stat.hot .stat-label::after,
+      .stat.gin .stat-label::after {
+        content: none;
+      }
+
       .table { margin: 8px 6px; padding: 6px; }
       #playerHand { padding: 22px 0 10px; }
     }
+
+    .stat-label .lbl-short { display: none; }
 
     /* === Round 3: table-first fit pass ===================================================
        Floating widgets (mascot, bubble, deadwood meter) now sit inside their zone headers.
@@ -1891,14 +1984,15 @@
     </header>
 
     <section class="status">
-      <div class="stat" title="Which hand you are on. Round 1 deals the first hand."><div class="stat-label">Round</div><div class="stat-value" id="roundValue">0</div></div>
-      <div class="stat" title="Your running match score. First to the target wins."><div class="stat-label">Player Score</div><div class="stat-value" id="playerScoreValue">0</div></div>
-      <div class="stat" title="The bot's running match score."><div class="stat-label">AI Score</div><div class="stat-value" id="aiScoreValue">0</div></div>
-      <div class="stat" title="Cards left to draw. When the stock runs out, the discard pile is reshuffled; if neither can supply a card, the round is a draw."><div class="stat-label">Stock Left</div><div class="stat-value" id="stockValue">0</div></div>
-      <div class="stat" title="Points in your unmelded cards. Aces are 1, face cards 10. Knock at 10 or less; Gin at 0."><div class="stat-label">Your Deadwood</div><div class="stat-value" id="deadwoodValue">0</div></div>
-      <div class="stat" title="First player to this score wins the match."><div class="stat-label">Target</div><div class="stat-value" id="targetValue">100</div></div>
+      <div class="stat" title="Which hand you are on. Round 1 deals the first hand."><div class="stat-label"><span class="lbl-full">Round</span><span class="lbl-short">Rnd</span></div><div class="stat-value" id="roundValue">0</div></div>
+      <div class="stat" title="Your running match score. First to the target wins."><div class="stat-label"><span class="lbl-full">Player Score</span><span class="lbl-short">You</span></div><div class="stat-value" id="playerScoreValue">0</div></div>
+      <div class="stat" title="The bot's running match score."><div class="stat-label"><span class="lbl-full">AI Score</span><span class="lbl-short">Bot</span></div><div class="stat-value" id="aiScoreValue">0</div></div>
+      <div class="stat" title="Cards left to draw. When the stock runs out, the discard pile is reshuffled; if neither can supply a card, the round is a draw."><div class="stat-label"><span class="lbl-full">Stock Left</span><span class="lbl-short">Stk</span></div><div class="stat-value" id="stockValue">0</div></div>
+      <div class="stat" title="Points in your unmelded cards. Aces are 1, face cards 10. Knock at 10 or less; Gin at 0."><div class="stat-label"><span class="lbl-full">Your Deadwood</span><span class="lbl-short">DW</span></div><div class="stat-value" id="deadwoodValue">0</div></div>
+      <div class="stat" title="First player to this score wins the match."><div class="stat-label"><span class="lbl-full">Target</span><span class="lbl-short">Tgt</span></div><div class="stat-value" id="targetValue">100</div></div>
     </section>
 
+    <div class="table-stage">
     <main class="table" data-motto="Deadwood Dept. says this table smells strategic">
       <section class="zone zone--opponent" aria-label="Bot hand">
         <div class="zone-header">
@@ -1942,8 +2036,9 @@
         </div>
         <div class="card-row" id="playerHand" role="group" aria-label="Your cards. Use arrow keys to move between cards."></div>
       </section>
+    </main>
 
-      <details class="tr-drawer" id="tableDrawer">
+      <details class="tr-drawer tr-drawer--side" id="tableDrawer">
         <summary>Melds, log &amp; stats</summary>
         <div class="tr-drawer-body">
           <div class="melds" id="meldPreview"></div>
@@ -1951,7 +2046,7 @@
           <dl class="drawer-stats" id="drawerStats" aria-label="Your match stats on this device"></dl>
         </div>
       </details>
-    </main>
+    </div>
 
     <footer class="action-dock">
       <div class="action-grid">
@@ -1992,6 +2087,7 @@
         <span id="rbPointsLabel">Points<b id="rbPoints">0</b></span>
         <span>Defender<b id="rbDefenderDw">0</b></span>
       </div>
+      <div class="rb-skip-hint" id="rbSkipHint" hidden>Tap or Space to skip</div>
     </div>
     <div class="overlay" id="trophyOverlay">
       <div class="overlay-card trophy-card" role="dialog" aria-modal="true" aria-labelledby="trophyHeadline">
@@ -2008,10 +2104,13 @@
   </div>
 
   <script>
-    // The shared double-tap guard (assets/turdsuite.js) cancels the click of any tap that follows
-    // another within 350 ms, so a quick select-then-discard silently lost its second tap. The body
-    // already uses touch-action: manipulation, which stops double-tap zoom, so the guard is not needed here.
-    window.addEventListener("touchend", (event) => event.stopImmediatePropagation(), { capture: true, passive: true });
+    const Presentation = window.TurdRummyPresentation || {
+      ROUND_BANNER_VISIBLE_MS: 2800,
+      PRESENTATION_AUTO_SKIP_MS: 3000,
+      REVEAL_STAGGER_STEP_MS: 90,
+      REVEAL_STAGGER_CAP_MS: 720,
+      trophyDelayMs: () => 3250
+    };
 
     const TURDRUMMY_BALANCE = {
       knockLimit: 10,
@@ -2100,6 +2199,10 @@
     let coachIndex = 0;
     let handLayoutQueued = false;
     let bannerTimer = 0;
+    let presentationAutoSkipTimer = 0;
+    let presentationActive = false;
+    let pendingTrophyAfterPresentation = false;
+    let lastBannerModel = null;
 
     // The one reduced-motion gate for flights, count-ups and the reveal stagger.
     function motionOn() {
@@ -2118,7 +2221,51 @@
     function clearPresentation() {
       presentationTimers.splice(0).forEach((id) => window.clearTimeout(id));
       window.clearTimeout(bannerTimer);
-      if (el.roundBanner) el.roundBanner.classList.remove("show");
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = 0;
+      presentationActive = false;
+      pendingTrophyAfterPresentation = false;
+      if (el.roundBanner) {
+        el.roundBanner.classList.remove("show", "is-skippable");
+      }
+      if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+    }
+
+    function finalizeBannerNumbers() {
+      if (!lastBannerModel || !el.roundBanner) return;
+      el.rbKnockerDw.textContent = String(lastBannerModel.knockerDeadwood);
+      el.rbDefenderDw.textContent = String(lastBannerModel.defenderDeadwood);
+      el.rbPoints.textContent = String(lastBannerModel.points);
+    }
+
+    function skipPresentation() {
+      if (!presentationActive) return;
+      const openTrophy = pendingTrophyAfterPresentation;
+      presentationTimers.splice(0).forEach((id) => window.clearTimeout(id));
+      window.clearTimeout(bannerTimer);
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = 0;
+      presentationActive = false;
+      pendingTrophyAfterPresentation = false;
+      if (el.roundBanner) {
+        el.roundBanner.classList.remove("show", "is-skippable");
+      }
+      if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+      finalizeBannerNumbers();
+      el.opponentCards.querySelectorAll(".card").forEach((node) => {
+        node.classList.remove("card-flip");
+        node.style.animationDelay = "0ms";
+      });
+      if (openTrophy) showTrophy();
+    }
+
+    function armPresentation({ showTrophyAfter }) {
+      presentationActive = true;
+      pendingTrophyAfterPresentation = !!showTrophyAfter;
+      window.clearTimeout(presentationAutoSkipTimer);
+      presentationAutoSkipTimer = window.setTimeout(() => {
+        if (presentationActive) skipPresentation();
+      }, Presentation.PRESENTATION_AUTO_SKIP_MS);
     }
 
     function rectOf(selector) {
@@ -2350,12 +2497,14 @@
     // Round banner: names the result and counts up the deadwood and points. Never takes clicks.
     function showRoundBanner(model) {
       const banner = el.roundBanner;
+      lastBannerModel = model;
       el.rbTitle.textContent = model.title;
       banner.classList.toggle("defeat", model.tone === "defeat");
       banner.classList.toggle("draw", model.tone === "draw");
-      banner.classList.remove("show");
+      banner.classList.remove("show", "is-skippable");
       void banner.offsetWidth;
       banner.classList.add("show");
+      if (el.rbSkipHint) el.rbSkipHint.hidden = false;
       const counters = [
         [el.rbKnockerDw, model.knockerDeadwood],
         [el.rbDefenderDw, model.defenderDeadwood],
@@ -2369,11 +2518,20 @@
           return;
         }
         node.textContent = "0";
-        countTween(node, 0, Math.round(Number(to) || 0), 520 + i * 60);
+        countTween(node, 0, Math.round(Number(to) || 0), 420 + i * 50);
       });
       if (animate) playSfx("tick");
       window.clearTimeout(bannerTimer);
-      bannerTimer = window.setTimeout(() => banner.classList.remove("show"), 3600);
+      bannerTimer = window.setTimeout(() => {
+        banner.classList.remove("show", "is-skippable");
+        if (el.rbSkipHint) el.rbSkipHint.hidden = true;
+        if (pendingTrophyAfterPresentation) {
+          pendingTrophyAfterPresentation = false;
+          showTrophy();
+        }
+        presentationActive = false;
+      }, Presentation.ROUND_BANNER_VISIBLE_MS);
+      banner.classList.add("is-skippable");
     }
 
     function roundBannerModel(knocker, awardedTo, isGin, points, knockerDw, defenderDw) {
@@ -2999,7 +3157,11 @@
         if (freshReveal && motionOn()) {
           el.opponentCards.querySelectorAll(".card").forEach((node, i) => {
             node.classList.add("card-flip");
-            node.style.animationDelay = Motion.staggerDelay(i, 110, 1000) + "ms";
+            node.style.animationDelay = Motion.staggerDelay(
+              i,
+              Presentation.REVEAL_STAGGER_STEP_MS,
+              Presentation.REVEAL_STAGGER_CAP_MS
+            ) + "ms";
           });
         }
         el.aiMeta.textContent = count + " revealed";
@@ -3673,10 +3835,9 @@
       renderAll();
       // Big-moment presentation runs after the state is final; the score above never waits on it.
       pushLog(summary);
+      armPresentation({ showTrophyAfter: state.matchOver });
       showRoundBanner(roundBannerModel(knocker, awardedTo, isGin, points, knockerDeadwood, defenderDeadwood));
       runLayoffFlights(defender, knocker, layoffCards);
-      // The trophy waits for the round banner (3.6 s) so the match-winning result is readable first.
-      if (state.matchOver) later(showTrophy, 3700);
     }
 
     // The bot's move as two flights: its draw lands in its fan, its discard leaves the fan for the pile.
@@ -3918,6 +4079,12 @@
         startFirstRoundIfNeeded();
       });
       el.trophyKeepBtn.addEventListener("click", hideTrophy);
+      el.roundBanner.addEventListener("click", () => skipPresentation());
+      document.addEventListener("keydown", (event) => {
+        if (event.code !== "Space" || !presentationActive) return;
+        event.preventDefault();
+        skipPresentation();
+      });
     }
 
     function updateSoundToggleLabel() {
@@ -3926,6 +4093,46 @@
       el.soundToggleBtn.textContent = on ? "\u{1F50A} Sound On" : "\u{1F508} Sound Off";
       el.soundToggleBtn.setAttribute("aria-pressed", String(on));
     }
+
+    function playMoment(kind) {
+      const Moments = window.TurdRummyMoments;
+      if (!Moments || typeof Moments.buildTableState !== "function") {
+        throw new Error("TurdRummyMoments unavailable");
+      }
+      clearPresentation();
+      hideTrophy();
+      finishCoach();
+      el.guideOverlay.classList.remove("show");
+      roundLog.length = 0;
+      const table = Moments.buildTableState(kind);
+      state.initialized = true;
+      state.round = 4;
+      state.dealer = "player";
+      state.roundOver = false;
+      state.matchOver = false;
+      state.playerHand = table.playerHand.slice();
+      state.aiHand = table.aiHand.slice();
+      state.playerScore = table.playerScore;
+      state.aiScore = table.aiScore;
+      state.stock = [{ suit: "C", rank: 4, id: "C4-moment" }];
+      state.discard = [{ suit: "S", rank: 2, id: "S2-moment" }];
+      state.turn = "player";
+      state.phase = "draw";
+      state.selectedCardId = null;
+      state.drawnCardId = null;
+      state.drawnCardSource = null;
+      state.roundSummary = "";
+      state.lastAiAction = "QA moment: " + kind + ".";
+      state.message = state.lastAiAction;
+      const knockerHand = table.knocker === "player" ? state.playerHand : state.aiHand;
+      const analysis = analyzeHand(knockerHand);
+      finishRound(table.knocker, table.isGin, analysis.deadwoodScore, analysis.melds);
+    }
+
+    window.TurdRummyDev = {
+      playMoment,
+      skipPresentation
+    };
 
     function init() {
       loadStats();
@@ -3941,6 +4148,8 @@
       if (!skipGuide) openGuide();
       else el.guideOverlay.classList.remove("show");
       syncCoach();
+      const momentParam = new URLSearchParams(window.location.search).get("moment");
+      if (momentParam) playMoment(momentParam);
     }
 
     window.addEventListener("blur", suspendAiForBackground);

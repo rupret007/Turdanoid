@@ -14,10 +14,10 @@
  *
  * Scenarios: phone (390x844), small (320x640), desktop (1280x800), reduced (390x844 with
  * prefers-reduced-motion), continue (navigate away mid-round, come back, play on), keyboard
- * (Tab/Arrow/Enter only, with focus-visibility checks).
+ * (Tab/Arrow/Enter only, with focus-visibility checks), moments (knock/gin/undercut/match-win QA frames).
  *
  * Usage:
- *   node scripts/turdrummy-autoplay.mjs [--scenarios=phone,small,desktop,reduced,continue,keyboard]
+ *   node scripts/turdrummy-autoplay.mjs [--scenarios=phone,small,desktop,reduced,continue,keyboard,moments]
  *        [--rounds=2] [--match] [--seed=1] [--max-actions=400] [--out=DIR] [--base=URL]
  * Env:
  *   PLAYWRIGHT_CHANNEL  browser channel (default: Playwright's bundled Chromium)
@@ -48,7 +48,8 @@ const SCENARIO_DEFS = {
   desktop: { viewport: { width: 1280, height: 800 }, mobile: false, handAboveFold: true },
   reduced: { viewport: { width: 390, height: 844 }, mobile: true, reducedMotion: 'reduce', handAboveFold: true },
   continue: { viewport: { width: 390, height: 844 }, mobile: true },
-  keyboard: { viewport: { width: 1280, height: 800 }, mobile: false }
+  keyboard: { viewport: { width: 1280, height: 800 }, mobile: false },
+  moments: { viewport: { width: 390, height: 844 }, mobile: true, moments: true }
 };
 const STUCK_MS = 10000;
 const SHOT_EVERY = 6;
@@ -670,6 +671,48 @@ function summarize(values) {
   };
 }
 
+async function runMomentsScenario(browser, base, opts, report, outDir) {
+  const kinds = ['knock', 'gin', 'undercut', 'match-win'];
+  const viewports = [
+    { width: 390, height: 844, tag: '390' },
+    { width: 1280, height: 800, tag: '1280' }
+  ];
+  const momentOut = join(root, 'conductor/reviews/turdanoid-1000x/r4/turdrummy-moments');
+  await mkdir(momentOut, { recursive: true });
+  for (const vp of viewports) {
+    for (const kind of kinds) {
+      const name = `moments-${kind}-${vp.tag}`;
+      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+      const page = await context.newPage();
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') report.findings.push({ scenario: name, kind: 'console', detail: msg.text() });
+      });
+      page.on('pageerror', (err) => report.findings.push({ scenario: name, kind: 'pageerror', detail: String(err) }));
+      await page.goto(`${base}/turdrummy.html?moment=${encodeURIComponent(kind)}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(120);
+      await page.screenshot({ path: join(momentOut, `${kind}-reveal-start-${vp.tag}.png`) });
+      await page.waitForSelector('#roundBanner.show', { timeout: 8000 });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: join(momentOut, `${kind}-banner-${vp.tag}.png`) });
+      await page.waitForTimeout(900);
+      await page.screenshot({ path: join(momentOut, `${kind}-reveal-mid-${vp.tag}.png`) });
+      await page.evaluate(() => window.TurdRummyDev.skipPresentation());
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: join(momentOut, `${kind}-after-skip-${vp.tag}.png`) });
+      if (kind === 'match-win') {
+        await page.waitForSelector('#trophyOverlay.show', { timeout: 5000 });
+        await page.screenshot({ path: join(momentOut, `${kind}-trophy-${vp.tag}.png`) });
+      }
+      const overflowX = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      if (overflowX > 1) {
+        report.findings.push({ scenario: name, kind: 'horizontal-scroll', detail: `${overflowX}px overflow at ${vp.tag}` });
+      }
+      report.runs.push({ scenario: name, viewport: vp, kind });
+      await context.close();
+    }
+  }
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const port = 8166;
@@ -689,6 +732,7 @@ async function main() {
       console.log(`[autoplay] ${name} ...`);
       if (name === 'continue') await runContinueScenario(browser, base, opts, report, opts.out);
       else if (name === 'keyboard') await runKeyboardScenario(browser, base, opts, report, opts.out);
+      else if (name === 'moments') await runMomentsScenario(browser, base, opts, report, opts.out);
       else await runPointScenario(browser, name, base, opts, report, opts.out);
     }
   } finally {
