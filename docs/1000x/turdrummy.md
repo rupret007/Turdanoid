@@ -1,4 +1,4 @@
-# TurdRummy — 1000x lane audit (round 2)
+# TurdRummy — 1000x lane audit (round 3)
 
 Lane: `turdrummy`. Owns `turdrummy.html`, `games/turdrummy-engine.js`, `tests/turdrummy*.test.js`,
 the `turdrummy*AiMs` lines of `CARD_TABLE_FEEL` in `games/suite-feel.js`, the Turdrummy section of
@@ -127,9 +127,78 @@ Each target is concrete and testable. `[x]` = done this round. `[ ]` = not done,
 - [x] Hand focus survives re-renders; arrow keys, Home and End move between cards.
 - [x] Layoff sound and deadwood tick added to the SFX bank.
 - [x] Reduced motion gates every flight, flip, tween, banner slide and confetti burst.
-- [ ] Hand cards are tapped on their visible strip when overlapped (a card's left part is covered by
-      the next one). Every card is 48px wide on a phone; the strip is narrower only in the 11-card,
-      four-group case, which wraps to two rows instead.
+- [x] Hand cards are tapped on their visible strip when overlapped. Round 3 autoplay taps the left
+      quarter of every card and the tap registers (see round 3, finding 1 for the swallowed-tap bug
+      that was hiding this).
+
+## Round 3 (quality, playtest, finish)
+
+### Autoplay harness: `scripts/turdrummy-autoplay.mjs`
+Not run by vitest. It serves the repo and plays through the real controls (taps on cards and
+buttons, overlay buttons, Tab and arrow keys) at 390x844, 320x640, 1280x800, a reduced-motion
+390x844 run, a continue round-trip (leave for the hub mid-round, come back, play on) and a
+keyboard-only round. It records console errors, uncaught errors, stuck turns (10 s without a state
+change), overlays that do not dismiss, horizontal scroll, controls cut off the viewport, taps that
+cannot land, bot turn latency, first-screen hand fit, and flights under reduced motion.
+
+    node scripts/turdrummy-autoplay.mjs [--scenarios=phone,small,desktop,reduced,continue,keyboard]
+         [--rounds=2] [--match] [--seed=1] [--out=DIR] [--trace]
+
+Run it with `--match` to play a whole match to the trophy. Screenshots go to `--out`.
+
+### Findings from playtest (and what was done)
+1. **Quick taps were swallowed (critical, shared cause).** `assets/turdsuite.js` cancels the click
+   of any tap that follows another within 350 ms (double-tap-zoom guard). A select followed by a
+   quick discard lost its second tap; a harness tap 150 ms after another never selected. The page
+   now stops that listener (`turdrummy.html`, top of the script). `touch-action: manipulation` on
+   the body already prevents double-tap zoom. Fixed on this page only; see Needs shared change.
+2. **The hand was below the fold on a phone.** At 390x844 the hand started at y 767 with the dock
+   at 700. Round one added a 145 px coach card to the table centre. Fixed: the coach is a
+   two-column strip on phones and short screens, the header is compact (title line hidden, 3x2
+   buttons), the status tiles are tighter and the centre trims its spacing. Measured on the first
+   player turn: cards 618-702, dock top 702 at 390x844 (`hand-below-fold` finding in the harness).
+3. **Floating widgets covered cards and status.** The mascot, its speech bubble and the fixed
+   "Your deadwood" meter were appended to `<body>`, so on a phone they sat over the status line and
+   the bot fan, and on desktop the meter floated over the table. The mascot and bubble now live in the
+   bot's zone header, the meter in the hand header. Its stale `z-index` made the meter paint over the
+   trophy buttons; cleared.
+4. **Desktop hand clipped by the dock.** At 1280x800 the hand's bottom 34 px sat under the dock. A
+   short-height desktop rule (`max-height: 860px`) trims the topbar, status, table and hand padding
+   and hides the footer note. Measured: cards 640-739, dock top 743.
+5. **320x640 cannot show the whole hand above the dock.** The screen is too short for the table and
+   a 144 px dock together. The hand scrolls under the sticky dock. Accepted; the harness does not
+   flag this size.
+6. **Live region re-announced on every tap.** Every card selection re-rendered the table, which
+   rewrote the one status box, so screen readers repeated the last status. The status box now skips
+   the rewrite when its text is unchanged. Covered by `tests/turdrummy-a11y.test.js`.
+7. **Flights were 220-560 ms.** Now 180-320 ms (`flightDuration`), pinned in `turdrummy-motion.test.js`.
+8. **Sort and difficulty were silent.** They now play the select tick.
+9. **Autoplay stall (unconfirmed).** Once, in a desktop run, the bot's turn never started (turn
+   stayed on the player with no draw). Not reproduced in four later full sweeps. The page pauses the
+   bot on window blur, so a headless focus change is the likely cause; the harness now brings the
+   page to front before each scenario. Root cause not confirmed.
+
+### Measured
+- Full sweep (2 rounds each, seed 1): phone, small, desktop, reduced, continue and keyboard all clean.
+- Full match at 390x844 (seed 7): 8-9 rounds, trophy shown, no findings.
+- Bot turn latency: median about 610 ms, max about 660 ms.
+- Reduced motion: 0 flights, 0 confetti canvases across a 2-round run.
+- Continue: a mid-round table left for the hub and reopened restores identically; the next move is accepted.
+
+### Checklist (round 3)
+- [x] Autoplay harness with all scenarios, reduced-motion run, continue round-trip, keyboard round.
+- [x] Autoplay findings fixed (1-4, 6-8). Finding 5 accepted. Finding 9 open.
+- [x] Screenshots reviewed at 390, 320 and 1280; the trophy frame included.
+- [x] Save compatibility test loads the exact b3821b4 turdrummy entry and stats value through the live
+      page: no card, score or message lost; the continue shape and the `{ stats }` envelope unchanged.
+- [x] Card flights 180-320 ms; bot pacing about 0.6 s per turn; reduced motion instant.
+- [x] Every player action has a visible and audible response (select, sort and difficulty included).
+- [x] Keyboard-only round: Tab to the buttons, arrows along the hand, Enter to act, visible focus.
+- [x] Status is one polite live region; bot moves and round results announce through it.
+- [ ] Discard pile shows a fanned top. Not done (see round 2).
+- [ ] Round-start deal flight. Not done; the staggered deal is unchanged.
+- [ ] Hand fits above the dock at 320x640. Not done (finding 5).
+- [ ] Physical phone check of motion and sound. Not run (no device here).
 
 ## Known limits (honest)
 - Overlapped fan cards are tapped on their visible strip (the next card covers their right part).
@@ -142,6 +211,11 @@ Each target is concrete and testable. `[x]` = done this round. `[ ]` = not done,
   banners running. They were not checked on a physical phone (no device here).
 
 ## Needs shared change (shared lane owns these files)
+- `assets/turdsuite.js` `preventDoubleTapZoom()` cancels the click of any tap within 350 ms of
+  the previous one, which swallowed quick second taps on every page that calls it (TurdRummy
+  verified; the same guard applies to the other games). Suggested fix: drop the JS guard and rely on
+  `touch-action: manipulation` (already on `suite-no-zoom`), or skip interactive targets (`button`,
+  `[data-card-id]`, `a`, `[role=button]`). TurdRummy already opts out on its own page.
 - `assets/turdsuite.css` could expose a shared `--suite-card-fan` helper; TurdRummy keeps its own
   fan math in `games/turdrummy-motion-core.js` for now.
 - Hub 2.0 could read `turdrummy_stats_v1` for the cover badge (read-only, no format change).

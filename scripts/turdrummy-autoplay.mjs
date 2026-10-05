@@ -422,11 +422,10 @@ function createHarness({ browser, base, opts, cfg, name, outDir, report }) {
       if (!keepGoing) break;
       if (!untilMatch && rounds >= untilRounds && s.roundOver) break;
       if (untilMatch && s.matchOver) {
-        // Let the trophy appear, then record it and stop.
-        await page.waitForTimeout(2000);
-        const trophy = await page.evaluate(() => document.getElementById('trophyOverlay').classList.contains('show'));
+        // The trophy follows the round banner; wait for it, then record it and stop.
+        const trophy = await page.waitForFunction(() => document.getElementById('trophyOverlay').classList.contains('show'), null, { timeout: 6000 }).then(() => true, () => false);
         if (trophy) await shot('trophy');
-        else found('overlay-missing', 'match ended but the trophy overlay never showed');
+        else found('overlay-missing', 'match ended but the trophy overlay never showed within 6 s');
         break;
       }
     }

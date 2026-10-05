@@ -3675,7 +3675,8 @@
       pushLog(summary);
       showRoundBanner(roundBannerModel(knocker, awardedTo, isGin, points, knockerDeadwood, defenderDeadwood));
       runLayoffFlights(defender, knocker, layoffCards);
-      if (state.matchOver) later(showTrophy, 1700);
+      // The trophy waits for the round banner (3.6 s) so the match-winning result is readable first.
+      if (state.matchOver) later(showTrophy, 3700);
     }
 
     // The bot's move as two flights: its draw lands in its fan, its discard leaves the fan for the pile.
