@@ -460,6 +460,11 @@
     .art-bubble:nth-of-type(3) { animation-delay: -3.1s; animation-duration: 4.4s; }
     @keyframes artBubble { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.8; } 100% { transform: translateY(-60px); opacity: 0; } }
 
+    .game-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       h1 .logo, .art-glow, .art-bubble { animation: none; }
       .game-card:hover .art-ball, .game-card:hover .art-paddle, .game-card:hover .art-piece, .game-card:hover .art-spin { animation: none; }
@@ -559,10 +564,10 @@
         background: none;
         color: var(--accent);
       }
-      .subtitle { font-size: 0.84rem; margin-bottom: 10px; }
+      .subtitle { display: none; }
       .hero-badge { font-size: 0.68rem; padding: 6px 10px; }
-      .masthead { margin-bottom: 12px; }
-      .games { grid-template-columns: 1fr; gap: 8px; }
+      .masthead { margin-bottom: 8px; }
+      .games { grid-template-columns: 1fr; gap: 6px; }
       .game-card { border-radius: 12px; }
       .cover, .emoji, .game-card::after,
       .game-card.last-played .title-row h2::after,
@@ -591,7 +596,7 @@
         flex-wrap: wrap;
         align-items: center;
         gap: 8px;
-        padding: 8px 12px;
+        padding: 6px 10px;
       }
       .game-info { flex: 1 1 8.5rem; min-width: 0; gap: 4px; }
       .game-card h2 { font-size: 1rem; overflow-wrap: anywhere; }
@@ -609,6 +614,21 @@
       .game-card:hover,
       .game-card:focus-visible { transform: none; }
     }
+
+    @media (max-width: 390px) {
+      .shell { width: min(100%, 96vw); padding: 12px 10px 10px; }
+      .meta-row { gap: 6px; }
+      .hero-badge { max-width: 100%; }
+    }
+
+    @media (max-width: 320px) {
+      body { padding: 6px; }
+      .shell { padding: 10px 8px 8px; border-radius: 14px; }
+      .game-card h2 { font-size: 0.92rem; }
+      .game-card p { font-size: 0.74rem; }
+      .play { min-width: 58px; padding: 7px 8px; font-size: 0.6rem; }
+      .changelog { font-size: 0.78rem; padding: 8px 10px; }
+    }
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
@@ -618,10 +638,11 @@
       <p class="subtitle">Six games. Pick your next round.</p>
       <div class="meta-row">
         <p class="hero-badge">No sign-in • works on phone and desktop</p>
+        <button type="button" class="suite-hub-mute" id="suite-hub-mute" tabindex="-1" aria-pressed="false" aria-label="Mute suite sounds">🔊 Sound on</button>
       </div>
     </header>
 
-    <main class="games" aria-label="Choose a game">
+    <main class="games" id="hub-games" aria-label="Choose a game">
       <a href="TurdAnoid.html" class="game-card" data-vibe="Turbo edition. More juice." style="--c:#9effc8;--c2:#7ae6ff">
         <div class="cover" aria-hidden="true">
           <svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid slice">
@@ -720,7 +741,7 @@
             <rect width="320" height="150" fill="url(#cj-spot)"/>
             <path d="M14 36Q70 20 126 36" fill="none" stroke="#ffd76a" stroke-opacity="0.35" stroke-width="2"/>
             <text x="70" y="24" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="8" font-weight="700" fill="#ffe4af" opacity="0.8" letter-spacing="2.5">PAYS 3:2</text>
-            <g transform="translate(232 62)">
+            <g class="art-chip-stack" transform="translate(232 62)">
               <g><circle cx="0" cy="44" r="18" fill="#a0261f"/><circle cx="0" cy="44" r="18" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="7 9"/><circle cx="0" cy="44" r="9" fill="#c8362d"/></g>
               <g><circle cx="0" cy="34" r="18" fill="#2b5fb8"/><circle cx="0" cy="34" r="18" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="7 9"/><circle cx="0" cy="34" r="9" fill="#3b78dc"/></g>
               <g><circle cx="0" cy="24" r="18" fill="#c9962a"/><circle cx="0" cy="24" r="18" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="7 9"/><circle cx="0" cy="24" r="9" fill="#e6b542"/><text x="0" y="28" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="9" font-weight="800" fill="#3a2400">100</text></g>
@@ -730,7 +751,7 @@
               <path d="M-2 0L34 54M34 0L-2 54M16 -4V58M-6 27H38" stroke="#18573f" stroke-width="2"/>
               <text x="16" y="34" text-anchor="middle" font-size="18">💩</text>
             </g>
-            <g transform="translate(128 46) rotate(-8)"><g class="art-fan-l">
+            <g class="art-fan-idle" transform="translate(128 46) rotate(-8)"><g class="art-fan-l">
               <rect x="-2" y="2" width="52" height="72" rx="6" fill="#000" opacity="0.35"/>
               <rect width="52" height="72" rx="6" fill="url(#cj-paper)"/>
               <text x="6" y="16" font-family="Trebuchet MS, sans-serif" font-size="13" font-weight="800" fill="#1f2528">A</text>
@@ -876,6 +897,10 @@
     <details class="changelog">
       <summary>Latest Changelog</summary>
       <ul>
+        <li><strong>1000x shared (round 4):</strong> quick second taps register again (removed touchend zoom guard; CSS <code>touch-action</code>); back pill overlap pass on hub + games.</li>
+        <li><strong>1000x shared (round 3):</strong> hub back pill moves to a top-left icon on phones (no dock overlap); boss-best + Spades stat chips; vitest 30s timeouts; hub polish + pause idle motion when tab hidden.</li>
+        <li><strong>1000x shared (round 2):</strong> premium card paper &amp; toilet-crest backs, felt/chip utilities, hub idle cover motion, Continue hero banner, parallax sewer critters, richer <code>Suite.audio()</code> presets (snap, shuffle, fanfare). Save keys unchanged.</li>
+        <li><strong>1000x shared (round 1):</strong> hub skip link, suite mute toggle, read-only stat chips, opt-in <code>Suite.audio()</code> / <code>Suite.fx()</code>.</li>
         <li><strong>Hub leftover after the phone resume cue:</strong> when you have a table in progress, the masthead badge turns into a one-tap "Continue &lt;Game&gt;" link — the last game you opened if it is still live, otherwise the first table waiting. First visits keep the "No sign-in" badge. No rules, storage, continue-validation, or layout change.</li>
         <li><strong>Hub leftover after phone rows:</strong> a marked card's <code>aria-label</code> now spells out the game, its blurb, and the action with its state ("Continue — in progress" / "Play again — last played"). The badge is hidden on phones, so this was the only cue some players had and it used to drop the blurb and the verb. No layout, storage, or continue-rule change.</li>
         <li><strong>TurdAnoid leftover after Bomb scoring:</strong> Mega Flush now pays its 15 × level bonus for the bottom-row bricks it removes, including Gold Rush 2×, a <code>+points</code> float, and the usual pickup roll. Upper bricks stay on the wall. Arcade mid-run saves stay parked with PR #8.</li>
@@ -901,5 +926,30 @@
     </details>
     <p class="footer-note">Six games • one sewer • <a href="neon-arkanoid.html">play the original Neon Arkanoid</a></p>
   </div>
+  <script type="module">
+    import { injectSkipLink, createAnnouncer } from './assets/suite-a11y.js';
+    import { decorateHubStatBadges } from './assets/suite-hub-stats.js';
+    import { wireHubCoverIdleMotion, wireHubAttractHeader } from './assets/suite-hub-attract.js';
+
+    function bootHubModules() {
+      injectSkipLink(document, 'hub-games');
+      decorateHubStatBadges(document, localStorage);
+      wireHubCoverIdleMotion(document);
+      wireHubAttractHeader(document);
+      if (window.Suite) {
+        const live = createAnnouncer(document);
+        const baseAnnounce = window.Suite.announce;
+        window.Suite.announce = function (msg, politeness) {
+          live.announce(msg, politeness);
+          if (typeof baseAnnounce === 'function') baseAnnounce(msg, politeness);
+        };
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootHubModules);
+    } else {
+      bootHubModules();
+    }
+  </script>
 </body>
 </html>

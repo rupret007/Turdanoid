@@ -198,10 +198,15 @@ async function main() {
     await runCheck(browser, 'hub-keyboard-launch', '', {
       actions: async page => {
         const links = await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
-        for (const href of links) {
+        for (let i = 0; i < 24; i++) {
+          const onFirst = await page.evaluate(() => document.activeElement?.classList?.contains('game-card'));
+          if (onFirst) break;
           await page.keyboard.press('Tab');
+        }
+        for (const href of links) {
           const focused = await page.evaluate(() => document.activeElement?.getAttribute('href'));
           if (focused !== href) fail('hub-keyboard-launch', `expected ${href} in keyboard order, saw ${focused}`);
+          if (href !== links[links.length - 1]) await page.keyboard.press('Tab');
         }
         await Promise.all([
           page.waitForURL(`${baseUrl}/turdspades.html`),
