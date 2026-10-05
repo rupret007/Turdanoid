@@ -48,12 +48,26 @@
     return 0.72 + 0.28 * Math.sin(nowMs * 0.014);
   }
 
+  /** Full juice (shards, confetti bursts, heavy parallax) when motion is OK. */
+  function allowJuiceEffects(reducedMotion) {
+    return !isReducedMotion(reducedMotion);
+  }
+
+  function confettiCount(requested, reducedMotion) {
+    if (!allowJuiceEffects(reducedMotion)) {
+      return 0;
+    }
+    return clampBurstCount(requested, reducedMotion, 4);
+  }
+
   root.TurdanoidFX = {
     isReducedMotion,
     shakeOffset,
     flashStrength,
     parallaxSpeedFactor,
     clampBurstCount,
-    dangerPulse
+    dangerPulse,
+    allowJuiceEffects,
+    confettiCount
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -5,7 +5,9 @@ import {
   parallaxSpeedFactor,
   clampBurstCount,
   dangerPulse,
-  isReducedMotion
+  isReducedMotion,
+  allowJuiceEffects,
+  confettiCount
 } from '../games/turdanoid-fx.js';
 
 describe('Turdanoid FX (reduced motion)', () => {
@@ -39,5 +41,12 @@ describe('Turdanoid FX (reduced motion)', () => {
   it('keeps danger pulse steady when reduced', () => {
     expect(dangerPulse(0, reduced)).toBe(1);
     expect(dangerPulse(0, motion)).not.toBe(1);
+  });
+
+  it('gates confetti and juice under reduced motion', () => {
+    expect(allowJuiceEffects(reduced)).toBe(false);
+    expect(allowJuiceEffects(motion)).toBe(true);
+    expect(confettiCount(80, reduced)).toBe(0);
+    expect(confettiCount(80, motion)).toBeGreaterThan(0);
   });
 });

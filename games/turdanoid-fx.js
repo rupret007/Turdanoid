@@ -8,3 +8,5 @@ export const flashStrength = api.flashStrength;
 export const parallaxSpeedFactor = api.parallaxSpeedFactor;
 export const clampBurstCount = api.clampBurstCount;
 export const dangerPulse = api.dangerPulse;
+export const allowJuiceEffects = api.allowJuiceEffects;
+export const confettiCount = api.confettiCount;

@@ -2,14 +2,16 @@
 (function attachTurdanoidBrick(root) {
   'use strict';
 
-  const MATERIALS = ['porcelain', 'sewer', 'slime', 'candy', 'tar'];
+  const MATERIALS = ['porcelain', 'sewer', 'slime', 'candy', 'tar', 'metal', 'gold'];
 
   const MATERIAL_PALETTES = {
     porcelain: ['#f2f8f5', '#9eb8aa', 'rgba(200,230,215,.5)'],
     sewer: ['#7af1c4', '#3aa97c', 'rgba(122,241,196,.45)'],
     slime: ['#b8ff7a', '#3d8a2a', 'rgba(160,255,120,.5)'],
     candy: ['#ff9de8', '#c23d8a', 'rgba(255,157,232,.48)'],
-    tar: ['#6a6a78', '#2a2a34', 'rgba(120,120,140,.4)']
+    tar: ['#6a6a78', '#2a2a34', 'rgba(120,120,140,.4)'],
+    metal: ['#c8d4e0', '#5a6a78', 'rgba(180,200,220,.45)'],
+    gold: ['#fff0b0', '#bf8a13', 'rgba(255,215,106,.55)']
   };
 
   const ROW_PALETTES = [
