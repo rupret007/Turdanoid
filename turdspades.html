@@ -837,8 +837,9 @@
     }
     @media (prefers-reduced-motion:reduce){.table.ts-spades-flash{animation:none}.ts-sweep-card{transition:none!important}}
 
-    /* One felt surface, with secondary controls in the table menu. */
-    .app { display:flex; flex-direction:column; height:calc(100svh - 16px); min-height:620px; max-height:none; }
+    /* One felt surface, with secondary controls in the table menu (phone / narrow only). */
+    @media (max-width: 920px) {
+    .app { display:flex; flex-direction:column; height:calc(100svh - 16px); min-height:0; max-height:none; }
     .topbar { flex:none; flex-wrap:nowrap; padding:8px 14px; }
     .title { min-width:0; }
     .club-label { color:var(--gold); font-size:.58rem; font-weight:800; letter-spacing:.2em; text-transform:uppercase; }
@@ -923,12 +924,12 @@
     .bid-v::after { bottom:5px; font-size:.3rem; }
     #bidNil, #lockBid { padding:0 8px; font-size:.74rem; }
     .ts-contract-banner, .ts-bot-hint { display:none; }
-    .ts-receipt-overlay { position:fixed; padding:16px; }
-    .ts-receipt-card { width:420px; max-width:100%; max-height:calc(100svh - 32px); overflow:auto; overflow-wrap:anywhere; }
+    .ts-receipt-overlay { position:fixed; inset:0; padding:16px; box-sizing:border-box; }
+    .ts-receipt-card { width:100%; max-width:min(420px, calc(100vw - 32px)); box-sizing:border-box; max-height:calc(100svh - 32px); overflow:auto; overflow-wrap:anywhere; }
     .ts-receipt-lines li + li { margin-top:10px; }
     .ts-boss, .ts-bubble, .ts-bagwarn { display:none; }
+    .suite-back-pill { top:max(6px, env(safe-area-inset-top) + 4px); bottom:auto; left:max(6px, env(safe-area-inset-left) + 4px); padding:6px 10px; font-size:10px; letter-spacing:.12em; z-index:10001; }
     .ts-banner { max-width:calc(100vw - 24px); white-space:normal; font-size:1rem; }
-    @media (max-width:920px) {
       body, body[data-turn="bid"] { padding:6px; }
       .app { height:calc(100svh - 12px); min-height:0; border-radius:16px; overflow:visible; }
       .topbar { padding:5px 9px; border-radius:16px 16px 0 0; }
@@ -948,11 +949,11 @@
       .trick .head { height:18px; }
       .trick .name { font-size:.52rem; }
       .trick .meta { font-size:.52rem; }
-      .trick-pile.layout-seat .entry[data-seat] { width:44px; height:60px; border-radius:7px; }
-      .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 65px); }
-      .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 5px); }
-      .trick-pile.layout-seat .entry[data-seat="West"] { left:calc(50% - 73px); }
-      .trick-pile.layout-seat .entry[data-seat="East"] { left:calc(50% + 29px); }
+      .trick-pile.layout-seat .entry[data-seat] { width:42px; height:58px; border-radius:7px; }
+      .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 68px); }
+      .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 36px); }
+      .trick-pile.layout-seat .entry[data-seat="West"] { left:calc(50% - 76px); }
+      .trick-pile.layout-seat .entry[data-seat="East"] { top:calc(50% - 6px); left:calc(50% + 34px); transform:translateY(-50%); }
       .entry[data-seat] strong { font-size:.41rem; padding:2px 4px; top:-5px; letter-spacing:.04em; }
       .entry .ec { font-size:1.05rem; }
       .entry[data-seat]::after { font-size:.48rem; left:5px; top:5px; }
@@ -982,14 +983,14 @@
       body[data-phase="bidding"] .seat-west, body[data-phase="bidding"] .seat-east { align-self:start; }
       .ts-receipt-card { padding:14px; }
       .ts-receipt-lines { font-size:.75rem; }
-    }
     @media (prefers-reduced-motion:reduce) {
       #youCards .card, .table-menu summary, .ts-receipt-overlay, .ts-banner { transition:none; }
+    }
     }
 
   </style>
 </head>
-<body class="suite-ambient suite-no-zoom" data-suite-no-back="1">
+<body class="suite-ambient suite-no-zoom">
   <div class="guide" id="guide">
     <div class="guide-card">
       <h2>TurdSpades</h2>
@@ -1970,6 +1971,7 @@
         layoutPhoneCards();
         const handObserver = new ResizeObserver(layoutPhoneCards);
         handObserver.observe(el.youCards);
+        window.dispatchEvent(new Event('turdspades:phone-hand-ready'));
       });
     }
 
