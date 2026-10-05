@@ -394,6 +394,105 @@
       isolation: isolate;
     }
 
+    .table-fx-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+      border-radius: inherit;
+    }
+
+    .table.table-shake {
+      animation: tableShake 0.38s ease;
+    }
+
+    @keyframes tableShake {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      20% { transform: translate3d(-4px, 1px, 0); }
+      40% { transform: translate3d(4px, -2px, 0); }
+      60% { transform: translate3d(-3px, 0, 0); }
+      80% { transform: translate3d(3px, 1px, 0); }
+    }
+
+    .shoe-lane {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 4px 0 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(236, 255, 245, 0.72);
+    }
+
+    .shoe-lane .shoe-stack {
+      width: 38px;
+      height: 52px;
+      border-radius: 6px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 50%),
+        repeating-linear-gradient(180deg, #1a3d30 0 3px, #123528 3px 6px);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.45),
+        2px 2px 0 rgba(0, 0, 0, 0.35),
+        4px 4px 0 rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .shoe-lane .shoe-stack::after {
+      content: "💩";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      opacity: 0.85;
+    }
+
+    .intel-drawer summary {
+      cursor: pointer;
+      list-style: none;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(142, 255, 194, 0.28);
+      background: rgba(8, 22, 17, 0.55);
+      margin-bottom: 8px;
+    }
+
+    .intel-drawer summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .intel-drawer summary::before {
+      content: "▸ ";
+    }
+
+    .intel-drawer[open] summary::before {
+      content: "▾ ";
+    }
+
+    .sr-live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     /* faint inlaid TURDANOID watermark along the bottom of the felt */
     .table::before {
       content: "TURDANOID";
@@ -1364,6 +1463,12 @@
       .playing-card[data-face="ace"] .center { font-size: 2rem; }
       .playing-card[data-face="court"] .center::before { font-size: 1.5rem; }
       .sidebar .desktop-controls { display: none; }
+      .intel-drawer:not([open]) .intel-drawer-body {
+        display: none;
+      }
+      .intel-drawer summary {
+        display: block;
+      }
       .mobile-pit {
         display: grid;
         padding-bottom: max(8px, env(safe-area-inset-bottom));
@@ -1463,8 +1568,16 @@
       .welcome-card,
       .chip-btn.tossed,
       .card-stat .v.flash,
-      .status.hype {
+      .status.hype,
+      .table.table-shake,
+      .toilet-boss.bounce,
+      .toilet-boss.shake,
+      .toilet-boss.cheer,
+      .streak-banner {
         animation: none;
+      }
+      .streak-banner.show {
+        transform: translate(-50%, -50%) scale(1);
       }
       .playing-card,
       .btn,
@@ -1472,6 +1585,15 @@
       .status,
       .hand {
         transition: none;
+      }
+    }
+
+    @media (min-width: 981px) {
+      .intel-drawer summary {
+        display: none;
+      }
+      .intel-drawer .intel-drawer-body {
+        display: block;
       }
     }
 
@@ -1512,6 +1634,7 @@
   </style>
 </head>
 <body class="suite-ambient suite-no-zoom">
+  <div id="jackLiveRegion" class="sr-live" aria-live="polite" aria-atomic="true"></div>
   <div class="welcome-guide" id="welcomeGuide">
     <div class="welcome-card">
           <h2>Crapjack 21</h2>
@@ -1575,7 +1698,13 @@
 
     <div class="layout">
       <section class="table" data-motto="Pit Boss Memo: no clean wins after midnight">
+        <canvas class="table-fx-canvas" id="tableFxCanvas" aria-hidden="true"></canvas>
         <div class="status" id="statusText">Place a bet, click Deal, and try not to get hustled by the toilet boss.</div>
+
+        <div class="shoe-lane" id="shoeLane" aria-hidden="true">
+          <span class="shoe-stack"></span>
+          <span id="shoeLaneText">Shoe ready</span>
+        </div>
 
         <div class="hand">
           <div class="hand-title">
@@ -1593,6 +1722,7 @@
             <span class="score-pill" id="playerScoreText">Score: 0</span>
           </div>
           <div class="cards" id="playerCards"></div>
+          <div id="playerHandMeter" class="hand-meter-host" aria-hidden="true"></div>
         </div>
 
         <div class="hand" id="splitHandWrap" hidden>
@@ -1601,6 +1731,7 @@
             <span class="score-pill" id="splitScoreText">Score: 0</span>
           </div>
           <div class="cards" id="splitCards"></div>
+          <div id="splitHandMeter" class="hand-meter-host" hidden aria-hidden="true"></div>
         </div>
 
         <div class="mobile-pit" id="mobilePit">
@@ -1656,6 +1787,9 @@
           </div>
         </div>
 
+        <details class="intel-drawer" id="intelDrawer">
+          <summary>Strategy, history &amp; rules</summary>
+          <div class="intel-drawer-body">
         <div>
           <h3 data-icon="🧠">Strategy Hint</h3>
           <div class="status" id="hintText">Hint: Place a bet to begin.</div>
@@ -1720,6 +1854,8 @@
           <p><strong>Controls:</strong> `N` deal, `H` hit, `S` stand, `D` double, `P` split, `X` surrender, `C` clear bet, `B` rebet, `M` sound, `Enter` smart action.</p>
           <p><strong>Theme Rule:</strong> If you bust, the toilet flushes your dignity.</p>
         </div>
+          </div>
+        </details>
       </aside>
     </div>
 
@@ -1836,6 +1972,7 @@
     let soundEnabled = true;
     let audioCtx = null;
     let statusPulseTimer = null;
+    let turdjackKit = null;
 
     function getActiveHand() {
       return activeHandIndex === 0 ? playerHand : splitHand;
@@ -1891,8 +2028,20 @@
       return audioCtx;
     }
 
+    function suiteMutedGlobal() {
+      try {
+        return localStorage.getItem('turdsuite_muted') === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
     function unlockAudio() {
-      if (!soundEnabled) return;
+      if (!soundEnabled || suiteMutedGlobal()) return;
+      if (window.__turdjackAudio) {
+        window.__turdjackAudio.unlock();
+        return;
+      }
       const ctx = ensureAudio();
       if (!ctx) return;
       if (ctx.state === 'suspended') {
@@ -1901,39 +2050,25 @@
     }
 
     function playSfx(type) {
-      if (!soundEnabled) return;
+      if (!soundEnabled || suiteMutedGlobal()) return;
+      if (window.__turdjackAudio) {
+        window.__turdjackAudio.play(type);
+        return;
+      }
       const ctx = ensureAudio();
       if (!ctx || ctx.state !== 'running') return;
-
-      const profileMap = {
-        chip: { f: 420, dur: 0.06, wave: 'triangle', vol: 0.035 },
-        deal: { f: 560, dur: 0.08, wave: 'square', vol: 0.04 },
-        hit: { f: 480, dur: 0.06, wave: 'triangle', vol: 0.04 },
-        stand: { f: 320, dur: 0.06, wave: 'triangle', vol: 0.035 },
-        split: { f: 700, dur: 0.08, wave: 'triangle', vol: 0.045 },
-        double: { f: 780, dur: 0.09, wave: 'sawtooth', vol: 0.045 },
-        surrender: { f: 190, dur: 0.1, wave: 'sawtooth', vol: 0.045 },
-        shuffle: { f: 260, dur: 0.12, wave: 'square', vol: 0.04 },
-        win: { f: 920, dur: 0.14, wave: 'triangle', vol: 0.05 },
-        lose: { f: 150, dur: 0.16, wave: 'sawtooth', vol: 0.05 },
-        push: { f: 360, dur: 0.08, wave: 'triangle', vol: 0.035 },
-        blackjack: { f: 1060, dur: 0.2, wave: 'triangle', vol: 0.06 },
-        bust: { f: 130, dur: 0.14, wave: 'sawtooth', vol: 0.05 }
-      };
-
-      const p = profileMap[type] || profileMap.chip;
       try {
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = p.wave;
-        osc.frequency.setValueAtTime(p.f, now);
-        gain.gain.setValueAtTime(p.vol, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(480, now);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + p.dur);
+        osc.stop(now + 0.06);
       } catch (err) {}
     }
 
@@ -1970,6 +2105,7 @@
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
+      syncKitSoundFlag();
       saveSoundPref();
       updateSoundButtons();
       if (soundEnabled) {
@@ -2757,9 +2893,27 @@
 
       if (roundHistory.length === 0) renderHistory();
 
+      const shoeLane = document.getElementById('shoeLaneText');
+      if (shoeLane) {
+        const cutNote = shoe.length <= cutCardsRemaining ? ' · shuffle soon' : '';
+        shoeLane.textContent = `${shoe.length} cards · cut ${cutCardsRemaining}${cutNote}`;
+      }
+
       syncMobileControls();
       persistTable();
       saveState();
+
+      if (turdjackKit && turdjackKit.afterHud) {
+        turdjackKit.afterHud({
+          currentBet,
+          splitBet,
+          splitRound,
+          playerHand,
+          splitHand,
+          handValue,
+          isSoftHand
+        });
+      }
     }
 
     function setMobileActionState(action, disabled) {
@@ -2796,6 +2950,7 @@
         else if (statusMood.tone === 'win') { Suite.toast('💰 ' + (Suite.quip('win_s') || 'NICE')); }
         else if (statusMood.tone === 'loss' && note.includes('dealer')) { Suite.toast('💩 ' + (Suite.quip('lose_s') || 'oof')); }
       } catch (e) {}
+      if (turdjackKit && turdjackKit.afterStatus) turdjackKit.afterStatus(text);
     }
 
     function trackDecision(action) {
@@ -3437,8 +3592,13 @@
       });
     }
 
+    function syncKitSoundFlag() {
+      window.__turdjackSoundEnabled = soundEnabled;
+    }
+
     function init() {
       soundEnabled = loadSoundPref();
+      syncKitSoundFlag();
       updateSoundButtons();
       createShoe(rules.decks || 4);
       renderCards();
@@ -3452,6 +3612,21 @@
       }
       const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('turdjack.html'));
       if (!skipGuide) showWelcomeGuide();
+      syncKitSoundFlag();
+      try {
+        const drawer = document.getElementById('intelDrawer');
+        if (drawer && window.matchMedia('(max-width: 980px)').matches) {
+          drawer.removeAttribute('open');
+        }
+      } catch (e) {}
+      if (!window.__TURDJACK_SKIP_KIT__) {
+        import('./games/turdjack-page-kit.js')
+          .then((m) => {
+            turdjackKit = m.installTurdjackKit(window);
+            updateHud();
+          })
+          .catch(() => {});
+      }
     }
 
     init();
@@ -3534,7 +3709,7 @@
         }
         if (bonus > 0 && typeof bankroll === 'number') {
           bankroll += bonus;
-          try { writeNumber && writeNumber(STORAGE.bankroll, bankroll); } catch (e) {}
+          try { saveState && saveState(); } catch (e) {}
           try { updateHud && updateHud(); } catch (e) {}
           showStreakBanner(banner, cold);
           try { if (window.Suite) Suite.win(); } catch (e) {}
@@ -3586,40 +3761,6 @@
       };
     }
   
-    // ---- Bet chip-stack visualization on the bet pill ----
-    function chipStackHtml(amount) {
-      if (!amount || amount <= 0) return '';
-      // Greedy break amount into chip denominations, then visualize
-      const denoms = [
-        {v: 1000, c: 'c1000'},
-        {v: 500,  c: 'c500'},
-        {v: 100,  c: 'c100'},
-        {v: 25,   c: 'c25'},
-        {v: 10,   c: 'c10'},
-      ];
-      const stack = [];
-      let rem = amount;
-      for (const d of denoms) {
-        while (rem >= d.v && stack.length < 12) { stack.push(d.c); rem -= d.v; }
-      }
-      if (!stack.length) return '';
-      return ' <span class="chip-stack">' + stack.map(c => '<span class="chip-vis ' + c + '"></span>').join('') + '</span>';
-    }
-    // Wrap updateHud so we re-render the chip stack on every refresh.
-    if (typeof updateHud === 'function') {
-      const _origUpdateHud = updateHud;
-      updateHud = function() {
-        _origUpdateHud();
-        try {
-          const betEl = document.getElementById('betText');
-          if (!betEl) return;
-          const amount = (typeof currentBet === 'number') ? currentBet : 0;
-          // Set base text + chip viz
-          betEl.innerHTML = '$' + amount.toLocaleString() + chipStackHtml(amount);
-        } catch (e) {}
-      };
-    }
-  
     // ---- Idle quip rotation when nothing's happening ----
     let lastIdleTime = Date.now();
     setInterval(() => {
@@ -3643,58 +3784,9 @@
   
   })();
 
-  // ============================================================
-  // === Crapjack 21 cosmetic layer (graphics pass, CSS hooks) ==
-  // === Purely visual: felt inlay art, chip toss, stat flash. ==
-  // ============================================================
+  // HUD stat flash (cosmetic; kit handles chips, felt, FX)
   (function() {
     'use strict';
-
-    // ---- Gold inlay arc in the felt (text follows the active table rules) ----
-    function buildFeltInlay(payoutLabel, dealerStands) {
-      const line = '◆  CRAPJACK PAYS ' + payoutLabel + '  ◆  DEALER ' + (dealerStands ? 'STANDS ON 17' : 'HITS SOFT 17') + '  ◆';
-      const svg =
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 80">' +
-        '<defs><path id="a" d="M 20 72 Q 500 4 980 72"/></defs>' +
-        '<path d="M 20 44 Q 500 -24 980 44" fill="none" stroke="#ffd76a" stroke-opacity="0.24" stroke-width="1.4"/>' +
-        '<path d="M 20 80 Q 500 12 980 80" fill="none" stroke="#ffd76a" stroke-opacity="0.24" stroke-width="1.4"/>' +
-        '<text font-family="Trebuchet MS, Georgia, serif" font-size="25" font-weight="700" letter-spacing="4" fill="#ffd76a" fill-opacity="0.38">' +
-        '<textPath href="#a" startOffset="50%" text-anchor="middle">' + line + '</textPath></text>' +
-        '</svg>';
-      return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
-    }
-
-    function paintFeltInlay() {
-      try {
-        const table = document.querySelector('.table');
-        if (!table) return;
-        const summary = document.getElementById('ruleSummary');
-        const note = summary ? String(summary.textContent || '') : '';
-        const payout = note.includes('6:5') ? '6:5' : '3:2';
-        const stands = !note.includes('hits soft 17');
-        table.style.setProperty('--felt-inlay', buildFeltInlay(payout, stands));
-      } catch (e) {}
-    }
-
-    paintFeltInlay();
-    try {
-      const summaryEl = document.getElementById('ruleSummary');
-      if (summaryEl && window.MutationObserver) {
-        new MutationObserver(paintFeltInlay).observe(summaryEl, { childList: true, characterData: true, subtree: true });
-      }
-    } catch (e) {}
-
-    // ---- Chip toss animation on press (class toggle only) ----
-    document.querySelectorAll('[data-chip]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (btn.disabled) return;
-        btn.classList.remove('tossed'); void btn.offsetWidth;
-        btn.classList.add('tossed');
-      });
-      btn.addEventListener('animationend', () => btn.classList.remove('tossed'));
-    });
-
-    // ---- HUD value flash when a stat actually changes ----
     try {
       if (window.MutationObserver) {
         document.querySelectorAll('.card-stat .v').forEach((el) => {

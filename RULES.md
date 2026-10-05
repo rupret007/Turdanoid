@@ -176,6 +176,13 @@ Single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, an
 - **True Count**: Running count ÷ remaining decks
 - **Dealer hole card**: Enters the count only when it is revealed
 
+### Table feedback
+
+- **Hand meter:** Pips under your hand show total toward 21; gold/red zone is 17–21 (bust risk).
+- **Shoe lane:** Cards remaining and cut-card distance above the dealer.
+- **Sound:** `M` toggles `turdjackSoundOn_v1`; hub mute (`turdsuite_muted`) silences table SFX too.
+- **Motion:** `prefers-reduced-motion` disables table shake, particle bursts, and most mascot animations.
+
 ### Strategy Hint
 
 The game provides basic strategy advice based on:
