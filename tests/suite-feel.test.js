@@ -10,6 +10,7 @@ import {
   scaleLerp,
   lerpToward,
   clampMinBallSpeed,
+  nudgeBallOffHorizontalRail,
   decayShake,
   bumpShake,
   ballDangerRatio,
@@ -54,6 +55,12 @@ describe('suite-feel', () => {
     expect(Math.hypot(vx, vy)).toBeCloseTo(4.25);
   });
 
+  it('nudgeBallOffHorizontalRail keeps speed but adds vertical motion', () => {
+    const { vx, vy } = nudgeBallOffHorizontalRail(5.5, 0.05, 0.2);
+    expect(Math.hypot(vx, vy)).toBeCloseTo(5.5, 1);
+    expect(Math.abs(vy) / Math.hypot(vx, vy)).toBeGreaterThanOrEqual(0.2);
+  });
+
   it('card table AI pacing constants are positive and ordered', () => {
     expect(CARD_TABLE_FEEL.crapeightsAiMs).toBeLessThan(800);
     expect(CARD_TABLE_FEEL.turdrummyQuickAiMs).toBeLessThan(CARD_TABLE_FEEL.turdrummyAiMs);
@@ -85,6 +92,7 @@ describe('suite-feel', () => {
     expect(htmlNumericConst(page, 'FEEL_POINTER_LERP')).toBe(TURDANOID_FEEL.pointerLerpPerFrame);
     expect(htmlNumericConst(page, 'FEEL_POINTER_LERP_TOUCH')).toBe(TURDANOID_FEEL.pointerLerpTouchPerFrame);
     expect(htmlNumericConst(page, 'FEEL_MIN_BALL_SPEED')).toBe(TURDANOID_FEEL.minBallSpeed);
+    expect(htmlNumericConst(page, 'FEEL_MIN_BALL_VERTICAL')).toBe(TURDANOID_FEEL.minBallVerticalRatio);
     expect(htmlNumericConst(page, 'FEEL_PADDLE_ENGLISH')).toBe(TURDANOID_FEEL.paddleEnglish);
     expect(htmlNumericConst(page, 'FEEL_SHAKE_DECAY')).toBe(TURDANOID_FEEL.shakeDecayPerFrame);
     expect(htmlNumericConst(page, 'FEEL_HIT_STOP_BREAK')).toBe(TURDANOID_FEEL.hitStopFramesOnBreak);
