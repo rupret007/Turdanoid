@@ -28,7 +28,9 @@
     roundWin: [[523, 0.12, 'triangle', 0.05], [659, 0.16, 'triangle', 0.055]],
     roundLose: [[220, 0.16, 'sawtooth', 0.045], [160, 0.2, 'sawtooth', 0.045]],
     matchWin: [[523, 0.12, 'triangle', 0.06], [659, 0.12, 'triangle', 0.06], [784, 0.12, 'triangle', 0.06], [1046, 0.2, 'triangle', 0.065]],
-    matchLose: [[260, 0.18, 'sawtooth', 0.05], [220, 0.18, 'sawtooth', 0.05], [160, 0.26, 'sawtooth', 0.05]]
+    matchLose: [[260, 0.18, 'sawtooth', 0.05], [220, 0.18, 'sawtooth', 0.05], [160, 0.26, 'sawtooth', 0.05]],
+    layoff: [[610, 0.05, 'triangle', 0.035], [740, 0.06, 'triangle', 0.035]],
+    tick: [[1200, 0.02, 'square', 0.012]]
   };
 
   /** @returns {Array<Array>|null} the note list for a known SFX name, or null. */
