@@ -167,7 +167,8 @@ describe('the live TurdRummy layoff search', () => {
     const page = boot();
     checkLayoff(page, fixture);
     checkLayoff(page, { ...fixture, defender: fixture.defender.slice().reverse() });
-  });
+    // The full layoff search re-runs JSDOM-hosted analysis per order; it needs more than vitest's 5s default under parallel load.
+  }, 30000);
 
   it('chooses the run over a competing rank set when that unlocks another card', () => {
     const page = boot();

@@ -58,6 +58,35 @@ describe('fanLayout', () => {
     expect(layout.step).toBe(60 * 0.6);
   });
 
+  it('measures width as G cards at full size, the rest overlapped, plus group gaps', () => {
+    const layout = fanLayout({ cardWidth: 40, count: 10, groupCount: 3, availableWidth: 400, groupGap: 8 });
+    const expected = 3 * 40 + 7 * layout.step + 2 * 8;
+    expect(layout.width).toBeCloseTo(expected, 5);
+    expect(layout.wrap).toBe(false);
+  });
+
+  it('asks for a second row when one row cannot keep a readable strip per card', () => {
+    const layout = fanLayout({ cardWidth: 48, count: 11, groupCount: 4, availableWidth: 246, groupGap: 8, largestGroup: 3 });
+    expect(layout.wrap).toBe(true);
+    expect(layout.step).toBeGreaterThanOrEqual(48 * 0.3);
+    expect(layout.step).toBeLessThanOrEqual(48 * 0.6);
+    // A 3-card group at this overlap must fit one row.
+    expect(48 + 2 * layout.step).toBeLessThanOrEqual(246);
+  });
+
+  it('keeps a 3-meld 10-card hand on one row at 390px, where strips stay readable', () => {
+    const layout = fanLayout({ cardWidth: 48, count: 10, groupCount: 3, availableWidth: 330, groupGap: 8, largestGroup: 3 });
+    expect(layout.wrap).toBe(false);
+    expect(-(layout.step - 48) / 48).toBeLessThan(0.6);
+    expect(layout.step / 48).toBeGreaterThanOrEqual(0.42);
+  });
+
+  it('keeps one row when a single long group can fan out (no melds yet)', () => {
+    const layout = fanLayout({ cardWidth: 48, count: 10, groupCount: 1, availableWidth: 246, largestGroup: 10 });
+    expect(layout.wrap).toBe(false);
+    expect(48 + 9 * layout.step).toBeLessThanOrEqual(246 + 0.001);
+  });
+
   it('handles one card and an empty hand without dividing by zero', () => {
     expect(fanLayout({ cardWidth: 50, count: 1, groupCount: 1, availableWidth: 300 }).step).toBe(50);
     expect(fanLayout({ cardWidth: 50, count: 0, groupCount: 0, availableWidth: 300 }).width).toBe(50);

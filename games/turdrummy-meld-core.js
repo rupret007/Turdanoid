@@ -33,11 +33,15 @@
   }
 
   /**
-   * How far each card is offset from the one before it, so that the whole hand
-   * fits on one row. Cards inside a group sit `step` apart; a group boundary adds
-   * `groupGap` on top. Overlap is capped so a card always shows at least
-   * `minStepRatio` of its width, and never more than `maxStepRatio` (a fan, not a stack).
-   * @returns {{step: number, width: number, cardWidth: number}} all in px.
+   * How far each card is offset from the one before it, so the hand fits one row.
+   * Inside a group, cards sit `step` apart. Each group starts at full card width,
+   * and a group boundary adds `groupGap` on top, so for G groups of N cards:
+   *   width = G*cardWidth + (N-G)*step + (G-1)*groupGap
+   * Overlap is capped at `maxStepRatio` (a fan, not a stack). If one row would leave
+   * less than `readableRatio` of each card visible (0.42 by default), `wrap` is true:
+   * groups should flow onto a second row, and `step` is the largest overlap the biggest
+   * group allows in one row (never below `minStepRatio`).
+   * @returns {{step: number, width: number, cardWidth: number, wrap: boolean}} px.
    */
   function fanLayout(options) {
     const cardWidth = Math.max(0, Number(options.cardWidth) || 0);
@@ -45,19 +49,34 @@
     const groups = Math.max(1, Math.floor(Number(options.groupCount) || 1));
     const available = Math.max(0, Number(options.availableWidth) || 0);
     const groupGap = Math.max(0, Number(options.groupGap) || 0);
+    const largest = Math.max(1, Math.floor(Number(options.largestGroup) || count || 1));
     const maxRatio = options.maxStepRatio === undefined ? 0.6 : options.maxStepRatio;
     const minRatio = options.minStepRatio === undefined ? 0.3 : options.minStepRatio;
     if (count <= 1) {
-      return { step: cardWidth, width: cardWidth, cardWidth };
+      return { step: cardWidth, width: cardWidth, cardWidth, wrap: false };
     }
     const gaps = Math.max(0, groups - 1) * groupGap;
-    const fit = (available - cardWidth - gaps) / (count - 1);
-    const step = Math.max(cardWidth * minRatio, Math.min(cardWidth * maxRatio, fit));
-    return {
-      step,
-      width: cardWidth + (count - 1) * step + gaps,
-      cardWidth
-    };
+    const overlapCards = count - groups;
+    if (overlapCards <= 0) {
+      return { step: cardWidth, width: groups * cardWidth + gaps, cardWidth, wrap: false };
+    }
+    const fit = (available - groups * cardWidth - gaps) / overlapCards;
+    // With several groups, a single row must leave a readable strip (corner rank + suit).
+    // A lone group cannot wrap, so it simply takes the smallest strip that fits.
+    const readableRatio = groups > 1 ? (options.readableRatio === undefined ? 0.42 : options.readableRatio) : minRatio;
+    if (fit >= cardWidth * readableRatio) {
+      const step = Math.min(cardWidth * maxRatio, fit);
+      return {
+        step,
+        width: groups * cardWidth + overlapCards * step + gaps,
+        cardWidth,
+        wrap: false
+      };
+    }
+    // Crowded: let the groups wrap. Each row must hold the largest group at this overlap.
+    const wrapStep = Math.min(cardWidth * maxRatio, (available - cardWidth) / Math.max(1, largest - 1));
+    const step = Math.max(cardWidth * minRatio, wrapStep);
+    return { step, width: available, cardWidth, wrap: true };
   }
 
   /**

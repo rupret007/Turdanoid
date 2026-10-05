@@ -83,7 +83,7 @@
    * @param {Array<{id: string}>} discard current discard pile
    */
   function activeHumanTakes(takes, discard) {
-    if (!Array.isArray(takes) || takes.length === 0) return [];
+    if (!Array.isArray(takes) || takes.length === 0) {return [];}
     const thrownBack = new Set((Array.isArray(discard) ? discard : []).map((card) => card && card.id));
     return takes.filter((card) => card && !thrownBack.has(card.id));
   }
@@ -95,16 +95,16 @@
    * Pure: nothing is mutated. Returns 0 when there is no signal.
    */
   function computeFeedRisk(takes, card) {
-    if (!card || !Array.isArray(takes) || takes.length === 0) return 0;
+    if (!card || !Array.isArray(takes) || takes.length === 0) {return 0;}
     let risk = 0;
     for (const taken of takes) {
-      if (!taken || taken.id === card.id) continue;
+      if (!taken || taken.id === card.id) {continue;}
       if (taken.rank === card.rank) {
         risk += FEED_WEIGHTS.sameRank;
       } else if (taken.suit === card.suit) {
         const gap = Math.abs(taken.rank - card.rank);
-        if (gap === 1) risk += FEED_WEIGHTS.runNear;
-        else if (gap === 2) risk += FEED_WEIGHTS.runFar;
+        if (gap === 1) {risk += FEED_WEIGHTS.runNear;}
+        else if (gap === 2) {risk += FEED_WEIGHTS.runFar;}
       }
     }
     return risk;
@@ -123,13 +123,13 @@
     let threshold = input.baseThreshold + profile.knockOffset;
     const turns = Math.max(0, Math.floor(input.aiTurns || 0));
     const stock = Math.max(0, Math.floor(input.stockCount || 0));
-    if (profile.stockPressure && stock <= 4 && turns >= 6) threshold += 1;
+    if (profile.stockPressure && stock <= 4 && turns >= 6) {threshold += 1;}
     return Math.max(3, Math.min(limit, threshold));
   }
 
   /** Adds a bounded, deterministic-given-rng wobble to a score (Easy only). */
   function applyScoreNoise(score, amplitude, rng) {
-    if (!amplitude) return score;
+    if (!amplitude) {return score;}
     const draw = typeof rng === 'function' ? rng() : Math.random();
     return score + (draw * 2 - 1) * amplitude;
   }

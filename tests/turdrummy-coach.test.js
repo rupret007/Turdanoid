@@ -17,7 +17,7 @@ describe('coach step script', () => {
 
   it('gives every step a highlight target the page knows about', () => {
     const spots = new Set(['stock', 'hand', 'knock']);
-    for (const step of COACH_STEPS) expect(spots.has(step.spot)).toBe(true);
+    for (const step of COACH_STEPS) {expect(spots.has(step.spot)).toBe(true);}
   });
 });
 

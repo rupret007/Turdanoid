@@ -58,7 +58,6 @@ describe('computeDiscardSafety', () => {
   });
 });
 
-
 function memoryStorage(initial) {
   const map = new Map(Object.entries(initial || {}));
   return {

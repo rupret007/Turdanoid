@@ -16,7 +16,7 @@
    * @param {{reduced?: boolean, canAnimate?: boolean}} env
    */
   function shouldAnimate(env) {
-    if (!env) return false;
+    if (!env) {return false;}
     return !env.reduced && !!env.canAnimate;
   }
 
@@ -34,7 +34,7 @@
     const a = Number(from) || 0;
     const b = Number(to) || 0;
     const eased = easeOutCubic(t);
-    if (eased >= 1) return b;
+    if (eased >= 1) {return b;}
     return Math.round(a + (b - a) * eased);
   }
 

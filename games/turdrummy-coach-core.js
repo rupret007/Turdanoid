@@ -52,7 +52,7 @@
    */
   function nextCoachIndex(index, event) {
     const at = Math.max(0, Math.floor(Number(index) || 0));
-    if (at >= COACH_STEPS.length) return COACH_STEPS.length;
+    if (at >= COACH_STEPS.length) {return COACH_STEPS.length;}
     const step = COACH_STEPS[at];
     const matches = event === 'next' || event === step.advanceOn;
     return matches ? at + 1 : at;
