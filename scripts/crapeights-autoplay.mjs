@@ -101,7 +101,7 @@ async function activate(page, selector, touch) {
 async function runViewport(viewport) {
   const context = await browser.newContext({ viewport, hasTouch: viewport.width < 600,
     isMobile: viewport.width < 600, reducedMotion: 'no-preference' });
-  // Fix randomness only. Deal, pacing, AI, input and storage remain the real game.
+  // Seed cosmetic Math.random only; the real cryptographic deal, pacing, AI, input and storage are unchanged.
   await context.addInitScript(seed => {
     let value = seed >>> 0;
     Math.random = () => {
