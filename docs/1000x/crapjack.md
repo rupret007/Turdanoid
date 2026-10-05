@@ -1,61 +1,60 @@
 # Crapjack 21 — Turdanoid 1000x (lane: crapjack)
 
-Round 6 (final polish) on branch `cursor/turdanoid-1000x-crapjack`.
+Round 7 (table-first phones during play) on branch `cursor/turdanoid-1000x-crapjack`.
 
-## Honest audit (round 6)
+## Honest audit (round 7)
 
 ### Gameplay
-- **Strong:** Rules, coach, continue, dev scenarios unchanged; insurance / even-money / reset outcomes match pre-modal behavior.
-- **Weak:** No chip-tray physics (out of scope for this round).
+- **Strong:** Unchanged rules, coach, continue, modals, and save keys.
+- **Weak:** Chip-tray physics still out of scope.
 
 ### Feel
-- **Strong:** Pit decisions stay on the felt via styled modal instead of native `confirm()`.
-- **Weak:** H17 dealer chains still long by design.
+- **Strong:** Live hands on short/narrow phones keep the felt and pit in view; session stats live in Table Menu.
+- **Weak:** Very tall narrow layouts (e.g. 390×1200) still show full chrome when not in table-first band.
 
 ### Graphics / art
-- **Strong:** Confirm card matches welcome / table gold-green sewer palette.
+- **Strong:** Compact title row + two-chip HUD row during play.
 - **Weak:** Shared card faces (shared lane).
 
 ### Animation
-- **Strong:** Modal uses existing `suitePop`; disabled under `prefers-reduced-motion`.
+- **Strong:** Play focus scroll uses `instant` when `prefers-reduced-motion` is set.
 - **Weak:** —
 
 ### Audio
-- **Strong:** Unchanged WebAudio; no sound until gesture.
+- **Strong:** Unchanged; gesture-gated.
 
 ### HUD / UI
-- **Strong:** Large Yes/No targets (48px min height); focus lands on “No” first (safe default).
-- **Weak:** Intel drawer still dense on desktop.
+- **Strong:** Bankroll + bet stay visible; hands/wins/Hi-Lo/etc. in Table Menu drawer mirrors.
+- **Weak:** Desktop intel drawer still dense.
 
 ### Mobile / touch
-- **Strong:** Modal is full-screen overlay with touch-friendly buttons; no system dialog chrome.
-- **Weak:** —
+- **Strong:** Fixed mobile pit during `jack-table-first`; dealer/player/totals/actions fit 320×640, 360×740, 390×844 without horizontal scroll.
+- **Weak:** Toilet boss hidden during compact play (intentional).
 
 ### Accessibility
-- **Strong:** `role="dialog"`, `aria-modal`, labelled/described; Tab cycles Yes/No; Escape = decline.
+- **Strong:** Existing dialog/aria contracts preserved; stat mirrors are text-only duplicates.
 - **Weak:** —
 
 ### Performance
-- **Strong:** Modal is static DOM; no per-frame work.
+- **Strong:** Layout toggles are class-based; mirrors sync on HUD update only.
 
 ### Onboarding / AI
-- **Strong:** Unchanged from round 5.
+- **Strong:** Unchanged from round 6.
 
-## Checklist (round 6)
+## Checklist (round 7)
 
 | Target | Status |
 |--------|--------|
-| [x] Round 6 audit + checklist in `docs/1000x/crapjack.md` |
-| [x] Replace native `confirm()` for insurance, even money, reset bankroll with in-page modal |
-| [x] Focus trap, Escape = decline, reduced-motion safe styling |
-| [x] Unit tests: `games/turdjack-confirm-modal.js` + `tests/turdjack-confirm-modal.test.js` |
-| [x] Smoke: `turdjack-confirm-modals` exercises insurance / even money / reset via modal (no native dialogs) |
-| [x] Lint clean on owned turdjack engine/tests (no unused imports in `turdjack-engine.js` / `turdjack.test.js`) |
+| [x] Round 7 audit + checklist in `docs/1000x/crapjack.md` |
+| [x] `jack-table-first` chrome: compact title, 2-stat chip row, session stats in Table Menu |
+| [x] `games/turdjack-layout.js` + `games/turdjack-play-focus.js` + unit tests |
+| [x] Auto focus table/pit when a hand starts (no smooth scroll under reduced motion) |
+| [x] Playwright viewport check + screenshots under `conductor/reviews/turdanoid-1000x/r7/crapjack/` |
 | [x] `npx vitest run` / `npm run lint` / smoke 8153 |
 
 ## Prior rounds (summary)
 
-Round 5: table-first layout, chip flight cleanup, mobile bet circle, seat labels, totals aria.
+Round 6: in-page confirm modals. Round 5: table-first layout foundations, chips, seat labels, totals.
 
 ## Needs shared change
 

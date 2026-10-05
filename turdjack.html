@@ -366,6 +366,174 @@
       100% { transform: scale(1); }
     }
 
+    .mobile-menu-stats {
+      display: none;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(142, 255, 194, 0.2);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .mobile-menu-stats .card-stat {
+      padding: 5px 4px 6px;
+    }
+
+    .mobile-menu-stats .card-stat .k {
+      font-size: 0.48rem;
+      letter-spacing: 0.06em;
+    }
+
+    .mobile-menu-stats .card-stat .v {
+      font-size: 0.82rem;
+    }
+
+    body.jack-table-first {
+      padding: 4px;
+      padding-bottom: max(100px, calc(88px + env(safe-area-inset-bottom)));
+    }
+
+    body.jack-table-first .shell {
+      padding: 6px;
+      border-radius: 14px;
+    }
+
+    body.jack-table-first .topbar {
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    body.jack-table-first .topbar > div:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    body.jack-table-first .topbar h1 {
+      font-size: clamp(0.78rem, 3.6vw, 0.95rem);
+      letter-spacing: 0.08em;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    body.jack-table-first .topbar p {
+      display: none;
+    }
+
+    body.jack-table-first .mobile-menu {
+      flex: 0 0 auto;
+      width: auto;
+      max-width: 52%;
+    }
+
+    body.jack-table-first .mobile-menu details {
+      padding: 5px 8px;
+    }
+
+    body.jack-table-first .mobile-menu summary {
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+    }
+
+    body.jack-table-first .mobile-menu-stats {
+      display: grid;
+    }
+
+    body.jack-table-first .hud {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    body.jack-table-first .hud [data-jack-stat-tier="session"] {
+      display: none;
+    }
+
+    body.jack-table-first .hud [data-jack-stat-tier="live"] {
+      padding: 4px 4px 5px;
+    }
+
+    body.jack-table-first .hud [data-jack-stat-tier="live"] .k {
+      font-size: 0.48rem;
+      letter-spacing: 0.08em;
+    }
+
+    body.jack-table-first .hud [data-jack-stat-tier="live"] .v {
+      font-size: 0.88rem;
+    }
+
+    body.jack-table-first .status {
+      min-height: 30px;
+      padding: 5px 8px 5px 10px;
+      font-size: 0.68rem;
+      margin-bottom: 4px;
+    }
+
+    body.jack-table-first .table {
+      min-height: 0;
+      margin: 0 0 4px;
+      padding: 6px;
+    }
+
+    body.jack-table-first .table-stage {
+      gap: 2px 6px;
+      margin-bottom: 4px;
+    }
+
+    body.jack-table-first .hand {
+      padding: 5px 6px 6px;
+    }
+
+    body.jack-table-first .hand-title {
+      margin-bottom: 2px;
+      font-size: 0.72rem;
+    }
+
+    body.jack-table-first .cards {
+      min-height: 76px;
+    }
+
+    body.jack-table-first .playing-card {
+      width: 52px;
+      height: 76px;
+      padding: 4px;
+    }
+
+    body.jack-table-first .toilet-boss,
+    body.jack-table-first .boss-bubble {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @media (max-width: 980px) {
+      body.jack-table-first .mobile-pit {
+        position: fixed;
+        left: max(6px, env(safe-area-inset-left));
+        right: max(6px, env(safe-area-inset-right));
+        bottom: max(4px, env(safe-area-inset-bottom));
+        margin-top: 0;
+        z-index: 40;
+        padding: 6px;
+        gap: 4px;
+      }
+
+      body.jack-table-first .mobile-pit .btn,
+      body.jack-table-first .mobile-pit .chip-btn {
+        min-height: 36px;
+        font-size: 0.68rem;
+        padding: 5px 4px;
+      }
+
+      body.jack-table-first .mobile-pit-extra {
+        display: none;
+      }
+    }
+
     /* ---------- Layout / table ---------- */
     .layout {
       display: grid;
@@ -2574,21 +2742,31 @@
             <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound</button>
             <button class="btn danger" data-reset-bank onclick="resetBankroll()">↻ Reset Bank</button>
           </div>
+          <div class="mobile-menu-stats hud" aria-label="Session stats">
+            <div class="card-stat"><div class="k">Hands</div><div class="v" data-jack-mirror="handsText">0</div></div>
+            <div class="card-stat"><div class="k">Wins</div><div class="v" data-jack-mirror="winsText">0</div></div>
+            <div class="card-stat"><div class="k">Losses</div><div class="v" data-jack-mirror="lossesText">0</div></div>
+            <div class="card-stat"><div class="k">Pushes</div><div class="v" data-jack-mirror="pushesText">0</div></div>
+            <div class="card-stat"><div class="k">Surrenders</div><div class="v" data-jack-mirror="surrendersText">0</div></div>
+            <div class="card-stat"><div class="k">Win Rate</div><div class="v" data-jack-mirror="winRateText">0%</div></div>
+            <div class="card-stat"><div class="k">Hi-Lo</div><div class="v" data-jack-mirror="runningCountText">0</div></div>
+            <div class="card-stat"><div class="k">Discipline</div><div class="v" data-jack-mirror="disciplineText">0%</div></div>
+          </div>
         </details>
       </div>
     </div>
 
       <div class="hud">
-        <div class="card-stat hot"><div class="k">Bankroll</div><div class="v" id="bankrollText">$0</div></div>
-        <div class="card-stat"><div class="k">Current Bet</div><div class="v" id="betText">$0</div></div>
-        <div class="card-stat"><div class="k">Hands</div><div class="v" id="handsText">0</div></div>
-        <div class="card-stat"><div class="k">Wins</div><div class="v" id="winsText">0</div></div>
-        <div class="card-stat"><div class="k">Losses</div><div class="v" id="lossesText">0</div></div>
-        <div class="card-stat"><div class="k">Pushes</div><div class="v" id="pushesText">0</div></div>
-        <div class="card-stat"><div class="k">Surrenders</div><div class="v" id="surrendersText">0</div></div>
-        <div class="card-stat"><div class="k">Win Rate</div><div class="v" id="winRateText">0%</div></div>
-        <div class="card-stat"><div class="k">Hi-Lo</div><div class="v" id="runningCountText">0</div></div>
-        <div class="card-stat"><div class="k">Discipline</div><div class="v" id="disciplineText">0%</div></div>
+        <div class="card-stat hot" data-jack-stat-tier="live"><div class="k">Bankroll</div><div class="v" id="bankrollText">$0</div></div>
+        <div class="card-stat" data-jack-stat-tier="live"><div class="k">Current Bet</div><div class="v" id="betText">$0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Hands</div><div class="v" id="handsText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Wins</div><div class="v" id="winsText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Losses</div><div class="v" id="lossesText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Pushes</div><div class="v" id="pushesText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Surrenders</div><div class="v" id="surrendersText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Win Rate</div><div class="v" id="winRateText">0%</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Hi-Lo</div><div class="v" id="runningCountText">0</div></div>
+        <div class="card-stat" data-jack-stat-tier="session"><div class="k">Discipline</div><div class="v" id="disciplineText">0%</div></div>
       </div>
 
     <div class="layout">
@@ -2917,8 +3095,57 @@
     let audioCtx = null;
     let statusPulseTimer = null;
     let turdjackKit = null;
+    let turdjackPlayFocus = null;
+    let playLayoutResizeTimer = null;
     /** @type {null | ((opts: { title?: string, message: string, acceptLabel?: string, declineLabel?: string }) => Promise<boolean>)} */
     let askJackConfirm = null;
+
+    function prefersReducedMotionLocal() {
+      try {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function syncJackStatMirrors() {
+      document.querySelectorAll('[data-jack-mirror]').forEach((node) => {
+        const id = node.getAttribute('data-jack-mirror');
+        const src = id ? document.getElementById(id) : null;
+        if (src) node.textContent = src.textContent;
+      });
+    }
+
+    function syncPlayLayoutChrome() {
+      if (!turdjackPlayFocus) return;
+      turdjackPlayFocus.applyTableFirstBodyClass(document, {
+        roundActive,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight
+      });
+      if (document.body.classList.contains('jack-table-first')) syncJackStatMirrors();
+    }
+
+    function schedulePlayTableFocus() {
+      if (!turdjackPlayFocus || !roundActive) return;
+      const run = () => {
+        turdjackPlayFocus.focusPlayTable(document, {
+          roundActive,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          reducedMotion: prefersReducedMotionLocal()
+        });
+      };
+      requestAnimationFrame(() => requestAnimationFrame(run));
+    }
+
+    function onPlayLayoutResize() {
+      if (playLayoutResizeTimer) window.clearTimeout(playLayoutResizeTimer);
+      playLayoutResizeTimer = window.setTimeout(() => {
+        syncPlayLayoutChrome();
+        if (roundActive) schedulePlayTableFocus();
+      }, 80);
+    }
 
     async function ensureJackConfirm() {
       if (!askJackConfirm) {
@@ -3898,6 +4125,9 @@
           isSoftHand
         });
       }
+
+      syncJackStatMirrors();
+      syncPlayLayoutChrome();
     }
 
     function setMobileActionState(action, disabled) {
@@ -4145,6 +4375,7 @@
       }
 
       updateHud();
+      schedulePlayTableFocus();
     }
 
     function playerHit() {
@@ -4626,6 +4857,7 @@
 
       ui.newShoeBtn.addEventListener('click', newShoe);
       ui.resetStatsBtn.addEventListener('click', resetBankroll);
+      window.addEventListener('resize', onPlayLayoutResize, { passive: true });
 
       document.addEventListener('keydown', (e) => {
         if (isJackConfirmOpen()) {
@@ -4753,6 +4985,14 @@
           drawer.removeAttribute('open');
         }
       } catch (e) { /* ignore */ }
+      import('./games/turdjack-play-focus.js')
+        .then((m) => {
+          turdjackPlayFocus = m;
+          syncPlayLayoutChrome();
+          if (roundActive) schedulePlayTableFocus();
+        })
+        .catch(() => {});
+
       if (!window.__TURDJACK_SKIP_KIT__) {
         import('./games/turdjack-page-kit.js')
           .then((m) => {

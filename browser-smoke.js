@@ -1,5 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { chromium, devices } from 'playwright';
 import { validEightsSnapshot, validJackSnapshot, validRummySnapshot, validSpadesSnapshot } from './tests/continue-fixtures.js';
+
+const crapjackR7ShotDir = path.join(process.cwd(), 'conductor/reviews/turdanoid-1000x/r7/crapjack');
 
 const baseUrl = process.argv[2] || 'http://127.0.0.1:8123';
 // Default to the Edge channel (Windows dev workflow). Set PLAYWRIGHT_CHANNEL=""
@@ -1027,6 +1031,94 @@ async function main() {
         }
       }
     });
+
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      const vpName = `turdjack-play-viewport-${viewport.width}x${viewport.height}`;
+      await runCheck(browser, vpName, 'turdjack.html', {
+        context: { viewport },
+        actions: async (page) => {
+          fs.mkdirSync(crapjackR7ShotDir, { recursive: true });
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(200);
+          await page.evaluate(() => {
+            createShoe(4);
+            const pull = (rank, suit) => {
+              const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+              return shoe.splice(index, 1)[0];
+            };
+            const hole = pull('K', 'S');
+            const playerTwo = pull('9', 'D');
+            const dealerUp = pull('5', 'H');
+            const playerOne = pull('2', 'C');
+            shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+            bankroll = 1000;
+            currentBet = 20;
+            lastBet = 20;
+            startRound();
+          });
+          await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 4000 });
+          await page.waitForFunction(() => {
+            const d = document.getElementById('dealerTotalBadge');
+            const p = document.getElementById('playerTotalBadge');
+            return d && p && d.getBoundingClientRect().height > 4 && p.getBoundingClientRect().height > 4;
+          }, undefined, { timeout: 5000 });
+          await page.waitForTimeout(200);
+          const layout = await page.evaluate(() => {
+            const slack = 2;
+            const inViewport = (el) => {
+              if (!el) return false;
+              const style = getComputedStyle(el);
+              if (style.display === 'none' || style.visibility === 'hidden') return false;
+              const rect = el.getBoundingClientRect();
+              if (rect.width < 1 || rect.height < 1) return false;
+              return (
+                rect.top >= -slack &&
+                rect.left >= -slack &&
+                rect.bottom <= window.innerHeight + slack &&
+                rect.right <= window.innerWidth + slack
+              );
+            };
+            const dealerCards = document.getElementById('dealerCards');
+            const playerCards = document.getElementById('playerCards');
+            const dealerBadge = document.getElementById('dealerTotalBadge');
+            const playerBadge = document.getElementById('playerTotalBadge');
+            const hitBtn = document.querySelector('[data-mobile-action="hit"]');
+            const pit = document.getElementById('mobilePit');
+            return {
+              tableFirst: document.body.classList.contains('jack-table-first'),
+              scrollWidth: document.documentElement.scrollWidth,
+              width: window.innerWidth,
+              checks: {
+                dealerCards: inViewport(dealerCards),
+                playerCards: inViewport(playerCards),
+                dealerBadge: inViewport(dealerBadge),
+                playerBadge: inViewport(playerBadge),
+                hitBtn: inViewport(hitBtn),
+                pit: inViewport(pit)
+              }
+            };
+          });
+          await page.screenshot({
+            path: path.join(crapjackR7ShotDir, `play-${viewport.width}x${viewport.height}.png`),
+            fullPage: false
+          });
+          if (layout.scrollWidth > layout.width + 1) {
+            fail(vpName, `horizontal scroll ${layout.scrollWidth} > ${layout.width}`);
+          }
+          if (viewport.width <= 390 && !layout.tableFirst) {
+            fail(vpName, 'live hand should enable jack-table-first chrome on phone widths');
+          }
+          const missing = Object.entries(layout.checks).filter(([, ok]) => !ok).map(([key]) => key);
+          if (missing.length) {
+            fail(vpName, `play controls escaped viewport: ${missing.join(', ')} (${JSON.stringify(layout.checks)})`);
+          }
+        }
+      });
+    }
 
     await runCheck(browser, 'turdjack-mobile', 'turdjack.html', {
       mobile: true,
