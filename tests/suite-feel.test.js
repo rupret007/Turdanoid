@@ -102,6 +102,8 @@ describe('suite-feel', () => {
   it('keeps turdtris.html danger HUD threshold aligned with games/suite-feel.js', () => {
     const page = readPage('turdtris.html');
     expect(htmlNumericConst(page, 'FEEL_DANGER_HUD_RATIO')).toBe(TURDTRIS_FEEL.dangerHudPulseRatio);
+    expect(htmlNumericConst(page, 'FEEL_SHAKE_DECAY')).toBe(TURDTRIS_FEEL.shakeDecayPerFrame);
+    expect(htmlNumericConst(page, 'FEEL_LEVEL_FLASH_FRAMES')).toBe(TURDTRIS_FEEL.levelFlashFrames);
   });
 
   it('keeps card-table bot pacing aligned with CARD_TABLE_FEEL', () => {
