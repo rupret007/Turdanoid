@@ -1013,7 +1013,7 @@ body::after {
   body.board-focus .layout { width: 100%; padding: 7px; margin-top: 0; border-radius: 14px; }
   body.board-focus .topbar { flex-direction: row; align-items: center; gap: 6px; margin-bottom: 6px; }
   body.board-focus .top-actions { display: none; }
-  body.board-focus .topbar h1 { font-size: .91rem; letter-spacing: .04em; }
+  body.board-focus .topbar h1 { font-size: .78rem; letter-spacing: .04em; margin-left: 50px; }
   body.board-focus .mobile-menu details { padding: 2px 8px; }
   body.board-focus .mobile-menu summary { font-size: .69rem; min-height: 32px; }
   body.board-focus .hud { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-bottom: 4px; }
@@ -1031,7 +1031,8 @@ body::after {
   .mobile-level-progress { font-size: .58rem; gap: 4px; grid-template-columns: 1fr auto; }
   .mobile-level-progress > span { grid-column: 1 / -1; }
   .pb-boss, .pb-bubble { display: none; }
-  .suite-back-pill { display: none; }
+  .suite-back-pill { display: inline-flex; top: 13px; bottom: auto; left: 14px; width: 44px; min-width: 44px; min-height: 44px; padding: 4px; gap: 3px; letter-spacing: .06em; font-size: .58rem; z-index: 10000; }
+  .mobile-menu details[open] summary { padding-left: 28px; }
   .overlay { padding: 7px; }
   .overlay-card { padding: 12px 9px; }
   .overlay-card h2 { font-size: 1.35rem; }
@@ -1043,6 +1044,7 @@ body::after {
 @media (max-height: 700px) and (max-width: 980px) {
   body.board-focus #game { width: min(calc(100vw - 42px), calc((100dvh - 302px - env(safe-area-inset-bottom)) / 2)); }
   .well-caption { display: none; }
+  .welcome-card { padding-top: 44px; }
   .overlay-card .overlay-flavor { display: none; }
   .overlay-card h2 { font-size: 1.05rem; margin-bottom: 5px; }
   .overlay-kicker { font-size: .6rem; margin-bottom: 3px; }
