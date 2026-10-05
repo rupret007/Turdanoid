@@ -21,9 +21,10 @@ function pendingWildSnapshot() {
   return snapshot;
 }
 
-function boot(snapshot = validEightsSnapshot()) {
+function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
   const timers = new Map();
   const errors = [];
+  const writes = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
   let nextTimer = 1;
@@ -51,6 +52,12 @@ function boot(snapshot = validEightsSnapshot()) {
       window.localStorage.setItem('turdsuite_continue_v1', JSON.stringify({
         v: 1, games: { 'crapeights.html': { updatedAt: 1, snapshot } }
       }));
+      Object.entries(initialStorage).forEach(([key, value]) => window.localStorage.setItem(key, JSON.stringify(value)));
+      const setItem = window.Storage.prototype.setItem;
+      window.Storage.prototype.setItem = function (key, value) {
+        writes.push({ key, value });
+        return setItem.call(this, key, value);
+      };
       sources.forEach((source) => window.eval(source));
       const core = window.TurdSuiteTableContinue;
       window.Suite = {
@@ -70,7 +77,9 @@ function boot(snapshot = validEightsSnapshot()) {
   return {
     w,
     timers,
+    writes,
     state: () => JSON.parse(w.eval('JSON.stringify({players,deck,discard,currentPlayer,roundNumber,direction,activeSuit,hasDrawnThisTurn,pendingWildCard,roundActive})')),
+    snapshot: () => JSON.parse(w.eval('JSON.stringify({kind:"crapeights",v:1,players,deck,discard,roundNumber,currentPlayer,direction,activeSuit,pendingDrawCards,pendingSkips,roundActive,hasDrawnThisTurn,selectedCardId,pendingWildCard,historyLog,nextCardId,overlay:lastOverlay})')),
     stored: () => JSON.parse(w.localStorage.getItem('turdsuite_continue_v1')).games['crapeights.html'].snapshot
   };
 }
@@ -87,13 +96,46 @@ describe('Crappy Eights live-page save and input regressions', () => {
     const old = validEightsSnapshot();
     const game = boot(old);
     expect(game.w.eval('onboardingOpen')).toBe(false);
-    expect(game.state()).toMatchObject({
-      players: old.players, deck: old.deck, discard: old.discard,
-      currentPlayer: old.currentPlayer, roundNumber: old.roundNumber,
-      direction: old.direction, activeSuit: old.activeSuit
-    });
+    // This is the exact historical fixture: no optional defaults are added first.
+    // Check the live variables as well as storage, which alone could hide a
+    // renderer that left the old save untouched but restored the wrong state.
+    expect(game.snapshot()).toEqual(old);
     expect(game.stored()).toEqual(old);
     expect(game.w.document.querySelectorAll('#playerHand .card-btn')).toHaveLength(7);
+    expect(game.w.document.querySelector('#playerHand [aria-pressed="true"]').dataset.cardId).toBe(String(old.selectedCardId));
+    expect(game.w.document.getElementById('historyText').textContent).toContain(old.historyLog[0]);
+    game.w.document.getElementById('playBtn').click();
+    expect(game.state().discard.at(-1)).toEqual(old.players[0].hand[0]);
+    expect(game.state().players[0].hand).toHaveLength(6);
+    expect(game.state().currentPlayer).toBe(1);
+    expect(boot(game.stored()).snapshot()).toEqual(game.stored());
+  });
+
+  it('resolves old saved draw and skip penalties once while preserving all 52 cards', () => {
+    const snapshot = validEightsSnapshot();
+    snapshot.direction = -1;
+    snapshot.pendingDrawCards = 2;
+    snapshot.pendingSkips = 1;
+    const game = boot(snapshot);
+    expect(game.snapshot()).toMatchObject({
+      direction: -1, currentPlayer: 2, pendingDrawCards: 0, pendingSkips: 0,
+      hasDrawnThisTurn: false, selectedCardId: null, nextCardId: 53
+    });
+    expect(game.state().players[0].hand).toEqual([
+      ...snapshot.players[0].hand, snapshot.deck.at(-1), snapshot.deck.at(-2)
+    ]);
+    expect(game.state().players.slice(1)).toEqual(snapshot.players.slice(1));
+    expect(game.state().deck).toEqual(snapshot.deck.slice(0, -2));
+    expect(game.snapshot().historyLog).toEqual([
+      expect.stringContaining('Riley got skipped.'),
+      expect.stringContaining('You draws 2 and loses turn.'),
+      ...snapshot.historyLog
+    ]);
+    const cards = [...game.state().deck, ...game.state().discard, ...game.state().players.flatMap(player => player.hand)];
+    expect(cards.map(card => card.id).sort((a, b) => a - b)).toEqual(Array.from({ length: 52 }, (_, i) => i + 1));
+    const resumed = boot(game.stored());
+    expect(resumed.snapshot()).toEqual(game.stored());
+    expect(resumed.w.eval('aiTurnTimeoutId')).not.toBeNull();
   });
 
   it('accepts one draw across repeated button and direct input after restoring', () => {
@@ -107,6 +149,22 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(once.players[0].hand).toHaveLength(before.players[0].hand.length + 1);
     expect(once.deck).toHaveLength(before.deck.length - 1);
     expect(once.hasDrawnThisTurn).toBe(true);
+  });
+
+  it('preserves a saved drawn turn and accepts Pass after Continue without drawing twice', () => {
+    const game = boot();
+    game.w.document.getElementById('drawBtn').click();
+    const saved = game.stored();
+    const resumed = boot(saved);
+    expect(resumed.snapshot()).toEqual(saved);
+    expect(resumed.w.document.getElementById('drawBtn').disabled).toBe(true);
+    resumed.w.drawForHuman();
+    expect(resumed.snapshot()).toEqual(saved);
+    resumed.w.document.getElementById('passBtn').click();
+    expect(resumed.state().currentPlayer).toBe(1);
+    expect(resumed.state().hasDrawnThisTurn).toBe(false);
+    expect(resumed.state().players).toEqual(saved.players);
+    expect(resumed.state().deck).toEqual(saved.deck);
   });
 
   it('learns a public pass only when it commits, regardless of hidden playable cards', () => {
@@ -149,6 +207,8 @@ describe('Crappy Eights live-page save and input regressions', () => {
     const snapshot = pendingWildSnapshot();
     const wild = snapshot.pendingWildCard;
     const game = boot(snapshot);
+    expect(game.snapshot()).toEqual(snapshot);
+    expect(game.stored()).toEqual(snapshot);
     expect(game.w.document.getElementById('suitChooser').style.display).toBe('flex');
     expect(game.w.document.activeElement).toBe(game.w.document.querySelector('#suitChooser .recommended'));
     const before = game.state();
@@ -214,6 +274,57 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(game.state()).toEqual(before);
   });
 
+  it('keeps keyboard card focus through selection and supports arrows, Home and End', () => {
+    const game = boot();
+    const hand = game.w.document.getElementById('playerHand');
+    const cards = [...hand.querySelectorAll('.card-btn')];
+    const press = (code) => {
+      const event = new game.w.KeyboardEvent('keydown', { key: code, code, bubbles: true, cancelable: true });
+      game.w.document.activeElement.dispatchEvent(event);
+      return event;
+    };
+    cards[0].focus();
+    expect(press('ArrowRight').defaultPrevented).toBe(true);
+    expect(game.w.document.activeElement).toBe(cards[1]);
+    expect(press('End').defaultPrevented).toBe(true);
+    expect(game.w.document.activeElement).toBe(cards.at(-1));
+    press('Home');
+    press('ArrowRight');
+    press('ArrowRight');
+    const selected = game.w.document.activeElement;
+    const before = game.state();
+    expect(press('Enter').defaultPrevented).toBe(false);
+    // JSDOM does not synthesize native keyboard activation; model its one click.
+    selected.click();
+    expect(game.state()).toEqual(before);
+    expect(game.w.document.activeElement).toBe(selected);
+    expect(selected.getAttribute('aria-pressed')).toBe('true');
+    expect(selected.getAttribute('aria-label')).toMatch(/selected/i);
+    expect(press('Enter').defaultPrevented).toBe(false);
+    selected.click();
+    expect(game.state().discard.at(-1).id).toBe(Number(selected.dataset.cardId));
+    expect(game.state().players[0].hand).toHaveLength(6);
+    expect(game.w.document.activeElement).toBe(cards[3]);
+  });
+
+  it('announces a bot play through the polite atomic live region', () => {
+    const snapshot = validEightsSnapshot();
+    snapshot.currentPlayer = 1;
+    snapshot.selectedCardId = null;
+    const isAction = card => ['8', 'J', 'Q'].includes(card.rank);
+    snapshot.deck.push(...snapshot.players[1].hand.filter(isAction));
+    snapshot.players[1].hand = snapshot.players[1].hand.filter(card => !isAction(card));
+    const game = boot(snapshot);
+    const timer = game.w.eval('aiTurnTimeoutId');
+    game.timers.get(timer).callback();
+    const status = game.w.document.getElementById('statusText');
+    expect(status.getAttribute('role')).toBe('status');
+    expect(status.getAttribute('aria-live')).toBe('polite');
+    expect(status.getAttribute('aria-atomic')).toBe('true');
+    expect(status.textContent).toMatch(/Casey played/);
+    expect(game.state().discard).toHaveLength(2);
+  });
+
   it('pauses the drawer, persists difficulty separately and resumes without snapshot changes', () => {
     const game = boot();
     const before = game.state();
@@ -263,12 +374,48 @@ describe('Crappy Eights live-page save and input regressions', () => {
     snapshot.deck.push(...snapshot.players[1].hand);
     snapshot.players[1].hand = [];
     snapshot.overlay = { title: 'Bot wins', summary: 'Round complete', matchFinished: false, tone: 'defeat', flavor: 'Dirty tricks.', kicker: 'Round Over' };
-    const game = boot(snapshot);
+    const previousStats = { matchesPlayed: 4, matchesWon: 1, roundsPlayed: 17, roundsWon: 6, bestRoundPoints: 144 };
+    const previousDisplayStats = { v: 1, roundsPlayed: 8, roundsWon: 3, matchesPlayed: 2, matchesWon: 1, pointsCollected: 250, bestRound: 100, winStreak: 1, bestStreak: 2 };
+    const game = boot(snapshot, { crapeightsStats: previousStats, crapeights_stats_v1: previousDisplayStats });
     expect(game.w.document.querySelector('.ce-receipt-total').textContent).toContain('TOTAL FLUSHED');
     const expected = game.w.CrapeightsEffects.scoringReceipt(snapshot.players, 1).total;
     expect(game.w.document.querySelector('.ce-receipt-total strong').textContent).toBe(`+${expected}`);
-    expect(game.w.localStorage.getItem('crapeights_stats_v1')).toBeNull();
+    expect(game.w.localStorage.getItem('crapeightsStats')).toBe(JSON.stringify(previousStats));
+    expect(game.w.localStorage.getItem('crapeights_stats_v1')).toBe(JSON.stringify(previousDisplayStats));
+    expect(game.writes.filter(write => ['crapeightsStats', 'crapeights_stats_v1'].includes(write.key))).toEqual([]);
+    expect(game.snapshot()).toEqual(snapshot);
     expect(game.stored()).toEqual(snapshot);
+  });
+
+  it('retains both stats key formats while recording a continued match win once', () => {
+    const snapshot = validEightsSnapshot();
+    snapshot.deck.push(...snapshot.players[0].hand.splice(1));
+    snapshot.players[0].score = 199;
+    const previousStats = { matchesPlayed: 4, matchesWon: 1, roundsPlayed: 17, roundsWon: 6, bestRoundPoints: 144 };
+    const previousDisplayStats = { v: 1, roundsPlayed: 8, roundsWon: 3, matchesPlayed: 2, matchesWon: 1, pointsCollected: 250, bestRound: 100, winStreak: 1, bestStreak: 2 };
+    const game = boot(snapshot, { crapeightsStats: previousStats, crapeights_stats_v1: previousDisplayStats });
+    const points = game.w.CrapeightsEffects.scoringReceipt(snapshot.players, 0).total;
+    game.w.document.getElementById('playBtn').click();
+    const expectedLegacy = { matchesPlayed: 5, matchesWon: 2, roundsPlayed: 18, roundsWon: 7, bestRoundPoints: Math.max(144, points) };
+    const expectedDisplay = { v: 1, roundsPlayed: 9, roundsWon: 4, matchesPlayed: 3, matchesWon: 2, pointsCollected: 250 + points, bestRound: Math.max(100, points), winStreak: 2, bestStreak: 2 };
+    expect(JSON.parse(game.w.localStorage.getItem('crapeightsStats'))).toEqual(expectedLegacy);
+    expect(JSON.parse(game.w.localStorage.getItem('crapeights_stats_v1'))).toEqual(expectedDisplay);
+    expect(game.writes.filter(write => write.key === 'crapeightsStats')).toHaveLength(1);
+    expect(game.writes.filter(write => write.key === 'crapeights_stats_v1')).toHaveLength(1);
+    expect(game.snapshot().overlay.matchFinished).toBe(true);
+    expect(game.state().roundActive).toBe(false);
+    const summary = game.w.document.getElementById('roundSummary');
+    const overlay = game.w.document.getElementById('roundOverlay');
+    expect(overlay.getAttribute('aria-describedby')).toBe(summary.id);
+    expect(summary.getAttribute('role')).toBe('status');
+    expect(summary.getAttribute('aria-live')).toBe('polite');
+    expect(summary.getAttribute('aria-atomic')).toBe('true');
+    expect(summary.textContent).toContain(`You reached ${199 + points}. Match complete in round 2.`);
+    expect(summary.closest('.shell')).toBeNull();
+    expect(overlay.contains(game.w.document.activeElement)).toBe(true);
+    const resumed = boot(game.stored(), { crapeightsStats: expectedLegacy, crapeights_stats_v1: expectedDisplay });
+    expect(resumed.snapshot()).toEqual(game.stored());
+    expect(resumed.writes.filter(write => ['crapeightsStats', 'crapeights_stats_v1'].includes(write.key))).toEqual([]);
   });
 
   it('keeps finished saves finished after focus events and repeated input', () => {
