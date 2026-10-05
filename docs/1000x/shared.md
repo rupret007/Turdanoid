@@ -1,40 +1,65 @@
-# Turdanoid 1000x — shared lane audit (round 1)
+# Turdanoid 1000x — shared lane audit (round 2)
 
 Base: round-0 audit `TURDANOID-1000X-AUDIT-1005.md`, tree `b3821b4` save contract.
 
 ## Honest audit (deeper)
 
-| Area | Current state | Gap |
-|------|---------------|-----|
-| Gameplay | Hub is a launcher only; continue/last-played logic is solid | No per-game progress surfaced on cards; feels like a static list |
-| Feel | Toast/hype/quips, card deal/flip CSS, ambient bg | No shared particle/shake layer; games duplicate WebAudio beeps |
-| Graphics | Strong v4 hub SVG covers, sewer tokens | Phone rows hide art; cards still small in table HUDs (game lanes) |
-| Animation | Cover hover sheen, logo bob, SVG micro-motion | Hub not “arcade busy”; reduced-motion mostly OK |
-| Audio | `turdsuite.js` basic tones + mute key | No shared preset bank or master gain; per-game inconsistency |
-| HUD | Masthead resume shortcut, phone edge accents | No suite mute control on door; no stat chips |
-| Mobile/touch | Compact phone rows, safe areas, no horizontal scroll | Stat text must not wrap layout at 320px |
-| a11y | Card `aria-label` for continue state | No skip link; no shared live region; focus rings uneven |
-| Perf | CSS ambient, `contain` on bg | FX module must cap particles and avoid per-frame DOM |
-| Onboarding | “No sign-in” badge | First visit could use subtle identity (sound tip) — optional |
-| AI | N/A (shared) | N/A |
+| Area | Round 1 | Round 2 gap / action |
+|------|---------|----------------------|
+| Gameplay | Hub launcher + continue honest | Hero Continue banner + trophy stat chips |
+| Feel | Opt-in FX/audio modules | Hub idle SVG motion; ambient parallax + critters |
+| Graphics | v4 covers, basic card indices | Paper texture, toilet-crest backs, felt/chip utilities, court/ace via game CSS + shared vars |
+| Animation | Hover-only cover motion | Idle cover loops (pause off-screen / reduced motion); deal/slide utility classes |
+| Audio | Basic preset bank | Richer snap/shuffle/chip/fanfare/wah + documented API |
+| HUD | Mute + stat chips | Trophy styling; Continue masthead pulse |
+| Mobile/touch | 320px phone rows | Focus rings on game cards; larger shared index clamps |
+| a11y | Skip link, announcer | Landmarks unchanged; focus-visible on hub cards |
+| Perf | FX cap | Ambient uses transform-only; critters capped at 2 |
+| Onboarding | No sign-in badge | Continue hero when table live |
+| AI | N/A | N/A |
 
-Save/continue: **do not** change `turdsuite_continue_v1` shapes or existing localStorage keys. Hub stats are **read-only**.
+Save/continue: **do not** change `turdsuite_continue_v1` shapes or existing localStorage keys.
+
+## Suite.audio() API (for game lanes)
+
+Load once after user gesture (hub mute or any `Suite.audio()` call):
+
+```js
+const audio = await Suite.audio();
+audio.playPreset('tick');    // UI tick
+audio.playPreset('snap');    // card land
+audio.playPreset('card');    // alias snap
+audio.playPreset('chip');    // double clack
+audio.playPreset('shuffle'); // noise + riffle
+audio.playPreset('win');     // fanfare (alias: fanfare)
+audio.playPreset('lose');    // wah-wah (alias: wah)
+audio.playPreset('blip');    // short UI
+audio.playPreset('ding');    // two-tone OK
+```
+
+Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 in the runtime wrapper; games may use `playTone` for custom beeps.
 
 ## Checklist (testable)
 
+### Round 1 (done)
 - [x] `assets/suite-audio.js` — WebAudio preset bank, master volume, honours `turdsuite_muted`, unit tests
 - [x] `assets/suite-fx.js` — shake/flash/confetti with `prefers-reduced-motion` gating, particle cap, unit tests
 - [x] `assets/suite-a11y.js` — skip link helper, `aria-live` announcer, focus-visible utility, unit tests
 - [x] `assets/suite-hub-stats.js` — read-only badges from existing keys, hub decoration, unit tests
 - [x] Hub: skip link, suite mute toggle, stat badges on game cards (desktop + phone)
 - [x] `turdsuite.js`: lazy `Suite.audio` / `Suite.fx` / hub hooks; `Suite.announce` for games
-- [x] `turdsuite.css`: global playing-card index contrast + focus-visible; skip/mute/stat styles
-- [x] `games/suite-feel.js`: `prefersReducedMotion` helper (+ test)
-- [x] `README.md` + `RULES.md` Shared Utilities note
 - [x] Favicon polish (procedural SVG)
-- [ ] Per-game adoption of `Suite.fx` / `Suite.audio` presets (other lanes)
-- [ ] Larger card hit targets in table layouts at 390px (card-game lanes — CSS in their HTML)
+
+### Round 2
+- [x] Card art tokens: paper texture, toilet-crest back weave, shared index contrast clamps, selected/illegal hooks in `turdsuite.css`
+- [x] Table felt + chips: `.suite-table-felt`, `.suite-felt-stitch`, `.suite-chip[data-denom]`, `.suite-slide-in` + reduced-motion fallbacks
+- [x] Hub 2.0: idle cover motion (`suite-hub-attract.js`), attract header glow, hero Continue banner class, trophy stat chips
+- [x] Ambient layer: parallax depth + rat/duck critters (`suite-ambient.js`), pause hidden tab + reduced motion
+- [x] Suite audio: snap, shuffle, tick, richer win/lose; tests updated
+- [x] Unit tests: `suite-ambient`, `suite-hub-attract`
+- [ ] Per-game adoption of new audio presets (other lanes)
+- [ ] Table layouts opt into `.suite-table-felt` on felt panels (card-game lanes)
 
 ## Needs shared change (other lanes)
 
-_None for round 1 — stat badges and FX/audio are opt-in via `Suite.audio()` / `Suite.fx()`._
+_None — opt into `.suite-table-felt`, `.suite-chip`, and `Suite.audio()` presets from game pages._
