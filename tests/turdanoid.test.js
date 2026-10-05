@@ -126,6 +126,12 @@ describe('TurdAnoid Balance Logic', () => {
     });
   });
 
+  describe('Combo window', () => {
+    it('gives players a slightly wider chain window at 105 frames', () => {
+      expect(TURDANOID_BALANCE.scoring.comboWindowFrames).toBe(105);
+    });
+  });
+
   describe('Scoring', () => {
     it('computes brick hit score with combo multiplier', () => {
       // level 2, no combo: 10 + 2*2 = 14

@@ -125,6 +125,18 @@ describe('TurdAnoid game regressions', () => {
     });
   });
 
+  describe('pointer paddle follow', () => {
+    it('smooths toward the touch target instead of snapping only on move events', () => {
+      const startX = g.paddle.x;
+      g.pointerMove(g.W * 0.75, g.H - 40);
+      stepFrames(g, 1);
+      expect(g.paddle.x).toBeGreaterThan(startX);
+      expect(g.paddle.x).toBeLessThan(g.W * 0.75);
+      stepFrames(g, 24);
+      expect(Math.abs(g.paddle.x - g.W * 0.75)).toBeLessThan(4);
+    });
+  });
+
   describe('shield (regression: only saved a solo ball)', () => {
     it('saves every ball during multiball', () => {
       const H = g.H;

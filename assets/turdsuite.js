@@ -125,6 +125,23 @@
     return arr[Math.floor(Math.random() * arr.length)];
   };
 
+  /** Quick pop on a stat tile or score chip after a score change. */
+  Suite.bump = function (el) {
+    if (!el || !el.classList) return;
+    el.classList.remove('suite-pop');
+    void el.offsetWidth;
+    el.classList.add('suite-pop');
+  };
+
+  function enhancePhoneHud() {
+    try {
+      const targets = document.querySelectorAll('.hud, .topbar, .mobile-run-strip');
+      for (let i = 0; i < targets.length; i++) {
+        targets[i].classList.add('suite-phone-hud');
+      }
+    } catch (e) {}
+  }
+
   // ---------- Back-to-Hub pill ----------
   function injectBackPill() {
     try {
@@ -311,6 +328,7 @@
   function boot() {
     injectAmbientBg();
     injectBackPill();
+    enhancePhoneHud();
     preventDoubleTapZoom();
     recordLastGame();
     markHubProgress();

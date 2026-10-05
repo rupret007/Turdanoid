@@ -143,7 +143,12 @@ async function main() {
               page.waitForURL(`${baseUrl}/${href}`),
               page.locator(`.game-card[href="${href}"]`).tap()
             ]);
-            await page.goto(`${baseUrl}/`);
+            const back = page.locator('a.suite-back-pill[aria-label="Back to game hub"]:visible').first();
+            if (!(await back.isVisible())) fail(name, `${href} must expose the Hub escape`);
+            await Promise.all([
+              page.waitForURL(`${baseUrl}/`),
+              back.tap()
+            ]);
           }
           await page.evaluate(games => {
             localStorage.setItem('turdsuite_continue_v1', JSON.stringify({ v: 1, games }));
@@ -668,16 +673,28 @@ async function main() {
         }
         await page.keyboard.up('ArrowDown');
 
+        await page.evaluate(() => { stopLoop(); tetromino.col = 4; });
         const left = await page.locator('[data-action="left"]').boundingBox();
         await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
         await page.mouse.down();
-        await page.waitForTimeout(100);
-        if (!(await page.evaluate(() => holdInterval !== null))) {
-          fail('turdtris-held-input-pause', 'held phone movement did not start');
+        const firstCol = await page.evaluate(() => tetromino.col);
+        if (firstCol !== 3) fail('turdtris-held-input-pause', 'press must move exactly once immediately');
+        await page.waitForTimeout(70);
+        const waiting = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout !== null, repeating: holdInterval !== null }));
+        if (waiting.col !== firstCol || !waiting.pending || waiting.repeating) {
+          fail('turdtris-held-input-pause', `hold must wait before repeating: ${JSON.stringify(waiting)}`);
         }
+        await page.waitForFunction(col => holdInterval !== null && tetromino.col < col, firstCol);
+        await page.mouse.up();
+        const released = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout, repeating: holdInterval }));
+        await page.waitForTimeout(220);
+        if (released.pending !== null || released.repeating !== null || await page.evaluate(() => tetromino.col) !== released.col) {
+          fail('turdtris-held-input-pause', 'release must cancel both delayed and active repeat without another move');
+        }
+        await page.mouse.down();
         await page.keyboard.press('p');
-        const state = await page.evaluate(() => ({ softDrop, holdInterval, col: tetromino.col }));
-        if (state.softDrop || state.holdInterval !== null) {
+        const state = await page.evaluate(() => ({ softDrop, holdInterval, holdDelayTimeout, col: tetromino.col }));
+        if (state.softDrop || state.holdInterval !== null || state.holdDelayTimeout !== null) {
           fail('turdtris-held-input-pause', 'pausing must release held phone movement');
         }
         await page.keyboard.press('p');
@@ -689,13 +706,31 @@ async function main() {
 
         await page.keyboard.press('p');
         await page.locator('[data-action="down"]').click();
-        if (await page.evaluate(() => softDrop || holdInterval !== null)) {
+        if (await page.evaluate(() => softDrop || holdInterval !== null || holdDelayTimeout !== null)) {
           fail('turdtris-held-input-pause', 'paused dock input must not queue a drop');
         }
         await page.locator('[data-action="pause"]').click();
         if (await page.evaluate(() => paused)) {
           fail('turdtris-held-input-pause', 'phone Pause control must still resume');
         }
+        for (const boundary of ['pointercancel', 'pointerleave']) {
+          await page.dispatchEvent('[data-action="left"]', 'pointerdown', { pointerType: 'touch', pointerId: 1 });
+          await page.dispatchEvent('#mobileControls', boundary, { pointerType: 'touch', pointerId: 1 });
+          const released = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout, repeating: holdInterval }));
+          await page.waitForTimeout(220);
+          if (released.pending !== null || released.repeating !== null || await page.evaluate(() => tetromino.col) !== released.col) {
+            fail('turdtris-held-input-pause', `${boundary} left phone movement running`);
+          }
+        }
+        await page.evaluate(() => { stopLoop(); tetromino.col = 4; });
+        await page.keyboard.down('ArrowRight');
+        await page.keyboard.down('ArrowRight');
+        if (await page.evaluate(() => tetromino.col) !== 5) fail('turdtris-held-input-pause', 'OS keyboard repeat bypassed delayed shift');
+        const repeated = await page.evaluate(() => { for (let i = 0; i < 7; i++) tickDasRepeat(33); return tetromino.col; });
+        if (repeated <= 5) fail('turdtris-held-input-pause', 'held keyboard direction never repeated');
+        await page.keyboard.up('ArrowRight');
+        const stopped = await page.evaluate(() => { const col = tetromino.col; tickDasRepeat(330); return !dasRightHeld && tetromino.col === col; });
+        if (!stopped) fail('turdtris-held-input-pause', 'released keyboard direction kept moving');
       }
     });
 
@@ -1561,14 +1596,33 @@ async function main() {
           if (state.phase === 'bidding' && state.bidTurn === 0) {
             const beforeBid = state.bids[0];
             document.getElementById('lockBid')?.click();
-            return { acted: 'bid', beforeBid, afterBid: state.bids[0], phase: state.phase };
+            const once = JSON.stringify([state.bids, state.hands, state.trick, state.currentPlayer]);
+            const timer = aiTurnTimeoutId;
+            document.getElementById('lockBid')?.click();
+            window.dispatchEvent(new Event('focus'));
+            document.dispatchEvent(new Event('visibilitychange'));
+            return {
+              acted: 'bid', beforeBid, afterBid: state.bids[0], phase: state.phase,
+              unchanged: once === JSON.stringify([state.bids, state.hands, state.trick, state.currentPlayer]),
+              sameTimer: timer !== null && timer === aiTurnTimeoutId
+            };
           }
           if (state.phase === 'play' && state.currentPlayer === 0) {
             const legal = typeof legalCards === 'function' ? legalCards(0)[0] : null;
             if (!legal) return { acted: 'none' };
             state.selected = legal.id;
             playSelected();
-            return { acted: 'play', remaining: state.hands[0].length };
+            const remaining = state.hands[0].length;
+            const once = JSON.stringify([state.hands, state.trick, state.currentPlayer]);
+            const timer = aiTurnTimeoutId;
+            playSelected();
+            window.dispatchEvent(new Event('focus'));
+            document.dispatchEvent(new Event('visibilitychange'));
+            return {
+              acted: 'play', remaining,
+              unchanged: once === JSON.stringify([state.hands, state.trick, state.currentPlayer]),
+              sameTimer: timer !== null && timer === aiTurnTimeoutId
+            };
           }
           return { acted: 'wait', phase: state.phase, turn: state.currentPlayer };
         });
@@ -1578,8 +1632,8 @@ async function main() {
         if (played.acted === 'play' && !(played.remaining < before.you.split(',').filter(Boolean).length)) {
           fail('table-continue-restore', `restored Spades should play a card, saw ${JSON.stringify(played)}`);
         }
-        if (played.acted === 'none') {
-          fail('table-continue-restore', `restored Spades should have a legal card, saw ${JSON.stringify(played)}`);
+        if (!['bid', 'play'].includes(played.acted) || !played.unchanged || !played.sameTimer) {
+          fail('table-continue-restore', `restored Spades must accept one action and keep one bot timer after repeated input/focus: ${JSON.stringify(played)}`);
         }
 
         await page.evaluate(() => { if (typeof clearAiTimer === 'function') clearAiTimer(); });
@@ -1695,8 +1749,165 @@ async function main() {
         if (!canAct.human) {
           fail('crapeights-continue-restore', `restored Eights should still be the human turn, saw ${JSON.stringify(canAct)}`);
         }
+        const action = await page.evaluate(() => {
+          const before = players[0].hand.length;
+          const stock = deck.length;
+          document.getElementById('drawBtn').click();
+          const once = JSON.stringify([players, deck, discard, currentPlayer]);
+          document.getElementById('drawBtn').click();
+          return { before, after: players[0].hand.length, stock, remaining: deck.length, drawn: hasDrawnThisTurn,
+            unchanged: once === JSON.stringify([players, deck, discard, currentPlayer]) };
+        });
+        if (action.after !== action.before + 1 || action.remaining !== action.stock - 1 || !action.drawn || !action.unchanged) {
+          fail('crapeights-continue-restore', `restored Eights must accept exactly one draw across repeated input: ${JSON.stringify(action)}`);
+        }
+        await page.evaluate(() => { clearHumanAutoPassTimer(); clearAiTimer(); });
       }
     });
+
+    for (const game of ['turdspades', 'crapeights']) {
+      await runCheck(browser, `${game}-finished-reload`, `${game}.html`, {
+        actions: async page => {
+          const expected = await page.evaluate(({ game, snapshot }) => {
+            if (game === 'turdspades') {
+              closeGuide(); clearAiTimer(); applySpadesSnapshot(snapshot);
+              state.hands = [[], [], [], []]; state.trick = []; state.selected = null;
+              state.tricks = [4, 3, 3, 3]; state.scores = [500, 0];
+              scoreRound('Final trick'); render();
+              return { scores: state.scores.slice(), round: state.round };
+            }
+            hideWelcomeGuide(); clearAiTimer(); applyEightsSnapshot(snapshot);
+            // Leave every card in the deck/discard/hands so the saved table remains valid.
+            discard.push(...players[0].hand); players[0].hand = []; selectedCardId = null; players[0].score = 200;
+            endRound(0);
+            return { scores: players.map(player => player.score), round: roundNumber };
+          }, { game, snapshot: game === 'turdspades' ? validSpadesSnapshot() : validEightsSnapshot() });
+          await page.reload({ waitUntil: 'load' });
+          const restored = await page.evaluate(game => {
+            window.dispatchEvent(new Event('focus'));
+            window.dispatchEvent(new Event('focus'));
+            document.dispatchEvent(new Event('visibilitychange'));
+            if (game === 'turdspades') {
+              playSelected(); document.getElementById('lockBid').click();
+              return { finished: state.phase === 'matchEnd', scores: state.scores.slice(), round: state.round, timer: aiTurnTimeoutId };
+            }
+            document.getElementById('drawBtn').click(); document.getElementById('playBtn').click();
+            return { finished: !roundActive && lastOverlay?.matchFinished, scores: players.map(player => player.score), round: roundNumber, timer: aiTurnTimeoutId };
+          }, game);
+          await page.waitForTimeout(800);
+          const later = await page.evaluate(game => game === 'turdspades'
+            ? { scores: state.scores.slice(), round: state.round, timer: aiTurnTimeoutId, finished: state.phase === 'matchEnd' }
+            : { scores: players.map(player => player.score), round: roundNumber, timer: aiTurnTimeoutId, finished: !roundActive }, game);
+          if (!restored.finished || !later.finished || restored.timer !== null || later.timer !== null ||
+              restored.round !== expected.round || later.round !== expected.round ||
+              JSON.stringify(restored.scores) !== JSON.stringify(expected.scores) || JSON.stringify(later.scores) !== JSON.stringify(expected.scores)) {
+            fail(`${game}-finished-reload`, `completed match revived after reload or repeated input: ${JSON.stringify({ expected, restored, later })}`);
+          }
+          await page.locator('a.suite-back-pill[aria-label="Back to game hub"]:visible').first().click();
+          if (await page.locator(`.game-card.in-progress[href="${game}.html"]`).count()) {
+            fail(`${game}-finished-reload`, 'completed match must not appear as a live Continue');
+          }
+        }
+      });
+    }
+
+    for (const game of ['TurdAnoid', 'turdtris', 'crapeights']) {
+      await runCheck(browser, `${game}-reduced-motion`, `${game}.html`, {
+        context: { reducedMotion: 'reduce' },
+        actions: async page => {
+          const selectors = game === 'TurdAnoid' ? ['.hud .col.critical']
+            : game === 'turdtris' ? ['.card.warn.stack-danger', '.pb-danger.warn', '.pb-danger.alarm']
+              : ['.hud-card.hot.pressure', '.shell.play-bump', '.opp-card.active .ce-avatar'];
+          await page.evaluate(game => {
+            if (game === 'TurdAnoid') { startGame(); lives = 1; updateHud(); }
+            else if (game === 'turdtris') { hideWelcomeGuide(); stopLoop(); playfield[4][0] = 'I'; updateScore(); }
+            else { hideWelcomeGuide(); pendingDrawCards = 2; updateHud(); document.querySelector('.shell').classList.add('play-bump'); document.querySelector('.opp-card').classList.add('active'); }
+          }, game);
+          for (const mode of ['reduce', 'no-preference', 'reduce']) {
+            await page.emulateMedia({ reducedMotion: mode });
+            for (const selector of selectors) {
+              if (selector.startsWith('.pb-danger.')) {
+                await page.evaluate(selector => { document.querySelector('.pb-danger').className = selector.slice(1).replaceAll('.', ' '); }, selector);
+              }
+              const animation = await page.locator(selector).evaluate(el => getComputedStyle(el).animationName);
+              if ((animation === 'none') !== (mode === 'reduce')) {
+                fail(`${game}-reduced-motion`, `${selector} animation ${animation} does not follow ${mode}`);
+              }
+            }
+          }
+          if (game === 'TurdAnoid') {
+            const rendered = await page.evaluate(() => {
+              const oldTranslate = ctx.translate;
+              const oldGradient = ctx.createLinearGradient;
+              const oldNow = Object.getOwnPropertyDescriptor(performance, 'now');
+              const translations = [], dangerColors = [];
+              let now = 1000;
+              ctx.translate = function(x, y) { translations.push([x, y]); return oldTranslate.call(this, x, y); };
+              ctx.createLinearGradient = function(...args) {
+                const gradient = oldGradient.apply(this, args);
+                if (args[1] === H * 0.55 && args[3] === H) {
+                  const add = gradient.addColorStop;
+                  gradient.addColorStop = function(offset, color) { if (offset === 1) dangerColors.push(color); return add.call(this, offset, color); };
+                }
+                return gradient;
+              };
+              try {
+                Object.defineProperty(performance, 'now', { configurable: true, value: () => now });
+                window.eval('shake = 10');
+                balls = [{ x: W / 2, y: H * 0.85, r: 7, vy: 4, vx: 0, trail: [], stuck: false }];
+                render(); now = 1500; render();
+              } finally {
+                ctx.translate = oldTranslate; ctx.createLinearGradient = oldGradient;
+                if (oldNow) Object.defineProperty(performance, 'now', oldNow); else delete performance.now;
+              }
+              return { translation: translations[0], dangerColors };
+            });
+            if (!rendered.translation || rendered.translation.some(value => value !== 0)) fail('TurdAnoid-reduced-motion', `canvas still shakes: ${JSON.stringify(rendered)}`);
+            if (rendered.dangerColors.length !== 2 || rendered.dangerColors[0] !== rendered.dangerColors[1]) fail('TurdAnoid-reduced-motion', `canvas danger should remain steady: ${JSON.stringify(rendered)}`);
+          }
+        }
+      });
+    }
+
+    for (const game of ['TurdAnoid', 'crapeights']) {
+      await runCheck(browser, `${game}-unavailable-haptics`, `${game}.html`, {
+        actions: async page => {
+          for (const mode of ['absent', 'throws']) {
+            const result = await page.evaluate(({ game, mode, snapshot }) => {
+              const descriptor = Object.getOwnPropertyDescriptor(navigator, 'vibrate');
+              let calls = 0;
+              Object.defineProperty(navigator, 'vibrate', { configurable: true, value: mode === 'absent' ? undefined : () => { calls++; throw new Error('Haptics unavailable'); } });
+              try {
+                if (game === 'TurdAnoid') {
+                  startGame();
+                  // Separate the target from neighboring rows: a radius-7 ball can hit both
+                  // sides of the live wall's 5px gap during the same physics step.
+                  const brick = { ...bricks[0], x: W * 0.35, y: H * 0.35, w: 60, h: 20, hp: 1, maxHp: 1 };
+                  const survivor = { ...brick, x: W * 0.7, y: H * 0.2, hp: 2, maxHp: 2 };
+                  bricks = [brick, survivor];
+                  balls = [{ x: brick.x + brick.w / 2, y: brick.y + brick.h + 6, r: 7, vx: 0, vy: -5, trail: [], stuck: false }];
+                  step(1000 / 60);
+                  const acted = brick.hp === 0 && bricks.length === 1 && bricks[0] === survivor
+                    && survivor.hp === 2 && score === 17 && balls[0].vy > 0 && state === 'playing';
+                  return { acted, calls, score, targetHp: brick.hp, survivorHp: survivor.hp, remaining: bricks.length };
+                }
+                hideWelcomeGuide(); clearAiTimer(); clearHumanAutoPassTimer(); applyEightsSnapshot(snapshot); updateAll();
+                const before = players[0].hand.length;
+                selectedCardId = players[0].hand.find(card => card.rank !== '8' && isPlayable(card)).id;
+                updateAll(); document.getElementById('playBtn').click(); clearAiTimer();
+                return { acted: players[0].hand.length === before - 1, calls };
+              } finally {
+                if (descriptor) Object.defineProperty(navigator, 'vibrate', descriptor);
+                else delete navigator.vibrate;
+              }
+            }, { game, mode, snapshot: validEightsSnapshot() });
+            if (!result.acted || mode === 'throws' && result.calls < 1) {
+              fail(`${game}-unavailable-haptics`, `gameplay must complete when haptics ${mode}: ${JSON.stringify(result)}`);
+            }
+          }
+        }
+      });
+    }
 
     await runCheck(browser, 'turdrummy-continue-no-round-skip', 'turdrummy.html', {
       actions: async (page) => {
