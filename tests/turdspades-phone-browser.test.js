@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -16,11 +17,16 @@ const viewports = [
   { width: 320, height: 640 },
   { width: 1280, height: 800 }
 ];
+// CI runs unit tests before installing Playwright browsers; skip (not fail) when none is available.
+const hasBrowser = Boolean(process.env.PLAYWRIGHT_CHANNEL) || existsSync(chromium.executablePath());
 let server;
 let browser;
 let baseUrl;
 
 beforeAll(async () => {
+  if (!hasBrowser) {
+    return;
+  }
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
   server = createServer(async (request, response) => {
     const path = resolve(root, `.${decodeURIComponent(new URL(request.url, 'http://localhost').pathname)}`);
@@ -213,7 +219,7 @@ async function handHitStrips(page) {
   }));
 }
 
-describe.sequential('TurdSpades table browser geometry', () => {
+(hasBrowser ? describe.sequential : describe.skip)('TurdSpades table browser geometry', () => {
   for (const viewport of viewports) {
     it(`keeps bids, a complete trick, the full fan and receipt usable at ${viewport.width}×${viewport.height}`, async () => {
       const context = await browser.newContext({ viewport, reducedMotion: 'no-preference' });
