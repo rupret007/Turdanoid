@@ -5,3 +5,6 @@ test-results/
 
 # 1000x autoplay screenshot runs (archived on the conductor Mini, not in repo)
 docs/1000x/*-autoplay*/**/*.png
+
+# conductor review artifacts written by QA scripts/tests (kept on the conductor machine)
+conductor/
