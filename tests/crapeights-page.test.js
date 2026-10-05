@@ -150,6 +150,7 @@ describe('Crappy Eights live-page save and input regressions', () => {
     const wild = snapshot.pendingWildCard;
     const game = boot(snapshot);
     expect(game.w.document.getElementById('suitChooser').style.display).toBe('flex');
+    expect(game.w.document.activeElement).toBe(game.w.document.querySelector('#suitChooser .recommended'));
     const before = game.state();
     game.w.drawForHuman();
     game.w.smartMove();
