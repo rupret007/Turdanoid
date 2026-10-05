@@ -835,6 +835,15 @@
       .ts-score-strip{font-size:.7rem;padding:6px 8px}
       .topbar .title p{display:none}
     }
+    @media (max-width: 360px) {
+      .trick-pile { min-height: 118px; }
+      .trick-pile.layout-seat .entry[data-seat="North"] { top: 2%; }
+      .trick-pile.layout-seat .entry[data-seat="West"] { top: 30%; left: 3%; }
+      .trick-pile.layout-seat .entry[data-seat="East"] { top: 30%; right: 3%; }
+      .trick-pile.layout-seat .entry[data-seat="You"] { bottom: 8%; }
+      .entry[data-seat] strong { font-size: 0.58rem; padding: 2px 5px; }
+      .entry .ec { font-size: 0.95rem; padding-top: 4px; }
+    }
     @media (prefers-reduced-motion:reduce){.table.ts-spades-flash{animation:none}.ts-sweep-card{transition:none!important}}
 
     /* One felt surface, with secondary controls in the table menu (phone / narrow only). */

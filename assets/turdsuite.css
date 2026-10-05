@@ -169,6 +169,10 @@ body[data-suite-back="top"]:has(.suite-back-pill) {
   body:not([data-suite-back="top"]):has(.suite-back-pill):has(.hud .card-stat) .table-pit-rail.desktop-controls {
     margin-left: calc(max(10px, calc(var(--suite-safe-left) + 8px)) + 44px + 8px);
   }
+  /* Wide viewports: bottom-left Hub pill vs TurdRummy action dock (Draw Stock column). */
+  body:not([data-suite-back="top"]):has(.suite-back-pill):has(.title-group) .action-dock {
+    padding-left: calc(max(10px, calc(var(--suite-safe-left) + 8px)) + 88px);
+  }
 }
 
 @media (max-width: 920px) {

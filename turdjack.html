@@ -1656,6 +1656,7 @@
 
     .chip-btn.tossed {
       animation: chipToss 0.36s cubic-bezier(0.2, 1.4, 0.4, 1);
+      pointer-events: none;
     }
 
     @keyframes chipToss {
@@ -2405,10 +2406,17 @@
       }
       .table-bet-zone {
         margin-top: 0;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        max-height: 76px;
       }
       .bet-circle {
-        width: min(108px, 22vw);
-        height: min(108px, 22vw);
+        width: min(64px, 12vw);
+        height: min(64px, 12vw);
+        flex-shrink: 0;
       }
       .cards {
         min-height: 88px;
@@ -2429,7 +2437,10 @@
       }
       .table-bet-zone .chip-rack.desktop-controls {
         display: flex;
+        flex: 1 1 auto;
+        justify-content: flex-start;
         padding: 2px 0;
+        min-width: 0;
       }
       .table-bet-zone .chip-rack .chip-btn {
         width: 42px;

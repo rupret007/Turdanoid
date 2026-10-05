@@ -1,38 +1,56 @@
 # Turdanoid 1000x — lane `xfix` (integration cross-suite)
 
-Round 1 focus: back-to-hub pill overlap on phones after shared lane moved the control to top-left.
+Integration QA lane: all seven games merged; fix cross-suite layout, continue/hub, and harness regressions.
 
-## Audit (round 1)
+## Audit (round 2)
 
 | Area | Finding |
 |------|---------|
-| Gameplay / rules | No rule changes this round. |
-| Feel / UX | Top-left `←` pill (≤520px) covered score HUD (TurdAnoid), card-game titles/kickers, TurdRummy stat strip, Crapjack pit rail (desktop bottom pill). |
-| Graphics | N/A (layout fix). |
-| Animation / audio | Unchanged. |
-| HUD / mobile | Reserve space via shared `--suite-back-reserve-x`; TurdSpades keeps top pill ≤920px with compact 44px control. |
-| a11y | Pill keeps `aria-label="Back to game hub"` and ≥44px target. |
-| Perf | CSS-only reserves; overlap script uses leaf/interactive targets to avoid padding false positives. |
-| Onboarding / AI | Overlap script dismisses guides/coaches before capture. |
+| Gameplay / rules | No rule, scoring, AI, or save-format changes. |
+| Desktop TurdRummy | Round-2 CSS left `.table-stage { display: block }` at all widths, collapsing the desktop side drawer under the felt and causing back-pill overlap with melds/dock at 1280×800. |
+| Crapjack 1280×800 | Bet-zone chips stacked vertically into the pit rail; tossed chips blocked Deal clicks; autoplay could not place bets. |
+| TurdRummy phone | Hand could sit under the sticky dock (autoplay `hand-below-fold`); 320px smoke failed corner-index audits when the fan sat under the dock. |
+| TurdSpades 320–360 | Trick-pile seat labels could overlap at the narrowest width. |
+| Harness / flake | Playwright browser tests (TurdSpades geometry) can flake under max parallelism; full `vitest run` may need a retry on a loaded machine. |
 
-## Checklist
+## Checklist (round 2)
 
-- [x] Shared `--suite-back-reserve-x` + per-game selectors in `assets/turdsuite.css` (TurdAnoid HUD, Crappy Eights topbar, TurdRummy topbar/status/table, Crapjack topbar/HUD + desktop pit rail, Turdtris board-focus topbar, TurdSpades ≤920 title + compact pill)
-- [x] `assets/suite-back-pill.js` — `backPillReserveX`, overlap helpers + unit tests
-- [x] `scripts/suite-overlap-check.mjs` — hub + 6 games × 390/320/1280, horizontal scroll + console errors + pill overlap; screenshots under conductor `xfix/`
-- [x] Remove redundant TurdSpades inline pill override (shared CSS owns compact top pill)
-- [x] Turdtris: drop hard-coded `margin-left: 50px` on title (use shared reserve on topbar)
-- [ ] Needs shared change: none this round
+- [x] Run all `scripts/*` harnesses on integrated tree; fix failures
+- [x] `suite-overlap-check` — hub + 6 games @ 390/320/1280 (incl. TurdRummy desktop drawer)
+- [x] TurdRummy: restore desktop `grid` side drawer; phone fold + 320 corner-index fit
+- [x] Crapjack: short-desktop bet row + chip `pointer-events` during toss
+- [x] TurdSpades: tighter trick-seat layout ≤360px
+- [x] Hub continue + stat badges + b3821b4 save restore (integration test)
+- [x] `tests/xfix-round2-integration.test.js` (desktop drawer, save compat, no early AudioContext on hub)
+- [x] `npx vitest run` / `npm run lint` / `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8158`
 
-## Verification (round 1)
+## Script results (round 2)
+
+| Script | Result |
+|--------|--------|
+| `node scripts/suite-overlap-check.mjs` | PASS (after TurdRummy desktop grid fix) |
+| `node scripts/turdanoid-autoplay.mjs` | PASS (~210s classic+boss sessions) |
+| `node scripts/turdanoid-qa-capture.mjs` | PASS |
+| `PLAYWRIGHT_CHANNEL=chromium node scripts/turdtris-autoplay.mjs --seconds=12` | PASS (all five variants) |
+| `node scripts/crapjack-autoplay.mjs` | PASS (after bet-zone / chip fixes) |
+| `node scripts/crapjack-moments-capture.mjs` | PASS |
+| `PLAYWRIGHT_CHANNEL=chromium node scripts/crapeights-autoplay.mjs --rounds 1` | PASS |
+| `node scripts/turdspades-autoplay.mjs` | PASS |
+| `node scripts/turdrummy-autoplay.mjs --scenarios=phone,reduced,continue --rounds=1` | PASS (after phone layout) |
+
+## Verification (round 2)
 
 | Check | Result |
 |-------|--------|
-| `npx vitest run` | PASS — 90 files, 796 tests |
+| `npx vitest run` | PASS — 95 files, 814 tests |
 | `npm run lint` | PASS |
 | `node scripts/suite-overlap-check.mjs` | PASS |
 | `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8158` | PASS |
 
+## Round 1 (retained)
+
+- [x] Shared `--suite-back-reserve-x` + overlap harness (`assets/suite-back-pill.js`, `scripts/suite-overlap-check.mjs`)
+
 ## Needs shared change
 
-None — all fixes are in `assets/turdsuite.css`, `assets/suite-back-pill.js`, minimal game HTML/CSS, and `scripts/suite-overlap-check.mjs`.
+None this round.

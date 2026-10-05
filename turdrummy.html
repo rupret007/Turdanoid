@@ -1508,6 +1508,27 @@
       #playerHand { padding: 22px 2px 10px; }
     }
 
+    @media (max-width: 390px) {
+      .action-dock .footer-note {
+        display: none;
+      }
+
+      .zone--opponent {
+        max-height: 50px;
+        overflow: hidden;
+      }
+
+      .zone--center .message:not(:empty) {
+        max-height: 2.4em;
+        overflow: hidden;
+      }
+
+      #playerHand {
+        padding-top: 12px;
+        padding-bottom: 2px;
+      }
+    }
+
     @media (max-width: 760px) {
       .topbar {
         align-items: flex-start;
@@ -1565,7 +1586,12 @@
     /* Table + side drawer: felt is the hero on desktop; phones keep a fold-under drawer. */
     .table-stage {
       min-height: 0;
-      display: block;
+    }
+
+    @media (max-width: 920px) {
+      .table-stage {
+        display: block;
+      }
     }
 
     .tr-drawer {
@@ -1990,6 +2016,45 @@
     .tr-deadwood #trDeadwoodValue::after { content: none; }
     .tr-deadwood .label { white-space: nowrap; }
 
+    @media (max-width: 360px) {
+      :root {
+        --card-w: 44px;
+        --back-w: 32px;
+        --back-h: 46px;
+      }
+
+      .app {
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+      }
+
+      .table-stage {
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .table {
+        margin: 4px;
+        padding: 4px;
+        gap: 2px;
+        overflow: hidden;
+      }
+
+      .zone--opponent {
+        max-height: 46px;
+        overflow: hidden;
+      }
+
+      .zone--center .message:not(:empty) {
+        display: none;
+      }
+
+      #playerHand {
+        padding-top: 10px;
+        padding-bottom: 2px;
+        min-height: calc(var(--card-h) + 20px);
+      }
+    }
+
     @media (max-width: 640px) {
       .title-group p { display: none; }
       .topbar { padding: 5px 8px; gap: 5px; }
@@ -2015,7 +2080,7 @@
       .piles { padding: 0; }
       .pile h3 { margin-bottom: 4px; }
       .action-dock { padding: 5px 8px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
-      .footer-note { min-height: 34px; }
+      .footer-note { display: none; }
       .zone--hand { padding: 4px 2px 0; }
       .message { padding: 6px 10px; font-size: 0.78rem; }
       .tr-deadwood .bar { width: 64px; }
@@ -2466,6 +2531,10 @@
       groupNodes.forEach((node) => { largestGroup = Math.max(largestGroup, node.querySelectorAll(".card").length); });
       const Vis = window.TurdRummyHandVisibility;
       const indexStrip = Vis ? Vis.CORNER_INDEX_WIDTH : 16;
+      const narrowPhone = window.matchMedia && window.matchMedia("(max-width: 360px)").matches;
+      const minStepRatio = Vis
+        ? Math.max(Vis.minFanStepRatio(cardWidth), narrowPhone ? 0.42 : 0)
+        : undefined;
       const fan = Meld.fanLayout({
         cardWidth,
         count: cards.length,
@@ -2474,7 +2543,8 @@
         groupGap: HAND_GROUP_GAP,
         largestGroup,
         indexStripPx: indexStrip,
-        minStepRatio: Vis ? Vis.minFanStepRatio(cardWidth) : undefined
+        minStepRatio,
+        readableRatio: narrowPhone ? 0.46 : undefined
       });
       container.style.setProperty("--fan-overlap", (fan.step - cardWidth).toFixed(2) + "px");
       container.style.setProperty("--group-gap", HAND_GROUP_GAP + "px");
