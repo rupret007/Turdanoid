@@ -1106,6 +1106,92 @@ async function main() {
       }
     });
 
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      const name = `turdrummy-hand-layout-${viewport.width}`;
+      await runCheck(browser, name, 'turdrummy.html', {
+        context: { viewport },
+        actions: async (page) => {
+          await page.evaluate(() => {
+            if (typeof closeGuide === 'function') closeGuide();
+            document.getElementById('startRoundBtn')?.click();
+          });
+          await page.locator('#playerHand .card-button').first().waitFor({ state: 'visible', timeout: 8000 });
+          await page.evaluate(() => {
+            document.getElementById('coachSkipBtn')?.click();
+            window.TurdRummyDev?.relayoutHand?.();
+          });
+          await page.waitForTimeout(200);
+          const layout = await page.evaluate(() => {
+            const hand = document.getElementById('playerHand');
+            const drawer = document.querySelector('#tableDrawer > summary');
+            const handBox = hand?.getBoundingClientRect();
+            const drawerTop = drawer?.getBoundingClientRect().top ?? 0;
+            const gap = handBox ? drawerTop - handBox.bottom : -999;
+            const audit = window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [{ reason: 'audit missing' }] };
+            return { gap, audit, scrollY: window.scrollY };
+          });
+          if (layout.gap < 2) {
+            fail(name, `drawer header should sit below the hand fan (gap ${layout.gap}px)`);
+          }
+          if (!layout.audit.ok) {
+            fail(name, `corner index regions covered: ${JSON.stringify(layout.audit.failures)}`);
+          }
+          const mid = await page.evaluate(() => {
+            const cards = [...document.querySelectorAll('#playerHand .card-button')];
+            const pick = cards[Math.floor(cards.length / 2)] || cards[0];
+            if (pick) pick.click();
+            return window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [{ reason: 'audit missing' }] };
+          });
+          await page.waitForTimeout(100);
+          if (!mid.ok) {
+            fail(name, `selected card hid neighbour indices: ${JSON.stringify(mid.failures)}`);
+          }
+          if (layout.scrollY > 1) {
+            fail(name, `unexpected vertical scroll during play at ${viewport.width}px`);
+          }
+        }
+      });
+    }
+
+    await runCheck(browser, 'turdrummy-desktop-hand-hero', 'turdrummy.html', {
+      context: { viewport: { width: 1280, height: 800 } },
+      actions: async (page) => {
+        await page.evaluate(() => {
+          if (typeof closeGuide === 'function') closeGuide();
+          document.getElementById('startRoundBtn')?.click();
+        });
+        await page.locator('#playerHand .card-button').first().waitFor({ state: 'visible', timeout: 8000 });
+        await page.evaluate(() => {
+          document.getElementById('coachSkipBtn')?.click();
+          window.TurdRummyDev?.relayoutHand?.();
+        });
+        await page.waitForTimeout(200);
+        const desk = await page.evaluate(() => {
+          const card = document.querySelector('#playerHand .card');
+          const audit = window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [] };
+          return {
+            cardW: card?.offsetWidth ?? 0,
+            scrollY: window.scrollY,
+            docScroll: document.documentElement.scrollHeight > window.innerHeight + 2,
+            audit
+          };
+        });
+        if (desk.cardW < 72) {
+          fail('turdrummy-desktop-hand-hero', `desktop hand cards too small (${desk.cardW}px wide)`);
+        }
+        if (!desk.audit.ok) {
+          fail('turdrummy-desktop-hand-hero', `corner indices: ${JSON.stringify(desk.audit.failures)}`);
+        }
+        if (desk.scrollY > 1) {
+          fail('turdrummy-desktop-hand-hero', 'page scrolled during play at 1280×800');
+        }
+      }
+    });
+
     await runCheck(browser, 'turdrummy-reset-recovery', 'turdrummy.html', {
       actions: async (page, getDialogCount) => {
         await page.evaluate(() => document.getElementById('startRoundBtn')?.click());

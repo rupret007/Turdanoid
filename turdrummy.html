@@ -14,6 +14,7 @@
   <script src="games/turdrummy-audio-core.js"></script>
   <script src="games/turdrummy-fx-core.js"></script>
   <script src="games/turdrummy-meld-core.js"></script>
+  <script src="games/turdrummy-hand-visibility-core.js"></script>
   <script src="games/turdrummy-motion-core.js"></script>
   <script src="games/turdrummy-coach-core.js"></script>
   <script src="games/turdrummy-presentation-core.js"></script>
@@ -41,7 +42,7 @@
       --felt-hi: #1d6149;
       --felt-mid: #154536;
       --felt-lo: #0f3c30;
-      --card-w: clamp(46px, 6.6vw, 62px);
+      --card-w: clamp(46px, 6.6vw, 80px);
       --card-h: calc(var(--card-w) * 1.42);
       --fan-overlap: 0px;
       --group-gap: 10px;
@@ -528,7 +529,7 @@
        squeezing every card below a readable strip. */
     #playerHand.is-wrapped {
       flex-wrap: wrap;
-      row-gap: 28px;
+      row-gap: 36px;
     }
 
     .hand-group {
@@ -540,6 +541,11 @@
     }
 
     .hand-group + .hand-group { margin-left: var(--group-gap); }
+
+    #playerHand .hand-group .card {
+      position: relative;
+      z-index: var(--fan-z, 1);
+    }
 
     .hand-group .card + .card { margin-left: var(--fan-overlap); }
 
@@ -571,7 +577,7 @@
     .hand-group-label {
       position: absolute;
       left: 2px;
-      top: -15px;
+      top: -18px;
       font-size: 0.56rem;
       font-weight: 800;
       letter-spacing: 0.14em;
@@ -740,7 +746,7 @@
     .card-button:hover {
       transform: translateY(-5px);
       box-shadow: var(--suite-card-shadow-lift), var(--suite-paper-edge);
-      z-index: 1;
+      z-index: calc(var(--fan-z, 1) + 4);
     }
 
     .card-button:active {
@@ -754,14 +760,14 @@
 
     .card-button.selected,
     .card-button.selected:hover {
-      transform: translateY(-10px) scale(1.04);
+      transform: translateY(-8px) scale(1.02);
       box-shadow:
         0 0 0 2px #ffd76a,
         0 0 0 4px rgba(255, 215, 106, 0.35),
         0 0 24px rgba(255, 215, 106, 0.6),
         var(--suite-card-shadow-lift),
         var(--suite-paper-edge);
-      z-index: 2;
+      z-index: calc(var(--fan-z, 1) + 8);
     }
 
     .card-button.selected::before {
@@ -1344,8 +1350,8 @@
        indent shrinks as the viewport grows: 155px - appLeft, where appLeft = max(8px, (100vw - 1100px) / 2). */
     @media (min-width: 921px) {
       :root {
-        --card-w: 68px;
-        --back-h: 72px;
+        --card-w: 80px;
+        --back-h: 84px;
       }
 
       .table-stage {
@@ -1357,6 +1363,25 @@
 
       .table {
         margin: 8px 0 8px 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+      }
+
+      .zone--hand {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        min-height: 0;
+      }
+
+      #playerHand {
+        flex: 1 1 auto;
+        align-items: flex-end;
+        padding-top: 18px;
+        padding-bottom: 10px;
       }
 
       .tr-drawer--side {
@@ -1385,9 +1410,13 @@
 
     @media (min-width: 921px) and (max-height: 860px) {
       :root {
-        --card-w: 62px;
-        --back-h: 66px;
+        --card-w: 74px;
+        --back-h: 78px;
       }
+
+      .topbar { padding: 6px 10px; }
+      .status { padding: 4px 10px; }
+      .zone--opponent .card-row { transform: scale(0.92); transform-origin: top center; }
     }
 
     @media (max-width: 920px) {
@@ -1812,10 +1841,56 @@
     @media (max-width: 920px) {
       .drawer-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .trophy-card dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+      .table-stage {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .table-stage > .tr-drawer {
+        margin: 2px 6px 6px;
+        flex-shrink: 0;
+      }
+
+      .zone--hand {
+        margin-bottom: 4px;
+      }
+
+      #playerHand {
+        padding-bottom: 16px;
+      }
     }
 
     /* 320px phones: one tight HUD row + trim the table frame so the hand keeps its width. */
     @media (max-width: 360px) {
+      .topbar {
+        padding: 3px 6px 4px;
+        gap: 4px;
+      }
+
+      .title-group h1 {
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+      }
+
+      .title-group h1::after {
+        display: none;
+      }
+
+      .top-links {
+        gap: 3px;
+      }
+
+      .top-links .btn,
+      .top-links a {
+        min-height: 28px;
+        padding: 3px 3px;
+        font-size: 0.62rem;
+        border-radius: 8px;
+      }
+
       .status {
         grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 2px 3px;
@@ -1847,8 +1922,20 @@
         content: none;
       }
 
-      .table { margin: 8px 6px; padding: 6px; }
-      #playerHand { padding: 22px 0 10px; }
+      .table { margin: 6px 4px; padding: 5px; gap: 4px; }
+      .zone--hand .zone-title { font-size: 0.68rem; }
+      .tr-deadwood { padding: 3px 7px; gap: 5px; }
+      .tr-deadwood .bar { width: 52px; }
+      .tr-deadwood .label { font-size: 7px; }
+      #playerHand { padding: 6px 0 22px; }
+      #playerHand.is-wrapped { row-gap: 44px; }
+      .table-stage > .tr-drawer { margin-top: 4px; }
+      .tr-drawer > summary { min-height: 36px; padding: 6px 10px; font-size: 0.68rem; }
+
+      .card-button.selected,
+      .card-button.selected:hover {
+        transform: translateY(-5px) scale(1.01);
+      }
     }
 
     .stat-label .lbl-short { display: none; }
@@ -1942,7 +2029,9 @@
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 2px 8px;
         margin-top: 4px;
+        margin-bottom: 2px;
         padding: 5px 8px 5px 12px;
+        max-width: 100%;
       }
       .coach-step { grid-column: 1 / -1; font-size: 0.55rem; line-height: 1.2; }
       .coach h2 { font-size: 0.85rem; line-height: 1.2; }
@@ -2375,13 +2464,17 @@
       const groupNodes = container.querySelectorAll(".hand-group");
       let largestGroup = 1;
       groupNodes.forEach((node) => { largestGroup = Math.max(largestGroup, node.querySelectorAll(".card").length); });
+      const Vis = window.TurdRummyHandVisibility;
+      const indexStrip = Vis ? Vis.CORNER_INDEX_WIDTH : 16;
       const fan = Meld.fanLayout({
         cardWidth,
         count: cards.length,
         groupCount: groupNodes.length || 1,
         availableWidth: available,
         groupGap: HAND_GROUP_GAP,
-        largestGroup
+        largestGroup,
+        indexStripPx: indexStrip,
+        minStepRatio: Vis ? Vis.minFanStepRatio(cardWidth) : undefined
       });
       container.style.setProperty("--fan-overlap", (fan.step - cardWidth).toFixed(2) + "px");
       container.style.setProperty("--group-gap", HAND_GROUP_GAP + "px");
@@ -3216,7 +3309,7 @@
           const tilt = Meld ? Meld.fanTransform(at, count, { maxTilt: 7, arc: 7 }) : { rotate: 0, lift: 0 };
           const drop = group.kind === "deadwood" ? 6 : 0;
           at += 1;
-          const fan = ` style="--fr:${tilt.rotate}deg;--fy:${tilt.lift + drop}px"`;
+          const fan = ` style="--fr:${tilt.rotate}deg;--fy:${tilt.lift + drop}px;--fan-z:${at}"`;
           return createCardHtml(card, interactive, card.id === state.selectedCardId, `data-hand-id="${card.id}"${fan}`);
         }).join("");
         return `<div class="hand-group hand-group--${group.kind}" data-kind="${group.kind}"><span class="hand-group-label" aria-hidden="true">${group.label}</span>${cards}</div>`;
@@ -4131,7 +4224,15 @@
 
     window.TurdRummyDev = {
       playMoment,
-      skipPresentation
+      skipPresentation,
+      auditHandCornerIndices() {
+        return window.TurdRummyHandVisibility
+          ? TurdRummyHandVisibility.auditHandCornerIndices(el.playerHand)
+          : { ok: false, failures: [{ id: "", reason: "visibility module missing" }] };
+      },
+      relayoutHand() {
+        layoutHand();
+      }
     };
 
     function init() {

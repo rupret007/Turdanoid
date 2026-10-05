@@ -51,7 +51,12 @@
     const groupGap = Math.max(0, Number(options.groupGap) || 0);
     const largest = Math.max(1, Math.floor(Number(options.largestGroup) || count || 1));
     const maxRatio = options.maxStepRatio === undefined ? 0.6 : options.maxStepRatio;
-    const minRatio = options.minStepRatio === undefined ? 0.3 : options.minStepRatio;
+    const indexStrip = options.indexStripPx === undefined ? 16 : Math.max(0, Number(options.indexStripPx) || 0);
+    const indexRatio = cardWidth > 0 ? indexStrip / cardWidth : 0;
+    const minRatio = Math.max(
+      options.minStepRatio === undefined ? 0.3 : options.minStepRatio,
+      indexRatio
+    );
     if (count <= 1) {
       return { step: cardWidth, width: cardWidth, cardWidth, wrap: false };
     }
@@ -63,7 +68,12 @@
     const fit = (available - groups * cardWidth - gaps) / overlapCards;
     // With several groups, a single row must leave a readable strip (corner rank + suit).
     // A lone group cannot wrap, so it simply takes the smallest strip that fits.
-    const readableRatio = groups > 1 ? (options.readableRatio === undefined ? 0.42 : options.readableRatio) : minRatio;
+    const readableRatio = groups > 1
+      ? Math.max(
+        options.readableRatio === undefined ? 0.42 : options.readableRatio,
+        indexRatio
+      )
+      : minRatio;
     if (fit >= cardWidth * readableRatio) {
       const step = Math.min(cardWidth * maxRatio, fit);
       return {
