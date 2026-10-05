@@ -1837,6 +1837,66 @@
       margin-top: 6px;
     }
 
+    /* ---------- Pit confirm (insurance / reset) ---------- */
+    .jack-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 12, 9, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 95;
+      backdrop-filter: blur(6px);
+    }
+
+    .jack-confirm-card {
+      position: relative;
+      width: min(480px, 100%);
+      border: 1px solid rgba(255, 215, 106, 0.45);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 30%),
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(142, 255, 194, 0.1), transparent 70%),
+        rgba(8, 20, 15, 0.97);
+      padding: 20px 22px;
+      box-shadow:
+        0 0 0 1px rgba(142, 255, 194, 0.16),
+        0 0 44px rgba(255, 215, 106, 0.16),
+        0 30px 60px rgba(0, 0, 0, 0.6);
+      animation: suitePop 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    }
+
+    .jack-confirm-card h2 {
+      margin: 0 0 10px;
+      font-size: 1.25rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    .jack-confirm-card p {
+      margin: 0 0 18px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 1rem;
+    }
+
+    .jack-confirm-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: stretch;
+    }
+
+    .jack-confirm-actions .btn {
+      flex: 1 1 140px;
+      min-height: 48px;
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
     /* ---------- Welcome guide ---------- */
     .welcome-guide {
       position: fixed;
@@ -2206,6 +2266,7 @@
     @media (prefers-reduced-motion: reduce) {
       .playing-card,
       .welcome-card,
+      .jack-confirm-card,
       .chip-btn.tossed,
       .card-stat .v.flash,
       .status.hype,
@@ -2465,6 +2526,25 @@
       <div class="welcome-actions">
         <button class="btn" id="quickGuideBtn">Quick Start</button>
         <button class="btn subtle" id="closeGuideBtn">Review Then Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="jack-confirm-overlay"
+    id="jackConfirmOverlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="jackConfirmTitle"
+    aria-describedby="jackConfirmMessage"
+    aria-hidden="true"
+  >
+    <div class="jack-confirm-card">
+      <h2 id="jackConfirmTitle">Pit decision</h2>
+      <p id="jackConfirmMessage"></p>
+      <div class="jack-confirm-actions">
+        <button type="button" class="btn subtle" id="jackConfirmNo">No</button>
+        <button type="button" class="btn" id="jackConfirmYes">Yes</button>
       </div>
     </div>
   </div>
@@ -2837,6 +2917,26 @@
     let audioCtx = null;
     let statusPulseTimer = null;
     let turdjackKit = null;
+    /** @type {null | ((opts: { title?: string, message: string, acceptLabel?: string, declineLabel?: string }) => Promise<boolean>)} */
+    let askJackConfirm = null;
+
+    async function ensureJackConfirm() {
+      if (!askJackConfirm) {
+        const m = await import('./games/turdjack-confirm-modal.js');
+        askJackConfirm = m.createJackConfirmAsk(document, window);
+      }
+      return askJackConfirm;
+    }
+
+    async function jackConfirm(options) {
+      const ask = await ensureJackConfirm();
+      return ask(options);
+    }
+
+    function isJackConfirmOpen() {
+      const el = document.getElementById('jackConfirmOverlay');
+      return el && el.style.display === 'flex' && el.getAttribute('aria-hidden') === 'false';
+    }
 
     function getActiveHand() {
       return activeHandIndex === 0 ? playerHand : splitHand;
@@ -3895,7 +3995,7 @@
       updateHud();
     }
 
-    function startRound() {
+    async function startRound() {
       if (roundActive) return;
       unlockAudio();
       if (currentBet < MIN_BET) {
@@ -3947,9 +4047,12 @@
 
       if (dealerShowsAce && rules.allowInsurance) {
         if (pBJ) {
-          const evenMoney = confirm(
-            `Dealer shows Ace and you have blackjack. Take even money for guaranteed $${currentBet * 2}?`
-          );
+          const evenMoney = await jackConfirm({
+            title: 'Even money',
+            message: `Dealer shows Ace and you have blackjack. Take even money for guaranteed $${currentBet * 2}?`,
+            acceptLabel: 'Yes — lock it',
+            declineLabel: 'No — ride it'
+          });
           if (evenMoney) {
             revealDealerHole();
             bankroll += currentBet * 2;
@@ -3972,15 +4075,18 @@
             const countNote = tc >= 3
               ? `Running count is hot (TC ${tc.toFixed(1)}), so insurance is less terrible here.`
               : `Running count is ${tc.toFixed(1)} TC, so insurance is usually -EV.`;
-            const buyInsurance = (() => {
+            const buyInsurance = await (async () => {
               const devFlag = window.__turdjackDev && window.__turdjackDev._autoInsurance;
               if (devFlag === 'buy' || devFlag === 'skip') {
                 window.__turdjackDev._autoInsurance = null;
                 return devFlag === 'buy';
               }
-              return confirm(
-                `Dealer shows Ace. Buy insurance for $${premium}? ${countNote}`
-              );
+              return jackConfirm({
+                title: 'Insurance',
+                message: `Dealer shows Ace. Buy insurance for $${premium}? ${countNote}`,
+                acceptLabel: 'Yes — insure',
+                declineLabel: 'No thanks'
+              });
             })();
             if (buyInsurance) {
               bankroll -= premium;
@@ -4387,13 +4493,19 @@
       updateHud();
     }
 
-    function resetBankroll() {
+    async function resetBankroll() {
       if (roundActive) {
         setStatus('Finish the current hand before resetting bankroll and stats.');
         updateHud();
         return;
       }
-      if (!confirm('Reset bankroll and stats back to defaults?')) return;
+      const ok = await jackConfirm({
+        title: 'Reset bankroll',
+        message: 'Reset bankroll and stats back to defaults?',
+        acceptLabel: 'Yes — reset',
+        declineLabel: 'No — keep stats'
+      });
+      if (!ok) return;
       bankroll = INITIAL_BANKROLL;
       currentBet = 0;
       lastBet = MIN_BET;
@@ -4516,6 +4628,9 @@
       ui.resetStatsBtn.addEventListener('click', resetBankroll);
 
       document.addEventListener('keydown', (e) => {
+        if (isJackConfirmOpen()) {
+          return;
+        }
         if (onboardingOpen) {
           if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
             e.preventDefault();
