@@ -1,55 +1,61 @@
 # Crapjack 21 — Turdanoid 1000x (lane: crapjack)
 
-Round 5 (final) implementer pass on branch `cursor/turdanoid-1000x-crapjack`.
+Round 6 (final polish) on branch `cursor/turdanoid-1000x-crapjack`.
 
-## Honest audit (round 5)
+## Honest audit (round 6)
 
 ### Gameplay
-- **Strong:** Unchanged rules, coach, continue, dev scenarios.
-- **Weak:** Insurance still uses native `confirm` (unchanged).
+- **Strong:** Rules, coach, continue, dev scenarios unchanged; insurance / even-money / reset outcomes match pre-modal behavior.
+- **Weak:** No chip-tray physics (out of scope for this round).
 
 ### Feel
-- **Strong:** Chip flight cleared on deal; felt bet circle hidden mid-hand on phones so the oval stack never sits over cards.
-- **Weak:** Long dealer hit chains on H17 tables (by design).
+- **Strong:** Pit decisions stay on the felt via styled modal instead of native `confirm()`.
+- **Weak:** H17 dealer chains still long by design.
 
 ### Graphics / art
-- **Strong:** Desktop short viewport uses flatter hand rails so dealer/player read as one felt surface; compact bet circle.
-- **Weak:** Shared card face caps (shared lane).
+- **Strong:** Confirm card matches welcome / table gold-green sewer palette.
+- **Weak:** Shared card faces (shared lane).
 
 ### Animation
-- **Strong:** Flying-chip timeout + phase guard; shoe/discard fade during phone play.
+- **Strong:** Modal uses existing `suitePop`; disabled under `prefers-reduced-motion`.
+- **Weak:** —
 
 ### Audio
-- **Strong:** Unchanged WebAudio bank.
+- **Strong:** Unchanged WebAudio; no sound until gesture.
 
 ### HUD / UI
-- **Strong:** One total badge per hand on ≤980px (score pill kept for SR/tests only); short seat titles (“You”, “Split”) with full `aria-label`.
-- **Weak:** HUD still scrolls on very short 320×640 (acceptable).
+- **Strong:** Large Yes/No targets (48px min height); focus lands on “No” first (safe default).
+- **Weak:** Intel drawer still dense on desktop.
 
 ### Mobile / touch
-- **Strong:** Bet circle only while betting; chips remain in HUD bet tile during play.
+- **Strong:** Modal is full-screen overlay with touch-friendly buttons; no system dialog chrome.
+- **Weak:** —
 
 ### Accessibility
-- **Strong:** Total badges expose `aria-label`; live region unchanged.
+- **Strong:** `role="dialog"`, `aria-modal`, labelled/described; Tab cycles Yes/No; Escape = decline.
+- **Weak:** —
 
 ### Performance
-- **Strong:** CSS-only responsive chrome; no new per-frame loops.
+- **Strong:** Modal is static DOM; no per-frame work.
 
 ### Onboarding / AI
-- **Strong:** Unchanged from round 4.
+- **Strong:** Unchanged from round 5.
 
-## Checklist (round 5)
+## Checklist (round 6)
 
 | Target | Status |
 |--------|--------|
-| [x] Round 5 audit + checklist in `docs/1000x/crapjack.md` |
-| [x] Fix stray oval/pill over cards (chip flight cleanup, hide felt bet circle + flying chips while playing on mobile) |
-| [x] Short seat titles at narrow widths; full names for screen readers |
-| [x] Remove duplicate “Score: N” pill on phones (SR-only pill; total badge visible) |
-| [x] Desktop 1280×800: unified felt hands + smaller bet circle in short-viewport layout |
-| [x] Moments capture → `conductor/reviews/turdanoid-1000x/r5/crapjack-moments/` |
-| [x] Unit tests: layout, seat labels, chip flight, totals aria |
+| [x] Round 6 audit + checklist in `docs/1000x/crapjack.md` |
+| [x] Replace native `confirm()` for insurance, even money, reset bankroll with in-page modal |
+| [x] Focus trap, Escape = decline, reduced-motion safe styling |
+| [x] Unit tests: `games/turdjack-confirm-modal.js` + `tests/turdjack-confirm-modal.test.js` |
+| [x] Smoke: `turdjack-confirm-modals` exercises insurance / even money / reset via modal (no native dialogs) |
+| [x] Lint clean on owned turdjack engine/tests (no unused imports in `turdjack-engine.js` / `turdjack.test.js`) |
 | [x] `npx vitest run` / `npm run lint` / smoke 8153 |
+
+## Prior rounds (summary)
+
+Round 5: table-first layout, chip flight cleanup, mobile bet circle, seat labels, totals aria.
 
 ## Needs shared change
 
