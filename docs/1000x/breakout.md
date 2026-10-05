@@ -37,11 +37,21 @@ Round 4: in-play visual pop (rendering only; HP/scoring/levels unchanged).
 
 - Hub badge for `turdanoid_boss_best_v1` and classic best (shared hub 2.0).
 
+## Autoplay findings (2026-10-05, port 8151)
+
+| Session | Avg FPS | Console | Stuck | H-loop |
+|---------|---------|---------|-------|--------|
+| Classic 390×844 | ~70 | 0 | 0 | 0 |
+| Classic 1280×800 | 71.4 | 0 | 0 | 0 |
+| Boss 390×844 | 72.3 | 0 | 0 | 0 |
+
+Screenshots: `conductor/reviews/turdanoid-1000x/r4/breakout-autoplay/` (bob-overnight-inject clone).
+
 ## Verification
 
 | Check | Result |
 |-------|--------|
-| `npx vitest run` | (see round 4 report) |
-| `npm run lint` | (see round 4 report) |
-| `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8151` | (see round 4 report) |
-| `node scripts/turdanoid-autoplay.mjs 8151 …/r4/breakout-autoplay/` | (see round 4 report) |
+| `npx vitest run` | PASS (303/303) |
+| `npm run lint` | PASS (warnings only, pre-existing) |
+| `PLAYWRIGHT_CHANNEL=chromium node smoke-runner.js 8151` | PASS |
+| `node scripts/turdanoid-autoplay.mjs 8151 …/r4/breakout-autoplay/` | PASS |
