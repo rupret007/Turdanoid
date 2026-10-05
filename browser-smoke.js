@@ -1,5 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { chromium, devices } from 'playwright';
 import { validEightsSnapshot, validJackSnapshot, validRummySnapshot, validSpadesSnapshot } from './tests/continue-fixtures.js';
+
+const crapjackR7ShotDir = path.join(process.cwd(), 'conductor/reviews/turdanoid-1000x/r7/crapjack');
 
 const baseUrl = process.argv[2] || 'http://127.0.0.1:8123';
 // Default to the Edge channel (Windows dev workflow). Set PLAYWRIGHT_CHANNEL=""
@@ -1040,6 +1044,94 @@ async function main() {
       }
     });
 
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      const vpName = `turdjack-play-viewport-${viewport.width}x${viewport.height}`;
+      await runCheck(browser, vpName, 'turdjack.html', {
+        context: { viewport },
+        actions: async (page) => {
+          fs.mkdirSync(crapjackR7ShotDir, { recursive: true });
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(200);
+          await page.evaluate(() => {
+            createShoe(4);
+            const pull = (rank, suit) => {
+              const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+              return shoe.splice(index, 1)[0];
+            };
+            const hole = pull('K', 'S');
+            const playerTwo = pull('9', 'D');
+            const dealerUp = pull('5', 'H');
+            const playerOne = pull('2', 'C');
+            shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+            bankroll = 1000;
+            currentBet = 20;
+            lastBet = 20;
+            startRound();
+          });
+          await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 4000 });
+          await page.waitForFunction(() => {
+            const d = document.getElementById('dealerTotalBadge');
+            const p = document.getElementById('playerTotalBadge');
+            return d && p && d.getBoundingClientRect().height > 4 && p.getBoundingClientRect().height > 4;
+          }, undefined, { timeout: 5000 });
+          await page.waitForTimeout(200);
+          const layout = await page.evaluate(() => {
+            const slack = 2;
+            const inViewport = (el) => {
+              if (!el) return false;
+              const style = getComputedStyle(el);
+              if (style.display === 'none' || style.visibility === 'hidden') return false;
+              const rect = el.getBoundingClientRect();
+              if (rect.width < 1 || rect.height < 1) return false;
+              return (
+                rect.top >= -slack &&
+                rect.left >= -slack &&
+                rect.bottom <= window.innerHeight + slack &&
+                rect.right <= window.innerWidth + slack
+              );
+            };
+            const dealerCards = document.getElementById('dealerCards');
+            const playerCards = document.getElementById('playerCards');
+            const dealerBadge = document.getElementById('dealerTotalBadge');
+            const playerBadge = document.getElementById('playerTotalBadge');
+            const hitBtn = document.querySelector('[data-mobile-action="hit"]');
+            const pit = document.getElementById('mobilePit');
+            return {
+              tableFirst: document.body.classList.contains('jack-table-first'),
+              scrollWidth: document.documentElement.scrollWidth,
+              width: window.innerWidth,
+              checks: {
+                dealerCards: inViewport(dealerCards),
+                playerCards: inViewport(playerCards),
+                dealerBadge: inViewport(dealerBadge),
+                playerBadge: inViewport(playerBadge),
+                hitBtn: inViewport(hitBtn),
+                pit: inViewport(pit)
+              }
+            };
+          });
+          await page.screenshot({
+            path: path.join(crapjackR7ShotDir, `play-${viewport.width}x${viewport.height}.png`),
+            fullPage: false
+          });
+          if (layout.scrollWidth > layout.width + 1) {
+            fail(vpName, `horizontal scroll ${layout.scrollWidth} > ${layout.width}`);
+          }
+          if (viewport.width <= 390 && !layout.tableFirst) {
+            fail(vpName, 'live hand should enable jack-table-first chrome on phone widths');
+          }
+          const missing = Object.entries(layout.checks).filter(([, ok]) => !ok).map(([key]) => key);
+          if (missing.length) {
+            fail(vpName, `play controls escaped viewport: ${missing.join(', ')} (${JSON.stringify(layout.checks)})`);
+          }
+        }
+      });
+    }
+
     await runCheck(browser, 'turdjack-mobile', 'turdjack.html', {
       mobile: true,
       actions: async (page) => {
@@ -1066,6 +1158,99 @@ async function main() {
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
         if (!(await resetButton.isDisabled())) fail('turdjack-mobile', 'reset control should stay disabled during an active hand');
+      }
+    });
+
+    await runCheck(browser, 'turdjack-confirm-modals', 'turdjack.html', {
+      actions: async (page, getDialogCount) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+        const dialogBaseline = getDialogCount();
+
+        await page.evaluate(() => {
+          rules = normalizeRules({ ...rules, decks: 1, allowInsurance: true });
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const p2 = pull('9', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('10', 'C');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 1000;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmNo').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterInsurance = await page.evaluate(() => ({
+          bankroll,
+          insuranceBets: stats.insuranceBets,
+          losses: stats.losses
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `insurance must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterInsurance.bankroll !== 900 || afterInsurance.insuranceBets !== 0 || afterInsurance.losses !== 1) {
+          fail('turdjack-confirm-modals', `declined insurance should lose to dealer BJ, saw ${JSON.stringify(afterInsurance)}`);
+        }
+
+        await page.evaluate(() => {
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('7', 'C');
+          const p2 = pull('K', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('A', 'S');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 900;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterEvenMoney = await page.evaluate(() => ({
+          bankroll,
+          wins: stats.wins,
+          blackjacks: stats.blackjacks,
+          status: ui.statusText.textContent
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `even money must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterEvenMoney.bankroll !== 1000 || afterEvenMoney.wins !== 1 || afterEvenMoney.blackjacks !== 1
+          || !afterEvenMoney.status.includes('Even money')) {
+          fail('turdjack-confirm-modals', `even money accept payout wrong: ${JSON.stringify(afterEvenMoney)}`);
+        }
+
+        await page.locator('#resetStatsBtn').click();
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForTimeout(300);
+        const afterReset = await page.evaluate(() => ({
+          bankroll,
+          hands: stats.hands,
+          wins: stats.wins
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `reset must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterReset.bankroll !== 1000 || afterReset.hands !== 0 || afterReset.wins !== 0) {
+          fail('turdjack-confirm-modals', `reset accept should zero stats, saw ${JSON.stringify(afterReset)}`);
+        }
       }
     });
 
