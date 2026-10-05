@@ -1784,12 +1784,14 @@
       bottom: auto;
       left: auto;
       z-index: 30;
+      min-width: 176px;
       max-width: min(240px, 78vw);
       transform-origin: top right;
       transform: translateY(-6px) scale(0.94);
     }
     .tr-bubble.show { transform: translateY(0) scale(1); }
     .tr-bubble::after { top: -8px; bottom: auto; right: 24px; transform: rotate(45deg); }
+    .zone--opponent .zone-title::before { content: none; }
     .tr-deadwood {
       position: static;
       min-width: 0;
@@ -1818,18 +1820,20 @@
       .stat-label { font-size: 0.54rem; line-height: 1.1; }
       .stat-value { font-size: 0.92rem; line-height: 1.15; }
       .zone--hand .zone-meta { display: none; }
-      .message { margin-top: 5px; }
+      .message { margin-top: 3px; }
       .zone--hand { padding-top: 2px; }
-      #playerHand { padding: 12px 2px 6px; }
-      .table { margin: 4px; padding: 4px; gap: 3px; }
+      .zone--hand .zone-header { margin-bottom: 0; }
+      #playerHand { padding: 8px 2px 4px; }
+      .table { margin: 4px; padding: 4px; gap: 2px; }
       .zone--center { padding: 4px 6px 4px; }
       .zone--center .zone-title { display: none; }
-      .zone--center .zone-header { margin-bottom: 0; }
+      .zone--center .zone-header { margin-bottom: 3px; }
+      .zone--opponent { padding-top: 0; }
       .zone-header { margin-bottom: 2px; }
       .piles { padding: 0; }
       .pile h3 { margin-bottom: 4px; }
       .action-dock { padding: 5px 8px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
-      .footer-note { min-height: 26px; }
+      .footer-note { min-height: 34px; }
       .zone--hand { padding: 4px 2px 0; }
       .message { padding: 6px 10px; font-size: 0.78rem; }
       .tr-deadwood .bar { width: 64px; }
@@ -3092,6 +3096,11 @@
     }
 
     function writeStatusBox(target, statusText, summaryText) {
+      // The status box is a live region. Re-rendering the same text (every card tap re-renders the table)
+      // must not rewrite it, or screen readers repeat the last status on each tap.
+      const key = String(statusText || "") + "\u0001" + String(summaryText || "");
+      if (target.dataset.key === key) return;
+      target.dataset.key = key;
       target.textContent = "";
       const statusLabel = document.createElement("strong");
       statusLabel.textContent = "Status:";

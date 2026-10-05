@@ -64,10 +64,14 @@
     };
   }
 
-  /** Flight duration in ms, scaled by distance so short hops stay snappy. */
+  /**
+   * Flight duration in ms, scaled by distance. Round 3 keeps every card flight in the snappy
+   * 180-320 ms band: long hops still read as a move, and the bot's discard flight starts only
+   * after its draw flight has landed.
+   */
   function flightDuration(distancePx) {
     const d = Math.max(0, Number(distancePx) || 0);
-    return Math.round(Math.min(560, Math.max(220, 180 + d * 0.35)));
+    return Math.round(Math.min(320, Math.max(180, 180 + d * 0.25)));
   }
 
   root.TurdRummyMotion = {

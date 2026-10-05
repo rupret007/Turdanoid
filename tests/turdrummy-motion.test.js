@@ -79,7 +79,17 @@ describe('flightDelta and flightDuration', () => {
   });
 
   it('keeps short hops snappy and long flights under half a second', () => {
-    expect(flightDuration(0)).toBe(220);
-    expect(flightDuration(100000)).toBe(560);
+    expect(flightDuration(0)).toBe(180);
+    expect(flightDuration(100000)).toBe(320);
+  });
+
+  it('keeps every card flight inside the 180-320 ms snappy band', () => {
+    for (const distance of [0, 1, 40, 200, 600, 1400, 5000]) {
+      const ms = flightDuration(distance);
+      expect(ms).toBeGreaterThanOrEqual(180);
+      expect(ms).toBeLessThanOrEqual(320);
+    }
+    // Monotonic: a longer hop is never faster than a shorter one.
+    expect(flightDuration(400)).toBeGreaterThan(flightDuration(100));
   });
 });

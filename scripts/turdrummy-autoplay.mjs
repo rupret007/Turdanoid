@@ -312,6 +312,7 @@ function createHarness({ browser, base, opts, cfg, name, outDir, report }) {
     if (!foldMeasured && s.hand.length >= 10 && s.turn === 'player' && s.phase === 'draw' && !s.guideOpen) {
       foldMeasured = true;
       await measureFold();
+      await shot('first-hand');
     }
     if (s.overflowX > 1) found('horizontal-scroll', `${s.overflowX}px wider than the viewport on ${name} at round ${s.round}`);
 
