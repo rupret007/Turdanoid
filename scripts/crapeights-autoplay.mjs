@@ -7,7 +7,7 @@
  * Exit 1 means a console/page error, stuck round, overflow, or inaccessible hand.
  */
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -83,11 +83,15 @@ async function inspect(page) {
 async function activate(page, selector, touch) {
   const button = page.locator(selector).first();
   if (!await button.isVisible() || !await button.isEnabled()) return false;
+  const before = (await inspect(page)).key;
   try {
-    if (touch) await button.tap({ timeout: 1500 });
-    else await button.click({ timeout: 1500 });
+    if (touch) await button.tap({ timeout: 5000 });
+    else await button.click({ timeout: 5000 });
     return true;
   } catch (error) {
+    // Input can land before Playwright finishes waiting for touch/layout cleanup.
+    // Observe the real state before treating that timeout as an application fault.
+    if ((await inspect(page)).key !== before) return true;
     // A scheduled auto-pass may legitimately disable a button during pointer input.
     if (!await button.isEnabled()) return false;
     throw error;
@@ -189,6 +193,7 @@ async function runViewport(viewport) {
     result.layoutIssues = [...layoutIssues];
     result.pass = result.roundsCompleted === options.rounds && result.errors.length === 0
       && result.layoutIssues.length === 0;
+    if (result.pass) await unlink(resolve(options.output, `${viewport.width}-failure.png`)).catch(() => {});
     console.log(`[${viewport.width}] ${result.pass ? 'PASS' : 'FAIL'}: ${result.roundsCompleted} full rounds; ${JSON.stringify(result.actions)}; errors=${result.errors.length}, layout=${result.layoutIssues.length}`);
   } catch (error) {
     result.errors.push(error.stack || error.message);
