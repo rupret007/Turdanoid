@@ -4,13 +4,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SAVE_FIXTURE =
   '/Users/jeffstory/Documents/bob-overnight-inject/conductor/reviews/turdanoid-1000x/savecompat/b3821b4-saves.json';
+// CI runs unit tests before installing Playwright browsers, and the b3821b4 save capture lives only on the
+// conductor machine: skip (not fail) when either is unavailable.
+const hasBrowser = Boolean(process.env.PLAYWRIGHT_CHANNEL) || existsSync(chromium.executablePath());
+const hasSaveFixture = existsSync(SAVE_FIXTURE);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -24,6 +28,9 @@ let baseUrl;
 let browser;
 
 beforeAll(async () => {
+  if (!hasBrowser) {
+    return;
+  }
   server = createServer(async (req, res) => {
     const path = resolve(
       root,
@@ -56,7 +63,7 @@ afterAll(async () => {
   }
 });
 
-describe('xfix round 2 integration', () => {
+describe.skipIf(!hasBrowser)('xfix round 2 integration', () => {
   it('keeps TurdRummy desktop side drawer (grid) at 1280×800', async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await page.goto(`${baseUrl}/turdrummy.html`, { waitUntil: 'domcontentloaded' });
@@ -79,7 +86,7 @@ describe('xfix round 2 integration', () => {
     await page.close();
   });
 
-  it('loads b3821b4 saves on the hub and restores Crappy Eights continue', async () => {
+  it.skipIf(!hasSaveFixture)('loads b3821b4 saves on the hub and restores Crappy Eights continue', async () => {
     const saves = JSON.parse(readFileSync(SAVE_FIXTURE, 'utf8'));
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await page.goto(`${baseUrl}/index.html`);
