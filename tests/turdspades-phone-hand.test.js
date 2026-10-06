@@ -4,6 +4,7 @@ import {
   phoneHandIndexRegionsClear,
   phoneHandDomIndexRegionsClear,
   PHONE_INDEX_WIDTH,
+  PHONE_ROW_BODY_GAP,
   PHONE_SELECTED_LIFT
 } from '../games/turdspades-phone-hand.js';
 
@@ -52,7 +53,7 @@ describe('TurdSpades phone hand geometry', () => {
             ...layout.positions.filter((card) => card.row === 0).map((card) => card.y + layout.cardHeight)
           );
           const frontTop = Math.min(...layout.positions.filter((card) => card.row === 1).map((card) => card.y));
-          expect(frontTop - rearBottom).toBeGreaterThanOrEqual(-0.000001);
+          expect(frontTop - rearBottom).toBeGreaterThanOrEqual(PHONE_ROW_BODY_GAP - 0.000001);
         }
       }
     }

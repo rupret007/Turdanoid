@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   showFeltBetCircle,
   showHandScorePill,
+  useCompactBetweenHandsHud,
   useCompactSeatTitles,
   useTableFirstPlayLayout,
   playFocusScrollBehavior
@@ -28,5 +29,13 @@ describe('turdjack-layout', () => {
     expect(useTableFirstPlayLayout(390, 844, true)).toBe(true);
     expect(useTableFirstPlayLayout(900, 900, true)).toBe(false);
     expect(playFocusScrollBehavior(true)).toBe('instant');
+  });
+
+  it('collapses the main HUD between hands at 390 and below only', () => {
+    expect(useCompactBetweenHandsHud(320, false)).toBe(true);
+    expect(useCompactBetweenHandsHud(390, false)).toBe(true);
+    expect(useCompactBetweenHandsHud(391, false)).toBe(false);
+    expect(useCompactBetweenHandsHud(320, true)).toBe(false);
+    expect(useCompactBetweenHandsHud(1280, false)).toBe(false);
   });
 });

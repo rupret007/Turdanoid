@@ -510,6 +510,32 @@
       pointer-events: none;
     }
 
+    /* Between hands at phone widths: match table-first HUD (2 live stats; session grid in Table Menu). */
+    @media (max-width: 390px) {
+      body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+
+      body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud [data-jack-stat-tier="session"] {
+        display: none;
+      }
+
+      body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud [data-jack-stat-tier="live"] {
+        padding: 4px 4px 5px;
+      }
+
+      body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud [data-jack-stat-tier="live"] .k {
+        font-size: 0.48rem;
+        letter-spacing: 0.08em;
+      }
+
+      body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud [data-jack-stat-tier="live"] .v {
+        font-size: 0.88rem;
+      }
+    }
+
     @media (max-width: 980px) {
       body.jack-table-first .mobile-pit {
         position: fixed;
@@ -3134,6 +3160,12 @@
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight
       });
+      if (turdjackPlayFocus.useCompactBetweenHandsHud) {
+        document.body.classList.toggle(
+          'jack-phone-compact-hud',
+          turdjackPlayFocus.useCompactBetweenHandsHud(window.innerWidth, roundActive)
+        );
+      }
       if (document.body.classList.contains('jack-table-first')) syncJackStatMirrors();
     }
 

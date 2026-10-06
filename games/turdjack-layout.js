@@ -46,6 +46,17 @@ export function useTableFirstPlayLayout(viewportWidth, viewportHeight, roundActi
 }
 
 /**
+ * Between hands on phones: keep only live bankroll/bet tiles in the main HUD (session stats stay in Table Menu).
+ * @param {number} viewportWidth
+ * @param {boolean} roundActive
+ */
+export function useCompactBetweenHandsHud(viewportWidth, roundActive) {
+  if (roundActive) {return false;}
+  const w = Number.isFinite(viewportWidth) ? viewportWidth : 1280;
+  return w <= 390;
+}
+
+/**
  * @param {boolean} reducedMotion
  * @returns {'instant' | 'auto'}
  */

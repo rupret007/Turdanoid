@@ -9,6 +9,8 @@ export const PHONE_SELECTED_LIFT = 8;
 const CARD_ASPECT = 1.42;
 const MAX_HAND_HEIGHT = 160;
 const ROW_GAP = 4;
+/** Minimum clear space between stacked row card bodies (not index corners). */
+export const PHONE_ROW_BODY_GAP = 6;
 const ARC_HEIGHT = 4;
 
 function indexRect(pos, layout, lift = 0) {
@@ -95,72 +97,106 @@ export function layoutPhoneHand({ count = 0, width = 320 } = {}) {
     };
   }
 
-  let cardWidth = Math.min(availableWidth, Math.max(48, Math.min(58, availableWidth / 6.5)));
-  let cardHeight = Math.round(cardWidth * CARD_ASPECT);
-  const maxCardHeight = Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT - ROW_GAP) / 2);
-  if (cardHeight > maxCardHeight) {
-    cardHeight = maxCardHeight;
+  let cardHeightCap = Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT - ROW_GAP) / 2);
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    let cardWidth = Math.min(availableWidth, Math.max(48, Math.min(58, availableWidth / 6.5)));
+    let cardHeight = Math.min(Math.round(cardWidth * CARD_ASPECT), cardHeightCap);
     cardWidth = Math.round(cardHeight / CARD_ASPECT);
-  }
-  const indexPitchMin = Math.max(PHONE_INDEX_WIDTH, cardWidth - PHONE_INDEX_WIDTH + 1);
-  const singleRowCapacity = Math.max(
-    1,
-    Math.floor((availableWidth - cardWidth) / indexPitchMin) + 1
-  );
-  const rows = cardCount > singleRowCapacity ? 2 : 1;
-  const rearCount = rows === 2 ? Math.ceil(cardCount / 2) : cardCount;
-  if (rows === 2) {
-    const maxTwoRowCardHeight = Math.floor(
-      (MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT - ROW_GAP - ARC_HEIGHT) / 2
+    const indexPitchMin = Math.max(PHONE_INDEX_WIDTH, cardWidth - PHONE_INDEX_WIDTH + 1);
+    const singleRowCapacity = Math.max(
+      1,
+      Math.floor((availableWidth - cardWidth) / indexPitchMin) + 1
     );
-    if (cardHeight > maxTwoRowCardHeight) {
-      cardHeight = maxTwoRowCardHeight;
+    const rows = cardCount > singleRowCapacity ? 2 : 1;
+    const rowGap = rows === 2 ? Math.max(ROW_GAP, PHONE_ROW_BODY_GAP) : ROW_GAP;
+    const rearCount = rows === 2 ? Math.ceil(cardCount / 2) : cardCount;
+    if (rows === 2) {
+      const maxTwoRowCardHeight = Math.floor(
+        (MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT - rowGap - ARC_HEIGHT) / 2
+      );
+      if (cardHeight > maxTwoRowCardHeight) {
+        cardHeight = maxTwoRowCardHeight;
+        cardWidth = Math.round(cardHeight / CARD_ASPECT);
+      }
+    } else if (cardHeight > Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT))) {
+      cardHeight = Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT));
       cardWidth = Math.round(cardHeight / CARD_ASPECT);
     }
-  } else if (cardHeight > Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT))) {
-    cardHeight = Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT));
-    cardWidth = Math.round(cardHeight / CARD_ASPECT);
+
+    const minRowStride = rows === 2
+      ? PHONE_SELECTED_LIFT + ARC_HEIGHT + cardHeight + PHONE_ROW_BODY_GAP - PHONE_SELECTED_LIFT
+      : 0;
+    const rowStride = rows === 2
+      ? Math.max(cardHeight + rowGap, minRowStride)
+      : cardHeight + rowGap;
+    const pitchFor = (rowCount) => {
+      if (rowCount <= 1) {return 0;}
+      const maxPitch = (availableWidth - cardWidth) / (rowCount - 1);
+      const minPitch = Math.max(PHONE_INDEX_WIDTH, cardWidth - PHONE_INDEX_WIDTH + 1);
+      return Math.max(PHONE_INDEX_WIDTH, Math.min(maxPitch, minPitch));
+    };
+
+    const rearPitch = pitchFor(rearCount);
+    const frontCount = rows === 2 ? cardCount - rearCount : 0;
+    const frontPitch = rows === 2 ? pitchFor(frontCount) : 0;
+    const frontOffset = rows === 2 ? Math.max(0, (rearPitch - frontPitch) / 2) : 0;
+
+    const positions = Array.from({ length: cardCount }, (_, index) => {
+      const row = rows === 2 && index >= rearCount ? 1 : 0;
+      const rowIndex = row === 0 ? index : index - rearCount;
+      const rowCount = row === 0 ? rearCount : frontCount;
+      const pitch = row === 0 ? rearPitch : frontPitch;
+      const rowWidth = cardWidth + (rowCount - 1) * pitch;
+      const rowStart = (availableWidth - rowWidth) / 2 + (row === 1 ? frontOffset : 0);
+      const midpoint = (rowCount - 1) / 2;
+      const arc = rowCount > 1 ? Math.pow((rowIndex - midpoint) / (midpoint || 1), 2) * ARC_HEIGHT : 0;
+      return {
+        x: rowStart + rowIndex * pitch,
+        y: PHONE_SELECTED_LIFT + row * rowStride + arc,
+        z: index + 1,
+        row
+      };
+    });
+
+    const height = PHONE_SELECTED_LIFT + (rows - 1) * rowStride + ARC_HEIGHT + cardHeight;
+    let rowGapOk = true;
+    if (rows === 2) {
+      const rearBottom = Math.max(
+        ...positions.filter((card) => card.row === 0).map((card) => card.y + cardHeight)
+      );
+      const frontTop = Math.min(...positions.filter((card) => card.row === 1).map((card) => card.y));
+      rowGapOk = frontTop - rearBottom >= PHONE_ROW_BODY_GAP - 0.000001;
+    }
+
+    if (height <= MAX_HAND_HEIGHT && rowGapOk && cardHeight >= 44) {
+      return {
+        cardWidth,
+        cardHeight,
+        height,
+        selectedLift: PHONE_SELECTED_LIFT,
+        rowStride,
+        rows,
+        positions
+      };
+    }
+
+    const shrinkTarget = rows === 2
+      ? Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT - rowGap - ARC_HEIGHT) / 2) - 1
+      : Math.floor((MAX_HAND_HEIGHT - PHONE_SELECTED_LIFT)) - 1;
+    cardHeightCap = Math.min(cardHeightCap, cardHeight, shrinkTarget) - 1;
+    if (cardHeightCap < 44) {
+      break;
+    }
   }
 
-  const rowStride = cardHeight + ROW_GAP;
-  const pitchFor = (rowCount) => {
-    if (rowCount <= 1) {return 0;}
-    const maxPitch = (availableWidth - cardWidth) / (rowCount - 1);
-    const minPitch = Math.max(PHONE_INDEX_WIDTH, cardWidth - PHONE_INDEX_WIDTH + 1);
-    return Math.max(PHONE_INDEX_WIDTH, Math.min(maxPitch, minPitch));
-  };
-
-  const rearPitch = pitchFor(rearCount);
-  const frontCount = rows === 2 ? cardCount - rearCount : 0;
-  const frontPitch = rows === 2 ? pitchFor(frontCount) : 0;
-  const frontOffset = rows === 2 ? Math.max(0, (rearPitch - frontPitch) / 2) : 0;
-
-  const positions = Array.from({ length: cardCount }, (_, index) => {
-    const row = rows === 2 && index >= rearCount ? 1 : 0;
-    const rowIndex = row === 0 ? index : index - rearCount;
-    const rowCount = row === 0 ? rearCount : frontCount;
-    const pitch = row === 0 ? rearPitch : frontPitch;
-    const rowWidth = cardWidth + (rowCount - 1) * pitch;
-    const rowStart = (availableWidth - rowWidth) / 2 + (row === 1 ? frontOffset : 0);
-    const midpoint = (rowCount - 1) / 2;
-    const arc = rowCount > 1 ? Math.pow((rowIndex - midpoint) / (midpoint || 1), 2) * ARC_HEIGHT : 0;
-    return {
-      x: rowStart + rowIndex * pitch,
-      y: PHONE_SELECTED_LIFT + row * rowStride + arc,
-      z: index + 1,
-      row
-    };
-  });
-
-  const height = PHONE_SELECTED_LIFT + (rows - 1) * rowStride + ARC_HEIGHT + cardHeight;
-
   return {
-    cardWidth,
-    cardHeight,
-    height,
+    cardWidth: 0,
+    cardHeight: 0,
+    height: 0,
     selectedLift: PHONE_SELECTED_LIFT,
-    rowStride,
-    rows,
-    positions
+    rowStride: 0,
+    rows: 0,
+    positions: []
   };
 }

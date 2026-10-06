@@ -3,8 +3,11 @@
  */
 import {
   playFocusScrollBehavior,
+  useCompactBetweenHandsHud,
   useTableFirstPlayLayout
 } from './turdjack-layout.js';
+
+export { useCompactBetweenHandsHud };
 
 /**
  * @param {DOMRect|{top:number,left:number,bottom:number,right:number}} rect
