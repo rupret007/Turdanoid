@@ -46,8 +46,7 @@ Round-0 audit baseline: partnership Spades with Nil/bags, table continue, paced 
 
 ## Needs shared change
 
-- Optional central `SuiteAudio` so all card tables share one master bus (see round-0 shared targets).
-- `suite-back-pill` hub link can overlap dock taps on very small viewports (shared `turdsuite.css`).
+Shared round 3–4 landed `Suite.audio()`, optional hub `turdspades_stats_v1` chips, and a top-left 44px Hub pill on phones (no bottom-dock overlap). Nothing left for the shared lane from this Spades round.
 
 ## Verification
 

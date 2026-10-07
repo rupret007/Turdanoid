@@ -8,7 +8,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 1. [TurdAnoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
 2. [Turdtris (Tetris Clone)](#turdtris-tetris-clone)
-3. [Turdjack (Blackjack)](#turdjack-blackjack)
+3. [Crapjack 21 (Blackjack)](#crapjack-21-blackjack)
 4. [Crapeights (Crazy Eights)](#crapeights-crazy-eights)
 5. [Turdrummy (Gin Rummy)](#turdrummy-gin-rummy)
 6. [Turdspades (Spades)](#turdspades)
@@ -145,11 +145,11 @@ Classic is the default on every page load. In Run Menu, choose a challenge and p
 
 ---
 
-## Turdjack (Blackjack)
+## Crapjack 21 (Blackjack)
 
 ### Overview
 
-Single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, and strategy hints.
+Crapjack 21 (`turdjack.html`) is single-deck to 8-deck Blackjack with configurable rules, Hi-Lo card counting, and strategy hints. The hub name is Crapjack 21; storage keys stay `turdjack*`.
 
 ### Controls
 

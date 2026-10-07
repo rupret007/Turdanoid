@@ -52,5 +52,5 @@ presentation, side drawer desktop layout. See git history for full checklists.
 - `TurdRummyDev.auditHandCornerIndices` is for QA/smoke only.
 
 ## Needs shared change (shared lane owns these files)
-- `assets/turdsuite.js` `preventDoubleTapZoom()` still cancels quick second taps on pages that call it.
-- Hub 2.0 could read `turdrummy_stats_v1` for the cover badge (read-only).
+
+Landed on the integration branch: `preventDoubleTapZoom()` now only installs CSS `touch-action: manipulation` (no `touchend` `preventDefault`); hub cover badges read `turdrummy_stats_v1`. Nothing left for the shared lane from this Rummy round.

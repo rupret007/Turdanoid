@@ -30,7 +30,7 @@ Round 5 (final QA): power-up/boss readability, desktop theater layout, capture h
 
 ## Needs shared change
 
-- Hub badge for `turdanoid_boss_best_v1` and classic best (shared hub 2.0).
+Landed: hub cover badges read `turdanoid_v2_best` and `turdanoid_boss_best_v1`. Nothing left for the shared lane from this breakout round.
 
 ## What to try on a phone
 

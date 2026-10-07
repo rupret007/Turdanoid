@@ -58,9 +58,7 @@ Round 6: in-page confirm modals. Round 5: table-first layout foundations, chips,
 
 ## Needs shared change
 
-- **Hub pill / back control** at 320px (`assets/turdsuite.css` or hub markup).
-- **SuiteAudio / SuiteFX** (shared lane).
-- **Card face art** in shared CSS.
+Landed on the integration branch: Hub back pill is a top-left 44px icon on phones; `Suite.audio()` / `Suite.fx()` exist; shared card-face CSS is in `assets/turdsuite.css`. Nothing left for the shared lane from this Crapjack round.
 
 ## Save compatibility
 

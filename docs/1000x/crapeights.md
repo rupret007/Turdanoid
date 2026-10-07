@@ -31,8 +31,7 @@ Read the conductor's round-0 audit and play-read the four-player page, two-playe
 
 ## Needs shared change
 
-- The full lint command exits successfully with four existing `no-unused-vars` warnings outside this lane: `games/turdjack-engine.js` imports `RANKS`, `SUITS`, and `hiLoValue`; `tests/turdjack.test.js` imports `MIN_BET`. The shared/conductor or Crapjack lane should remove those unused imports for a completely warning-free suite. Crappy Eights files lint without warnings.
-- No shared runtime, storage, or smoke assertion changes are required. The only shared-file edits are the authorized Crapeights rules section and `crapeightsAiMs` line (760 ms).
+Historical note from round 1: unused-import lint warnings in Crapjack files were later cleaned up; `npm run lint` on the integration head is clean. No shared runtime, storage, or smoke assertion changes were required from this round.
 
 ## Validation
 
@@ -120,9 +119,9 @@ The fixed shared Hub pill can cover a small part of the lower-left hand/control 
 
 ### Final review artifacts
 
-- [390px opening](crapeights-autoplay/390-opening.png) and [desktop opening](crapeights-autoplay/1280-opening.png)
-- [320px final table](crapeights-autoplay/spot-final-320.png) and [800px-high desktop](crapeights-autoplay/spot-final-1280.png)
-- [Round scoring receipt](crapeights-autoplay/390-round-2-receipt.png) and [full autoplay report](crapeights-autoplay/report.json)
+PNG dumps from this autoplay run were trimmed from the repo (JSON kept). Curated before/after shots live in `docs/1000x/screenshots/` (`after-crapeights-320-play.jpg`, `after-crapeights-390-play.jpg`, `after-crapeights-desktop-play.jpg`).
+
+- [full autoplay report](crapeights-autoplay/report.json)
 
 # Round 3 — quality, playtest and finish
 
@@ -156,7 +155,7 @@ This explicitly requested lane document and autoplay script are authorized excep
 
 ### Additional Needs shared change
 
-The shared zoom guard should exempt native interactive controls using `touch-action: manipulation`; its present document-level `preventDefault()` cancels legitimate rapid activation across the suite. Crappy Eights now contains a tested local workaround. The shared fixed Hub pill still covers some lower-left content on short screens; its placement remains the shared lane's responsibility.
+Shared round 4 later removed the document-level `touchend` `preventDefault` (CSS `touch-action: manipulation` only) and moved the Hub pill to a top-left 44px icon on phones. Those asks are closed on the integration branch.
 
 ### Round 3 final autoplay evidence
 
@@ -166,7 +165,7 @@ The shared zoom guard should exempt native interactive controls using `touch-act
 - **PASS — screenshot inspection:** reviewed opening tables, guide, in-play action states, 320px hand rows, keyboard focus, wild picker, scoring receipts and full-match trophy. Phone fans now clear pile headings; result receipts have no lingering table stamps; desktop remains table-first at 1280×800. The 320×640 hand and controls are vertically reachable, with no horizontal scrolling. Transient action stamps and speech can briefly overlap seat artwork/text, without blocking input; the fixed shared Hub pill remains the known placement issue noted above.
 - **PASS — save/stat contract:** exact unmodified `validEightsSnapshot()` from the b3821b4 fixture is compared against every live/restored field, then played and reloaded. Draw/skip penalties, pending wild, selection, history and finished overlays are covered. Both `crapeightsStats` and `crapeights_stats_v1` retain their existing field formats; continued wins increment once and restored finished rounds write neither stats key. No scoring, existing storage key or snapshot format changed.
 
-Representative artifacts: [390px table](crapeights-autoplay-r3/phone-390-opening.png), [320px table](crapeights-autoplay-r3/small-320-opening.png), [desktop table](crapeights-autoplay-r3/keyboard-1280-opening.png), [wild picker](crapeights-autoplay-r3/match/phone-390-wild-suit-picker.png), [match trophy](crapeights-autoplay-r3/match/phone-390-match-1-trophy.png), [four-scenario report](crapeights-autoplay-r3/report.json), [full-match report](crapeights-autoplay-r3/match/report.json).
+Representative artifacts: round-3 PNGs were trimmed from the repo. JSON remains: [four-scenario report](crapeights-autoplay-r3/report.json), [full-match report](crapeights-autoplay-r3/match/report.json). Curated shots: `docs/1000x/screenshots/after-crapeights-*-play.jpg`.
 
 - **NOT RUN — physical phone, listening, screen-reader hardware and measured phone frame rate:** browser checks verify native touch/keyboard behavior, visible focus, announcement semantics, overflow and motion/audio gates. Hardware review remains separate.
 
@@ -193,7 +192,7 @@ Conductor r4-stage screenshots flagged two remaining presentation issues: at **3
 
 ## Needs shared change
 
-Unchanged from prior rounds: shared Hub pill overlap on short phones; shared `preventDoubleTapZoom` should exempt `touch-action: manipulation` controls; Crapjack unused-import lint warnings in `games/turdjack-engine.js` and `tests/turdjack.test.js`.
+Shared round 4 landed the double-tap fix (`touch-action: manipulation`, no `touchend` `preventDefault`) and moved the Hub pill to a top-left 44px icon on phones. No remaining shared-lane ask from this Eights round.
 
 ## Round 4 local commits
 

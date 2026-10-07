@@ -59,14 +59,12 @@
 - [x] Opt-in gesture toggle (`turdtrisGestures_v1`) in run menu + guide line
 - [x] Unit tests for fx, audio, layout, suite-feel alignment
 - [x] Update Turdtris section of `RULES.md`
-- [ ] Shared `SuiteAudio` mixer (owned by **shared** lane — see below)
-- [ ] Hub per-game stat badge for `turdtrisHighScore` (**shared**)
+- [x] Shared `SuiteAudio` mixer (owned by **shared** lane — see below)
+- [x] Hub per-game stat badge for `turdtrisHighScore` (**shared**)
 
 ## Needs shared change
 
-- Hub should read `turdtrisHighScore` for cover badges (shared lane).
-- Optional global `SuiteAudio` module to dedupe oscillator code across games (shared lane).
-- Round 2 repository lint exits successfully but has six pre-existing unused-import warnings outside this lane: `RANKS`, `SUITS`, `hiLoValue` in `games/turdjack-engine.js`; `RANKS`, `SUITS` in `tests/crapeights.test.js`; `MIN_BET` in `tests/turdjack.test.js`. Route cleanup to the owning lanes for a warning-free repository lint. Turdtris files have zero warnings/errors.
+Landed on the integration branch: hub badges read `turdtrisHighScore`; `Suite.audio()` is the shared mixer. `npm run lint` is clean (the old unused-import warnings in other lanes are gone). Nothing left for the shared lane from this Turdtris round.
 
 ## Round 2: deeper audit and implementation targets
 

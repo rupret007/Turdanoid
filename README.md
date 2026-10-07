@@ -1,270 +1,83 @@
-# Turdanoid Games
+# Turdanoid
 
-A collection of six active browser games with a playful turd theme.
+Six browser games, one sewer. Open `index.html` and pick a stall.
 
-The repository root is the finished six-game launcher. The original Neon Arkanoid remains playable as a secondary direct link instead of acting as the product's front door.
+This repository is **public**. GitHub Pages already serves **`main`**:
+[https://rupret007.github.io/Turdanoid/](https://rupret007.github.io/Turdanoid/).
+This branch is the **Turdanoid 1000x** integration (draft
+[PR #41](https://github.com/rupret007/Turdanoid/pull/41)) — same six titles,
+richer tables, and phone/320px layout work. It is **not** deployed.
 
-## Version
-
-- **Current build:** `v4.0.0`
-- **Build date:** May 4, 2026
-
-## Unreleased
-
-- **Turdanoid 1000x (suite):** TurdAnoid worlds/boss/coach; Turdtris cabinet/music/modes; Crapjack table/deal/chips/coach; Crappy Eights table/characters/AI levels; TurdRummy fan/melds/reveal/AI; TurdSpades arena/bidding/AI; **shared** hub/card art/audio/back-pill placement and continue UX. Lane details in `docs/1000x/*.md`.
-- **Turdanoid 1000x (shared lane, round 4):** fix rapid second-tap clicks lost to `preventDoubleTapZoom` (CSS `touch-action` via `suite-touch.js`); back-pill overlap re-check + narrow top inset. Details: `docs/1000x/shared.md`.
-- **Turdanoid 1000x (shared lane, round 3):** phone back pill top-left (no dock overlap); hub reads `turdanoid_boss_best_v1` / optional `turdspades_stats_v1`; vitest 30s timeouts; hub idle pauses when tab hidden. Details: `docs/1000x/shared.md`.
-- When a returning player has a live table, the hub's masthead badge becomes a one-tap "↩ Continue &lt;Game&gt;" link — the last game opened if that table is still live, otherwise the first table waiting — so the pick-up path starts at the top of the page instead of a scan down the grid. First visits keep the "No sign-in" reassurance badge; no rules, storage, continue validation, or layout change. See [the hub resume shortcut handoff](docs/HUB_RESUME_SHORTCUT_HANDOFF.md).
-- On phones the hub now gives the "in progress" and "last played" rows a coloured left edge — live accent for a table waiting to Continue, gold for the last game opened — so a returning player can scan straight to it. The "In progress" / "Last played" badge is hidden at phone widths, which had left only the small "Continue" / "Play again" verb as a cue. Render only: no rules, storage, continue validation, or desktop layout change. See [the hub resume-cue handoff](docs/HUB_PHONE_RESUME_CUE_HANDOFF.md).
-- The hub's "Continue" / "Play again" card now reads its full state to screen readers: game name, one-line blurb, then the action and whether it is in progress or last played. The visual badge is hidden on phones, so this label was the only cue some players got, and it previously dropped the blurb and the action word. See [the hub polish handoff](docs/HUB_CONTINUE_LABEL_HANDOFF.md).
-- The phone launcher shows all six games as compact, direct-launch rows with short game descriptions. Play, Play again, and Continue keep dark, readable text; larger text can move the action below the description. Desktop cover cards stay in place. See [the phone hub handoff](docs/HUB_PHONE_HANDOFF.md).
-- TurdAnoid Mega Flush now pays its existing 15 × level bonus for the bottom-row bricks it actually removes, including a Gold Rush 2×, a `+points` float, HUD bump, and the usual pickup roll. Upper bricks stay on the wall. Bomb scoring, death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
-- TurdAnoid Bomb now pays the destroy bonus for bricks it actually kills, including a Gold Rush 2×, a `+points` float, and the usual pickup roll. Splash-damaged survivors still score nothing. Death, Enlarge/Shrink wall carry, and parked arcade saves stay outside this leftover.
-- Crapjack's Hint, Smart and Discipline feedback now keep soft 15/16 in the soft-hand strategy instead of surrendering them under hard-hand rules. The Hit hint names the soft total and explains the flexible ace; manual surrender stays available. See [the guidance handoff](docs/CRAPJACK_SOFT_HAND_HANDOFF.md).
-- TurdRummy reconsiders dependent deadwood cards after a layoff extends a run, so a legal chain cannot award the round to the wrong side. Competing run/set placements are searched; human and AI defenders use the same result. Gin still forbids layoffs. See [the scoring handoff](docs/TURDRUMMY_LAYOFF_HANDOFF.md).
-- Returning to a visible window resumes paused TurdSpades, TurdRummy and Crappy Eights turns, including Crappy Eights' pending automatic pass. Hidden tabs and open guides keep the table paused; repeated focus/tab-return events cannot duplicate a turn. Fresh matches and finished rounds do not revive old timers.
-- Made `index.html` the canonical six-game launcher so the root GitHub Pages URL opens the complete suite.
-- Moved the original Neon Arkanoid to `neon-arkanoid.html` and kept `hub.html` as a compatibility redirect.
-- Simplified the launcher's opening copy and added routing assertions to the browser smoke pass.
-- Deepened TurdSpades with player/bot Nil bids, honest ±100 scoring receipts, Nil-aware bot play, and always-reachable mobile bidding controls.
-- After Nil landed: TurdSpades bot cards play one at a time, tab-hide pauses those turns, and a partner overtakes a winning Nil card when it can. The hub marks the last opened game. The TurdAnoid test hook no longer ships on the public Pages host.
-- After leftover #15: leaving TurdSpades, TurdRummy, or Crappy Eights saves the live table on this device. The hub says Continue when a table is waiting, returning players skip the welcome guide, and malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now loads the suite runtime so last-played is honest. Mid-run arcade saves stay parked with PR #8.
-- After leftover #16: Crapjack 21 continues the live hand, so leaving mid-round no longer keeps the deducted bet without the cards. Continue now uses the same validators on the live suite as in tests, the hub only says Continue for an unfinished playable table, and restored tables accept a real action. Arcade mid-run saves stay parked with PR #8.
-- After leftover #20: TurdAnoid keeps Enlarge and Shrink paddle size when the next wall builds, so the Big/Shrunk chip matches the bat you serve with. Death still strips both. Arcade mid-run saves stay parked with PR #8.
-- After leftover #19: Turdtris keeps Hold and Next on the thumb dock so a phone run can see the held piece and the incoming piece without scrolling. Hold dims after it is used this piece, and a second tap does not swap. Arcade mid-run saves stay parked with PR #8.
-- After leftover #18: Turdtris keeps Hold, soft drop, and Pause on the thumb dock instead of behind More Controls. A stalled frame cannot dump extra gravity. Game over shows whether the run set a device best, and Space or Enter starts the next stack. Arcade mid-run saves stay parked with PR #8.
-
-## Changelog (Latest)
-
-- Suite-wide graphics pass (render/CSS only — no rules, scoring, physics, or controls changed):
-  - Hub: inline-SVG cover art for all six games with hover motion, a 3×2 collection grid, and per-game accent colours.
-  - Shared theme (`assets/turdsuite.css`): ambient sewer backdrop (brick tiles, rising bubbles, stink wisps, vignette) injected behind every page, plus shared tokens for card paper, card-back weave, felt grain, wooden rails, and glass panels.
-  - TurdAnoid: pre-rendered sewer brick wall, shaded pipes, slime drips, a live sludge surface, vignette, smoke on brick kills, HP pips on tough bricks, glass HUD chips, gradient title screen.
-  - Turdtris: HiDPI board, beveled glossy tiles, cracked-stone garbage rows, dashed ghost piece, lock flash, line-clear light sweep with sparks, framed board.
-  - Crapjack 21 / Crappy Eights / TurdRummy / TurdSpades: real felt with grain and wooden rails, one shared card design (paper faces, gold-foil aces, ribbon court stickers, diamond-weave backs), casino chips, action-card badges, meld tints, four-seat Spades table with trick well and bid dial, deal/flip animations, glass HUD tiles, framed guides and overlays.
-- TurdAnoid Turbo fixes and polish:
-  - Fixed a level-clear bug that could award the clear bonus dozens of times and skip levels.
-  - Shield now saves every ball during multiball.
-  - Auto-pause when the tab loses focus.
-  - Frame-rate independent physics (plays the same at 60/120/144 Hz).
-  - New brick death animations, parallax sewer background, ball squash-and-stretch, paddle recoil.
-- Testing overhaul: repaired the vitest suite, added real-game regression tests for TurdAnoid, cross-platform browser smoke runner (`npm run test:smoke`), and GitHub Actions CI.
-
-Previous (v3.1):
-
-- Hub refresh:
-  - TurdAnoid moved to the top card in the game launcher.
-  - Neon Arkanoid removed from hub card list.
-  - New **TurdRummy** (Gin Rummy) added as the bottom hub card.
-- New game added:
-  - `crapeights.html` with Crazy Eights / Uno-style flow, 3 bot opponents, action-card effects (`2`, `J`, `Q`, `8`), and first-to-200 match scoring.
-- New game added:
-  - `turdrummy.html` with meld/deadwood analyzer, knock/gin scoring, layoff/undercut flow, and mobile-first action dock.
-- New game added:
-  - `turdspades.html` with 4-player partnership Spades, bidding flow, trick resolution, bag penalties, and match scoring.
-- Regression checks expanded in `test-runner.ps1` for TurdRummy and updated hub link/order expectations.
+No sign-in. Progress lives in `localStorage` on this device.
 
 ## Games
 
-### TurdAnoid
+The hub lineup, in order:
 
-Silly Arkanoid variant (vanilla JavaScript + Canvas) with stink-based effects and capsule madness.
+| Game | File | What you get |
+|------|------|----------------|
+| **TurdAnoid Turbo** | `TurdAnoid.html` | Brick-breaker, five worlds, 19 capsules, optional Boss Flush, coach |
+| **Turdtris** | `turdtris.html` | Guideline stacker, Sprint 40L / Ultra 2:00, desktop 5-piece cabinet |
+| **Crapjack 21** | `turdjack.html` | Blackjack, chips on felt, in-page pit modals, table-first phones |
+| **Crappy Eights** | `crapeights.html` | You vs 3 bots, action cards, three AI levels, race to 200 |
+| **TurdRummy** | `turdrummy.html` | Gin rummy, meld-grouped fan, layoff/undercut, 320px corner indices |
+| **TurdSpades** | `turdspades.html` | Partnership Spades, Nil, phone trick well, device-local continue |
 
-**Features:**
-- Arkanoid-inspired capsules (Enlarge, Slow, Catch, Disruption, Laser, etc.)
-- Distinct level patterns that get more complex over time
-- Bomb pays the destroy bonus (Gold Rush 2×) for bricks it kills; splash-damaged survivors score nothing
-- Mega Flush pays 15 × level (Gold Rush 2×) for the bottom-row bricks it removes, with `+points` floats and the usual pickup roll; upper bricks stay
-- Strongly visible stink/gas progression the longer the ball survives
-- Stacking enlarge behavior (multiple length boosts actually stack)
-- Enlarge and Shrink keep their paddle size when the next wall builds; dying still resets both
-- Touch and mouse support
-- Responsive canvas (resizes on window change)
-- High score persistence
+Legacy (not in the six-card grid): `neon-arkanoid.html`. `hub.html` redirects to `index.html`.
 
-**Controls:** Mouse or touch to move paddle.
+Card tables (Eights, Rummy, Spades) and a live Crapjack hand save on this device;
+the hub says **Continue** when a playable table is waiting. Arcade mid-run saves
+stay parked with PR #8.
 
-### Turdtris
+## Phone / 320px
 
-Tetris-inspired stacker with modern guideline-style mechanics and progressive chaos.
+- Hub at ≤600px (including 320px): compact rows so all six games fit the first screen. Desktop keeps cover cards.
+- Returning rows get a coloured left edge (live Continue vs last played). Mute and Hub-back are named 44px controls; on phones the back pill is a top-left icon.
+- Tables go table-first on a narrow phone: Crapjack collapses chrome during a hand; TurdRummy keeps meld-fan corner indices on screen; TurdSpades keeps a stable trick well and readable index corners.
 
-**Features:**
-- 7-bag randomizer
-- SRS-style wall kicks
-- Hold and ghost piece systems
-- Combo, back-to-back, T-Spin, and perfect-clear scoring
-- Lock delay + gravity progression
-- Level modifiers with themed progression and garbage pressure
-- A visible next-level pulse that names remaining lines and the next garbage modifier
-- Always-reachable mobile thumb controls for move, rotate, soft drop, hard drop, hold, and pause — none of them hide behind More Controls
-- Hold and Next stay on the thumb dock so a phone run can see the queue without scrolling
-- Hold dims after it is used this piece; a second tap does not swap
-- Frame-hitch gravity clamp so a stalled tab cannot slam the stack
-- End-run best-score receipt with Space/Enter replay
-- High score persistence
+Known 320px nits (not claimed fixed): Crapjack’s between-hands stats grid still pushes the felt down; TurdSpades’ second hand row can overlap the first by about half a card (indices stay visible). Physical phone feel is **NOT RUN** — Jeff to judge.
 
-**Controls:** Arrow keys or touch gestures.
+## Quick start
 
-### Crapjack 21
+No build step. Open `index.html` in a modern browser, or any game file above.
 
-Blackjack with a toilet-dealer vibe and persistent bankroll.
-
-**Features:**
-- Blackjack rules with dealer logic, blackjack payout, push handling, and double down/split/surrender support
-- Betting chips and quick mobile action controls
-- Persistent bankroll + stats in localStorage
-- Device-local continue for a live hand; lifetime bankroll is not rewritten until the hand settles
-- Responsive table layout and themed card rendering
-
-**Controls:** Mouse/touch buttons, plus keyboard shortcuts (`N`, `H`, `S`, `D`, `C`).
-
-### Crappy Eights
-
-Crazy Eights with Uno-style pacing and themed table presentation.
-
-**Features:**
-- You vs 3 bot opponents
-- Action cards:
-  - `2` = draw two + skip
-  - `J` = skip
-  - `Q` = reverse direction
-  - `8` = wild suit pick
-- Smart move helper and keyboard shortcuts (`P`, `D`, `A`, `M`)
-- Round scoring by opponents' leftover card values
-- Match target race to 200 points
-- Mobile-friendly controls, on-entry rules guide, and local stats persistence
-- Device-local continue for the live match when you leave for the hub
-
-**Controls:** Tap/click cards and actions, or keyboard (`P` play, `D` draw, `A` smart, `M` sound).
-
-### TurdRummy
-
-Gin Rummy game themed to match the rest of the hub.
-
-**Features:**
-- Real meld/deadwood hand analysis
-- Knock and gin decisions from your selected discard
-- Layoff and undercut scoring logic
-- Order-independent chained layoffs, with the round's visible receipt naming the cards actually laid off
-- AI draw/discard logic tuned for reasonable play
-- Fixed mobile control dock for draw/discard/knock/gin actions
-- Round/match scoring with localStorage persistence
-- Device-local continue for the live table; ghost scores cannot skip a round
-
-**Controls:** Tap/click cards to select discard, then use bottom action buttons.
-
-### TurdSpades
-
-Classic Spades (partnership trick-taking) themed for the Turdanoid hub.
-
-**Features:**
-- You + North partner vs West/East bot team
-- Full bidding phase each round, including risk-gated Nil bids for people and bots
-- Watchable bot play with tab-hide pause, plus partner cover when a Nil winner can be overtaken
-- Device-local continue: the same match, bids, and tricks come back when you return from the hub
-- Trick-taking with suit-following and trump-spade rules
-- Spades break logic
-- Team contract scoring with transparent Nil bonuses/penalties, bags, and the 10-bag penalty
-- Match target race and round summaries
-- Mobile-friendly action dock and on-entry rules guide
-
-**Controls:** Tap/click a card to select, then `Play Selected`. In the bid phase, use `-`/`+` or `Bid Nil`, then `Lock Bid`; keyboard players can press `N` for Nil and `Enter` to confirm.
-
-## Legacy Game (Direct Link)
-
-- `neon-arkanoid.html` - Neon Arkanoid (still available directly, not part of the six-card lineup)
-
-## Getting Started
-
-1. Open `index.html` (or the repository root when served) to access the current game lineup.
-2. Or open an individual file:
-   - `TurdAnoid.html` - TurdAnoid
-   - `turdtris.html` - Turdtris
-   - `turdjack.html` - Crapjack 21
-   - `crapeights.html` - Crappy Eights
-   - `turdrummy.html` - TurdRummy
-   - `turdspades.html` - TurdSpades
-
-## Mobile Support
-
-All games support touch controls and responsive layouts, with primary actions placed for easier thumb reach.
-
-## Returning to a card table
-
-TurdSpades, TurdRummy and Crappy Eights wait when you switch away during an
-automatic turn. Return to the window or tab to continue that same turn. If the
-guide is open, close it when you are ready; bots wait while you read. Crappy
-Eights also retains a pending automatic pass after an unplayable draw.
-Switching away does not deal a new hand or reset the match.
-
-## Testing
-
-Install test tooling once:
+CI uses **Node 22**. Test tooling:
 
 ```bash
-npm install
+npm ci                 # or npm install
+npm run lint
+npm test               # Vitest; 30s timeouts. Serial (`npx vitest run --maxWorkers=1`) if parallel flakes
+npx playwright install chromium   # one-time
+PLAYWRIGHT_CHANNEL='' npm run test:smoke
 ```
 
-Run the unit tests (Vitest, cross-platform):
+There is no `npm run build`. Lint covers `games/` and `tests/`. Smoke serves the
+repo locally and drives every game in Playwright. Empty `PLAYWRIGHT_CHANNEL`
+uses bundled Chromium (Linux/macOS/CI); the default channel is local Edge for
+the Windows workflow.
 
-```bash
-npm test
-```
+Windows wrappers: `test-runner.ps1`, `browser-smoke.ps1`.
 
-Run the browser smoke pass (Playwright, cross-platform — serves the repo on a
-local HTTP server and drives every game headlessly):
+CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull request.
 
-```bash
-npx playwright install chromium   # one-time browser download
-npm run test:smoke
-```
+## Play online (`main` / Pages)
 
-Notes:
-- The smoke pass defaults to the local Edge channel (Windows dev workflow).
-  Set `PLAYWRIGHT_CHANNEL=""` to use Playwright's bundled Chromium instead
-  (Linux/macOS/CI).
-- Lint with `npm run lint` (covers `games/` and `tests/`).
-- CI (`.github/workflows/ci.yml`) runs lint, unit tests, and the smoke pass
-  on every push and pull request.
+- Hub: https://rupret007.github.io/Turdanoid/
+- TurdAnoid: https://rupret007.github.io/Turdanoid/TurdAnoid.html
+- Turdtris: https://rupret007.github.io/Turdanoid/turdtris.html
+- Crapjack 21: https://rupret007.github.io/Turdanoid/turdjack.html
+- Crappy Eights: https://rupret007.github.io/Turdanoid/crapeights.html
+- TurdRummy: https://rupret007.github.io/Turdanoid/turdrummy.html
+- TurdSpades: https://rupret007.github.io/Turdanoid/turdspades.html
+- Neon Arkanoid: https://rupret007.github.io/Turdanoid/neon-arkanoid.html
 
-Windows-only wrappers are still available:
+`.nojekyll` keeps Pages from running Jekyll. Those URLs are **`main`**, not this 1000x branch.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File test-runner.ps1
-powershell -ExecutionPolicy Bypass -File browser-smoke.ps1
-```
+## Status
 
-## Play Online (GitHub Pages)
+- Draft PR #41. Do not merge, undraft, or point Pages at this branch from this pass.
+- Rules and save-key shapes stay compatible with the `b3821b4` / `main` pin.
+- Lane notes: `docs/1000x/*.md`. Curated before/after shots: `docs/1000x/screenshots/`.
+- Game rules: `RULES.md`.
 
-**Enable GitHub Pages** (one-time setup):
-
-1. Go to https://github.com/rupret007/Turdanoid
-2. Click **Settings** > **Pages**
-3. Under "Build and deployment", set **Source** to "Deploy from a branch"
-4. Set **Branch** to `main`, **Folder** to `/ (root)`
-5. Click **Save**
-
-After deployment:
-
-- **Turdanoid:** https://rupret007.github.io/Turdanoid/
-- **TurdAnoid:** https://rupret007.github.io/Turdanoid/TurdAnoid.html
-- **Turdtris:** https://rupret007.github.io/Turdanoid/turdtris.html
-- **Crapjack 21:** https://rupret007.github.io/Turdanoid/turdjack.html
-- **Crappy Eights:** https://rupret007.github.io/Turdanoid/crapeights.html
-- **TurdRummy:** https://rupret007.github.io/Turdanoid/turdrummy.html
-- **TurdSpades:** https://rupret007.github.io/Turdanoid/turdspades.html
-- **Neon Arkanoid (original):** https://rupret007.github.io/Turdanoid/neon-arkanoid.html
-
-The `.nojekyll` file ensures GitHub Pages serves files as-is.
-
-## Technical Notes
-
-- **TurdAnoid**: Vanilla JavaScript (Canvas API), single file, delta-time game loop
-- **Turdtris**: Vanilla JavaScript (Canvas API)
-- **Crapjack 21**: Vanilla JavaScript + DOM/CSS card UI
-- **Crappy Eights**: Vanilla JavaScript + DOM/CSS card UI
-- **TurdRummy**: Vanilla JavaScript + DOM/CSS card UI
-- **TurdSpades**: Vanilla JavaScript + DOM/CSS card UI
-- **Neon Arkanoid (legacy)**: Vanilla JavaScript (Canvas API)
-
-No build step required. Open in any modern browser.
+Vanilla HTML + JS. No bundler.
