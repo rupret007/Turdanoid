@@ -38,7 +38,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
       position: relative;
       isolation: isolate;
     }
@@ -538,7 +538,9 @@
     }
 
     @media (max-width: 820px) {
-      body { padding: 10px; }
+      body {
+        padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      }
       .shell {
         width: min(820px, 94vw);
         padding: 16px 14px 14px;
@@ -577,30 +579,57 @@
          the only returning-player cue left is the small "Continue" / "Play again"
          verb. Give the row itself an edge accent a player can scan straight to:
          gold for last played, live accent for a table still in progress. When a
-         card is both, .in-progress is declared last and wins — the honest call. */
+         card is both, .in-progress is declared last and wins — the honest call.
+         Use an absolutely positioned pseudo-element to avoid shrinking
+         the content area and triggering flexbox wrap on tight viewports. */
+      .game-card { min-height: 44px; }
       .game-card.last-played,
       .game-card.in-progress {
-        border-left: 4px solid var(--gold);
+        position: relative;
         background:
           linear-gradient(90deg, color-mix(in srgb, var(--gold) 13%, transparent), transparent 62%),
           linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
       }
+      .game-card.last-played::before,
+      .game-card.in-progress::before {
+        content: "";
+        position: absolute;
+        inset: auto;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        height: auto;
+        opacity: 1;
+        animation: none;
+        transition: none;
+        background: var(--gold);
+        background-size: auto;
+        background-position: 0 0;
+        border-radius: 12px 0 0 12px;
+        z-index: 5;
+      }
       .game-card.in-progress {
-        border-left-color: var(--accent);
         background:
           linear-gradient(90deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
           linear-gradient(180deg, rgba(16, 30, 50, 0.82), rgba(8, 18, 34, 0.9));
       }
+      .game-card.in-progress::before {
+        background: var(--accent);
+      }
       .body {
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
         gap: 8px;
         padding: 6px 10px;
       }
       .game-info { flex: 1 1 8.5rem; min-width: 0; gap: 4px; }
       .game-card h2 { font-size: 1rem; overflow-wrap: anywhere; }
-      .game-card p { font-size: 0.78rem; overflow-wrap: anywhere; }
+      .game-card p {
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .play {
         align-self: center;
         justify-content: center;
@@ -622,12 +651,83 @@
     }
 
     @media (max-width: 320px) {
-      body { padding: 6px; }
+      body {
+        padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+      }
       .shell { padding: 10px 8px 8px; border-radius: 14px; }
       .game-card h2 { font-size: 0.92rem; }
       .game-card p { font-size: 0.74rem; }
       .play { min-width: 58px; padding: 7px 8px; font-size: 0.6rem; }
       .changelog { font-size: 0.78rem; padding: 8px 10px; }
+    }
+
+    /* Squat phone landscape: two compact columns so six ≥44px rows stay
+       reachable without horizontal overflow. Vertical scroll is allowed.
+       Width can exceed 600px (844×390), so this block restates the phone-row
+       chrome instead of depending on the portrait 600px query. */
+    @media (max-width: 900px) and (max-height: 430px) and (orientation: landscape) {
+      body {
+        align-items: stretch;
+        padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      }
+      .shell {
+        width: 100%;
+        max-width: none;
+        padding: 8px 10px 8px;
+      }
+      h1 { font-size: 1.15rem; margin-bottom: 4px; }
+      .subtitle { display: none; }
+      .masthead { margin-bottom: 6px; }
+      .games { grid-template-columns: 1fr 1fr; gap: 6px; }
+      .cover, .emoji, .game-card::after,
+      .game-card.last-played .title-row h2::after,
+      .game-card.in-progress .title-row h2::after { display: none; }
+      .game-card { min-height: 44px; border-radius: 12px; }
+      .game-card.last-played,
+      .game-card.in-progress { position: relative; }
+      .game-card.last-played::before,
+      .game-card.in-progress::before {
+        content: "";
+        position: absolute;
+        inset: auto;
+        left: 0; top: 0; bottom: 0;
+        width: 4px;
+        height: auto;
+        opacity: 1;
+        animation: none;
+        transition: none;
+        background: var(--gold);
+        background-size: auto;
+        background-position: 0 0;
+        border-radius: 12px 0 0 12px;
+        z-index: 5;
+      }
+      .game-card.in-progress::before { background: var(--accent); }
+      .body {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+      }
+      .game-info { flex: 1 1 8.5rem; min-width: 0; gap: 4px; }
+      .game-card h2 { font-size: 0.92rem; overflow-wrap: anywhere; }
+      .game-card p {
+        font-size: 0.74rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .play {
+        align-self: center;
+        margin: 0 0 0 auto;
+        min-width: 58px;
+        padding: 7px 8px;
+        font-size: 0.6rem;
+        white-space: nowrap;
+      }
+      .game-card:hover,
+      .game-card:focus-visible { transform: none; }
     }
   </style>
 </head>
@@ -638,7 +738,7 @@
       <p class="subtitle">Six games. Pick your next round.</p>
       <div class="meta-row">
         <p class="hero-badge">No sign-in • works on phone and desktop</p>
-        <button type="button" class="suite-hub-mute" id="suite-hub-mute" tabindex="-1" aria-pressed="false" aria-label="Mute suite sounds">🔊 Sound on</button>
+        <button type="button" class="suite-hub-mute" id="suite-hub-mute" aria-pressed="false" aria-label="Mute suite sounds">🔊 Sound on</button>
       </div>
     </header>
 

@@ -527,10 +527,12 @@
       position: relative;
     }
     .trick-pile.layout-seat .entry{position:absolute;margin:0}
-    .trick-pile.layout-seat .entry[data-seat="You"]{bottom:4%;left:50%;transform:translateX(-50%)}
-    .trick-pile.layout-seat .entry[data-seat="North"]{top:4%;left:50%;transform:translateX(-50%)}
-    .trick-pile.layout-seat .entry[data-seat="West"]{top:42%;left:6%;transform:translateY(-50%)}
-    .trick-pile.layout-seat .entry[data-seat="East"]{top:42%;right:6%;left:auto;transform:translateY(-50%)}
+    /* Seat centering uses the independent `translate` property so pop-in
+       (suitePop) and the winning-card transform cannot clobber position. */
+    .trick-pile.layout-seat .entry[data-seat="You"]{bottom:4%;left:50%;translate:-50% 0}
+    .trick-pile.layout-seat .entry[data-seat="North"]{top:4%;left:50%;translate:-50% 0}
+    .trick-pile.layout-seat .entry[data-seat="West"]{top:42%;left:6%;translate:0 -50%}
+    .trick-pile.layout-seat .entry[data-seat="East"]{top:42%;right:6%;left:auto;translate:0 -50%}
     .entry {
       border: 1px dashed rgba(255,215,106,.34);
       border-radius: 999px;
@@ -844,7 +846,12 @@
       .entry[data-seat] strong { font-size: 0.58rem; padding: 2px 5px; }
       .entry .ec { font-size: 0.95rem; padding-top: 4px; }
     }
-    @media (prefers-reduced-motion:reduce){.table.ts-spades-flash{animation:none}.ts-sweep-card{transition:none!important}}
+    @media (prefers-reduced-motion:reduce){
+      .table.ts-spades-flash{animation:none}
+      .ts-sweep-card{transition:none!important}
+      .entry.pop-in{animation:none}
+      .entry.winning{transform:none}
+    }
 
     /* One felt surface, with secondary controls in the table menu (phone / narrow only). */
     @media (max-width: 920px) {
@@ -908,10 +915,10 @@
     .trick-pile::before { content:'♠'; top:50%; bottom:auto; transform:translate(-50%,-50%); font-size:5rem; letter-spacing:0; }
     .trick-pile .entry:not([data-seat]) { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); padding:7px 10px; font-size:.65rem; white-space:nowrap; }
     .trick-pile.layout-seat .entry[data-seat] { width:56px; height:76px; }
-    .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 83px); bottom:auto; right:auto; left:50%; transform:translateX(-50%); }
-    .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 3px); bottom:auto; right:auto; left:50%; transform:translateX(-50%); }
-    .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 92px); transform:translateY(-50%); }
-    .trick-pile.layout-seat .entry[data-seat="East"] { top:50%; bottom:auto; right:auto; left:calc(50% + 36px); transform:translateY(-50%); }
+    .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 83px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+    .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 3px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+    .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 92px); translate:0 -50%; }
+    .trick-pile.layout-seat .entry[data-seat="East"] { top:50%; bottom:auto; right:auto; left:calc(50% + 36px); translate:0 -50%; }
     .table-caption { text-align:center; font-size:.59rem; color:#c3d9ba; padding:3px 0; height:20px; flex:none; }
     .seat-you { grid-row:3; grid-column:1/-1; border-top:1px solid #b9dec433; border-radius:0; padding:6px 6px 0; }
     .seat-you .head { height:24px; }
@@ -963,10 +970,10 @@
       .trick .name { font-size:.52rem; }
       .trick .meta { font-size:.52rem; }
       .trick-pile.layout-seat .entry[data-seat] { width:42px; height:58px; border-radius:7px; }
-      .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 68px); bottom:auto; right:auto; left:50%; transform:translateX(-50%); }
-      .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 36px); bottom:auto; right:auto; left:50%; transform:translateX(-50%); }
-      .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 76px); transform:translateY(-50%); }
-      .trick-pile.layout-seat .entry[data-seat="East"] { top:calc(50% - 6px); bottom:auto; right:auto; left:calc(50% + 34px); transform:translateY(-50%); }
+      .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 68px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+      .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 36px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+      .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 76px); translate:0 -50%; }
+      .trick-pile.layout-seat .entry[data-seat="East"] { top:calc(50% - 6px); bottom:auto; right:auto; left:calc(50% + 34px); translate:0 -50%; }
       .entry[data-seat] strong { font-size:.41rem; padding:2px 4px; top:-5px; letter-spacing:.04em; }
       .entry .ec { font-size:1.05rem; }
       .entry[data-seat]::after { font-size:.48rem; left:5px; top:5px; }
@@ -1673,12 +1680,17 @@
     // Geometry depends only on the hand's available width; resize/render work, no frame loop.
     function layoutPhoneCards() {
       if (!window.__tsPhoneHand || !window.matchMedia('(max-width: 920px)').matches) return;
-      const layout = window.__tsPhoneHand({ count: state.hands[0].length, width: el.youCards.clientWidth });
+      const width = el.youCards.clientWidth;
+      // Flex layout can report 0 width before the first paint; ResizeObserver retries.
+      if (width < 48) return;
+      const layout = window.__tsPhoneHand({ count: state.hands[0].length, width });
+      if (!layout.positions.length) return;
       el.youCards.style.setProperty('--hand-height', `${layout.height}px`);
       el.youCards.style.setProperty('--hand-card-width', `${layout.cardWidth}px`);
       el.youCards.style.setProperty('--hand-card-height', `${layout.cardHeight}px`);
       [...el.youCards.children].forEach((card, i) => {
         const pos = layout.positions[i];
+        if (!pos) return;
         card.style.setProperty('--hand-x', `${pos.x}px`);
         card.style.setProperty('--hand-y', `${pos.y}px`);
         card.style.setProperty('--hand-z', String(pos.z));

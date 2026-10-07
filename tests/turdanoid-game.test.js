@@ -61,6 +61,24 @@ function bootGame() {
   return { dom, g };
 }
 
+function bootGameWithPrefs(prefs = {}) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://localhost/TurdAnoid.html',
+    beforeParse(window) {
+      window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
+      window.requestAnimationFrame = () => 0;
+      window.cancelAnimationFrame = () => {};
+      Object.entries(prefs).forEach(([key, value]) => window.localStorage.setItem(key, value));
+    }
+  });
+  const g = dom.window.__turdanoid;
+  if (!g) {
+    throw new Error('TurdAnoid test hook (window.__turdanoid) missing');
+  }
+  return { dom, g };
+}
+
 function stepFrames(g, frames, dt = FRAME) {
   for (let i = 0; i < frames; i++) {
     g.step(dt);
@@ -580,5 +598,36 @@ describe('TurdAnoid Pages debug surface', () => {
   it('hides the test hook on file URLs', () => {
     const dom = bootAt('file:///TurdAnoid.html');
     expect(dom.window.__turdanoid).toBeUndefined();
+  });
+});
+
+describe('TurdAnoid phone chrome and suite mute', () => {
+  it('names icon buttons and keeps 44px tap targets', () => {
+    expect(html).toMatch(/id="btnSound"[^>]*aria-label="Mute sound"/);
+    expect(html).toMatch(/id="btnPause"[^>]*aria-label="Pause game"/);
+    expect(html).toMatch(/\.iconbtn\{width:44px;height:44px;min-width:44px;min-height:44px/);
+    expect(html).toContain('Space to launch');
+    expect(html).not.toMatch(/\.iconbtn\{width:34px;height:34px/);
+  });
+
+  it('honors turdsuite_muted as a master mute without dropping the game key', () => {
+    const { dom, g } = bootGameWithPrefs({ turdsuite_muted: '1' });
+    const sound = dom.window.document.getElementById('btnSound');
+    expect(g.suiteMuted()).toBe(true);
+    expect(g.soundBlocked()).toBe(true);
+    expect(sound.getAttribute('aria-label')).toBe('Unmute sound');
+    expect(sound.getAttribute('aria-pressed')).toBe('true');
+    expect(html).toContain('turdanoid_v2_sound');
+  });
+
+  it('updates the pause control name when the run pauses and resumes', () => {
+    const { dom, g } = bootGame();
+    g.startGame();
+    const pause = dom.window.document.getElementById('btnPause');
+    expect(pause.getAttribute('aria-label')).toBe('Pause game');
+    g.doPause();
+    expect(pause.getAttribute('aria-label')).toBe('Resume game');
+    g.doResume();
+    expect(pause.getAttribute('aria-label')).toBe('Pause game');
   });
 });

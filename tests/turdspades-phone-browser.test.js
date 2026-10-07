@@ -56,6 +56,39 @@ afterAll(async () => {
   }
 });
 
+async function waitForLayoutSettle(page, expectedTrick = 0) {
+  await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve()));
+  await page.waitForFunction((count) => {
+    const cards = [...document.querySelectorAll('#youCards .card')];
+    if (cards.some((card) => {
+      const box = card.getBoundingClientRect();
+      return box.width < 20 || box.height < 20;
+    })) {
+      return false;
+    }
+    const entries = [...document.querySelectorAll('#trickPile .entry[data-seat]')];
+    if (entries.length !== count) {
+      return false;
+    }
+    const rects = entries.map((node) => {
+      const box = node.getBoundingClientRect();
+      return {
+        seat: node.getAttribute('data-seat'),
+        left: Math.round(box.left),
+        top: Math.round(box.top),
+        width: box.width,
+        height: box.height
+      };
+    });
+    if (rects.some((rect) => rect.width < 20 || rect.height < 20)) {
+      return false;
+    }
+    const seats = new Set(rects.map((rect) => rect.seat));
+    const origins = new Set(rects.map((rect) => `${rect.left}:${rect.top}`));
+    return seats.size === count && origins.size === count;
+  }, expectedTrick, { timeout: 8000 });
+}
+
 async function capture(page, viewport, phase) {
   if (process.env.TURDSPADES_SCREENSHOTS === '1') {
     await page.screenshot({
@@ -255,6 +288,7 @@ async function handHitStrips(page) {
           render();
         });
         await page.clock.runFor(5000);
+        await waitForLayoutSettle(page, 0);
         await capture(page, viewport, 'bidding');
         await verifyGeometry(page, viewport, 'bidding');
         expect(await page.locator('#youCards .card').count()).toBe(13);
@@ -279,6 +313,7 @@ async function handHitStrips(page) {
           render();
         });
         await page.clock.runFor(1000);
+        await waitForLayoutSettle(page, 4);
         await verifyGeometry(page, viewport, 'mid-trick');
         expect(await page.locator('#trickPile .entry[data-seat]').count()).toBe(4);
         if (viewport.width <= 920) {

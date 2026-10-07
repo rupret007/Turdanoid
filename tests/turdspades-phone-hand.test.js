@@ -101,6 +101,7 @@ describe('TurdSpades phone hand geometry', () => {
   it('returns a stable empty hand and normalizes invalid counts and widths', () => {
     expect(layoutPhoneHand().positions).toEqual([]);
     expect(layoutPhoneHand().height).toBe(0);
+    expect(layoutPhoneHand({ count: 13, width: 0 }).positions).toEqual([]);
     expect(layoutPhoneHand({ count: -1 }).positions).toEqual([]);
     expect(layoutPhoneHand({ count: NaN }).positions).toEqual([]);
     expect(layoutPhoneHand({ count: 100 }).positions).toHaveLength(13);

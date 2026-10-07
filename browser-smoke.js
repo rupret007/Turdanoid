@@ -169,15 +169,42 @@ async function main() {
           const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
           if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
           // The badge is hidden on phones; the row edge accent must carry the cue.
+          // The accent is rendered with a ::before pseudo-element to avoid shrinking
+          // the content area and triggering flexbox wrap on tight viewports.
           const edges = await page.evaluate(() => {
-            const px = el => parseFloat(getComputedStyle(el).borderLeftWidth) || 0;
-            const plain = document.querySelector('.game-card:not(.in-progress):not(.last-played)');
-            const progress = document.querySelector('.game-card.in-progress');
-            const played = document.querySelector('.game-card[href="TurdAnoid.html"].last-played');
-            return { plain: px(plain), progress: px(progress), played: px(played) };
+            const edge = el => {
+              const before = getComputedStyle(el, '::before');
+              return {
+                visible: before.content !== 'none' && before.display !== 'none' &&
+                  before.visibility === 'visible' && Number(before.opacity) === 1 &&
+                  parseFloat(before.width) === 4 && parseFloat(before.height) >= 44,
+                color: before.backgroundColor,
+                border: getComputedStyle(el).borderLeftWidth
+              };
+            };
+            const probe = document.createElement('span');
+            document.body.append(probe);
+            const color = token => {
+              probe.style.color = `var(${token})`;
+              return getComputedStyle(probe).color;
+            };
+            const gold = color('--gold');
+            const accent = color('--accent');
+            probe.remove();
+            return [...document.querySelectorAll('.game-card')].map(card => ({
+              name: card.querySelector('h2').textContent,
+              marked: card.matches('.in-progress, .last-played'),
+              expectedColor: card.matches('.in-progress') ? accent : gold,
+              ...edge(card)
+            }));
           });
-          if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
-          if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          for (const edge of edges) {
+            if (edge.marked && (!edge.visible || edge.color !== edge.expectedColor)) {
+              fail(name, `resume edge must be visible with the correct state color: ${JSON.stringify(edge)}`);
+            }
+            if (!edge.marked && edge.visible) fail(name, `plain row must not have a resume edge: ${JSON.stringify(edge)}`);
+            if (edge.border !== '1px') fail(name, `resume edge must not consume content width: ${JSON.stringify(edge)}`);
+          }
           // A returning player with live tables gets a one-tap resume shortcut in the masthead.
           const resume = await page.evaluate(() => {
             const el = document.querySelector('.hero-badge.hero-resume');

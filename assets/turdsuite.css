@@ -547,6 +547,8 @@ body.suite-no-zoom label {
 .suite-hub-mute {
   margin: 0;
   padding: 7px 13px;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 999px;
   font: 700 0.76rem/1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0.04em;
@@ -560,7 +562,8 @@ body.suite-no-zoom label {
 .suite-hub-mute:hover,
 .suite-hub-mute:focus-visible {
   border-color: rgba(158, 255, 200, 0.65);
-  outline: none;
+  outline: 2px solid var(--suite-accent);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px rgba(158, 255, 200, 0.25);
 }
 .suite-hub-stat {

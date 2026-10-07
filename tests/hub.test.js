@@ -67,9 +67,27 @@ describe('six-game hub last-played mark', () => {
     const phone = hubHtml.slice(hubHtml.indexOf('@media (max-width: 600px)'));
     // The badge that marks Continue / Play again is display:none on phones...
     expect(phone).toMatch(/\.game-card\.in-progress \.title-row h2::after \{ display: none/);
-    // ...so the row itself must carry a visible cue in that same block.
-    expect(phone).toMatch(/\.game-card\.last-played,\s*\.game-card\.in-progress \{\s*border-left:/);
-    expect(phone).toMatch(/\.game-card\.in-progress \{\s*border-left-color: var\(--accent\)/);
+    // ...so the row itself must carry a visible cue via a ::before pseudo-element
+    // (using a pseudo avoids shrinking the content area and triggering flexbox wrap).
+    expect(phone).toMatch(/\.game-card\.last-played::before,\s*\.game-card\.in-progress::before \{/);
+    expect(phone).toMatch(/transition:\s*none/);
+    expect(phone).toMatch(/\.game-card\.in-progress::before \{\s*background: var\(--accent\)/);
+    expect(phone).toMatch(/\.game-card p \{[\s\S]*?white-space:\s*nowrap[\s\S]*?text-overflow:\s*ellipsis/);
+    expect(phone).toMatch(/\.game-card \{ min-height: 44px/);
+  });
+
+  it('keeps the hub mute control on the keyboard tab order', () => {
+    expect(hubHtml).toMatch(/id="suite-hub-mute"/);
+    expect(hubHtml).not.toMatch(/id="suite-hub-mute"[^>]*tabindex="-1"/);
+  });
+
+  it('uses a two-column phone landscape grid so six rows stay reachable', () => {
+    expect(hubHtml).toMatch(/@media \(max-width: 900px\) and \(max-height: 430px\) and \(orientation: landscape\)/);
+    const landscape = hubHtml.slice(hubHtml.indexOf('orientation: landscape)'));
+    expect(landscape).toMatch(/grid-template-columns: 1fr 1fr/);
+    expect(landscape).toMatch(/min-height: 44px/);
+    expect(landscape).toMatch(/\.game-card\.last-played::before,\s*\.game-card\.in-progress::before \{/);
+    expect(landscape).toMatch(/text-overflow:\s*ellipsis/);
   });
 
   it(
@@ -238,6 +256,9 @@ describe('hub door extras (1000x shared)', () => {
     expect(hubHtml).toContain('id="suite-hub-mute"');
     expect(hubHtml).toContain('id="hub-games"');
     expect(hubHtml).toContain('suite-hub-mute');
+    const css = readFileSync(join(root, 'assets/turdsuite.css'), 'utf8');
+    expect(css).toMatch(/\.suite-hub-mute \{[\s\S]*?min-height: 44px/);
+    expect(css).toMatch(/\.suite-hub-mute:hover,\s*\.suite-hub-mute:focus-visible \{[\s\S]*?outline: 2px solid/);
   });
 
   it('suite runtime exposes lazy audio/fx loaders', () => {

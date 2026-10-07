@@ -67,7 +67,7 @@
   .hud .col{display:flex;flex-direction:column;gap:1px;padding:6px 12px 7px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)),rgba(4,16,12,.58);border:1px solid rgba(158,255,200,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);min-width:74px}
   .hud .lbl{font-size:.72em;opacity:.6;letter-spacing:.2em}
   .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 18px rgba(158,255,200,.45),0 2px 6px rgba(0,0,0,.7);font-variant-numeric:tabular-nums}
-  .hud .right{text-align:right;margin-right:84px}
+  .hud .right{text-align:right;margin-right:104px}
   .hud .right .val{color:var(--gold);text-shadow:0 0 18px rgba(255,215,106,.45),0 2px 6px rgba(0,0,0,.7)}
   .hud .center{text-align:center}
   .hud .center .val{color:var(--hot);text-shadow:0 0 18px rgba(255,157,116,.5),0 2px 6px rgba(0,0,0,.7)}
@@ -95,7 +95,7 @@
 
   /* Buttons row */
   .topbtns{position:absolute;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;gap:6px;z-index:5}
-  .iconbtn{width:36px;height:36px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(4,16,12,.6);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .15s,border-color .15s}
+  .iconbtn{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(4,16,12,.6);border:1px solid rgba(158,255,200,.35);color:var(--ink);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);transition:transform .15s,border-color .15s}
   .iconbtn:hover{border-color:rgba(158,255,200,.6)}
   .iconbtn:active{transform:scale(.92)}
   .iconbtn:focus-visible,.overlay button:focus-visible,#btnCoachNext:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
@@ -163,12 +163,12 @@
     .hud .col{padding:5px 8px 6px;min-width:0;border-color:rgba(158,255,200,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 20px rgba(0,0,0,.5)}
     .hud .lbl{text-shadow:0 1px 4px #000}
     .hud .val{font-size:1.35em;text-shadow:0 0 14px rgba(158,255,200,.5),0 2px 8px #000}
-    .hud .right{margin-right:72px}
+    .hud .right{margin-right:100px}
     .topbtns{gap:4px}
-    .iconbtn{width:34px;height:34px;font-size:16px}
+    .iconbtn{width:44px;height:44px;font-size:16px}
   }
   @media (max-width:360px){
-    .hud .right{margin-right:68px}
+    .hud .right{margin-right:96px}
     .hud .center .val{font-size:1.2em}
   }
   @media (prefers-reduced-motion:reduce){
@@ -197,7 +197,7 @@
       </div>
     </aside>
     <div id="playShell">
-    <canvas id="game"></canvas>
+    <canvas id="game" role="img" tabindex="0" aria-label="TurdAnoid playfield. Arrow keys or A and D move the seat. Space to launch. P to pause."></canvas>
 
     <div class="hud" aria-hidden="true">
       <div class="col"><span class="lbl">Score</span><span class="val" id="hudScore">0</span></div>
@@ -206,8 +206,8 @@
     </div>
 
     <div class="topbtns">
-      <button class="iconbtn" id="btnSound" title="Sound">🔊</button>
-      <button class="iconbtn" id="btnPause" title="Pause">⏸</button>
+      <button class="iconbtn" id="btnSound" type="button" title="Sound" aria-label="Mute sound" aria-pressed="false">🔊</button>
+      <button class="iconbtn" id="btnPause" type="button" title="Pause" aria-label="Pause game">⏸</button>
     </div>
 
     <div id="combo"></div>
@@ -336,6 +336,13 @@ const BOSS_BEST_KEY = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss.BOSS_
 let best = parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);
 let bossBest = parseInt(localStorage.getItem(BOSS_BEST_KEY)||'0',10);
 let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
+function suiteMuted(){
+  try {
+    if (window.Suite && typeof Suite.isMuted === 'function') return !!Suite.isMuted();
+    return localStorage.getItem('turdsuite_muted') === '1';
+  } catch (e) { return false; }
+}
+function soundBlocked(){ return !soundOn || suiteMuted(); }
 let ambientOn = localStorage.getItem(AMBIENT_KEY) === '1';
 let hapticOn = localStorage.getItem(HAPTIC_KEY) !== '0';
 let gameMode = 'classic';
@@ -455,7 +462,7 @@ const TITLE_QUIPS = [
 let actx = null;
 function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
 function beep(freq=440, dur=0.08, type='square', vol=0.06, slide=0){
-  if(!soundOn) return;
+  if(soundBlocked()) return;
   const a = audio(); if(!a) return;
   try{
     const o = a.createOscillator(), g = a.createGain();
@@ -468,7 +475,7 @@ function beep(freq=440, dur=0.08, type='square', vol=0.06, slide=0){
   }catch(e){}
 }
 function fart(){
-  if(!soundOn) return;
+  if(soundBlocked()) return;
   const a = audio(); if(!a) return;
   try{
     const o=a.createOscillator(), g=a.createGain(), lfo=a.createOscillator(), lg=a.createGain();
@@ -491,7 +498,7 @@ function stopAmbient(){
   }catch(e){ ambientNodes = null; }
 }
 function startAmbient(){
-  if(!soundOn || !ambientOn) return;
+  if(soundBlocked() || !ambientOn) return;
   const a = audio(); if(!a) return;
   stopAmbient();
   try{
@@ -507,7 +514,7 @@ function startAmbient(){
   }catch(e){}
 }
 function playProfile(name){
-  if(!soundOn) return;
+  if(soundBlocked()) return;
   if(TAUDIO){
     const p = TAUDIO.sfxProfile(name);
     beep(p.freq, p.dur, p.type, p.vol, p.slide || 0);
@@ -546,7 +553,17 @@ function announce(msg){
 const tTitle=$('titleScreen'), tPause=$('pauseScreen'), tHow=$('howScreen'), tEnd=$('endScreen'), tClearTally=$('clearTally');
 const elTallyLines = $('tallyLines');
 const btnSound=$('btnSound'), btnPause=$('btnPause');
-btnSound.textContent = soundOn ? '🔊' : '🔇';
+function syncSoundButton(){
+  const muted = soundBlocked();
+  btnSound.textContent = muted ? '🔇' : '🔊';
+  btnSound.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
+  btnSound.setAttribute('aria-pressed', muted ? 'true' : 'false');
+}
+function syncPauseButton(){
+  btnPause.setAttribute('aria-label', state==='paused' ? 'Resume game' : 'Pause game');
+}
+syncSoundButton();
+syncPauseButton();
 
 /* ---- Resize ---- */
 function resize(){
@@ -1077,10 +1094,19 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) handleWi
 
 btnLaunch.addEventListener('click', e=>{ e.stopPropagation(); if(waitingLaunch) launch(); });
 btnSound.addEventListener('click', ()=>{
-  soundOn=!soundOn;
+  const muted = soundBlocked();
+  if(muted){
+    soundOn = true;
+    try {
+      if (window.Suite && typeof Suite.setMuted === 'function') Suite.setMuted(false);
+      else localStorage.setItem('turdsuite_muted', '0');
+    } catch (e) {}
+  } else {
+    soundOn = false;
+  }
   localStorage.setItem(SOUND_KEY, soundOn?'1':'0');
-  btnSound.textContent = soundOn?'🔊':'🔇';
-  if(soundOn){ sfx.power(); startAmbient(); }
+  syncSoundButton();
+  if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
 });
 btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
@@ -1181,7 +1207,7 @@ function beginRun(){
 }
 function showOverlay(el){ el.classList.add('show'); }
 function hideOverlay(el){ el.classList.remove('show'); }
-function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); }
+function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); syncPauseButton(); }
 function doResume(){
   if(state!=='paused') return;
   state='playing';
@@ -1190,6 +1216,7 @@ function doResume(){
   // freeze rAF, and the first playing frame must not inherit that gap.
   lastTime = performance.now();
   hideOverlay(tPause);
+  syncPauseButton();
 }
 function cancelLevelTransition(){
   if(levelTimeoutId){ clearTimeout(levelTimeoutId); levelTimeoutId = 0; }
@@ -2946,7 +2973,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     startGame, step, newLevel, quitToMenu, doPause, doResume,
     applyPower, spawnMulti, handleWindowBlur, pointerMove, launch, skipClearTally,
     qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers,
-    beginClearTally, gameOver,
+    beginClearTally, gameOver, suiteMuted, soundBlocked, beep,
     get state(){ return state; },
     get score(){ return score; },
     set score(v){ score = v; },
