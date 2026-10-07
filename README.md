@@ -78,6 +78,6 @@ CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull r
 - Draft PR #41. Do not merge, undraft, or point Pages at this branch from this pass.
 - Rules and save-key shapes stay compatible with the `b3821b4` / `main` pin.
 - Lane notes: `docs/1000x/*.md`. Curated before/after shots: `docs/1000x/screenshots/`.
-- Game rules: `RULES.md`.
+- Game rules: `RULES.md` (blackjack section heading is **Turdjack**, matching `turdjack.html` and storage keys; the hub card is Crapjack 21).
 
 Vanilla HTML + JS. No bundler.
