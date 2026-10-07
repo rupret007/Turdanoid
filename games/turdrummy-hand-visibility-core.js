@@ -6,15 +6,18 @@
   const CORNER_INDEX_WIDTH = 16;
   const CORNER_INDEX_HEIGHT = 26;
 
-  /** Minimum horizontal fan step so each card's top-left index clears the card to its left (with z-index stacking). */
-  function minFanStepPx(cardWidth) {
+  /** Minimum horizontal fan step so each card's top-left index clears the card to its left (with z-index stacking).
+   *  `extraPx` covers face inset (card padding) so the 16×26 audit box, which is
+   *  measured from `.card-face`, still sits on this card. */
+  function minFanStepPx(cardWidth, extraPx) {
     const w = Math.max(0, Number(cardWidth) || 0);
-    return Math.min(w, CORNER_INDEX_WIDTH);
+    const extra = Math.max(0, Number(extraPx) || 0);
+    return Math.min(w, CORNER_INDEX_WIDTH + extra);
   }
 
-  function minFanStepRatio(cardWidth) {
+  function minFanStepRatio(cardWidth, extraPx) {
     const w = Math.max(1, Number(cardWidth) || 1);
-    return minFanStepPx(w) / w;
+    return minFanStepPx(w, extraPx) / w;
   }
 
   /**
