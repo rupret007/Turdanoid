@@ -1,5 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { chromium, devices } from 'playwright';
 import { validEightsSnapshot, validJackSnapshot, validRummySnapshot, validSpadesSnapshot } from './tests/continue-fixtures.js';
+
+const crapjackR7ShotDir = path.join(process.cwd(), 'conductor/reviews/turdanoid-1000x/r7/crapjack');
 
 const baseUrl = process.argv[2] || 'http://127.0.0.1:8123';
 // Default to the Edge channel (Windows dev workflow). Set PLAYWRIGHT_CHANNEL=""
@@ -165,15 +169,42 @@ async function main() {
           const arcade = await page.locator('.game-card[href="TurdAnoid.html"] .play').textContent();
           if (!arcade.includes('Play again')) fail(name, 'arcade last-played must remain Play again');
           // The badge is hidden on phones; the row edge accent must carry the cue.
+          // The accent is rendered with a ::before pseudo-element to avoid shrinking
+          // the content area and triggering flexbox wrap on tight viewports.
           const edges = await page.evaluate(() => {
-            const px = el => parseFloat(getComputedStyle(el).borderLeftWidth) || 0;
-            const plain = document.querySelector('.game-card:not(.in-progress):not(.last-played)');
-            const progress = document.querySelector('.game-card.in-progress');
-            const played = document.querySelector('.game-card[href="TurdAnoid.html"].last-played');
-            return { plain: px(plain), progress: px(progress), played: px(played) };
+            const edge = el => {
+              const before = getComputedStyle(el, '::before');
+              return {
+                visible: before.content !== 'none' && before.display !== 'none' &&
+                  before.visibility === 'visible' && Number(before.opacity) === 1 &&
+                  parseFloat(before.width) === 4 && parseFloat(before.height) >= 44,
+                color: before.backgroundColor,
+                border: getComputedStyle(el).borderLeftWidth
+              };
+            };
+            const probe = document.createElement('span');
+            document.body.append(probe);
+            const color = token => {
+              probe.style.color = `var(${token})`;
+              return getComputedStyle(probe).color;
+            };
+            const gold = color('--gold');
+            const accent = color('--accent');
+            probe.remove();
+            return [...document.querySelectorAll('.game-card')].map(card => ({
+              name: card.querySelector('h2').textContent,
+              marked: card.matches('.in-progress, .last-played'),
+              expectedColor: card.matches('.in-progress') ? accent : gold,
+              ...edge(card)
+            }));
           });
-          if (!(edges.progress > edges.plain)) fail(name, `an in-progress row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
-          if (!(edges.played > edges.plain)) fail(name, `a last-played row needs a visible edge accent, saw ${JSON.stringify(edges)}`);
+          for (const edge of edges) {
+            if (edge.marked && (!edge.visible || edge.color !== edge.expectedColor)) {
+              fail(name, `resume edge must be visible with the correct state color: ${JSON.stringify(edge)}`);
+            }
+            if (!edge.marked && edge.visible) fail(name, `plain row must not have a resume edge: ${JSON.stringify(edge)}`);
+            if (edge.border !== '1px') fail(name, `resume edge must not consume content width: ${JSON.stringify(edge)}`);
+          }
           // A returning player with live tables gets a one-tap resume shortcut in the masthead.
           const resume = await page.evaluate(() => {
             const el = document.querySelector('.hero-badge.hero-resume');
@@ -198,10 +229,15 @@ async function main() {
     await runCheck(browser, 'hub-keyboard-launch', '', {
       actions: async page => {
         const links = await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
-        for (const href of links) {
+        for (let i = 0; i < 24; i++) {
+          const onFirst = await page.evaluate(() => document.activeElement?.classList?.contains('game-card'));
+          if (onFirst) break;
           await page.keyboard.press('Tab');
+        }
+        for (const href of links) {
           const focused = await page.evaluate(() => document.activeElement?.getAttribute('href'));
           if (focused !== href) fail('hub-keyboard-launch', `expected ${href} in keyboard order, saw ${focused}`);
+          if (href !== links[links.length - 1]) await page.keyboard.press('Tab');
         }
         await Promise.all([
           page.waitForURL(`${baseUrl}/turdspades.html`),
@@ -676,16 +712,23 @@ async function main() {
         await page.evaluate(() => { stopLoop(); tetromino.col = 4; });
         const left = await page.locator('[data-action="left"]').boundingBox();
         await page.mouse.move(left.x + left.width / 2, left.y + left.height / 2);
-        await page.mouse.down();
-        const firstCol = await page.evaluate(() => tetromino.col);
+        // Measure the 70ms window inside the browser: automation round trips
+        // under CPU contention can otherwise exceed the unchanged 148ms DAS.
+        const waiting = await page.evaluate(async () => {
+          document.querySelector('[data-action="left"]').dispatchEvent(new PointerEvent('pointerdown', {
+            bubbles: true, cancelable: true, pointerType: 'touch', pointerId: 1
+          }));
+          const firstCol = tetromino.col;
+          await new Promise(resolve => setTimeout(resolve, 70));
+          return { firstCol, col: tetromino.col, pending: holdDelayTimeout !== null, repeating: holdInterval !== null };
+        });
+        const firstCol = waiting.firstCol;
         if (firstCol !== 3) fail('turdtris-held-input-pause', 'press must move exactly once immediately');
-        await page.waitForTimeout(70);
-        const waiting = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout !== null, repeating: holdInterval !== null }));
         if (waiting.col !== firstCol || !waiting.pending || waiting.repeating) {
           fail('turdtris-held-input-pause', `hold must wait before repeating: ${JSON.stringify(waiting)}`);
         }
         await page.waitForFunction(col => holdInterval !== null && tetromino.col < col, firstCol);
-        await page.mouse.up();
+        await page.dispatchEvent('#mobileControls', 'pointerup', { pointerType: 'touch', pointerId: 1 });
         const released = await page.evaluate(() => ({ col: tetromino.col, pending: holdDelayTimeout, repeating: holdInterval }));
         await page.waitForTimeout(220);
         if (released.pending !== null || released.repeating !== null || await page.evaluate(() => tetromino.col) !== released.col) {
@@ -1028,6 +1071,94 @@ async function main() {
       }
     });
 
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      const vpName = `turdjack-play-viewport-${viewport.width}x${viewport.height}`;
+      await runCheck(browser, vpName, 'turdjack.html', {
+        context: { viewport },
+        actions: async (page) => {
+          fs.mkdirSync(crapjackR7ShotDir, { recursive: true });
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(200);
+          await page.evaluate(() => {
+            createShoe(4);
+            const pull = (rank, suit) => {
+              const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+              return shoe.splice(index, 1)[0];
+            };
+            const hole = pull('K', 'S');
+            const playerTwo = pull('9', 'D');
+            const dealerUp = pull('5', 'H');
+            const playerOne = pull('2', 'C');
+            shoe = shoe.concat([hole, playerTwo, dealerUp, playerOne]);
+            bankroll = 1000;
+            currentBet = 20;
+            lastBet = 20;
+            startRound();
+          });
+          await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 4000 });
+          await page.waitForFunction(() => {
+            const d = document.getElementById('dealerTotalBadge');
+            const p = document.getElementById('playerTotalBadge');
+            return d && p && d.getBoundingClientRect().height > 4 && p.getBoundingClientRect().height > 4;
+          }, undefined, { timeout: 5000 });
+          await page.waitForTimeout(200);
+          const layout = await page.evaluate(() => {
+            const slack = 2;
+            const inViewport = (el) => {
+              if (!el) return false;
+              const style = getComputedStyle(el);
+              if (style.display === 'none' || style.visibility === 'hidden') return false;
+              const rect = el.getBoundingClientRect();
+              if (rect.width < 1 || rect.height < 1) return false;
+              return (
+                rect.top >= -slack &&
+                rect.left >= -slack &&
+                rect.bottom <= window.innerHeight + slack &&
+                rect.right <= window.innerWidth + slack
+              );
+            };
+            const dealerCards = document.getElementById('dealerCards');
+            const playerCards = document.getElementById('playerCards');
+            const dealerBadge = document.getElementById('dealerTotalBadge');
+            const playerBadge = document.getElementById('playerTotalBadge');
+            const hitBtn = document.querySelector('[data-mobile-action="hit"]');
+            const pit = document.getElementById('mobilePit');
+            return {
+              tableFirst: document.body.classList.contains('jack-table-first'),
+              scrollWidth: document.documentElement.scrollWidth,
+              width: window.innerWidth,
+              checks: {
+                dealerCards: inViewport(dealerCards),
+                playerCards: inViewport(playerCards),
+                dealerBadge: inViewport(dealerBadge),
+                playerBadge: inViewport(playerBadge),
+                hitBtn: inViewport(hitBtn),
+                pit: inViewport(pit)
+              }
+            };
+          });
+          await page.screenshot({
+            path: path.join(crapjackR7ShotDir, `play-${viewport.width}x${viewport.height}.png`),
+            fullPage: false
+          });
+          if (layout.scrollWidth > layout.width + 1) {
+            fail(vpName, `horizontal scroll ${layout.scrollWidth} > ${layout.width}`);
+          }
+          if (viewport.width <= 390 && !layout.tableFirst) {
+            fail(vpName, 'live hand should enable jack-table-first chrome on phone widths');
+          }
+          const missing = Object.entries(layout.checks).filter(([, ok]) => !ok).map(([key]) => key);
+          if (missing.length) {
+            fail(vpName, `play controls escaped viewport: ${missing.join(', ')} (${JSON.stringify(layout.checks)})`);
+          }
+        }
+      });
+    }
+
     await runCheck(browser, 'turdjack-mobile', 'turdjack.html', {
       mobile: true,
       actions: async (page) => {
@@ -1054,6 +1185,99 @@ async function main() {
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
         if (!(await resetButton.isDisabled())) fail('turdjack-mobile', 'reset control should stay disabled during an active hand');
+      }
+    });
+
+    await runCheck(browser, 'turdjack-confirm-modals', 'turdjack.html', {
+      actions: async (page, getDialogCount) => {
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(150);
+        const dialogBaseline = getDialogCount();
+
+        await page.evaluate(() => {
+          rules = normalizeRules({ ...rules, decks: 1, allowInsurance: true });
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('K', 'S');
+          const p2 = pull('9', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('10', 'C');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 1000;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmNo').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterInsurance = await page.evaluate(() => ({
+          bankroll,
+          insuranceBets: stats.insuranceBets,
+          losses: stats.losses
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `insurance must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterInsurance.bankroll !== 900 || afterInsurance.insuranceBets !== 0 || afterInsurance.losses !== 1) {
+          fail('turdjack-confirm-modals', `declined insurance should lose to dealer BJ, saw ${JSON.stringify(afterInsurance)}`);
+        }
+
+        await page.evaluate(() => {
+          createShoe(1);
+          const pull = (rank, suit) => {
+            const index = shoe.findIndex((card) => card.rank === rank && card.suit === suit);
+            if (index < 0) throw new Error(`missing ${rank}${suit}`);
+            return shoe.splice(index, 1)[0];
+          };
+          const hole = pull('7', 'C');
+          const p2 = pull('K', 'D');
+          const up = pull('A', 'H');
+          const p1 = pull('A', 'S');
+          shoe.push(hole, p2, up, p1);
+          bankroll = 900;
+          currentBet = 100;
+          lastBet = 100;
+          roundActive = false;
+          startRound();
+        });
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForFunction(() => !roundActive, undefined, { timeout: 5000 });
+        const afterEvenMoney = await page.evaluate(() => ({
+          bankroll,
+          wins: stats.wins,
+          blackjacks: stats.blackjacks,
+          status: ui.statusText.textContent
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `even money must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterEvenMoney.bankroll !== 1000 || afterEvenMoney.wins !== 1 || afterEvenMoney.blackjacks !== 1
+          || !afterEvenMoney.status.includes('Even money')) {
+          fail('turdjack-confirm-modals', `even money accept payout wrong: ${JSON.stringify(afterEvenMoney)}`);
+        }
+
+        await page.locator('#resetStatsBtn').click();
+        await page.locator('#jackConfirmOverlay').waitFor({ state: 'visible', timeout: 4000 });
+        await page.locator('#jackConfirmYes').click();
+        await page.waitForTimeout(300);
+        const afterReset = await page.evaluate(() => ({
+          bankroll,
+          hands: stats.hands,
+          wins: stats.wins
+        }));
+        if (getDialogCount() !== dialogBaseline) {
+          fail('turdjack-confirm-modals', `reset must use in-page modal, native dialogs: ${getDialogCount() - dialogBaseline}`);
+        }
+        if (afterReset.bankroll !== 1000 || afterReset.hands !== 0 || afterReset.wins !== 0) {
+          fail('turdjack-confirm-modals', `reset accept should zero stats, saw ${JSON.stringify(afterReset)}`);
+        }
       }
     });
 
@@ -1103,6 +1327,92 @@ async function main() {
         await page.waitForTimeout(200);
         const seen = getDialogCount() - before;
         if (seen !== 1) fail('turdrummy-mobile', `expected 1 reset dialog, saw ${seen}`);
+      }
+    });
+
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 390, height: 844 }
+    ]) {
+      const name = `turdrummy-hand-layout-${viewport.width}`;
+      await runCheck(browser, name, 'turdrummy.html', {
+        context: { viewport },
+        actions: async (page) => {
+          await page.evaluate(() => {
+            if (typeof closeGuide === 'function') closeGuide();
+            document.getElementById('startRoundBtn')?.click();
+          });
+          await page.locator('#playerHand .card-button').first().waitFor({ state: 'visible', timeout: 8000 });
+          await page.evaluate(() => {
+            document.getElementById('coachSkipBtn')?.click();
+            window.TurdRummyDev?.relayoutHand?.();
+          });
+          await page.waitForTimeout(200);
+          const layout = await page.evaluate(() => {
+            const hand = document.getElementById('playerHand');
+            const drawer = document.querySelector('#tableDrawer > summary');
+            const handBox = hand?.getBoundingClientRect();
+            const drawerTop = drawer?.getBoundingClientRect().top ?? 0;
+            const gap = handBox ? drawerTop - handBox.bottom : -999;
+            const audit = window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [{ reason: 'audit missing' }] };
+            return { gap, audit, scrollY: window.scrollY };
+          });
+          if (layout.gap < 2) {
+            fail(name, `drawer header should sit below the hand fan (gap ${layout.gap}px)`);
+          }
+          if (!layout.audit.ok) {
+            fail(name, `corner index regions covered: ${JSON.stringify(layout.audit.failures)}`);
+          }
+          const mid = await page.evaluate(() => {
+            const cards = [...document.querySelectorAll('#playerHand .card-button')];
+            const pick = cards[Math.floor(cards.length / 2)] || cards[0];
+            if (pick) pick.click();
+            return window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [{ reason: 'audit missing' }] };
+          });
+          await page.waitForTimeout(100);
+          if (!mid.ok) {
+            fail(name, `selected card hid neighbour indices: ${JSON.stringify(mid.failures)}`);
+          }
+          if (layout.scrollY > 1) {
+            fail(name, `unexpected vertical scroll during play at ${viewport.width}px`);
+          }
+        }
+      });
+    }
+
+    await runCheck(browser, 'turdrummy-desktop-hand-hero', 'turdrummy.html', {
+      context: { viewport: { width: 1280, height: 800 } },
+      actions: async (page) => {
+        await page.evaluate(() => {
+          if (typeof closeGuide === 'function') closeGuide();
+          document.getElementById('startRoundBtn')?.click();
+        });
+        await page.locator('#playerHand .card-button').first().waitFor({ state: 'visible', timeout: 8000 });
+        await page.evaluate(() => {
+          document.getElementById('coachSkipBtn')?.click();
+          window.TurdRummyDev?.relayoutHand?.();
+        });
+        await page.waitForTimeout(200);
+        const desk = await page.evaluate(() => {
+          const card = document.querySelector('#playerHand .card');
+          const audit = window.TurdRummyDev?.auditHandCornerIndices?.() || { ok: false, failures: [] };
+          return {
+            cardW: card?.offsetWidth ?? 0,
+            scrollY: window.scrollY,
+            docScroll: document.documentElement.scrollHeight > window.innerHeight + 2,
+            audit
+          };
+        });
+        if (desk.cardW < 72) {
+          fail('turdrummy-desktop-hand-hero', `desktop hand cards too small (${desk.cardW}px wide)`);
+        }
+        if (!desk.audit.ok) {
+          fail('turdrummy-desktop-hand-hero', `corner indices: ${JSON.stringify(desk.audit.failures)}`);
+        }
+        if (desk.scrollY > 1) {
+          fail('turdrummy-desktop-hand-hero', 'page scrolled during play at 1280×800');
+        }
       }
     });
 

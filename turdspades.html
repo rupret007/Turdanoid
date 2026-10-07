@@ -63,7 +63,7 @@
       box-shadow: 0 30px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto auto 1fr auto;
+      grid-template-rows: auto auto auto auto 1fr auto;
       position: relative;
       isolation: isolate;
     }
@@ -127,6 +127,15 @@
     }
     .btn:active:not(:disabled), .actions a:active { transform: scale(.96); }
     .btn:disabled { opacity: .42; cursor: not-allowed; filter: saturate(.4); box-shadow: none; }
+    .btn:focus-visible, .actions a:focus-visible, .card:focus-visible, .ts-bid-chip:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 3px rgba(255,215,106,.25);
+    }
+    .ts-table-announcer {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
     /* primary: filled gradient pill */
     #playBtn, #lockBid, #quickStart {
       background: linear-gradient(180deg, #bfffdc 0%, #6fe8a8 45%, #33c07c 100%);
@@ -148,6 +157,21 @@
     }
     #newMatchBtn:hover:not(:disabled) { border-color: rgba(255,140,140,.85); box-shadow: 0 0 0 1px rgba(255,120,120,.22), 0 10px 20px rgba(0,0,0,.3); }
 
+    .ts-score-strip{
+      display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+      padding:8px 12px;border-bottom:1px solid rgba(158,255,200,.16);
+      background:linear-gradient(90deg,rgba(158,255,200,.08),transparent 40%,rgba(255,215,106,.06)),rgba(5,14,10,.88);
+      font-size:.78rem;font-weight:700;letter-spacing:.04em;
+    }
+    .ts-score-strip .us strong,.ts-score-strip .them strong{font-size:1.05rem;color:var(--gold-2);margin:0 4px}
+    .ts-score-strip .us em,.ts-score-strip .them em{font-style:normal;font-weight:600;color:var(--muted);font-size:.68rem;display:block;margin-top:2px}
+    .ts-score-strip .vs{opacity:.55;font-size:.7rem;text-transform:uppercase}
+    .ts-drawer-toggle{margin:0 12px 0;justify-self:start;min-height:40px;font-size:.72rem}
+    .stats.ts-details-drawer{
+      max-height:0;overflow:hidden;opacity:0;padding-top:0;padding-bottom:0;
+      border-bottom-width:0;transition:max-height .28s ease,opacity .2s ease,padding .2s ease;
+    }
+    .stats.ts-details-drawer.open{max-height:220px;opacity:1;padding:8px 12px;border-bottom-width:1px}
     /* ---------- HUD stat tiles (glass) ---------- */
     .stats {
       padding: 8px 12px;
@@ -225,6 +249,10 @@
     }
 
     /* ---------- the felt table + wooden rail ---------- */
+    .table.table-arena {
+      min-height: clamp(280px, 52vh, 520px);
+      overflow: hidden;
+    }
     .table {
       overflow: auto;
       padding: 10px;
@@ -262,6 +290,49 @@
       position: relative;
       transition: box-shadow .25s ease, border-color .25s ease;
     }
+    .ts-seat-ring{
+      position:absolute;inset:-3px;border-radius:16px;pointer-events:none;opacity:0;
+      box-shadow:0 0 0 2px rgba(255,215,106,.55),0 0 28px rgba(255,215,106,.35);
+      transition:opacity .2s ease;
+    }
+    body[data-turn="you"] .seat-you .ts-seat-ring,
+    body[data-turn="bid"] .seat-you .ts-seat-ring{opacity:1;box-shadow:0 0 0 2px rgba(158,255,200,.65),0 0 30px rgba(158,255,200,.4)}
+    body[data-turn="west"] .seat-west .ts-seat-ring,
+    body[data-turn="north"] .seat-north .ts-seat-ring,
+    body[data-turn="east"] .seat-east .ts-seat-ring{opacity:1}
+    .ts-avatar{width:42px;height:42px;flex:0 0 auto;border-radius:50%;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.12)}
+    .ts-avatar svg{display:block;width:100%;height:100%}
+    .head .seat-head{display:flex;align-items:center;gap:8px;min-width:0}
+    .ts-trick-stack{
+      position:absolute;top:6px;right:8px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;
+      background:linear-gradient(180deg,#ffe9b5,#ffc857);color:#3a2a06;font-size:.68rem;font-weight:900;
+      display:grid;place-items:center;opacity:0;transform:scale(.6);transition:opacity .2s ease,transform .2s ease;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+    }
+    .ts-trick-stack.show{opacity:1;transform:scale(1)}
+    .partner-bid-bubble{
+      grid-column:1/-1;font-size:.72rem;color:#ffe9bf;padding:4px 8px;border-radius:10px;
+      background:rgba(0,0,0,.25);border:1px solid rgba(255,215,106,.25);display:none;
+    }
+    .partner-bid-bubble.show{display:block}
+    #bidExpectedHint{grid-column:1/-1;font-size:.7rem;color:var(--muted);text-align:center}
+    .bid-chips{
+      grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-height:88px;overflow:auto;padding:4px 0;
+    }
+    .ts-bid-chip{
+      min-width:36px;min-height:36px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,215,106,.35);
+      background:rgba(20,14,6,.85);color:var(--gold-2);font-size:.72rem;font-weight:800;cursor:pointer;
+    }
+    .ts-bid-chip.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,215,106,.25),0 0 16px rgba(255,215,106,.2)}
+    .ts-bid-chip.nil-chip.active{border-color:#ff5c93;color:#ffdce8}
+    .ts-ai-select{font-size:.72rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(158,255,200,.35);background:rgba(8,22,18,.9);color:var(--ink)}
+    .ts-contract-banner{
+      position:absolute;left:50%;top:10px;transform:translate(-50%,0) scale(.96);z-index:5;padding:8px 14px;border-radius:12px;
+      font-weight:900;font-size:clamp(.62rem,2.8vw,.78rem);letter-spacing:.06em;text-transform:uppercase;color:#ffe9bf;
+      background:rgba(8,22,18,.92);border:1px solid rgba(255,215,106,.45);pointer-events:none;opacity:0;transition:opacity .25s ease,transform .3s ease;
+      max-width:min(94%,360px);text-align:center;line-height:1.25;
+    }
+    .ts-contract-banner.show{opacity:1;transform:translate(-50%,0) scale(1)}
     .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
     .name { color: var(--accent); font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; display: flex; align-items: center; gap: 6px; }
     .name::before { font-size: .95rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
@@ -286,12 +357,18 @@
       grid-template-columns: minmax(150px,1.05fr) minmax(240px,1.3fr) minmax(150px,1.05fr);
       gap: 10px;
     }
-    .backs { display: flex; flex-wrap: wrap; gap: 0; padding: 4px 2px 2px 2px; min-height: 46px; align-content: center; position: relative; z-index: 1; }
-    .backs .back + .back { margin-left: -11px; }
+    .backs { display: flex; flex-wrap: nowrap; gap: 0; padding: 8px 2px 2px 2px; min-height: 52px; align-content: center; justify-content: center; position: relative; z-index: 1; perspective: 600px; }
+    .backs .back { transform: rotate(var(--fan-r,0deg)) translateY(var(--fan-y,0)); transform-origin: center bottom; }
+    .backs .back + .back { margin-left: -14px; }
     .seat-north .backs { justify-content: center; }
     .seat-west .backs { justify-content: flex-start; }
     .seat-east .backs { justify-content: flex-end; }
-    .cards { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 2px 4px 2px; }
+    .cards { display: flex; flex-wrap: nowrap; justify-content: center; gap: 0; padding: 14px 4px 6px 4px; perspective: 800px; min-height: 100px; }
+    .cards .card{
+      transform: rotate(var(--fan-r,0deg)) translateY(var(--fan-y,0));
+      transform-origin: center bottom;margin-left:-10px;
+    }
+    .cards .card:first-child{margin-left:0}
 
     /* seat glow for whose turn it is */
     body[data-turn="you"] .seat-you, body[data-turn="bid"] .seat-you {
@@ -445,16 +522,17 @@
       font-size:.78rem;font-weight:900;letter-spacing:.5em;color:rgba(255,255,255,.07);pointer-events:none;white-space:nowrap;
     }
     .trick-pile {
-      min-height: 104px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px 12px;
-      justify-content: center;
-      align-content: center;
-      align-items: center;
+      min-height: 140px;
       padding: 12px 4px 8px;
       position: relative;
     }
+    .trick-pile.layout-seat .entry{position:absolute;margin:0}
+    /* Seat centering uses the independent `translate` property so pop-in
+       (suitePop) and the winning-card transform cannot clobber position. */
+    .trick-pile.layout-seat .entry[data-seat="You"]{bottom:4%;left:50%;translate:-50% 0}
+    .trick-pile.layout-seat .entry[data-seat="North"]{top:4%;left:50%;translate:-50% 0}
+    .trick-pile.layout-seat .entry[data-seat="West"]{top:42%;left:6%;translate:0 -50%}
+    .trick-pile.layout-seat .entry[data-seat="East"]{top:42%;right:6%;left:auto;translate:0 -50%}
     .entry {
       border: 1px dashed rgba(255,215,106,.34);
       border-radius: 999px;
@@ -536,9 +614,9 @@
         rgba(46,34,10,.74);
       padding: 8px 16px;
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: 1fr;
       align-items: center;
-      gap: 8px 16px;
+      gap: 6px;
       position: relative;
       overflow: hidden;
       isolation: isolate;
@@ -635,6 +713,15 @@
     .guide-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; position: relative; }
     .guide-actions .btn { min-height: 44px; padding: 10px 16px; }
 
+    @media (min-width: 921px) {
+      .app { grid-template-rows: auto auto auto 1fr auto; max-height: calc(100vh - 16px); }
+      .table.table-arena {
+        min-height: clamp(340px, 58vh, 580px);
+        margin: 10px 14px;
+      }
+      .message { margin: 0 14px; }
+      .ts-score-strip { margin: 0 14px; }
+    }
     @media (max-width: 920px) {
       .message{padding-right:14px}
       .message::after{content:none}
@@ -654,7 +741,8 @@
       .seat-west::after, .seat-east::after { font-size: 2.4rem; bottom: 6px; }
     }
     @media (max-width: 640px) {
-      body { padding: 6px; }
+      body { padding: 6px; overflow-x: hidden; }
+      .app { overflow-x: hidden; }
       body[data-turn="bid"] { padding-bottom: 204px; }
       .app { min-height: calc(100vh - 12px); border-radius: 14px; }
       .topbar { padding: 10px; }
@@ -680,6 +768,17 @@
       body[data-turn="bid"] .ts-boss,
       body[data-turn="bid"] .ts-bubble,
       body[data-turn="bid"] .ts-bagwarn { display: none; }
+      body[data-turn="you"] .ts-bubble {
+        left: 50%; right: auto; top: max(70px, env(safe-area-inset-top) + 58px); bottom: auto;
+        transform: translateX(-50%); transform-origin: top center;
+        max-width: min(88vw, 260px); font-size: 12px;
+      }
+      body[data-turn="you"] .ts-bubble.show { transform: translateX(-50%) translateY(0) scale(1); }
+      body[data-turn="you"] .ts-boss {
+        width: 58px; height: 58px; font-size: 44px;
+        bottom: max(112px, env(safe-area-inset-bottom) + 104px);
+        right: max(6px, env(safe-area-inset-right) + 4px);
+      }
     }
     @media (prefers-reduced-motion: reduce) {
       .card.deal-in, .back.deal-in, .entry.pop-in, .guide.show .guide-card, .v.flash,
@@ -704,10 +803,212 @@
     .ts-banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
     .ts-banner.cold{color:#cdd5ff;text-shadow:0 0 22px rgba(122,230,255,.85),0 4px 12px rgba(0,0,0,.7);border-color:rgba(122,230,255,.45);box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 40px rgba(122,230,255,.25),0 16px 40px rgba(0,0,0,.5)}
 
-    .ts-bagwarn{position:fixed;left:max(12px,env(safe-area-inset-left) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9990;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(8,22,18,.9);border:1px solid rgba(158,255,200,.42);border-radius:999px;padding:8px 14px;font:700 11px/1.5 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#eff9f1;letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1);display:none}
+    .ts-bagwarn{position:fixed;left:max(12px,env(safe-area-inset-left) + 8px);bottom:max(64px,env(safe-area-inset-bottom) + 56px);z-index:9990;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),rgba(8,22,18,.9);border:1px solid rgba(158,255,200,.42);border-radius:999px;padding:8px 14px;font:700 11px/1.5 'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:#eff9f1;letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(6px);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1);display:none}
     .ts-bagwarn.show{display:block}
     .ts-bagwarn.alarm{border-color:rgba(255,90,90,.8);background:linear-gradient(180deg,rgba(255,90,90,.25),rgba(255,90,90,.08)),rgba(50,12,12,.92);color:#ffe2e2;box-shadow:0 0 0 1px rgba(255,80,80,.3),0 0 24px rgba(255,80,80,.38),0 8px 22px rgba(0,0,0,.45);animation:tsBlink 1s infinite}
     @keyframes tsBlink{0%,100%{opacity:1}50%{opacity:.55}}
+
+    .ts-sweep-layer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+    .ts-sweep-card{position:absolute;padding:6px 10px;border-radius:8px;font:800 .72rem 'Trebuchet MS',sans-serif;color:#06281a;background:linear-gradient(180deg,#fff,#e8f5ec);box-shadow:0 8px 18px rgba(0,0,0,.45);transform:translate(0,0) scale(1);opacity:1;will-change:transform,opacity}
+    .ts-fx-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+    .table.ts-spades-flash{animation:tsSpadesFlash .85s ease-out}
+    .table.ts-spades-lit{box-shadow:var(--suite-rail),inset 0 0 0 2px rgba(150,190,255,.55),inset 0 0 70px rgba(0,0,0,.35)}
+    @keyframes tsSpadesFlash{0%{filter:brightness(1)}35%{filter:brightness(1.35)}100%{filter:brightness(1)}}
+    .ts-bot-hint{position:fixed;left:50%;bottom:max(118px,env(safe-area-inset-bottom) + 108px);transform:translateX(-50%) translateY(8px);z-index:9996;max-width:min(92vw,420px);padding:10px 14px;border-radius:12px;font:600 .78rem/1.4 'Trebuchet MS',sans-serif;color:#eff9f1;background:rgba(8,22,18,.92);border:1px solid rgba(158,255,200,.45);box-shadow:0 12px 28px rgba(0,0,0,.45);opacity:0;transition:opacity .2s ease,transform .22s ease;pointer-events:none;text-align:center}
+    .ts-bot-hint.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .bid-contract{grid-column:1/-1;justify-self:center;font-size:.68rem;color:#ffe9bf;letter-spacing:.06em;text-transform:uppercase;padding:2px 0 0}
+    .bid-contract strong{color:var(--gold-2)}
+    .ts-receipt-overlay{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:rgba(3,10,7,.72);opacity:0;pointer-events:none;transition:opacity .25s ease}
+    .ts-receipt-overlay.show{opacity:1;pointer-events:auto}
+    .ts-receipt-card{max-width:min(92%,420px);padding:16px 18px;border-radius:16px;border:1px solid rgba(255,215,106,.45);background:rgba(8,22,18,.95);box-shadow:0 20px 50px rgba(0,0,0,.55)}
+    .ts-receipt-card h3{margin:0 0 10px;font-size:.9rem;color:var(--gold-2);text-transform:uppercase;letter-spacing:.08em}
+    .ts-receipt-lines{margin:0 0 12px 18px;color:var(--muted);font-size:.78rem;line-height:1.45}
+    .ts-receipt-total{font-size:1.1rem;font-weight:900;color:var(--mint)}
+    .ts-trophy{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s ease}
+    .ts-trophy.show{opacity:1}
+    .ts-trophy span{font-size:5rem;filter:drop-shadow(0 8px 24px rgba(255,215,106,.6))}
+    .ts-trophy p{margin-top:8px;font-size:1.2rem;font-weight:900;color:var(--gold-2);text-transform:uppercase;letter-spacing:.1em}
+    .ts-deal-ghost{font-size:1rem;opacity:.9}
+    @media (max-width:640px){
+      .app{grid-template-rows:auto auto auto auto minmax(0,1fr) auto}
+      .table.table-arena{min-height:0;margin:6px;padding:6px}
+      .cards .card{width:clamp(40px,10.5vw,56px);height:clamp(58px,14.8vw,82px);margin-left:-12px}
+      .bid-chips{max-height:64px}
+      .ts-score-strip{font-size:.7rem;padding:6px 8px}
+      .topbar .title p{display:none}
+    }
+    @media (max-width: 360px) {
+      .trick-pile { min-height: 118px; }
+      .trick-pile.layout-seat .entry[data-seat="North"] { top: 2%; }
+      .trick-pile.layout-seat .entry[data-seat="West"] { top: 30%; left: 3%; }
+      .trick-pile.layout-seat .entry[data-seat="East"] { top: 30%; right: 3%; }
+      .trick-pile.layout-seat .entry[data-seat="You"] { bottom: 8%; }
+      .entry[data-seat] strong { font-size: 0.58rem; padding: 2px 5px; }
+      .entry .ec { font-size: 0.95rem; padding-top: 4px; }
+    }
+    @media (prefers-reduced-motion:reduce){
+      .table.ts-spades-flash{animation:none}
+      .ts-sweep-card{transition:none!important}
+      .entry.pop-in{animation:none}
+      .entry.winning{transform:none}
+    }
+
+    /* One felt surface, with secondary controls in the table menu (phone / narrow only). */
+    @media (max-width: 920px) {
+    .app { display:flex; flex-direction:column; height:calc(100svh - 16px); min-height:0; max-height:none; }
+    .topbar { flex:none; flex-wrap:nowrap; padding:8px 14px; }
+    .title { min-width:0; }
+    .club-label { color:var(--gold); font-size:.58rem; font-weight:800; letter-spacing:.2em; text-transform:uppercase; }
+    .title h1 { letter-spacing:.02em; }
+    .title p { display:none; }
+    .table-menu { position:relative; flex:none; z-index:15; }
+    .table-menu summary { display:flex; align-items:center; min-height:44px; padding:8px 12px; border:1px solid var(--edge); border-radius:12px; background:#102d23; font-size:.75rem; font-weight:800; cursor:pointer; list-style:none; }
+    .table-menu summary::before { content:'☰'; margin-right:6px; color:var(--mint); }
+    .table-menu summary::-webkit-details-marker { display:none; }
+    .table-menu summary:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+    .table-menu .actions { position:absolute; right:0; top:calc(100% + 6px); width:270px; max-width:calc(100vw - 30px); padding:10px; display:grid; grid-template-columns:1fr 1fr; background:#0b221a; border:1px solid var(--edge); border-radius:14px; box-shadow:0 12px 30px #0009; }
+    .table-menu .actions > * { min-width:0; width:100%; margin:0; min-height:44px; }
+    .table-menu select { min-height:44px; width:100%; }
+    .ts-score-strip { flex:none; display:grid; grid-template-columns:1fr auto 1fr; margin:0; padding:6px 14px; text-align:center; gap:8px; }
+    .ts-score-strip strong { font-variant-numeric:tabular-nums; }
+    .ts-score-strip .us, .ts-score-strip .them { display:block; }
+    .ts-score-strip .us em, .ts-score-strip .them em { font-size:.64rem; letter-spacing:0; }
+    .stats.ts-details-drawer { display:none; }
+    .stats.ts-details-drawer.open { display:grid; position:absolute; z-index:14; top:68px; left:8px; right:8px; max-height:220px; padding:12px; background:#0b221a; border:1px solid var(--edge); border-radius:12px; }
+    .message { flex:none; height:38px; margin:0; padding:7px 14px; font-size:.74rem; line-height:24px; white-space:nowrap; text-overflow:ellipsis; }
+    .message::after { display:none; }
+    .table.table-arena { flex:1; min-height:0; margin:6px 10px 8px; padding:10px; display:grid; grid-template-columns:110px minmax(0,1fr) 110px; grid-template-rows:64px minmax(0,1fr) auto; gap:4px; overflow:hidden; }
+    .table::after { display:none; }
+    .table::before { inset:6px; border-radius:18px; border-style:dashed; border-color:#c5b87555; box-shadow:inset 0 0 0 4px #ffffff04; }
+    .mid { display:contents; }
+    .zone { background:none; border:0; box-shadow:none; padding:0; min-width:0; }
+    .head { margin:0; padding:0; border:0; }
+    .name { letter-spacing:.03em; font-size:.72rem; }
+    .name::before, .seat-north::after, .seat-west::after, .seat-east::after { display:none; }
+    .name small { display:block; font-size:.58rem; color:var(--muted); font-weight:500; text-transform:none; }
+    .table > .seat-north { grid-column:2; grid-row:1; width:190px; max-width:100%; justify-self:center; display:flex; align-items:center; flex-direction:column; }
+    .seat-north .name { display:block; }
+    .seat-north .head { gap:6px; }
+    .seat-north .ts-avatar { width:34px; height:34px; }
+    .seat-north .meta, .seat-west .meta, .seat-east .meta { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
+    .seat-count { color:#e5f2dd; font-size:.61rem; white-space:nowrap; border:1px solid #b2cfb344; border-radius:12px; padding:2px 6px; background:#08251d; }
+    .seat-north .seat-count { position:absolute; top:39px; left:50%; transform:translateX(-50%); z-index:2; }
+    .seat-north .backs { min-height:0; height:24px; padding:1px 0 0; opacity:.65; }
+    .seat-north .back { width:18px; height:24px; transform:rotate(var(--fan-r,0deg)); }
+    .seat-north .back + .back { margin-left:-11px; }
+    .seat-west { grid-column:1; grid-row:2; }
+    .seat-east { grid-column:3; grid-row:2; }
+    .seat-west, .seat-east { align-self:center; justify-self:center; display:flex; flex-direction:column; align-items:center; gap:5px; z-index:2; }
+    .seat-west .head .seat-head, .seat-east .head .seat-head { flex-direction:column; gap:5px; }
+    .seat-west .name small, .seat-east .name small { display:none; }
+    .seat-west .backs, .seat-east .backs { display:none; }
+    .ts-seat-ring { inset:-5px; border-radius:30px; }
+    .ts-trick-stack { display:none; }
+    body[data-turn] .seat-you, body[data-turn] .seat-west, body[data-turn] .seat-east, body[data-turn] .seat-north { box-shadow:none; animation:none; }
+    .seat-you .ts-seat-ring { display:none; }
+    .trick { grid-column:2; grid-row:2; display:flex; flex-direction:column; background:radial-gradient(ellipse at center,#08291b66,transparent 70%); }
+    .trick::before { inset:16px -16px 20px; border-style:dashed; opacity:.55; }
+    .trick .head { justify-content:center; gap:10px; height:20px; flex:none; }
+    .trick .name { font-size:.61rem; opacity:.8; }
+    .trick .meta { font-size:.6rem; padding:0; background:none; border:0; }
+    .trick-pile { flex:1; min-height:0; width:100%; max-width:340px; align-self:center; padding:0; }
+    .trick-pile::before { content:'♠'; top:50%; bottom:auto; transform:translate(-50%,-50%); font-size:5rem; letter-spacing:0; }
+    .trick-pile .entry:not([data-seat]) { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); padding:7px 10px; font-size:.65rem; white-space:nowrap; }
+    .trick-pile.layout-seat .entry[data-seat] { width:56px; height:76px; }
+    .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 83px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+    .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 3px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+    .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 92px); translate:0 -50%; }
+    .trick-pile.layout-seat .entry[data-seat="East"] { top:50%; bottom:auto; right:auto; left:calc(50% + 36px); translate:0 -50%; }
+    .table-caption { text-align:center; font-size:.59rem; color:#c3d9ba; padding:3px 0; height:20px; flex:none; }
+    .seat-you { grid-row:3; grid-column:1/-1; border-top:1px solid #b9dec433; border-radius:0; padding:6px 6px 0; }
+    .seat-you .head { height:24px; }
+    .seat-you .ts-avatar { display:none; }
+    .seat-you .meta { font-size:.65rem; border:0; background:none; padding:0; }
+    .hand-guidance { font-size:.68rem; color:#c7dece; line-height:18px; height:18px; margin:0 0 2px; flex:none; pointer-events:none; }
+    .seat-you { display:flex; flex-direction:column; flex-shrink:0; min-height:0; overflow:visible; }
+    .cards { min-height:108px; padding:0; }
+    #youCards { position:relative; display:block; flex:none; isolation:isolate; overflow:visible; }
+    #youCards .card { position:absolute; margin:0; transform:none!important; }
+    body[data-turn="you"] #youCards .card:not(.illegal):not(.selected) { transform:none!important; box-shadow:0 0 0 1.5px rgba(158,255,200,.55), var(--suite-card-shadow), var(--suite-paper-edge); }
+    #youCards .card.selected, body[data-turn="you"] #youCards .card.selected { transform:translateY(-6px) scale(1.02)!important; z-index:30!important; }
+    .dock, body[data-turn="bid"] .dock { flex:none; position:relative; inset:auto; padding:6px 10px calc(6px + env(safe-area-inset-bottom)); border-radius:0; border:0; border-top:1px solid #9effc833; gap:4px; z-index:5; }
+    .dock-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    body[data-phase="bidding"] .dock-grid { display:none; }
+    .dock-grid .btn { padding:6px; font-size:.74rem; line-height:1.15; min-width:0; }
+    .bid-box { padding:6px 10px; gap:2px; border-radius:12px; }
+    .bid-box > .name { justify-self:center; font-size:.65rem; }
+    .bid-contract { text-transform:none; letter-spacing:0; padding:0; font-size:.66rem; text-align:center; }
+    #bidChips, #partnerBidBubble, #bidExpectedHint { display:none; }
+    .bid-controls { grid-template-columns:44px 50px 44px 84px 140px; gap:10px; padding:5px 0; }
+    .bid-v { width:44px; height:44px; justify-self:center; font-size:1.35rem; padding-bottom:6px; box-shadow:0 0 0 2px #c99d47,inset 0 1px 3px #fff9; }
+    .bid-v::before { display:none; }
+    .bid-v::after { bottom:5px; font-size:.3rem; }
+    #bidNil, #lockBid { padding:0 8px; font-size:.74rem; }
+    .ts-contract-banner, .ts-bot-hint { display:none; }
+    .ts-receipt-overlay { position:fixed; inset:0; padding:16px; box-sizing:border-box; }
+    .ts-receipt-card { width:100%; max-width:min(420px, calc(100vw - 32px)); box-sizing:border-box; max-height:calc(100svh - 32px); overflow:auto; overflow-wrap:anywhere; }
+    .ts-receipt-lines li + li { margin-top:10px; }
+    .ts-boss, .ts-bubble, .ts-bagwarn { display:none; }
+    .ts-banner { max-width:calc(100vw - 24px); white-space:normal; font-size:1rem; }
+      body, body[data-turn="bid"] { padding:6px; }
+      .app { height:calc(100svh - 12px); min-height:0; border-radius:16px; overflow:visible; }
+      .topbar { padding:5px 9px; border-radius:16px 16px 0 0; }
+      .club-label { font-size:.5rem; letter-spacing:.13em; }
+      .title h1 { font-size:1.13rem; }
+      .table-menu summary { font-size:.68rem; padding:6px 9px; }
+      .table-menu .actions .btn, .table-menu .actions a { font-size:.7rem; }
+      .ts-score-strip { padding:4px 9px; gap:6px; font-size:.68rem; }
+      .ts-score-strip .us strong, .ts-score-strip .them strong { font-size:1rem; }
+      .ts-score-strip .us em, .ts-score-strip .them em { font-size:.58rem; }
+      .message { height:32px; line-height:20px; font-size:.7rem; padding:6px 10px; }
+      .table.table-arena { margin:5px 5px 7px; padding:8px; border-radius:20px; grid-template-columns:52px minmax(0,1fr) 52px; grid-template-rows:58px minmax(0,1fr) auto; gap:2px; }
+      .seat-west .ts-avatar, .seat-east .ts-avatar { width:34px; height:34px; }
+      .seat-west .name, .seat-east .name { font-size:.62rem; }
+      .seat-count { font-size:.53rem; padding:2px 4px; }
+      .trick-pile { width:calc(100% + 12px); }
+      .trick .head { height:18px; }
+      .trick .name { font-size:.52rem; }
+      .trick .meta { font-size:.52rem; }
+      .trick-pile.layout-seat .entry[data-seat] { width:42px; height:58px; border-radius:7px; }
+      .trick-pile.layout-seat .entry[data-seat="North"] { top:calc(50% - 68px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+      .trick-pile.layout-seat .entry[data-seat="You"] { top:calc(50% + 36px); bottom:auto; right:auto; left:50%; translate:-50% 0; }
+      .trick-pile.layout-seat .entry[data-seat="West"] { top:50%; bottom:auto; right:auto; left:calc(50% - 76px); translate:0 -50%; }
+      .trick-pile.layout-seat .entry[data-seat="East"] { top:calc(50% - 6px); bottom:auto; right:auto; left:calc(50% + 34px); translate:0 -50%; }
+      .entry[data-seat] strong { font-size:.41rem; padding:2px 4px; top:-5px; letter-spacing:.04em; }
+      .entry .ec { font-size:1.05rem; }
+      .entry[data-seat]::after { font-size:.48rem; left:5px; top:5px; }
+      .table-caption { font-size:.52rem; height:18px; padding:2px 0; }
+      .seat-you { padding:4px 2px 0; }
+      .seat-you .name { font-size:.64rem; }
+      .seat-you .meta { font-size:.58rem; white-space:nowrap; }
+      .hand-guidance { font-size:.6rem; height:16px; line-height:16px; margin:0 0 2px; flex:none; pointer-events:none; z-index:0; }
+      .seat-you { display:flex; flex-direction:column; flex-shrink:0; min-height:0; overflow:visible; }
+      #youCards { position:relative; display:block; flex:none; min-height:0; height:var(--hand-height,150px); padding:0; margin:0; perspective:none; isolation:isolate; overflow:visible; z-index:1; }
+      #youCards .card { position:absolute; left:var(--hand-x,0); top:var(--hand-y,8px); width:var(--hand-card-width,54px); height:var(--hand-card-height,76px); margin:0; transform:none; z-index:var(--hand-z,1); transition:transform .12s ease,box-shadow .12s ease; will-change:auto; }
+      body[data-turn="you"] #youCards .card:not(.illegal):not(.selected) { transform:none; }
+      #youCards .card.selected, body[data-turn="you"] #youCards .card.selected { transform:translateY(-6px) scale(1.02); z-index:30; }
+      #youCards .card.illegal { transform:none; opacity:.42; z-index:1; }
+      #youCards .card .r { padding:5px 0 0 6px; font-size:.85rem; }
+      #youCards .card .r::after { font-size:.8em; }
+      #youCards .card .s { font-size:1.4rem; }
+      #youCards .card::after { display:none; }
+      .dock, body[data-turn="bid"] .dock { padding:5px 6px calc(5px + env(safe-area-inset-bottom)); border-radius:0 0 16px 16px; }
+      .dock-grid { gap:4px; }
+      .dock-grid .btn { font-size:.65rem; border-radius:10px; }
+      .bid-box { padding:5px 8px; }
+      .bid-contract { font-size:.6rem; }
+      body[data-turn="bid"] .bid-controls, .bid-controls { grid-template-columns:44px 48px 44px minmax(64px,1fr); grid-template-rows:44px 44px; gap:5px 10px; padding:4px 0 0; }
+      body[data-turn="bid"] #bidNil, #bidNil { grid-column:4; grid-row:1; }
+      body[data-turn="bid"] #lockBid, .bid-controls .btn.lock { grid-column:1/-1; grid-row:2; }
+      body[data-phase="bidding"] .trick .head, body[data-phase="bidding"] .trick-pile .entry:not([data-seat]) { display:none; }
+      body[data-phase="bidding"] .trick-pile::before { font-size:2.5rem; }
+      body[data-phase="bidding"] .seat-west, body[data-phase="bidding"] .seat-east { align-self:start; }
+      .ts-receipt-card { padding:14px; }
+      .ts-receipt-lines { font-size:.75rem; }
+    @media (prefers-reduced-motion:reduce) {
+      #youCards .card, .table-menu summary, .ts-receipt-overlay, .ts-banner { transition:none; }
+    }
+    }
 
   </style>
 </head>
@@ -735,60 +1036,87 @@
   <div class="app">
     <div class="topbar">
       <div class="title">
+        <span class="club-label">The sewer social club</span>
         <h1>&#9824; TurdSpades</h1>
         <p>Partnership spades with bag drama, smug bots, and absolutely no clean table talk.</p>
       </div>
+      <details class="table-menu" id="tsTableMenu">
+      <summary>Table menu</summary>
       <div class="actions">
         <a href="./">&#x1F3E0; Hub</a>
         <button class="btn" id="helpBtn">&#x2753; Guide</button>
         <button class="btn" id="nextRoundTop">&#x1F0CF; Next Round</button>
         <button class="btn" id="newMatchBtn">&#x21BB; New Match</button>
+        <span id="tsAiDifficulty" title="Bot difficulty"></span>
+        <button type="button" class="btn ts-drawer-toggle" id="tsDrawerToggle" aria-expanded="false" aria-controls="tsDetailsDrawer">Score details</button>
       </div>
+      </details>
     </div>
 
-    <div class="stats">
+    <div class="ts-score-strip" id="tsScoreStrip" aria-live="polite">Us vs Them</div>
+
+    <div class="stats ts-details-drawer" id="tsDetailsDrawer">
       <div class="stat"><div class="k">Round</div><div class="v" id="roundV">1</div></div>
       <div class="stat"><div class="k">Turn</div><div class="v" id="turnV">-</div></div>
       <div class="stat"><div class="k">Spades</div><div class="v" id="spadeV">Unbroken</div></div>
       <div class="stat"><div class="k">You + North</div><div class="v" id="teamAV">0 (bags 0)</div></div>
       <div class="stat"><div class="k">West + East</div><div class="v" id="teamBV">0 (bags 0)</div></div>
       <div class="stat"><div class="k">Bids/Tricks</div><div class="v" id="bidTrickV">-</div></div>
+      <p id="tsRoundSummary" style="grid-column:1/-1;font-size:.72rem;line-height:1.4"></p>
     </div>
 
-    <div class="message" id="msg">Set your bid to start the hand.</div>
+    <div class="message" id="msg" role="status" aria-live="polite">Set your bid to start the hand.</div>
 
-    <div class="table" data-motto="Bag Patrol is watching, unfortunately">
+    <div class="table table-arena" data-motto="Bag Patrol is watching, unfortunately">
+      <div class="ts-contract-banner" id="tsContractBanner" aria-hidden="true"></div>
       <div class="zone seat-north">
-        <div class="head"><div class="name">North (Partner)</div><div class="meta" id="northMeta"></div></div>
-        <div class="backs" id="northBack"></div>
+        <div class="ts-seat-ring" aria-hidden="true"></div>
+        <span class="ts-trick-stack" id="stackNorth" aria-hidden="true"></span>
+        <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarNorth" aria-hidden="true"></div><div class="name">North <small>Partner</small></div></div><div class="meta" id="northMeta"></div></div>
+        <span class="seat-count" id="northCount"></span>
+        <div class="backs fan-north" id="northBack"></div>
       </div>
 
       <div class="mid">
         <div class="zone seat-west">
-          <div class="head"><div class="name">West Bot</div><div class="meta" id="westMeta"></div></div>
-          <div class="backs" id="westBack"></div>
+          <div class="ts-seat-ring" aria-hidden="true"></div>
+          <span class="ts-trick-stack" id="stackWest" aria-hidden="true"></span>
+          <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarWest" aria-hidden="true"></div><div class="name">West <small>Bot</small></div></div><div class="meta" id="westMeta"></div></div>
+          <span class="seat-count" id="westCount"></span>
+          <div class="backs fan-west" id="westBack"></div>
         </div>
 
         <div class="zone trick">
           <div class="head"><div class="name">Current Trick</div><div class="meta" id="trickMeta">No cards</div></div>
-          <div class="trick-pile" id="trickPile"></div>
+          <div class="trick-pile layout-seat" id="trickPile"></div>
+          <div class="table-caption" id="tableCaption">Round 1 · Spades unbroken</div>
         </div>
 
         <div class="zone seat-east">
-          <div class="head"><div class="name">East Bot</div><div class="meta" id="eastMeta"></div></div>
-          <div class="backs" id="eastBack"></div>
+          <div class="ts-seat-ring" aria-hidden="true"></div>
+          <span class="ts-trick-stack" id="stackEast" aria-hidden="true"></span>
+          <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarEast" aria-hidden="true"></div><div class="name">East <small>Bot</small></div></div><div class="meta" id="eastMeta"></div></div>
+          <span class="seat-count" id="eastCount"></span>
+          <div class="backs fan-east" id="eastBack"></div>
         </div>
       </div>
 
       <div class="zone seat-you">
-        <div class="head"><div class="name">Your Hand</div><div class="meta" id="youMeta"></div></div>
-        <div class="cards" id="youCards"></div>
+        <div class="ts-seat-ring" aria-hidden="true"></div>
+        <span class="ts-trick-stack" id="stackYou" aria-hidden="true"></span>
+        <div class="head"><div class="seat-head"><div class="ts-avatar" id="avatarYou"></div><div class="name">Your Hand</div></div><div class="meta" id="youMeta"></div></div>
+        <div class="hand-guidance" id="handGuidance">Count your winners. Mind the bags.</div>
+        <div class="cards fan-you" id="youCards"></div>
       </div>
     </div>
 
     <div class="dock">
       <div class="bid-box" id="bidBox">
         <div class="name">Your Bid</div>
+        <div class="bid-contract" id="bidContractPreview" aria-hidden="true"></div>
+        <div id="bidExpectedHint" aria-live="polite"></div>
+        <div class="partner-bid-bubble" id="partnerBidBubble" role="status"></div>
+        <div class="bid-chips" id="bidChips" aria-label="Bid amount chips"></div>
         <div class="bid-controls">
           <button class="btn" id="bidDown">-</button>
           <div class="bid-v" id="bidV">4</div>
@@ -819,12 +1147,17 @@
       phase: 'bidding', scores: [0, 0], bags: [0, 0], bids: [null, null, null, null],
       tricks: [0, 0, 0, 0], hands: [[], [], [], []], trick: [],
       spadesBroken: false, selected: null, bidChoice: 4, sortMode: 'suit',
-      msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral'
+      msg: 'Set your bid to start.', summary: '', lastRoundTone: 'neutral',
+      playedThisRound: []
     };
 
     let aiTurnTimeoutId = null;
     let focusSuspendedPlay = false;
     const AI_TURN_MS = 400;
+
+    function tsEvent(name, detail) {
+      try { window.dispatchEvent(new CustomEvent('turdspades:' + name, { detail: detail || {} })); } catch (e) {}
+    }
 
     function clearAiTimer() {
       if (aiTurnTimeoutId !== null) {
@@ -848,6 +1181,16 @@
         const player = state.currentPlayer;
         const card = aiCard(player);
         if (!card) { render(); return; }
+        let nilCover = false;
+        try {
+          const partner = partnerOf(player);
+          const cover = pickNilCoverCard(legalCards(player), partner);
+          nilCover = cover && cover.id === card.id;
+        } catch (e) {}
+        try {
+          const hint = window.__tsExplainAi ? window.__tsExplainAi(player, card, { nilCover }) : '';
+          if (hint) tsEvent('bot-hint', { text: hint });
+        } catch (e) {}
         removeCard(player, card.id);
         playCard(player, card);
         render();
@@ -887,6 +1230,7 @@
       bidV: document.getElementById('bidV'), bidDown: document.getElementById('bidDown'),
       bidUp: document.getElementById('bidUp'), bidNil: document.getElementById('bidNil'),
       lockBid: document.getElementById('lockBid'),
+      bidContractPreview: document.getElementById('bidContractPreview'),
       playBtn: document.getElementById('playBtn'), sortSuit: document.getElementById('sortSuit'),
       sortRank: document.getElementById('sortRank'), nextRoundTop: document.getElementById('nextRoundTop'),
       nextRoundDock: document.getElementById('nextRoundDock'), newMatchBtn: document.getElementById('newMatchBtn'),
@@ -1047,6 +1391,7 @@
       state.selected = null;
       state.summary = '';
       state.lastRoundTone = 'neutral';
+      state.playedThisRound = [];
     }
 
     function startMatch() {
@@ -1086,6 +1431,7 @@
       setMessage(`${NAMES[state.bidTurn]} bids first.`, '');
       runBidFlow();
       render();
+      tsEvent('round-dealt', { round: state.round });
     }
 
     function aiBid(hand) {
@@ -1107,6 +1453,9 @@
         if (state.bids.every((b) => b !== null)) {
           state.phase = 'play';
           state.currentPlayer = state.leader;
+          const usContract = (state.bids[0] === 0 ? 0 : state.bids[0] || 0) + (state.bids[2] === 0 ? 0 : state.bids[2] || 0);
+          const themContract = (state.bids[1] === 0 ? 0 : state.bids[1] || 0) + (state.bids[3] === 0 ? 0 : state.bids[3] || 0);
+          tsEvent('contract-locked', { text: `Us need ${usContract} · Them need ${themContract}` });
           setMessage(`${NAMES[state.currentPlayer]} leads the first trick.`, `Race to ${TARGET}.`);
           break;
         }
@@ -1163,6 +1512,10 @@
     }
 
     function aiCard(player) {
+      if (typeof window.__tsPickAiCard === 'function') {
+        const picked = window.__tsPickAiCard(player);
+        if (picked) return picked;
+      }
       const legal = legalCards(player), partner = partnerOf(player);
       const need = (state.bids[player] + state.bids[partner]) - (state.tricks[player] + state.tricks[partner]);
       if (state.bids[player] === 0) {
@@ -1203,13 +1556,24 @@
 
     function playCard(player, card) {
       const lead = state.trick.length ? state.trick[0].card.suit : null;
+      const wasBroken = state.spadesBroken;
       if (!state.spadesBroken && card.suit === 'S') {
         if (lead) state.spadesBroken = true;
         else if (!state.hands[player].some((c) => c.id !== card.id && c.suit !== 'S')) state.spadesBroken = true;
       }
       state.trick.push({ player, card });
+      if (!Array.isArray(state.playedThisRound)) state.playedThisRound = [];
+      state.playedThisRound.push({ id: card.id, suit: card.suit, rank: card.rank });
+      tsEvent('card-played', { player, card });
+      if (state.spadesBroken && !wasBroken) tsEvent('spades-broken', {});
       if (state.trick.length < 4) { state.currentPlayer = (player + 1) % 4; return; }
       const win = winnerEntry(state.trick);
+      const completedTrick = state.trick.map((e) => ({
+        player: e.player,
+        playerName: NAMES[e.player],
+        card: e.card
+      }));
+      tsEvent('trick-complete', { winner: win.player, trick: completedTrick });
       state.tricks[win.player] += 1;
       const trickText = state.trick.map((e) => `${NAMES[e.player]} ${cardText(e.card)}`).join(' | ');
       state.trick = [];
@@ -1240,7 +1604,10 @@
             ? `${NAMES[nil.player]} made NIL (+100)`
             : `${NAMES[nil.player]} missed NIL with ${nil.tricks} trick${nil.tricks === 1 ? '' : 's'} (-100)`);
         }
-        if (result.bagPenalties) details.push(`${result.bagPenalties * 10}-bag penalty (-${result.bagPenalties * 100})`);
+        if (result.bagPenalties) {
+          details.push(`${result.bagPenalties * 10}-bag penalty (-${result.bagPenalties * 100})`);
+          if (t === 0) tsEvent('bag-penalty', { team: t, penalties: result.bagPenalties });
+        }
         details.push(`round total ${result.delta >= 0 ? '+' : ''}${result.delta}`);
         line.push(`${details.join('; ')}.`);
       }
@@ -1249,11 +1616,20 @@
       const teamBReached = state.scores[1] >= TARGET;
       const tiedAtOrAboveTarget = teamAReached && teamBReached && state.scores[0] === state.scores[1];
       state.phase = (teamAReached || teamBReached) && !tiedAtOrAboveTarget ? 'matchEnd' : 'roundEnd';
+      if (state.phase === 'matchEnd') {
+        tsEvent('match-end', { won: state.scores[0] > state.scores[1] });
+      }
       const winner = state.scores[0] > state.scores[1] ? 'You + North win the match.' : 'West + East win the match.';
       const status = state.phase === 'matchEnd'
         ? `Match complete. ${winner}`
         : (tiedAtOrAboveTarget ? 'Scores tied above target. Play a tiebreaker round.' : 'Round complete. Press Next Round.');
       setMessage(status, `${line.join(' ')} Last trick: ${lastTrick}`);
+      tsEvent('round-scored', {
+        lines: line,
+        deltaUs: deltas[0],
+        matchEnd: state.phase === 'matchEnd',
+        won: state.scores[0] > state.scores[1]
+      });
     }
 
     function runAiTurns() {
@@ -1278,6 +1654,7 @@
     }
 
     function renderCards() {
+      const focusedCard = el.youCards.contains(document.activeElement) ? document.activeElement.dataset.id : null;
       sortHand(state.hands[0]);
       const active = state.phase === 'play' && state.currentPlayer === 0;
       const legalSet = new Set(active ? legalCards(0).map((c) => c.id) : []);
@@ -1290,9 +1667,35 @@
         const faceAttrs = faceMeta.face ? ` data-face="${faceMeta.face}" data-badge="${faceMeta.badge}"` : '';
         const deal = dealAnimClass(`${state.round}:${c.id}`, 'deal-in');
         const safeId = window.Suite && Suite.escapeAttr ? Suite.escapeAttr(c.id) : String(c.id).replace(/[<>"]/g, '');
-        return `<button class="card ${red} ${illegal} ${sel} ${deal}" data-id="${safeId}" data-suit="${c.suit}" ${legal ? '' : 'disabled'}${faceAttrs} style="animation-delay:${i * 26}ms">
+        const suitName = { C: 'clubs', D: 'diamonds', H: 'hearts', S: 'spades' }[c.suit];
+        const phoneZ = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 920px)').matches
+          ? `;--hand-z:${i + 1};z-index:${i + 1}` : '';
+        return `<button type="button" class="card ${red} ${illegal} ${sel} ${deal}" data-id="${safeId}" data-suit="${c.suit}" aria-label="${rankLabel(c.rank)} of ${suitName}${illegal ? ', cannot follow suit' : ''}" aria-pressed="${!!sel}" ${legal ? '' : 'disabled'} tabindex="${legal ? '0' : '-1'}"${faceAttrs} style="animation-delay:${i * 26}ms${phoneZ}">
           <div class="r">${rankLabel(c.rank)}</div><div class="s">${SUIT_SYMBOL[c.suit]}</div><div class="r">${rankLabel(c.rank)}</div></button>`;
       }).join('');
+      layoutPhoneCards();
+      if (focusedCard) [...el.youCards.children].find((card) => card.dataset.id === focusedCard)?.focus({ preventScroll: true });
+    }
+
+    // Geometry depends only on the hand's available width; resize/render work, no frame loop.
+    function layoutPhoneCards() {
+      if (!window.__tsPhoneHand || !window.matchMedia('(max-width: 920px)').matches) return;
+      const width = el.youCards.clientWidth;
+      // Flex layout can report 0 width before the first paint; ResizeObserver retries.
+      if (width < 48) return;
+      const layout = window.__tsPhoneHand({ count: state.hands[0].length, width });
+      if (!layout.positions.length) return;
+      el.youCards.style.setProperty('--hand-height', `${layout.height}px`);
+      el.youCards.style.setProperty('--hand-card-width', `${layout.cardWidth}px`);
+      el.youCards.style.setProperty('--hand-card-height', `${layout.cardHeight}px`);
+      [...el.youCards.children].forEach((card, i) => {
+        const pos = layout.positions[i];
+        if (!pos) return;
+        card.style.setProperty('--hand-x', `${pos.x}px`);
+        card.style.setProperty('--hand-y', `${pos.y}px`);
+        card.style.setProperty('--hand-z', String(pos.z));
+        card.style.zIndex = String(pos.z);
+      });
     }
 
     function renderTrick() {
@@ -1327,6 +1730,21 @@
       el.westMeta.textContent = `${state.hands[1].length} cards | bid ${formatBid(state.bids[1])} | tricks ${state.tricks[1]}`;
       el.eastMeta.textContent = `${state.hands[3].length} cards | bid ${formatBid(state.bids[3])} | tricks ${state.tricks[3]}`;
       el.youMeta.textContent = `bid ${formatBid(state.bids[0])} | tricks ${state.tricks[0]} | ${state.hands[0].length} cards`;
+      document.body.dataset.phase = state.phase;
+      document.getElementById('tsScoreStrip').innerHTML = `<span class="us">You + North <strong>${state.scores[0]}</strong><em>${trickA} / ${bidA} tricks · ${state.bags[0]} bags</em></span><span class="vs">to ${TARGET}</span><span class="them">West + East <strong>${state.scores[1]}</strong><em>${trickB} / ${bidB} tricks · ${state.bags[1]} bags</em></span>`;
+      for (const [seat, player] of [['north', 2], ['west', 1], ['east', 3]]) {
+        const badge = document.getElementById(`${seat}Count`);
+        badge.textContent = `${state.hands[player].length} cards · ${formatBid(state.bids[player])}`;
+        badge.setAttribute('aria-label', `${NAMES[player]}: ${state.hands[player].length} cards, bid ${formatBid(state.bids[player])}, ${state.tricks[player]} tricks`);
+      }
+      document.getElementById('tableCaption').textContent = `Round ${state.round} · ♠ ${state.spadesBroken ? 'Trump is live' : 'Unbroken'}`;
+      const selected = state.hands[0].find((c) => c.id === state.selected);
+      document.getElementById('handGuidance').textContent = state.phase === 'bidding'
+        ? 'Count your winners. Mind the bags.'
+        : state.phase !== 'play' ? 'Hand settled. Ready for another flush?'
+        : selected ? `${cardText(selected)} selected · Play Selected to confirm`
+        : state.currentPlayer !== 0 ? `${NAMES[state.currentPlayer]} is thinking…`
+        : `Your turn · ${legalCards(0).length} lit cards to play`;
       // Cosmetic only: expose turn + spades-broken state to CSS, and flash stat tiles whose value changed.
       document.body.classList.toggle('spades-broken', state.spadesBroken);
       document.body.dataset.turn = state.phase === 'bidding'
@@ -1338,6 +1756,8 @@
         node.dataset.prev = node.textContent;
       }
       setMessage(state.msg, state.summary);
+      // Keep the full scoring recap available in the drawer; the table status stays concise.
+      document.getElementById('tsRoundSummary').textContent = state.summary;
     }
 
     function renderControls() {
@@ -1352,6 +1772,19 @@
       el.bidNil.disabled = !bidMode;
       el.bidNil.setAttribute('aria-pressed', String(bidMode && state.bidChoice === 0));
       el.lockBid.disabled = !bidMode;
+      if (el.bidContractPreview) {
+        if (bidMode) {
+          const northBid = state.bids[2];
+          const preview = northBid === null
+            ? 'Partner bid pending'
+            : `Team contract preview: <strong>${(state.bidChoice === 0 ? 0 : state.bidChoice) + (northBid === 0 ? 0 : northBid || 0)}</strong> tricks + bags drama`;
+          el.bidContractPreview.innerHTML = preview;
+          el.bidContractPreview.setAttribute('aria-hidden', 'false');
+        } else {
+          el.bidContractPreview.textContent = '';
+          el.bidContractPreview.setAttribute('aria-hidden', 'true');
+        }
+      }
       el.playBtn.disabled = !playMode || !state.selected;
       el.nextRoundTop.disabled = !nextMode;
       el.nextRoundDock.disabled = !nextMode;
@@ -1385,7 +1818,8 @@
         sortMode: state.sortMode,
         msg: String(state.msg || ''),
         summary: String(state.summary || ''),
-        lastRoundTone: state.lastRoundTone
+        lastRoundTone: state.lastRoundTone,
+        playedThisRound: (state.playedThisRound || []).map((c) => ({ id: c.id, suit: c.suit, rank: c.rank }))
       });
     }
 
@@ -1418,6 +1852,9 @@
       state.msg = String(snap.msg || '');
       state.summary = String(snap.summary || '');
       state.lastRoundTone = snap.lastRoundTone || 'neutral';
+      state.playedThisRound = Array.isArray(snap.playedThisRound)
+        ? snap.playedThisRound.map((c) => ({ id: c.id, suit: c.suit, rank: c.rank }))
+        : [];
       return true;
     }
 
@@ -1445,6 +1882,7 @@
       renderStats();
       renderControls();
       persistTable();
+      try { if (typeof window.__tsAfterRender === 'function') window.__tsAfterRender(); } catch (e) {}
     }
 
     function openGuide() {
@@ -1459,14 +1897,18 @@
     }
 
     function bind() {
+      const menu = document.getElementById('tsTableMenu');
+      menu.addEventListener('click', (event) => {
+        if (event.target.closest('button, a')) menu.open = false;
+      });
       el.youCards.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-id]');
         if (!btn || btn.disabled || state.phase !== 'play' || state.currentPlayer !== 0) return;
         state.selected = (state.selected === btn.dataset.id) ? null : btn.dataset.id;
         render();
       });
-      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); render(); });
-      el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); render(); });
+      el.bidDown.addEventListener('click', () => { state.bidChoice = Math.max(1, state.bidChoice - 1); tsEvent('bid-tick'); render(); });
+      el.bidUp.addEventListener('click', () => { state.bidChoice = Math.min(13, state.bidChoice + 1); tsEvent('bid-tick'); render(); });
       el.bidNil.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
         state.bidChoice = 0;
@@ -1476,6 +1918,7 @@
       el.lockBid.addEventListener('click', () => {
         if (state.phase !== 'bidding' || state.bidTurn !== 0) return;
         state.bids[0] = state.bidChoice;
+        tsEvent('bid-locked', { nil: state.bidChoice === 0, bid: state.bidChoice });
         state.bidTurn = (state.bidTurn + 1) % 4;
         runBidFlow();
         render();
@@ -1497,13 +1940,35 @@
           }
           return;
         }
+        if (e.code === 'Escape') {
+          menu.open = false;
+          document.getElementById('tsDetailsDrawer').classList.remove('open');
+          document.getElementById('tsDrawerToggle').setAttribute('aria-expanded', 'false');
+          return;
+        }
+        if (e.target.closest('summary, select, .actions')) return;
         if (e.code === 'Enter') {
           e.preventDefault();
           if (state.phase === 'bidding' && state.bidTurn === 0) el.lockBid.click();
+          else if (state.phase === 'roundEnd') el.nextRoundDock.click();
           else playSelected();
         } else if (e.code === 'KeyN' && state.phase === 'bidding' && state.bidTurn === 0) {
           e.preventDefault();
           el.bidNil.click();
+        } else if (
+          state.phase === 'play' && state.currentPlayer === 0 &&
+          (e.code === 'ArrowLeft' || e.code === 'ArrowRight')
+        ) {
+          e.preventDefault();
+          const buttons = [...el.youCards.querySelectorAll('.card:not([disabled])')];
+          if (!buttons.length) return;
+          const ids = buttons.map((b) => b.dataset.id);
+          let idx = state.selected ? ids.indexOf(state.selected) : -1;
+          if (e.code === 'ArrowRight') idx = idx < ids.length - 1 ? idx + 1 : 0;
+          else idx = idx > 0 ? idx - 1 : ids.length - 1;
+          state.selected = ids[idx];
+          render();
+          [...el.youCards.children].find((card) => card.dataset.id === state.selected)?.focus({ preventScroll: true });
         }
       });
     }
@@ -1515,12 +1980,30 @@
       else resumePlayFromBackground();
     });
 
+    window.legalCards = legalCards;
+    window.beats = beats;
+    window.winnerEntry = winnerEntry;
+    window.pickNilCoverCard = pickNilCoverCard;
+    window.low = low;
+    window.high = high;
+    window.render = render;
+
     bind();
     const restoredTable = tryRestoreTable();
     if (!restoredTable) startMatch();
     const skipGuide = restoredTable || (window.Suite && Suite.guide && Suite.guide.hasSeen('turdspades.html'));
     if (!skipGuide) openGuide();
-  
+
+    if (!/jsdom/i.test(navigator.userAgent)) {
+      import('./games/turdspades-client.js').catch(function () {});
+      import('./games/turdspades-phone-hand.js').then(({ layoutPhoneHand }) => {
+        window.__tsPhoneHand = layoutPhoneHand;
+        layoutPhoneCards();
+        const handObserver = new ResizeObserver(layoutPhoneCards);
+        handObserver.observe(el.youCards);
+        window.dispatchEvent(new Event('turdspades:phone-hand-ready'));
+      });
+    }
 
 // ============================================================
 // === TurdSpades partner mascot + bag warning ================
@@ -1571,8 +2054,8 @@
     try {
       // Pull team bags from state if available
       if (typeof state === 'undefined') return;
-      const us = state.bagsUs ?? state.bags ?? state.usBags ?? null;
-      const them = state.bagsThem ?? state.themBags ?? null;
+      const us = Array.isArray(state.bags) ? state.bags[0] : null;
+      const them = Array.isArray(state.bags) ? state.bags[1] : null;
       let html = '';
       let alarm = false;
       const tier = (n) => n >= 9 ? '🚨' : n >= 7 ? '⚠️' : null;
@@ -1591,7 +2074,11 @@
       }
     } catch (e) {}
   }
-  setInterval(updateBags, 900);
+  if (!/jsdom/i.test(navigator.userAgent)) {
+    setInterval(updateBags, 900);
+  } else {
+    updateBags();
+  }
 
   const QUIPS = {
     bid_low:    ["Soft bid. Coward.", "Bid bigger, wuss.", "Playing safe? Boring."],

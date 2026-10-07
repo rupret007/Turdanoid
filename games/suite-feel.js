@@ -10,6 +10,8 @@ export const TURDANOID_FEEL = {
   /** Snappier paddle follow while a touch is active (still lerped, not teleport). */
   pointerLerpTouchPerFrame: 0.62,
   minBallSpeed: 4.25,
+  /** Min |vy|/speed — nudge off horizontal rails that never reach bricks. */
+  minBallVerticalRatio: 0.2,
   /** Max radians from vertical for paddle english (wider = more control). */
   paddleEnglish: 1.12,
   shakeDecayPerFrame: 0.6,
@@ -24,13 +26,20 @@ export const TURDANOID_FEEL = {
 
 export const TURDTRIS_FEEL = {
   /** Stack-height ratio (see turdtris.html getDangerRatio) where HUD danger pulse starts. */
-  dangerHudPulseRatio: 0.55
+  dangerHudPulseRatio: 0.55,
+  maxClearSparks: 26,
+  maxClearSparksReduced: 8,
+  shakeDecayPerFrame: 0.86,
+  shakeEpsilon: 0.2,
+  shakeCapReduced: 0,
+  levelFlashFrames: 28
 };
 
 export const CARD_TABLE_FEEL = {
-  crapeightsAiMs: 600,
+  crapeightsAiMs: 760,
   turdrummyQuickAiMs: 180,
   turdrummyAiMs: 540,
+  /** Bot turn pacing (turdspades.html AI_TURN_MS); keep in sync. */
   turdspadesAiMs: 400
 };
 
@@ -53,6 +62,26 @@ export function clampMinBallSpeed(vx, vy, minSpeed = TURDANOID_FEEL.minBallSpeed
   }
   const f = minSpeed / sp;
   return { vx: vx * f, vy: vy * f };
+}
+
+/** Preserve speed while lifting near-horizontal ball paths (playtest softlock fix). */
+export function nudgeBallOffHorizontalRail(
+  vx,
+  vy,
+  minVerticalRatio = TURDANOID_FEEL.minBallVerticalRatio
+) {
+  const sp = Math.hypot(vx, vy);
+  if (sp < 1e-6) {
+    return { vx, vy };
+  }
+  if (Math.abs(vy) / sp >= minVerticalRatio) {
+    return { vx, vy };
+  }
+  const vySign = vy === 0 ? 1 : Math.sign(vy);
+  const newVy = vySign * sp * minVerticalRatio;
+  const vxMag = Math.sqrt(Math.max(0, sp * sp - newVy * newVy));
+  const vxSign = vx === 0 ? 1 : Math.sign(vx);
+  return { vx: vxSign * vxMag, vy: newVy };
 }
 
 export function decayShake(shake, ts, decayPerFrame = TURDANOID_FEEL.shakeDecayPerFrame) {
@@ -103,5 +132,15 @@ export function tryLightHaptic(pattern = 8) {
     }
   } catch {
     /* ignore */
+  }
+}
+
+/** @param {(query: string) => { matches: boolean } | null | undefined} matchMedia */
+export function prefersReducedMotion(matchMedia) {
+  try {
+    const mq = matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+    return !!(mq && mq.matches);
+  } catch {
+    return false;
   }
 }

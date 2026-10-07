@@ -8,7 +8,7 @@
      <body data-suite-no-back="1"> or window.SUITE_NO_BACK = true)
    - auto: ambient sewer backdrop (.suite-bg — tiles, wisps, bubbles;
      suppress with <body data-suite-no-bg="1">)
-   - auto: iPhone double-tap-zoom prevention
+   - auto: iPhone double-tap-zoom prevention (CSS touch-action; no touchend guard)
    ============================================================ */
 (function () {
   'use strict';
@@ -125,6 +125,64 @@
     return arr[Math.floor(Math.random() * arr.length)];
   };
 
+  let announcer = null;
+  function suiteImport(spec) {
+    try {
+      if (typeof window !== 'undefined' && window.__SUITE_SKIP_MODULES) {
+        return Promise.resolve(null);
+      }
+      return import(spec);
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+  }
+
+  Suite.announce = function (msg, politeness) {
+    try {
+      if (!announcer) {
+        suiteImport('./suite-a11y.js').then(function (m) {
+          if (!m) return;
+          announcer = m.createAnnouncer(document);
+          announcer.announce(msg, politeness);
+        }).catch(function () {});
+        return;
+      }
+      announcer.announce(msg, politeness);
+    } catch (e) {}
+  };
+
+  let audioEngine = null;
+  let audioPromise = null;
+  Suite.audio = function () {
+    if (audioEngine) return Promise.resolve(audioEngine);
+    if (!audioPromise) {
+      audioPromise = suiteImport('./suite-audio.js').then(function (m) {
+        if (!m) return null;
+        audioEngine = m.createSuiteAudio({
+          isMuted: function () { return muted; },
+          getContext: ctx,
+          masterVolume: 1
+        });
+        return audioEngine;
+      }).catch(function () { return null; });
+    }
+    return audioPromise;
+  };
+
+  let fxEngine = null;
+  let fxPromise = null;
+  Suite.fx = function () {
+    if (fxEngine) return Promise.resolve(fxEngine);
+    if (!fxPromise) {
+      fxPromise = suiteImport('./suite-fx.js').then(function (m) {
+        if (!m) return null;
+        fxEngine = m.createSuiteFX(document.body);
+        return fxEngine;
+      }).catch(function () { return null; });
+    }
+    return fxPromise;
+  };
+
   /** Quick pop on a stat tile or score chip after a score change. */
   Suite.bump = function (el) {
     if (!el || !el.classList) return;
@@ -155,7 +213,7 @@
       const a = document.createElement('a');
       a.className = 'suite-back-pill';
       a.href = './';
-      a.innerHTML = '<span class="arrow">←</span> Hub';
+      a.innerHTML = '<span class="arrow" aria-hidden="true">←</span><span class="suite-back-pill-label"> Hub</span>';
       a.setAttribute('aria-label', 'Back to game hub');
       document.body.appendChild(a);
     } catch (e) {}
@@ -176,25 +234,27 @@
       for (let i = 0; i < 3; i++) html += '<div class="suite-bg-wisp"></div>';
       for (let i = 0; i < 12; i++) html += '<i class="suite-bg-bubble"></i>';
       html += '<div class="suite-bg-vignette"></div>';
+      html += '<div class="suite-bg-parallax-far" aria-hidden="true"></div>';
+      html += '<div class="suite-bg-parallax-near" aria-hidden="true"></div>';
+      html += '<span class="suite-bg-critter" data-critter="rat" aria-hidden="true" style="--critter-delay:-8s;--critter-lane:22%"></span>';
+      html += '<span class="suite-bg-critter" data-critter="duck" aria-hidden="true" style="--critter-delay:-31s;--critter-lane:68%"></span>';
       bg.innerHTML = html;
       document.body.insertBefore(bg, document.body.firstChild);
+      suiteImport('./suite-ambient.js').then(function (m) {
+        if (m && typeof m.enhanceAmbientBackground === 'function') {
+          m.enhanceAmbientBackground(document);
+        }
+      }).catch(function () {});
     } catch (e) {}
   }
 
-  // ---------- iPhone niceties ----------
+  // ---------- iPhone niceties (CSS touch-action; see suite-touch.js) ----------
   function preventDoubleTapZoom() {
-    let last = 0;
-    document.addEventListener('touchend', function (e) {
-      const now = Date.now();
-      if (now - last <= 350) {
-        // Don't prevent default on form controls — typing/scrolling needs to work
-        const t = e.target;
-        if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA' && t.tagName !== 'SELECT')) {
-          e.preventDefault();
-        }
+    suiteImport('./suite-touch.js').then(function (m) {
+      if (m && typeof m.installSuiteTouchPolicy === 'function') {
+        m.installSuiteTouchPolicy(document);
       }
-      last = now;
-    }, { passive: false });
+    }).catch(function () {});
   }
 
   // ---------- Last-played + honest table continue ----------
@@ -307,6 +367,35 @@
   // table waiting. The static "no sign-in" badge reassures first-timers; a
   // player who already has a live table is better served by the shortcut.
   // Reads the same validated continue list the cards use; writes no storage.
+  function wireHubMuteToggle() {
+    try {
+      const btn = document.getElementById('suite-hub-mute');
+      if (!btn) return;
+      function sync() {
+        const on = muted;
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.setAttribute('aria-label', on ? 'Unmute suite sounds' : 'Mute suite sounds');
+        btn.textContent = on ? '🔇 Sound off' : '🔊 Sound on';
+      }
+      sync();
+      btn.addEventListener('click', function () {
+        Suite.setMuted(!muted);
+        sync();
+        if (!muted) {
+          ctx();
+          Suite.beep(520, 0.05, 'triangle', 0.04);
+        }
+      });
+    } catch (e) {}
+  }
+
+  function enhanceHubDoor() {
+    if (!isSuiteHubPage(currentPageName())) return;
+    try {
+      wireHubMuteToggle();
+    } catch (e) {}
+  }
+
   function markHubResume(continuing, last) {
     const badge = document.querySelector('.hero-badge');
     if (!badge || badge.classList.contains('hero-resume')) return;
@@ -317,7 +406,7 @@
     const name = heading ? heading.textContent.trim() : '';
     if (!name) return;
     const link = document.createElement('a');
-    link.className = badge.className + ' hero-resume';
+    link.className = badge.className + ' hero-resume hero-continue-banner';
     link.setAttribute('href', target);
     link.textContent = '↩ Continue ' + name;
     link.setAttribute('aria-label', 'Continue your ' + name + ' game in progress');
@@ -332,6 +421,7 @@
     preventDoubleTapZoom();
     recordLastGame();
     markHubProgress();
+    enhanceHubDoor();
     // unlock audio context on first interaction
     const unlock = function () {
       ctx();
