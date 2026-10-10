@@ -364,7 +364,7 @@ async function playRun(browser, variant) {
     await capture('onboarding');
     const beforeGesture = await page.evaluate(() => window.__autoplayMetrics.oscillatorStarts);
     if (beforeGesture) result.issues.push(`${beforeGesture} oscillators started before a user gesture.`);
-    await page.getByRole('button', { name: 'Review Then Start' }).click();
+    await page.getByRole('button', { name: 'Close Guide' }).click();
     await page.evaluate(() => document.activeElement.blur());
     await interactionProbes(page, mobile, directory, result.issues);
     const started = Date.now();
