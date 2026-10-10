@@ -552,7 +552,8 @@
     }
 
     @media (max-width: 600px) {
-      body { align-items: flex-start; }
+      /* Keep the shell centered on tall phones. The body's min-height lets
+         shorter screens and expanded content grow into normal page scroll. */
       .shell {
         width: min(640px, 94vw);
         padding: 14px 10px 12px;

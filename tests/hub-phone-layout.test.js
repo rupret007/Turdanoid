@@ -196,6 +196,57 @@ function resumeEdges() {
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('hub phone first-screen layout', () => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 414, height: 896 }]) {
+    for (const returning of [false, true]) {
+      it(`centers the ${returning ? 'returning' : 'new'} player hub at ${viewport.width}×${viewport.height}`, async () => {
+        const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
+        try {
+          await openHub(page, returning);
+          const shell = await page.locator('.shell').boundingBox();
+          const topSpace = shell.y;
+          const bottomSpace = viewport.height - shell.y - shell.height;
+          expect(topSpace).toBeGreaterThan(10);
+          expect(bottomSpace).toBeGreaterThan(10);
+          expect(Math.abs(topSpace - bottomSpace), 'balanced space above and below the hub').toBeLessThanOrEqual(2);
+          const layout = await page.evaluate(measureHub, true);
+          expect(layout.cards).toHaveLength(6);
+          expect(layout.offFirst).toEqual([]);
+          expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
+        } finally {
+          await page.close();
+        }
+      });
+    }
+  }
+
+  it('keeps expanded content reachable by keyboard in a short portrait viewport', async () => {
+    const viewport = { width: 320, height: 480 };
+    const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
+    try {
+      await openHub(page);
+      await page.locator('.changelog summary').focus();
+      await page.keyboard.press('Enter');
+      expect(await page.locator('.changelog').getAttribute('open')).not.toBeNull();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const shell = await page.locator('.shell').boundingBox();
+      expect(shell.y).toBeGreaterThanOrEqual(6);
+      expect(shell.height).toBeGreaterThan(viewport.height);
+      const layout = await page.evaluate(measureHub, false);
+      expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
+      expect(layout.clipped).toEqual([]);
+
+      await page.locator('.changelog summary').focus();
+      await page.keyboard.press('Tab');
+      const footerLink = page.locator('.footer-note a');
+      expect(await footerLink.evaluate((link) => link === document.activeElement)).toBe(true);
+      const footer = await footerLink.boundingBox();
+      expect(footer.y).toBeGreaterThanOrEqual(0);
+      expect(footer.y + footer.height).toBeLessThanOrEqual(viewport.height);
+    } finally {
+      await page.close();
+    }
+  });
+
   for (const viewport of PORTRAIT) {
     it(`fits all six returning-player rows in the first screen at ${viewport.width}×${viewport.height}`, async () => {
       const page = await browser.newPage({ viewport });
