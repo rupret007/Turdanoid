@@ -48,6 +48,36 @@ function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
 }
 
 describe('six-game hub last-played mark', () => {
+  for (const width of [390, 414]) {
+    it(`keeps the ${width}px portrait hub centered with room to grow vertically`, () => {
+      const dom = new JSDOM(hubHtml);
+      try {
+        // JSDOM does not evaluate viewport media queries. Apply the matching
+        // width-only rules in source order to check the phone CSS cascade.
+        const sheet = dom.window.document.querySelector('style').sheet;
+        const rules = [...sheet.cssRules].flatMap((rule) => {
+          if (!rule.media) {
+            return [rule.cssText];
+          }
+          const maxWidth = /^\(max-width: (\d+)px\)$/.exec(rule.conditionText);
+          return maxWidth && width <= Number(maxWidth[1])
+            ? [...rule.cssRules].map((nested) => nested.cssText)
+            : [];
+        });
+        const style = dom.window.document.createElement('style');
+        style.textContent = rules.join('\n');
+        dom.window.document.head.append(style);
+        const body = dom.window.getComputedStyle(dom.window.document.body);
+        expect(body.display).toBe('flex');
+        expect(body.alignItems).toBe('center');
+        expect(body.minHeight).toBe('100dvh');
+        expect(['', 'auto']).toContain(body.height);
+      } finally {
+        dom.window.close();
+      }
+    });
+  }
+
   it('keeps the root door as six live games plus one Neon link', () => {
     expect(hubHtml.match(/class="game-card"/g)).toHaveLength(6);
     for (const href of LIVE_GAMES) {
