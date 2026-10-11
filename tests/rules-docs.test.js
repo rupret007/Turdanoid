@@ -95,6 +95,20 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).not.toContain('Infinity Rotation');
   });
 
+  it('records Turdtris Close Guide as overlay dismissal', () => {
+    const game = readRepoFile('turdtris.html');
+    const documented = section(rules, 'Turdtris (Tetris Clone)');
+
+    expect(game).toContain('onclick="hideWelcomeGuide()"');
+    expect(game).toMatch(/>Close Guide<\/button>/);
+    expect(game).toContain('onclick="quickStartRun()"');
+    expect(game).toMatch(/>Quick Start<\/button>/);
+    expect(documented).toContain('**Play** starts the selected mode');
+    expect(documented).toContain('**Quick Start** starts a live run');
+    expect(documented).toContain('**Close Guide** dismisses the overlay without starting a new run');
+    expect(documented).not.toContain('Review Then Start');
+  });
+
   it('records the four-player Crappy Eights action match', () => {
     const game = readRepoFile('crapeights.html');
     const documented = section(rules, 'Crapeights (Crazy Eights)');

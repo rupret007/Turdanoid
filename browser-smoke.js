@@ -562,7 +562,7 @@ async function main() {
     await runCheck(browser, 'turdtris-mobile', 'turdtris.html', {
       mobile: true,
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.getByRole('button', { name: 'Close Guide' }).click();
         const playfield = page.locator('#game');
         if (!(await playfield.isVisible())) fail('turdtris-mobile', 'playfield not visible after guide close');
 
@@ -700,7 +700,7 @@ async function main() {
     await runCheck(browser, 'turdtris-held-input-pause', 'turdtris.html', {
       mobile: true,
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.getByRole('button', { name: 'Close Guide' }).click();
         await page.keyboard.down('ArrowDown');
         await page.keyboard.press('p');
         await page.getByRole('button', { name: 'Resume', exact: true }).click();
@@ -779,7 +779,7 @@ async function main() {
 
     await runCheck(browser, 'turdtris-restart-churn', 'turdtris.html', {
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Review Then Start' }).click();
+        await page.getByRole('button', { name: 'Close Guide' }).click();
         await page.waitForTimeout(180);
         const turdtrisBlurState = await page.evaluate(() => {
           window.dispatchEvent(new Event('blur'));
