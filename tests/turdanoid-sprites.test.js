@@ -7,7 +7,8 @@ import {
   paintCapsule,
   paintPipe,
   paintShard,
-  paintBoss
+  paintBoss,
+  paintAtmosphere
 } from '../games/turdanoid-sprites.js';
 import { TOKENS } from '../games/turdanoid-theme.js';
 
@@ -75,10 +76,14 @@ function recordCtx() {
 }
 
 describe('Turdanoid play-object sprites', () => {
-  it('bevels bricks with a grout inset and highlight', () => {
+  it('bevels bricks with extruded faces and a glaze hotspot', () => {
     const ctx = recordCtx();
-    paintBrickBevel(ctx, 40, 18, { c1: TOKENS.slime, c2: TOKENS.slimeDeep });
-    expect(ctx.calls.filter((c) => c === 'fill').length).toBeGreaterThanOrEqual(3);
+    const drawn = paintBrickBevel(ctx, 40, 18, { c1: TOKENS.slime, c2: TOKENS.slimeDeep });
+    expect(drawn.extruded).toBe(true);
+    expect(drawn.inset).toBe(true);
+    expect(drawn.depth).toBeGreaterThan(2);
+    expect(ctx.calls.filter((c) => c === 'fill').length).toBeGreaterThanOrEqual(6);
+    expect(ctx.calls).toContain('ellipse');
     expect(ctx.calls).toContain('stroke');
     expect(ctx.calls[0]).toBe('save');
     expect(ctx.calls[ctx.calls.length - 1]).toBe('restore');
@@ -119,6 +124,19 @@ describe('Turdanoid play-object sprites', () => {
     });
     expect(ctx.calls).toContainEqual(['fillText', 'Fire']);
     expect(ctx.fillStyle).toBe(TOKENS.inkText);
+    expect(ctx.calls).toContain('ellipse');
+    expect(paintCapsule(ctx, { x: 50, y: 60, col: TOKENS.brass, e: '🔥', lab: 'Fire', wob: 0 }, 400, {
+      reducedMotion: false
+    }).sparkle).toBe(true);
+  });
+
+  it('paints a ceiling light cone for stage atmosphere', () => {
+    const ctx = recordCtx();
+    const air = paintAtmosphere(ctx, { W: 390, H: 844, nowMs: 0, reducedMotion: true });
+    expect(air.cone).toBe(true);
+    expect(air.motes).toBeGreaterThanOrEqual(10);
+    expect(ctx.calls).toContain('ellipse');
+    expect(ctx.calls.some((c) => Array.isArray(c) && c[0] === 'fillRect')).toBe(true);
   });
 
   it('paints faceted shards and a readable boss bar', () => {

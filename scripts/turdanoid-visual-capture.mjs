@@ -55,7 +55,7 @@ async function openGame(browser, width, height) {
   });
   await page.goto(`http://127.0.0.1:${port}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#titleScreen.overlay', { timeout: 15000 });
-  await page.waitForTimeout(240);
+  await page.waitForTimeout(560);
   return page;
 }
 
@@ -84,6 +84,16 @@ async function main() {
     written.push(await shot(phone, 'title-390'));
     await startPlaying(phone);
     written.push(await shot(phone, 'play-390'));
+    await phone.evaluate(() => {
+      const g = window.__turdanoid;
+      if (g.qaSpawnCapsule) {
+        g.qaSpawnCapsule('laser', 0.42, 0.28);
+        g.qaSpawnCapsule('fire', 0.48, 0.5);
+        g.qaSpawnCapsule('multi', 0.4, 0.72);
+      }
+    });
+    await phone.waitForTimeout(220);
+    written.push(await shot(phone, 'powers-390'));
     await phone.evaluate(() => window.__turdanoid.doPause());
     await phone.waitForTimeout(180);
     written.push(await shot(phone, 'pause-390'));

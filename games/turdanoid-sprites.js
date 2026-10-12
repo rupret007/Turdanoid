@@ -11,4 +11,5 @@ export const paintCapsule = api.paintCapsule;
 export const paintPipe = api.paintPipe;
 export const paintShard = api.paintShard;
 export const paintBoss = api.paintBoss;
+export const paintAtmosphere = api.paintAtmosphere;
 export const roundRect = api.roundRect;
