@@ -6,8 +6,9 @@
     const m = material || 'sewer';
     const c = Math.max(0, Math.min(3, crackStage | 0));
     const met = metal ? 1 : 0;
-    const top = c1 || '#7af1c4';
-    const bot = c2 || '#3aa97c';
+    const theme = root.TurdanoidTheme && root.TurdanoidTheme.TOKENS;
+    const top = c1 || (theme && theme.slime) || '#3ecf9a';
+    const bot = c2 || (theme && theme.slimeDeep) || '#1a7a58';
     return `${m}|${c}|${met}|${Math.round(w)}|${Math.round(h)}|${top}|${bot}`;
   }
 
@@ -15,9 +16,10 @@
     const material = opts.material || 'sewer';
     const stage = Math.max(0, Math.min(3, opts.crackStage | 0));
     const metal = !!opts.metal;
-    const c1 = opts.c1 || '#7af1c4';
-    const c2 = opts.c2 || '#3aa97c';
-    const glow = opts.glow || 'rgba(122,241,196,.45)';
+    const theme = root.TurdanoidTheme && root.TurdanoidTheme.TOKENS;
+    const c1 = opts.c1 || (theme && theme.slime) || '#3ecf9a';
+    const c2 = opts.c2 || (theme && theme.slimeDeep) || '#1a7a58';
+    const glow = opts.glow || (theme && root.TurdanoidTheme.glow(theme.slime, 0.45)) || 'rgba(62,207,154,.45)';
 
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = 'rgba(0,0,0,.42)';

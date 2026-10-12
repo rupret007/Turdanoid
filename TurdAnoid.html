@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b1d24">
+<meta name="theme-color" content="#061018">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>TurdAnoid Turbo — Bricks. Busted.</title>
 <link rel="stylesheet" href="assets/turdsuite.css">
 <script src="games/table-continue-core.js"></script>
+<script src="games/turdanoid-theme-core.js"></script>
 <script src="games/turdanoid-fx-core.js"></script>
 <script src="games/turdanoid-brick-core.js"></script>
 <script src="games/turdanoid-audio-core.js"></script>
@@ -24,22 +25,27 @@
 <script src="games/turdanoid-layout-core.js"></script>
 <script src="games/turdanoid-qa-core.js"></script>
 <script src="assets/turdsuite.js"></script>
+<script>
+  if (typeof TurdanoidTheme !== 'undefined') {
+    TurdanoidTheme.applyCssVars(document.documentElement);
+  }
+</script>
 <style>
   :root{
-    --bg-a:#0b1d24; --bg-b:#15303a; --bg-c:#244a3f;
-    --ink:#eafff2; --accent:#9effc8; --hot:#ff9d74; --gold:#ffd76a;
-    --pink:#ff7ab6; --violet:#b290ff; --aqua:#7ae6ff;
-    --panel:rgba(8,22,18,.72); --panel-border:rgba(158,255,200,.32);
+    --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
+    --ink:var(--ta-ink-text, #eaf6f0); --accent:var(--ta-slime, #3ecf9a); --hot:var(--ta-coral, #ff6d5a); --gold:var(--ta-brass, #e8c56a);
+    --pink:var(--ta-rose, #d878a8); --violet:var(--ta-indigo, #8a82d8); --aqua:var(--ta-aqua, #5ec8e0);
+    --panel:var(--ta-glass, rgba(6,16,22,.78)); --panel-border:var(--ta-glass-border, rgba(232,197,106,.32));
     --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
   body{
-    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;color:var(--ink);
+    font-family:var(--ta-font,'Segoe UI','Avenir Next','Trebuchet MS',system-ui,sans-serif);color:var(--ink);
     background:
-      radial-gradient(1200px 600px at 15% 8%,rgba(158,255,200,.18),transparent 50%),
-      radial-gradient(900px 500px at 85% 12%,rgba(255,180,130,.14),transparent 55%),
-      radial-gradient(700px 400px at 50% 110%,rgba(178,144,255,.18),transparent 60%),
+      radial-gradient(1200px 600px at 15% 8%,rgba(62,207,154,.14),transparent 50%),
+      radial-gradient(900px 500px at 85% 12%,rgba(232,197,106,.1),transparent 55%),
+      radial-gradient(700px 400px at 50% 110%,rgba(138,130,216,.12),transparent 60%),
       linear-gradient(160deg,var(--bg-a),var(--bg-b) 40%,var(--bg-c));
     background-attachment:fixed;
   }
@@ -47,7 +53,7 @@
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;gap:0}
   #playShell{position:relative;width:100%;height:100%;flex:0 0 auto;max-width:100%;max-height:100%}
   #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px rgba(158,255,200,.18)}
-  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(158,255,200,.14), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,#06141a 0%,#0c2630 50%,#15394a 100%);touch-action:none}
+  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:none}
   .side-gutter{flex:1 1 0;min-width:0;max-width:min(420px,22vw);display:none;pointer-events:none;padding:max(12px,var(--safe-top)) 10px max(12px,var(--safe-bot));align-self:stretch}
   #stage.layout-wide .side-gutter{display:flex;flex-direction:column;justify-content:center}
   .side-art{padding:16px 14px;border-radius:16px;border:1px solid rgba(158,255,200,.16);background:linear-gradient(165deg,rgba(8,24,20,.75),rgba(4,12,10,.55));box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 16px 40px rgba(0,0,0,.35)}

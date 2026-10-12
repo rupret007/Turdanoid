@@ -1,3 +1,4 @@
+import './turdanoid-theme.js';
 import './turdanoid-brick-core.js';
 
 const api = globalThis.TurdanoidBrick;

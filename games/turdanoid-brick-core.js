@@ -4,24 +4,29 @@
 
   const MATERIALS = ['porcelain', 'sewer', 'slime', 'candy', 'tar', 'metal', 'gold'];
 
-  const MATERIAL_PALETTES = {
-    porcelain: ['#f2f8f5', '#9eb8aa', 'rgba(200,230,215,.5)'],
-    sewer: ['#7af1c4', '#3aa97c', 'rgba(122,241,196,.45)'],
-    slime: ['#b8ff7a', '#3d8a2a', 'rgba(160,255,120,.5)'],
-    candy: ['#ff9de8', '#c23d8a', 'rgba(255,157,232,.48)'],
-    tar: ['#6a6a78', '#2a2a34', 'rgba(120,120,140,.4)'],
-    metal: ['#c8d4e0', '#5a6a78', 'rgba(180,200,220,.45)'],
-    gold: ['#fff0b0', '#bf8a13', 'rgba(255,215,106,.55)']
-  };
+  const theme = root.TurdanoidTheme;
+  const MATERIAL_PALETTES = theme
+    ? theme.materialPalettes()
+    : {
+      porcelain: ['#e8f4ef', '#b8d4c8', 'rgba(232,244,239,.42)'],
+      sewer: ['#3ecf9a', '#1a7a58', 'rgba(62,207,154,.44)'],
+      slime: ['#3ecf9a', '#246a38', 'rgba(62,207,154,.46)'],
+      candy: ['#e878b8', '#882058', 'rgba(232,120,184,.44)'],
+      tar: ['#7a7a88', '#22222c', 'rgba(122,122,136,.36)'],
+      metal: ['#c4d0dc', '#4a5a68', 'rgba(196,208,220,.4)'],
+      gold: ['#f0d478', '#a87818', 'rgba(240,212,120,.5)']
+    };
 
-  const ROW_PALETTES = [
-    ['#5dffb8', '#1e9a62', 'rgba(93,255,184,.55)'],
-    ['#5ce8ff', '#1580b0', 'rgba(92,232,255,.55)'],
-    ['#ffe04a', '#c87800', 'rgba(255,224,74,.55)'],
-    ['#ff8a4a', '#b03810', 'rgba(255,138,74,.55)'],
-    ['#ff5aa8', '#a01868', 'rgba(255,90,168,.55)'],
-    ['#a878ff', '#4820b0', 'rgba(168,120,255,.55)']
-  ];
+  const ROW_PALETTES = theme
+    ? theme.rowPalettes()
+    : [
+      ['#3ecf9a', '#1a7a58', 'rgba(62,207,154,.46)'],
+      ['#5ec8e0', '#1a6a88', 'rgba(94,200,224,.46)'],
+      ['#e4bc48', '#8a6410', 'rgba(228,188,72,.46)'],
+      ['#e07a4a', '#8a3418', 'rgba(224,122,74,.46)'],
+      ['#d878a8', '#7a2858', 'rgba(216,120,168,.46)'],
+      ['#8a82d8', '#343078', 'rgba(138,130,216,.46)']
+    ];
 
   /** Rotates rainbow rows per campaign world so walls read differently in play. */
   const WORLD_ROW_ROTATIONS = [0, 1, 2, 3, 4];
