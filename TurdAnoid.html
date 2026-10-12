@@ -139,7 +139,13 @@
   #titleScreen.overlay{justify-content:flex-end;padding:24px 22px max(28px, calc(var(--safe-bot) + 22px));
     background:linear-gradient(180deg,rgba(6,16,24,.02) 0%,rgba(6,16,24,.16) 40%,rgba(6,16,24,.82) 64%,rgba(4,12,16,.96) 100%)}
   #titleScreen.overlay::after{content:"";position:absolute;inset:auto 10% 46% 10%;height:110px;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(232,197,106,.2),transparent 72%)}
-  #playShell:has(#titleScreen.show) .hud{visibility:hidden}
+  #playShell:has(#titleScreen.show) .hud,
+  #playShell:has(#endScreen.show) .hud,
+  #playShell:has(#clearTally.show) .hud,
+  #playShell:has(#howScreen.show) .hud,
+  #playShell:has(#endScreen.show) .topbtns,
+  #playShell:has(#clearTally.show) .topbtns,
+  #playShell:has(#howScreen.show) .topbtns{visibility:hidden}
   #titleScreen h1{position:relative}
   #titleScreen h1::after{content:"";display:block;width:76px;height:3px;margin:12px auto 0;border-radius:99px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
   #titleScreen.show h1{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) both, titleBob 3.6s ease-in-out .5s infinite}
@@ -162,13 +168,23 @@
   #endScreen.show .stat:nth-child(5){animation-delay:.2s}
   #endScreen.show .stat:nth-child(6){animation-delay:.25s}
   @keyframes statIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
-  #clearTally.tally-overlay{background:rgba(4,14,12,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  #clearTally.tally-overlay{background:linear-gradient(180deg,rgba(6,16,24,.28),rgba(4,12,16,.94));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   #clearTally h1{font-size:clamp(28px,8vw,48px);margin-bottom:12px}
-  #tallyLines{display:flex;flex-direction:column;gap:10px;min-width:min(320px,92vw);text-align:left}
-  .tally-line{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--panel-border);font-weight:700;letter-spacing:.03em}
-  .tally-line.active{border-color:rgba(255,215,106,.55);box-shadow:0 0 20px rgba(255,215,106,.15)}
+  .tally-card{width:min(340px,92vw);padding:8px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1)}
+  #tallyLines{display:flex;flex-direction:column;gap:8px;min-width:0;text-align:left}
+  .tally-line{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:12px;background:rgba(6,16,22,.35);border:1px solid rgba(232,197,106,.12);font-weight:700;letter-spacing:.03em}
+  .tally-line.active{border-color:rgba(255,215,106,.55);box-shadow:0 0 20px rgba(255,215,106,.15);background:rgba(232,197,106,.08)}
   .tally-line .tl-val{color:var(--gold);font-size:1.25em;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(255,215,106,.35)}
   #tallyHint{margin-top:16px;font-size:12px;opacity:.7;letter-spacing:.14em;text-transform:uppercase}
+  .result-kicker{margin:0 0 8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.35)}
+  #endScreen.is-win{background:linear-gradient(180deg,rgba(232,197,106,.34) 0%,rgba(18,22,16,.9) 48%,rgba(4,12,16,.97) 100%)}
+  #endScreen.is-loss{background:linear-gradient(180deg,rgba(255,90,72,.3) 0%,rgba(28,8,12,.92) 48%,rgba(4,10,12,.97) 100%)}
+  #endScreen.is-loss .result-kicker{color:var(--hot)}
+  #endScreen.is-win .result-kicker{color:var(--gold)}
+  .how-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(420px,92vw);margin:8px 0 4px;text-align:left}
+  .how-card{padding:12px 12px 10px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.3)}
+  .how-card h3{margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  .how-card p{margin:0;max-width:none;font-size:13px;line-height:1.4;opacity:.92}
   .overlay .helprow{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--ta-muted,#9ab4aa)}
   .overlay .helprow span{background:transparent;padding:0;border:0;box-shadow:none;letter-spacing:.02em}
   .menu-secondary{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
@@ -205,6 +221,8 @@
     .overlay{padding:18px 14px}
     .overlay h1{font-size:clamp(32px,10vw,64px)}
     .overlay button{padding:13px 22px;font-size:16px}
+    .how-grid{gap:8px}
+    .how-card p{font-size:12px}
   }
   @media (max-width:360px){
     .hud .right{margin-right:96px}
@@ -300,25 +318,29 @@
 
     <!-- How to play -->
     <div class="overlay" id="howScreen" inert>
-      <h1>How To Play<span class="sub">it's brick breaker, but worse</span></h1>
-      <p style="text-align:left;max-width:520px">
-        🎯 Bounce the turd off the toilet seat to break every brick.<br><br>
-        🧻 Falling power-ups: 19 of them. Standard arkanoid stuff at first — 📏 enlarge, 🐌 slow, 🧲 catch, 🌀 multiball, 🔫 laser, ❤️ extra life. Then it gets weird: 🌭 hot dog rockets, 🪠 plunger magnet, 🚽 mega-flush, 👻 ghost ball, 🦨 skunk cloud, 💰 gold rush, and more.<br><br>
-        🔥 Stack them. Multiball + 🔥 fire = three flaming turds. 📏 enlarge keeps stacking until your paddle is comically large. 🪠 plunger pulls every falling pickup toward you so you stop missing them.<br><br>
-        💥 Tap to fire any active offensive power. Chain brick hits to build a combo — bigger combo, bigger score multiplier.<br><br>
-        💀 Drop the ball and you lose a life. Run out and you're flushed. Forever. Or until you press restart.
-      </p>
+      <p class="title-kicker">House rules</p>
+      <h1>How To Play<span class="sub">brick breaker, but worse</span></h1>
+      <div class="how-grid">
+        <article class="how-card"><h3>Move</h3><p>Drag or ← →. Tap or Space to launch and fire.</p></article>
+        <article class="how-card"><h3>Break</h3><p>Bounce the turd. Clear the wall. Combos multiply score.</p></article>
+        <article class="how-card"><h3>Catch</h3><p>19 power-ups. Stack laser, fire, multiball, and the weird ones.</p></article>
+        <article class="how-card"><h3>Survive</h3><p>Drop the ball, lose a life. Run out and you're flushed.</p></article>
+      </div>
       <button id="btnHowBack">BACK</button>
     </div>
 
     <div class="overlay tally-overlay" id="clearTally" role="dialog" aria-labelledby="clearTallyTitle" aria-modal="true" tabindex="-1" inert>
+      <p class="title-kicker">Stage bonus</p>
       <h1 id="clearTallyTitle">Level clear</h1>
-      <div id="tallyLines"></div>
+      <div class="tally-card">
+        <div id="tallyLines"></div>
+      </div>
       <p id="tallyHint">Space or tap to skip</p>
     </div>
 
     <!-- Game Over / Win -->
     <div class="overlay" id="endScreen" inert>
+      <p class="result-kicker" id="endKicker">Run complete</p>
       <h1 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h1>
       <p class="quip" id="endQuip"></p>
       <div class="stats">
@@ -1408,6 +1430,10 @@ function gameOver(won){
     localStorage.setItem(STORAGE_KEY, String(best));
   }
   updateSideStats();
+  tEnd.classList.toggle('is-win', !!won);
+  tEnd.classList.toggle('is-loss', !won);
+  const endKicker = $('endKicker');
+  if(endKicker) endKicker.textContent = won ? 'Porcelain victory' : 'Down the drain';
   $('endTitle').firstChild.textContent = won ? (gameMode==='boss' ? 'King Flushed!' : 'You Win!') : 'Flushed.';
   $('endSub').textContent = won ? (gameMode==='boss' ? 'sewer royalty' : 'sewer royalty') : 'better luck next plunge';
   $('endQuip').textContent = (won?WIN_QUIPS:GAME_OVER_QUIPS)[Math.floor(Math.random()*(won?WIN_QUIPS:GAME_OVER_QUIPS).length)];
