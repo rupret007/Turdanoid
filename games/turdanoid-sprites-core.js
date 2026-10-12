@@ -34,7 +34,7 @@
     const t = tokens();
     const c1 = (opts && opts.c1) || t.slime;
     const c2 = (opts && opts.c2) || t.slimeDeep;
-    const depth = Math.max(2.4, Math.min(4.2, h * 0.24));
+    const depth = Math.max(3.2, Math.min(5.6, h * 0.34));
     const fx = 0.7;
     const fy = 0.5;
     const fw = Math.max(4, w - depth - 1.1);
@@ -51,7 +51,7 @@
     ctx.lineTo(fx + fw - 0.2, fy + fh);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,.28)';
+    ctx.fillStyle = 'rgba(0,0,0,.52)';
     ctx.beginPath();
     ctx.moveTo(fx + fw - 0.2, fy + 1);
     ctx.lineTo(w - 0.45, fy + depth * 0.7);
@@ -59,7 +59,7 @@
     ctx.lineTo(fx + fw - 0.2, fy + fh);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = 'rgba(8,6,10,.55)';
+    ctx.fillStyle = 'rgba(4,4,8,.72)';
     ctx.beginPath();
     ctx.moveTo(fx + 0.4, fy + fh);
     ctx.lineTo(fx + fw, fy + fh);
@@ -172,10 +172,10 @@
     ctx.lineWidth = 1.7;
     roundRect(ctx, x + 1.4, cupY + 1.2, w - 2.8, cupH - 2.4, cupH / 2 - 1);
     ctx.stroke();
-    const cavity = ctx.createRadialGradient(paddle.x - w * 0.12, cupY + cupH * 0.35, 2, paddle.x, cupY + cupH * 0.62, w * 0.46);
-    cavity.addColorStop(0, 'rgba(90,16,22,.08)');
-    cavity.addColorStop(0.55, 'rgba(40,4,10,.38)');
-    cavity.addColorStop(1, 'rgba(12,0,4,.62)');
+    const cavity = ctx.createRadialGradient(paddle.x - w * 0.12, cupY + cupH * 0.32, 2, paddle.x, cupY + cupH * 0.62, w * 0.46);
+    cavity.addColorStop(0, 'rgba(90,16,22,.12)');
+    cavity.addColorStop(0.5, 'rgba(28,4,8,.5)');
+    cavity.addColorStop(1, 'rgba(8,0,2,.78)');
     ctx.fillStyle = cavity;
     roundRect(ctx, x + 6, cupY + 4, w - 12, cupH - 8, cupH / 2 - 3);
     ctx.fill();
@@ -402,9 +402,9 @@
     const flicker = reduced ? 1 : 0.9 + 0.1 * Math.sin(now * 0.003);
     ctx.save();
     const cone = ctx.createLinearGradient(W * 0.5, 0, W * 0.5, H * 0.78);
-    cone.addColorStop(0, `rgba(255,230,160,${0.3 * flicker})`);
-    cone.addColorStop(0.16, `rgba(232,197,106,${0.14 * flicker})`);
-    cone.addColorStop(0.5, `rgba(184,212,200,${0.05 * flicker})`);
+    cone.addColorStop(0, `rgba(255,230,160,${0.38 * flicker})`);
+    cone.addColorStop(0.16, `rgba(232,197,106,${0.18 * flicker})`);
+    cone.addColorStop(0.5, `rgba(184,212,200,${0.06 * flicker})`);
     cone.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = cone;
     ctx.beginPath();

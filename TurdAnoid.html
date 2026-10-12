@@ -129,7 +129,7 @@
   .overlay.show > *:nth-child(7){animation-delay:.4s}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .overlay h1{font-size:clamp(44px,12vw,84px);letter-spacing:-.03em;margin-bottom:6px;line-height:.92;font-weight:800;
+  .overlay h1{font-size:clamp(36px,9vw,56px);letter-spacing:-.03em;margin-bottom:6px;line-height:.92;font-weight:800;
     background:linear-gradient(180deg,#fff8d8 0%,var(--gold) 42%,#c88820 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 28px rgba(255,215,106,.5)) drop-shadow(0 6px 0 rgba(70,40,0,.55)) drop-shadow(0 16px 28px rgba(0,0,0,.7))}
   .overlay h1 .sub{display:block;font-size:.34em;letter-spacing:.12em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.45);filter:none}
@@ -819,14 +819,14 @@ function drawTitleAttract(rts){
     titleDemoBall.y = H * 0.28;
     titleDemoReady = true;
   }
-  const top = H * 0.07;
-  const demoH = H * 0.48;
+  const top = H * 0.065;
   const now = performance.now();
   const calm = !!(reducedMotion && reducedMotion.matches);
   ctx.save();
   const cols = 8, rows = 4, gap = 6;
   const bw = (W * 0.86 - gap * (cols - 1)) / cols;
   const bh = Math.max(15, bw * 0.44);
+  const wallBottom = top + 12 + rows * (bh + gap);
   const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
     ? TurdanoidTheme.rowPalettes()
     : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58'],['#d878a8','#7a2858']];
@@ -849,11 +849,11 @@ function drawTitleAttract(rts){
   titleDemoBall.y += titleDemoBall.vy * rts;
   if(titleDemoBall.x < W*0.12 || titleDemoBall.x > W*0.88) titleDemoBall.vx *= -1;
   if(titleDemoBall.y < top + 16) titleDemoBall.vy = Math.abs(titleDemoBall.vy);
-  if(titleDemoBall.y > top + demoH - 36){
-    titleDemoBall.y = top + demoH - 36;
+  if(titleDemoBall.y > wallBottom + 36){
+    titleDemoBall.y = wallBottom + 36;
     titleDemoBall.vy = -Math.abs(titleDemoBall.vy);
   }
-  const seat = { x: W*0.5, y: top + demoH - 20, w: Math.min(158, W*0.44), h: 17, recoil: 0 };
+  const seat = { x: W*0.5, y: wallBottom + 26, w: Math.min(150, W*0.4), h: 16, recoil: 0 };
   if(TSPRITE){
     TSPRITE.paintPaddle(ctx, seat, {}, now, { W, H, reducedMotion: calm });
     TSPRITE.paintBall(ctx, {
@@ -861,10 +861,10 @@ function drawTitleAttract(rts){
       vx: titleDemoBall.vx, vy: titleDemoBall.vy, fire: 0, ghost: 0, trail: [], squash: 0
     }, { reducedMotion: true });
     TSPRITE.paintCapsule(ctx, {
-      x: W * 0.18, y: top + demoH * 0.78, col: '#5ec8e0', e: '🔫', lab: 'Laser', wob: now * 0.004
+      x: W * 0.14, y: wallBottom + 22, col: '#5ec8e0', e: '🔫', lab: 'Laser', wob: now * 0.004
     }, now, { reducedMotion: calm });
     TSPRITE.paintCapsule(ctx, {
-      x: W * 0.82, y: top + demoH * 0.7, col: '#ff6d5a', e: '🔥', lab: 'Fire', wob: now * 0.004 + 1.2
+      x: W * 0.86, y: wallBottom + 18, col: '#ff6d5a', e: '🔥', lab: 'Fire', wob: now * 0.004 + 1.2
     }, now, { reducedMotion: calm });
   } else {
     ctx.fillStyle = '#c02830';

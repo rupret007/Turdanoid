@@ -44,7 +44,7 @@
       ctx.shadowBlur = 0;
     }
 
-    const depth = (bevel && bevel.depth) || Math.max(2.4, Math.min(4.2, h * 0.24));
+    const depth = (bevel && bevel.depth) || Math.max(3.2, Math.min(5.6, h * 0.34));
     const fx = (bevel && bevel.fx) || 0.7;
     const fy = (bevel && bevel.fy) || 0.5;
     const fw = (bevel && bevel.fw) || Math.max(4, w - depth - 1.1);
