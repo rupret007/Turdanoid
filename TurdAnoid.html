@@ -735,7 +735,8 @@ function tryLightHaptic(ms){
 }
 function spawnImpactRing(x,y,col){
   if(FX && !FX.allowJuiceEffects(reducedMotion)) return;
-  impactRings.push({ x, y, r: 6, life: 14, col: col || '#9effc8' });
+  const fallback = FX ? FX.impactColor('wall') : '#3ecf9a';
+  impactRings.push({ x, y, r: 6, life: 14, col: col || fallback });
 }
 function formatRunTime(ms){
   const s = Math.max(0, Math.floor((ms || 0) / 1000));
@@ -774,7 +775,7 @@ function spawnConfetti(n){
       vx: (Math.random()-0.5)*3, vy: 2 + Math.random()*3,
       rot: Math.random()*6, vr: (Math.random()-0.5)*0.2,
       life: 50 + Math.random()*40,
-      col: ['#9effc8','#ffd76a','#ff7ab6','#7ae6ff'][Math.floor(Math.random()*4)]
+      col: (FX ? FX.confettiPalette() : ['#3ecf9a','#e8c56a','#d878a8','#5ec8e0'])[Math.floor(Math.random()*4)]
     });
   }
 }
@@ -1709,10 +1710,15 @@ function spawnSmoke(x, y, n, col){
   if(fxParticles.length > FX_MAX) fxParticles.splice(0, fxParticles.length - FX_MAX);
 }
 function spawnHitSpark(x,y,col){
-  const c = col || '#9effc8';
-  for(let i=0;i<6;i++){
-    const a = Math.random()*Math.PI*2;
-    particles.push({x,y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,g:0.05,life:14,r:1.5+Math.random()*2,col:c});
+  if(FX && !FX.allowJuiceEffects(reducedMotion)) return;
+  const n = FX ? FX.clampBurstCount(6, reducedMotion) : 6;
+  const c = col || (FX ? FX.impactColor('wall') : '#3ecf9a');
+  for(let i=0;i<n;i++){
+    if(FX && FX.makeSpark){ particles.push(FX.makeSpark(x, y, c)); }
+    else {
+      const a = Math.random()*Math.PI*2;
+      particles.push({x,y,vx:Math.cos(a)*2,vy:Math.sin(a)*2,g:0.05,life:14,r:1.5+Math.random()*2,col:c,spark:true});
+    }
   }
 }
 function spawnBrickChipPuff(br){
@@ -1858,9 +1864,10 @@ function step(dt){
       }
     }
 
-    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,'#9effc8'); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,'#9effc8'); spawnHitSpark(b.x,b.y,'#9effc8'); }
-    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,'#9effc8'); spawnHitSpark(b.x,b.y,'#9effc8'); }
+    const wallFx = FX ? FX.impactColor('wall') : '#3ecf9a';
+    if(b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,wallFx); spawnHitSpark(b.x,b.y,wallFx); }
+    if(b.x > W-b.r){ b.x = W-b.r; b.vx = -Math.abs(b.vx); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = 0; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,wallFx); spawnHitSpark(b.x,b.y,wallFx); }
+    if(b.y < b.r){ b.y = b.r; b.vy = Math.abs(b.vy); b.squash = Math.min(1,(b.squash||0)+0.5); b.squashAng = Math.PI/2; clampMinBallSpeed(b); sfx.bounce(); spawnImpactRing(b.x,b.y,wallFx); spawnHitSpark(b.x,b.y,wallFx); }
 
     if(b.vy>0 && b.y+b.r >= paddle.y && b.y - b.r <= paddle.y + paddle.h && Math.abs(b.x - paddle.x) < paddle.w/2 + b.r){
       const rel = (b.x - paddle.x)/(paddle.w/2);
@@ -1873,7 +1880,8 @@ function step(dt){
       paddle.recoil = Math.min(8, (paddle.recoil||0) + 5);
       paddle.squash = 1;
       if(activePowers.sticky){ b.stuck = true; waitingLaunch = true; btnLaunch.classList.add('show'); }
-      sfx.hit(); spawnImpactRing(b.x,b.y+b.r,'#9effc8'); spawnHitSpark(b.x,b.y+b.r,'#9effc8');
+      const paddleFx = FX ? FX.impactColor('paddle') : '#3ecf9a';
+      sfx.hit(); spawnImpactRing(b.x,b.y+b.r,paddleFx); spawnHitSpark(b.x,b.y+b.r,paddleFx);
       shake = Math.max(shake, 4);
     }
 
@@ -2372,10 +2380,13 @@ function render(){
     ring.life -= rts;
     ring.r += 1.8 * rts;
     if(ring.life <= 0) continue;
-    ctx.strokeStyle = ring.col;
-    ctx.globalAlpha = Math.max(0, ring.life / 14) * 0.7;
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, 6.283); ctx.stroke();
+    if(FX && FX.paintImpactRing){ FX.paintImpactRing(ctx, ring); }
+    else {
+      ctx.strokeStyle = ring.col;
+      ctx.globalAlpha = Math.max(0, ring.life / 14) * 0.7;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(ring.x, ring.y, ring.r, 0, 6.283); ctx.stroke();
+    }
   }
   ctx.globalAlpha = 1;
   for(let i=impactRings.length-1;i>=0;i--){ if(impactRings[i].life <= 0) impactRings.splice(i,1); }
@@ -2414,6 +2425,10 @@ function render(){
         ctx.beginPath(); ctx.arc(p.x+Math.cos(ang)*p.r*0.5, p.y+Math.sin(ang)*p.r*0.5, 4+k, 0, 6.283); ctx.fill();
       }
       ctx.globalAlpha = 1;
+      continue;
+    }
+    if(p.spark && FX && FX.paintSpark){
+      FX.paintSpark(ctx, p);
       continue;
     }
     ctx.globalAlpha = Math.max(0, p.life/40);
@@ -2473,9 +2488,10 @@ function render(){
   }
 
   if(flash>0){
-    const fa = FX ? FX.flashStrength(flash, reducedMotion) : flash*0.35;
+    const fill = FX && FX.flashFill ? FX.flashFill(flash, reducedMotion) : null;
+    const fa = fill ? fill.a : (FX ? FX.flashStrength(flash, reducedMotion) : flash*0.35);
     if(fa > 0.001){
-      ctx.fillStyle = `rgba(255,255,255,${fa})`;
+      ctx.fillStyle = fill ? fill.css : `rgba(255,255,255,${fa})`;
       ctx.fillRect(0,0,W,H);
     }
   }
