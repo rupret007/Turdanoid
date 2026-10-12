@@ -28,13 +28,36 @@
     }
     canvasW = Math.max(320, canvasW);
     canvasH = Math.max(480, canvasH);
+    canvasW -= canvasW % 2;
+    canvasH -= canvasH % 2;
     return { canvasW, canvasH, wide: true };
+  }
+
+  /**
+   * HUD insets so phone chrome clears the suite back pill and stays readable.
+   * Tracking is in em; keep labels under 0.12 so words do not mash.
+   */
+  function hudMetrics(viewportWidth, safeLeft = 0) {
+    const vw = Math.max(0, Number(viewportWidth) || 0);
+    const narrow = vw > 0 && vw <= 520;
+    const pillReserve = narrow ? 68 : 0;
+    const left = Math.max(10, Math.floor(safeLeft) + pillReserve);
+    return {
+      narrow,
+      left,
+      top: 10,
+      minTap: 44,
+      trackingHud: 0.02,
+      trackingLabel: 0.08,
+      trackingButton: 0.06
+    };
   }
 
   root.TurdanoidLayout = {
     REF_WIDTH,
     REF_HEIGHT,
     ASPECT,
-    computePlayfield
+    computePlayfield,
+    hudMetrics
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

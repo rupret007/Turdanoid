@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePlayfield, ASPECT, REF_WIDTH, REF_HEIGHT } from '../games/turdanoid-layout.js';
+import { computePlayfield, hudMetrics, ASPECT, REF_WIDTH, REF_HEIGHT } from '../games/turdanoid-layout.js';
 
 describe('Turdanoid layout', () => {
   it('keeps reference aspect constants', () => {
@@ -27,5 +27,15 @@ describe('Turdanoid layout', () => {
   it('does not treat squat mobile landscape as wide theater', () => {
     const r = computePlayfield(390, 320);
     expect(r.wide).toBe(false);
+  });
+
+  it('reserves HUD space for the phone back pill and keeps tracking readable', () => {
+    const phone = hudMetrics(390);
+    expect(phone.narrow).toBe(true);
+    expect(phone.left).toBeGreaterThanOrEqual(68);
+    expect(phone.minTap).toBe(44);
+    expect(phone.trackingButton).toBeLessThanOrEqual(0.08);
+    expect(hudMetrics(1280).left).toBe(10);
+    expect(hudMetrics(1280).narrow).toBe(false);
   });
 });
