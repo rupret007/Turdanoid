@@ -16,6 +16,7 @@
 <script src="games/turdanoid-audio-core.js"></script>
 <script src="games/turdanoid-levels-core.js"></script>
 <script src="games/turdanoid-worlds-core.js"></script>
+<script src="games/turdanoid-sprites-core.js"></script>
 <script src="games/turdanoid-brick-sprite-core.js"></script>
 <script src="games/turdanoid-shards-core.js"></script>
 <script src="games/turdanoid-boss-core.js"></script>
@@ -397,6 +398,7 @@ const HUD_DRAG_TOP = 56;
 const FX = typeof TurdanoidFX !== 'undefined' ? TurdanoidFX : null;
 const BRICK_ART = typeof TurdanoidBrick !== 'undefined' ? TurdanoidBrick : null;
 const BRICK_SPRITE = typeof TurdanoidBrickSprite !== 'undefined' ? TurdanoidBrickSprite : null;
+const TSPRITE = typeof TurdanoidSprites !== 'undefined' ? TurdanoidSprites : null;
 const TWORLDS = typeof TurdanoidWorlds !== 'undefined' ? TurdanoidWorlds : null;
 const TSHARDS = typeof TurdanoidShards !== 'undefined' ? TurdanoidShards : null;
 const TBOSS = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss : null;
@@ -792,8 +794,19 @@ function drawTitleAttract(rts){
   for(let r=0;r<3;r++){
     for(let c=0;c<cols;c++){
       const bx = W*0.1 + c*(bw+4) + (r%2)*(bw*0.5), by = top + 24 + r*(bw*0.55);
-      ctx.fillStyle = r===0 ? '#7ae6ff' : (r===1 ? '#ffd76a' : '#9effc8');
-      roundRect(ctx, bx, by, bw, bw*0.45, 4); ctx.fill();
+      const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
+        ? TurdanoidTheme.rowPalettes()
+        : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58']];
+      const dc1 = (demoPal[r] && demoPal[r][0]) || '#3ecf9a';
+      const dc2 = (demoPal[r] && demoPal[r][1]) || '#1a7a58';
+      if(TSPRITE){
+        ctx.save(); ctx.translate(bx, by);
+        TSPRITE.paintBrickBevel(ctx, bw, bw*0.45, { c1: dc1, c2: dc2 });
+        ctx.restore();
+      } else {
+        ctx.fillStyle = dc1;
+        roundRect(ctx, bx, by, bw, bw*0.45, 4); ctx.fill();
+      }
     }
   }
   titleDemoBall.x += titleDemoBall.vx * rts;
@@ -2184,29 +2197,23 @@ function render(){
       // so shapes slide off one edge while entering the other.
       for(const x of [bx, bx - W]){
         if(layer.kind === 'pipe'){
-          // Cylindrical shading + flange rings + a specular line
-          if(s.vertical){
+          const pipeCols = (world && world.pipe) || ['#0f2b24', '#1a7a58', '#1d4a3c'];
+          if(TSPRITE){
+            TSPRITE.paintPipe(ctx, {
+              x, y: s.y, w: s.w, h: s.h, vertical: !!s.vertical, colors: pipeCols
+            });
+          } else if(s.vertical){
             const pg = ctx.createLinearGradient(x, 0, x + s.h, 0);
-            pg.addColorStop(0, '#0f2b24'); pg.addColorStop(0.32, '#2f6b58');
-            pg.addColorStop(0.62, '#1d4a3c'); pg.addColorStop(1, '#0b201a');
+            pg.addColorStop(0, pipeCols[0]); pg.addColorStop(0.32, pipeCols[1]);
+            pg.addColorStop(0.62, pipeCols[2] || pipeCols[1]); pg.addColorStop(1, pipeCols[0]);
             ctx.fillStyle = pg;
             roundRect(ctx, x, s.y, s.h, s.w, s.h/2); ctx.fill();
-            ctx.fillStyle = '#3b7c66';
-            ctx.fillRect(x-2, s.y+4, s.h+4, 4);
-            ctx.fillRect(x-2, s.y+s.w-8, s.h+4, 4);
-            ctx.fillStyle = 'rgba(255,255,255,.14)';
-            ctx.fillRect(x + s.h*0.3, s.y+6, 1.5, s.w-12);
           } else {
             const pg = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
-            pg.addColorStop(0, '#0f2b24'); pg.addColorStop(0.32, '#2f6b58');
-            pg.addColorStop(0.62, '#1d4a3c'); pg.addColorStop(1, '#0b201a');
+            pg.addColorStop(0, pipeCols[0]); pg.addColorStop(0.32, pipeCols[1]);
+            pg.addColorStop(1, pipeCols[0]);
             ctx.fillStyle = pg;
             roundRect(ctx, x, s.y, s.w, s.h, s.h/2); ctx.fill();
-            ctx.fillStyle = '#3b7c66';
-            ctx.fillRect(x+4, s.y-2, 4, s.h+4);
-            ctx.fillRect(x+s.w-8, s.y-2, 4, s.h+4);
-            ctx.fillStyle = 'rgba(255,255,255,.14)';
-            ctx.fillRect(x+6, s.y + s.h*0.3, s.w-12, 1.5);
           }
         } else {
           const wobY = Math.sin(bgT*0.02 + s.wob) * 6;
@@ -2517,6 +2524,7 @@ function render(){
 }
 
 function drawShard(s){
+  if(TSPRITE){ TSPRITE.paintShard(ctx, s); return; }
   ctx.save();
   ctx.globalAlpha = s.alpha != null ? s.alpha : 1;
   ctx.translate(s.x, s.y);
@@ -2530,6 +2538,7 @@ function drawShard(s){
 }
 
 function drawBoss(b){
+  if(TSPRITE){ TSPRITE.paintBoss(ctx, b); return; }
   const x = b.x - b.w/2, y = b.y;
   ctx.fillStyle = 'rgba(0,0,0,.35)';
   roundRect(ctx, x+3, y+4, b.w, b.h, 12); ctx.fill();
@@ -2558,6 +2567,7 @@ function drawBrick(b){
   const spr = getBrickSpriteCanvas(b);
   if(spr){
     ctx.drawImage(spr, px, py, pw, ph);
+    if(TSPRITE){ TSPRITE.paintHpPips(ctx, b); }
     if(b.hitFlash > 0){
       ctx.save();
       ctx.globalAlpha = Math.min(0.85, b.hitFlash / 10);
@@ -2669,6 +2679,12 @@ function drawDyingBrick(d){
 }
 
 function drawPaddle(){
+  if(TSPRITE){
+    TSPRITE.paintPaddle(ctx, paddle, activePowers, performance.now(), {
+      W, H, reducedMotion: !!(reducedMotion && reducedMotion.matches)
+    });
+    return;
+  }
   const sq = Math.min(1, paddle.squash || 0);
   const x = paddle.x - paddle.w/2, y = paddle.y + (paddle.recoil||0), w = paddle.w, h = paddle.h;
   ctx.save();
@@ -2785,6 +2801,13 @@ function drawPaddle(){
 
 const BALL_VISUAL_SCALE = 1.38;
 function drawBall(b){
+  if(TSPRITE){
+    TSPRITE.paintBall(ctx, b, {
+      visualScale: BALL_VISUAL_SCALE,
+      reducedMotion: !!(reducedMotion && reducedMotion.matches)
+    });
+    return;
+  }
   const ghostly = b.ghost > 0;
   const r = b.r;
   const drawR = r * BALL_VISUAL_SCALE;
@@ -2880,6 +2903,12 @@ function drawBall(b){
 }
 
 function drawPowerup(p){
+  if(TSPRITE){
+    TSPRITE.paintCapsule(ctx, p, performance.now(), {
+      reducedMotion: !!(reducedMotion && reducedMotion.matches)
+    });
+    return;
+  }
   const t = performance.now() * 0.003;
   p.spin = (p.spin || 0) + 0.04;
   const y = p.y + Math.sin(p.wob)*2;
