@@ -401,6 +401,7 @@ const STORAGE_KEY = 'turdanoid_v2_best';
 const SOUND_KEY = 'turdanoid_v2_sound';
 const AMBIENT_KEY = 'turdanoid_v3_ambient';
 const HAPTIC_KEY = 'turdanoid_v3_haptic';
+const PREFS_KEY = typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.PREFS_KEY ? TurdanoidStorage.PREFS_KEY : 'turdanoid_prefs_v1';
 const BOSS_BEST_KEY = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss.BOSS_BEST_KEY : 'turdanoid_boss_best_v1';
 function probeLocalStorage(){
   try {
@@ -433,9 +434,41 @@ function createSafeStorage(primary){
 const persist = (typeof TurdanoidStorage !== 'undefined')
   ? TurdanoidStorage.createSafeStorage(TurdanoidStorage.probeStorage(window))
   : createSafeStorage(probeLocalStorage());
-let best = parseInt(persist.getItem(STORAGE_KEY)||'0',10);
-let bossBest = parseInt(persist.getItem(BOSS_BEST_KEY)||'0',10);
-let soundOn = persist.getItem(SOUND_KEY) !== '0';
+function loadGamePrefs(){
+  if(typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.loadPrefs){
+    return TurdanoidStorage.loadPrefs(persist);
+  }
+  return {
+    v: 1,
+    best: parseInt(persist.getItem(STORAGE_KEY)||'0',10)||0,
+    soundOn: persist.getItem(SOUND_KEY) !== '0',
+    ambientOn: persist.getItem(AMBIENT_KEY) === '1',
+    hapticOn: persist.getItem(HAPTIC_KEY) !== '0',
+    bossBest: parseInt(persist.getItem(BOSS_BEST_KEY)||'0',10)||0
+  };
+}
+function persistPrefs(patch){
+  if(typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.savePrefs){
+    const next = TurdanoidStorage.savePrefs(persist, patch);
+    best = next.best;
+    bossBest = next.bossBest;
+    soundOn = next.soundOn;
+    ambientOn = next.ambientOn;
+    hapticOn = next.hapticOn;
+    return next;
+  }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'best')){ best = patch.best; persist.setItem(STORAGE_KEY, String(best)); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'bossBest')){ bossBest = patch.bossBest; persist.setItem(BOSS_BEST_KEY, String(bossBest)); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'soundOn')){ soundOn = !!patch.soundOn; persist.setItem(SOUND_KEY, soundOn?'1':'0'); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'ambientOn')){ ambientOn = !!patch.ambientOn; persist.setItem(AMBIENT_KEY, ambientOn?'1':'0'); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'hapticOn')){ hapticOn = patch.hapticOn !== false; persist.setItem(HAPTIC_KEY, hapticOn?'1':'0'); }
+  persist.setItem(PREFS_KEY, JSON.stringify({ v:1, best, soundOn, ambientOn, hapticOn, bossBest }));
+  return { v:1, best, soundOn, ambientOn, hapticOn, bossBest };
+}
+const prefs = loadGamePrefs();
+let best = Number.isFinite(prefs.best) ? prefs.best : 0;
+let bossBest = Number.isFinite(prefs.bossBest) ? prefs.bossBest : 0;
+let soundOn = prefs.soundOn !== false;
 function suiteMuted(){
   try {
     if (window.Suite && typeof Suite.isMuted === 'function') return !!Suite.isMuted();
@@ -443,8 +476,8 @@ function suiteMuted(){
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
-let ambientOn = persist.getItem(AMBIENT_KEY) === '1';
-let hapticOn = persist.getItem(HAPTIC_KEY) !== '0';
+let ambientOn = !!prefs.ambientOn;
+let hapticOn = prefs.hapticOn !== false;
 let gameMode = 'classic';
 let runStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
 let levelStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
@@ -1244,7 +1277,7 @@ btnSound.addEventListener('click', ()=>{
   } else {
     soundOn = false;
   }
-  persist.setItem(SOUND_KEY, soundOn?'1':'0');
+  persistPrefs({ soundOn });
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
@@ -1491,10 +1524,10 @@ function gameOver(won){
   cancelLevelTransition();
   if(gameMode === 'boss'){
     bossBest = Math.max(bossBest, score);
-    persist.setItem(BOSS_BEST_KEY, String(bossBest));
+    persistPrefs({ bossBest });
   } else {
     best = Math.max(best, score);
-    persist.setItem(STORAGE_KEY, String(best));
+    persistPrefs({ best });
   }
   updateSideStats();
   tEnd.classList.toggle('is-win', !!won);
@@ -3274,6 +3307,9 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get boss(){ return boss; },
     get sludges(){ return sludges; },
     get remainingBreakable(){ return breakableLeft(); },
+    get best(){ return best; },
+    get soundOn(){ return soundOn; },
+    persistPrefs, loadGamePrefs,
     set level(v){ level = Math.max(1, Math.floor(v)); },
     get powerTypes(){ return TQA ? TQA.POWER_TYPES : POWERS.map(p => p.t); },
     get timedPowerTypes(){ return TQA ? TQA.TIMED_POWER_TYPES : []; }
