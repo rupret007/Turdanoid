@@ -282,30 +282,73 @@
       .replace(/>/g, '&gt;');
   };
 
+  function suiteStorage() {
+    try {
+      return localStorage || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Suite.table = {
     remember(page, snapshot) {
-      return !!(TableContinue && TableContinue.rememberContinue(localStorage, page, snapshot));
+      try {
+        const storage = suiteStorage();
+        return !!(storage && TableContinue && TableContinue.rememberContinue(storage, page, snapshot));
+      } catch (e) {
+        return false;
+      }
     },
     load(page) {
-      return TableContinue ? TableContinue.loadContinue(localStorage, page) : null;
+      try {
+        const storage = suiteStorage();
+        return storage && TableContinue ? TableContinue.loadContinue(storage, page) : null;
+      } catch (e) {
+        return null;
+      }
     },
     clear(page) {
-      return !!(TableContinue && TableContinue.clearContinue(localStorage, page));
+      try {
+        const storage = suiteStorage();
+        return !!(storage && TableContinue && TableContinue.clearContinue(storage, page));
+      } catch (e) {
+        return false;
+      }
     },
     has(page) {
-      return !!(TableContinue && TableContinue.hasLiveContinue(localStorage, page));
+      try {
+        const storage = suiteStorage();
+        return !!(storage && TableContinue && TableContinue.hasLiveContinue(storage, page));
+      } catch (e) {
+        return false;
+      }
     },
     list() {
-      return TableContinue ? TableContinue.listLiveContinuePages(localStorage) : [];
+      try {
+        const storage = suiteStorage();
+        return storage && TableContinue ? TableContinue.listLiveContinuePages(storage) : [];
+      } catch (e) {
+        return [];
+      }
     }
   };
 
   Suite.guide = {
     hasSeen(page) {
-      return !!(TableContinue && TableContinue.hasSeenGuide(localStorage, page));
+      try {
+        const storage = suiteStorage();
+        return !!(storage && TableContinue && TableContinue.hasSeenGuide(storage, page));
+      } catch (e) {
+        return false;
+      }
     },
     mark(page) {
-      return !!(TableContinue && TableContinue.markGuideSeen(localStorage, page));
+      try {
+        const storage = suiteStorage();
+        return !!(storage && TableContinue && TableContinue.markGuideSeen(storage, page));
+      } catch (e) {
+        return false;
+      }
     }
   };
 
