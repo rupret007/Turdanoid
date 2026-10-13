@@ -7,7 +7,7 @@ import {
   distinctRowHueCount,
   MATERIALS
 } from '../games/turdanoid-brick.js';
-import { spriteKey } from '../games/turdanoid-brick-sprite.js';
+import { spriteKey, paintBrickSprite } from '../games/turdanoid-brick-sprite.js';
 import { shouldPlaceBrick, allPatternNames, EXTRA_PATTERN_NAMES } from '../games/turdanoid-levels.js';
 
 describe('Turdanoid brick art', () => {
@@ -33,7 +33,7 @@ describe('Turdanoid brick art', () => {
     expect(pickMaterial(0, 2, 8, () => 0)).toBe('porcelain');
   });
 
-  it('uses rainbow row hues for sewer bricks (not one flat mint)', () => {
+  it('uses distinct ceramic row glazes for sewer bricks (not one flat mint)', () => {
     const top = brickColors(0, 6, 'sewer', 0, 0);
     const mid = brickColors(3, 6, 'sewer', 0, 0);
     const bot = brickColors(5, 6, 'sewer', 0, 0);
@@ -52,6 +52,43 @@ describe('Turdanoid brick art', () => {
     const a = spriteKey('sewer', 0, false, 40, 18, '#ff0000', '#880000');
     const b = spriteKey('sewer', 0, false, 40, 18, '#00ff00', '#008800');
     expect(a).not.toBe(b);
+  });
+
+  it('paints ceramic bricks with an inset bevel instead of a candy wash', () => {
+    const calls = [];
+    const gradient = { addColorStop() {} };
+    const ctx = {
+      fillStyle: '',
+      strokeStyle: '',
+      shadowColor: '',
+      shadowBlur: 0,
+      lineWidth: 1,
+      clearRect() { calls.push('clearRect'); },
+      save() { calls.push('save'); },
+      restore() { calls.push('restore'); },
+      beginPath() {},
+      closePath() {},
+      fill() { calls.push('fill'); },
+      stroke() {},
+      fillRect() {},
+      moveTo() {},
+      lineTo() {},
+      arcTo() {},
+      arc() {},
+      ellipse() {},
+      clip() { calls.push('clip'); },
+      createLinearGradient() { return gradient; },
+      createRadialGradient() { return gradient; }
+    };
+    const drawn = paintBrickSprite(ctx, 40, 18, {
+      material: 'sewer',
+      crackStage: 0,
+      c1: '#3ecf9a',
+      c2: '#1a7a58'
+    });
+    expect(drawn.ceramic).toBe(true);
+    expect(drawn.extruded).toBe(true);
+    expect(calls).toContain('clip');
   });
 });
 

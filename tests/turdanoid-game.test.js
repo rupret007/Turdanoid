@@ -80,6 +80,24 @@ function bootGameWithPrefs(prefs = {}) {
   return { dom, g };
 }
 
+function bootGameWithStorage(mutateStorage) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://localhost/TurdAnoid.html',
+    beforeParse(window) {
+      window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
+      window.requestAnimationFrame = () => 0;
+      window.cancelAnimationFrame = () => {};
+      mutateStorage(window);
+    }
+  });
+  const g = dom.window.__turdanoid;
+  if (!g) {
+    throw new Error('TurdAnoid test hook (window.__turdanoid) missing');
+  }
+  return { dom, g };
+}
+
 function stepFrames(g, frames, dt = FRAME) {
   for (let i = 0; i < frames; i++) {
     g.step(dt);
@@ -586,6 +604,16 @@ describe('TurdAnoid Pages debug surface', () => {
     expect(typeof dom.window.__turdanoid.startGame).toBe('function');
   });
 
+  it('jumps a classic campaign level for visual capture', () => {
+    const { g } = bootGame();
+    g.startGame();
+    expect(g.qaJumpLevel(7)).toBe(7);
+    expect(g.level).toBe(7);
+    expect(g.state).toBe('playing');
+    expect(g.qaJumpLevel(25)).toBe(25);
+    expect(g.level).toBe(25);
+  });
+
   it('exposes the test hook on the local smoke host', () => {
     const dom = bootAt('http://127.0.0.1:8123/TurdAnoid.html');
     expect(dom.window.__turdanoid).toBeTruthy();
@@ -669,5 +697,50 @@ describe('TurdAnoid phone chrome and suite mute', () => {
     expect(pause.getAttribute('aria-label')).toBe('Resume game');
     g.doResume();
     expect(pause.getAttribute('aria-label')).toBe('Pause game');
+  });
+});
+
+describe('TurdAnoid blocked storage', () => {
+  it('boots when getItem throws', () => {
+    const { g } = bootGameWithStorage((window) => {
+      window.Storage.prototype.getItem = () => {
+        throw new window.DOMException('Storage blocked', 'SecurityError');
+      };
+    });
+    expect(g.state).toBe('title');
+    expect(() => g.startGame()).not.toThrow();
+    expect(g.state).toBe('playing');
+    expect(g.suiteMuted()).toBe(false);
+    expect(g.soundBlocked()).toBe(false);
+  });
+
+  it('keeps best score in memory when setItem throws', () => {
+    const { dom, g } = bootGameWithStorage((window) => {
+      window.Storage.prototype.setItem = () => {
+        throw new window.DOMException('Quota exceeded', 'QuotaExceededError');
+      };
+    });
+    g.startGame();
+    g.score = 4200;
+    expect(() => g.gameOver(false)).not.toThrow();
+    expect(dom.window.document.getElementById('endBest').textContent).toBe('4,200');
+    g.startGame();
+    g.score = 100;
+    expect(() => g.gameOver(false)).not.toThrow();
+    expect(dom.window.document.getElementById('endBest').textContent).toBe('4,200');
+  });
+
+  it('toggles mute in memory when setItem throws', () => {
+    const { dom, g } = bootGameWithStorage((window) => {
+      window.Storage.prototype.setItem = () => {
+        throw new window.DOMException('Quota exceeded', 'QuotaExceededError');
+      };
+    });
+    const sound = dom.window.document.getElementById('btnSound');
+    expect(g.soundBlocked()).toBe(false);
+    expect(() => sound.click()).not.toThrow();
+    expect(g.soundBlocked()).toBe(true);
+    expect(() => sound.click()).not.toThrow();
+    expect(g.soundBlocked()).toBe(false);
   });
 });

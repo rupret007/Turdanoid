@@ -34,8 +34,8 @@
         h,
         life: 28 + rng() * 22,
         max: 50,
-        c1: brick.c1 || '#7af1c4',
-        c2: brick.c2 || '#3aa97c',
+        c1: brick.c1 || (root.TurdanoidTheme && root.TurdanoidTheme.TOKENS.slime) || '#3ecf9a',
+        c2: brick.c2 || (root.TurdanoidTheme && root.TurdanoidTheme.TOKENS.slimeDeep) || '#1a7a58',
         alpha: 1
       });
     }

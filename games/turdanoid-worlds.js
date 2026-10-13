@@ -1,3 +1,4 @@
+import './turdanoid-theme.js';
 import './turdanoid-worlds-core.js';
 
 const api = globalThis.TurdanoidWorlds;
