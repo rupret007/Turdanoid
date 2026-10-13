@@ -403,6 +403,7 @@ const STORAGE_KEY = 'turdanoid_v2_best';
 const SOUND_KEY = 'turdanoid_v2_sound';
 const AMBIENT_KEY = 'turdanoid_v3_ambient';
 const HAPTIC_KEY = 'turdanoid_v3_haptic';
+const PREFS_KEY = typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.PREFS_KEY ? TurdanoidStorage.PREFS_KEY : 'turdanoid_prefs_v1';
 const BOSS_BEST_KEY = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss.BOSS_BEST_KEY : 'turdanoid_boss_best_v1';
 function probeLocalStorage(){
   try {
@@ -435,9 +436,134 @@ function createSafeStorage(primary){
 const persist = (typeof TurdanoidStorage !== 'undefined')
   ? TurdanoidStorage.createSafeStorage(TurdanoidStorage.probeStorage(window))
   : createSafeStorage(probeLocalStorage());
-let best = parseInt(persist.getItem(STORAGE_KEY)||'0',10);
-let bossBest = parseInt(persist.getItem(BOSS_BEST_KEY)||'0',10);
-let soundOn = persist.getItem(SOUND_KEY) !== '0';
+function parseFallbackScore(raw){
+  if(typeof TurdanoidStorage !== 'undefined' && typeof TurdanoidStorage.parseScore === 'function'){
+    return TurdanoidStorage.parseScore(raw);
+  }
+  if(typeof raw === 'number'){
+    return (Number.isFinite(raw) && Number.isInteger(raw) && raw >= 0 && raw <= 1e9) ? raw : null;
+  }
+  if(typeof raw === 'string' && /^(?:0|[1-9]\d*)$/.test(raw)){
+    const n = Number(raw);
+    return (Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 1e9) ? n : null;
+  }
+  return null;
+}
+function mergeFallbackScores(){
+  if(typeof TurdanoidStorage !== 'undefined' && typeof TurdanoidStorage.mergeScores === 'function'){
+    return TurdanoidStorage.mergeScores.apply(null, arguments);
+  }
+  let highest = null;
+  for(let i = 0; i < arguments.length; i++){
+    const n = parseFallbackScore(arguments[i]);
+    if(n !== null && (highest === null || n > highest)) highest = n;
+  }
+  return highest === null ? 0 : highest;
+}
+function fallbackScore(raw){
+  return mergeFallbackScores(raw);
+}
+function keepRecoverableScore(incoming, existing){
+  return mergeFallbackScores(incoming, existing);
+}
+function adoptFallbackScore(raw, current){
+  return mergeFallbackScores(raw, current);
+}
+function adoptFallbackBool(raw, current){
+  return (raw === true || raw === false) ? raw : current;
+}
+function remirrorFallbackPrefs(prefs, existing){
+  prefs.best = mergeFallbackScores(prefs.best, existing && existing.best, persist.getItem(STORAGE_KEY));
+  prefs.bossBest = mergeFallbackScores(prefs.bossBest, existing && existing.bossBest, persist.getItem(BOSS_BEST_KEY));
+  persist.setItem(STORAGE_KEY, String(prefs.best));
+  persist.setItem(SOUND_KEY, prefs.soundOn?'1':'0');
+  persist.setItem(AMBIENT_KEY, prefs.ambientOn?'1':'0');
+  persist.setItem(HAPTIC_KEY, prefs.hapticOn?'1':'0');
+  persist.setItem(BOSS_BEST_KEY, String(prefs.bossBest));
+  const known = { v:1, best:prefs.best, soundOn:prefs.soundOn, ambientOn:prefs.ambientOn, hapticOn:prefs.hapticOn, bossBest:prefs.bossBest };
+  let stored = known;
+  if(existing && typeof existing === 'object' && !Array.isArray(existing)){
+    const extras = {};
+    Object.keys(existing).forEach((k)=>{ if(!Object.prototype.hasOwnProperty.call(known, k)) extras[k] = existing[k]; });
+    stored = Object.assign({}, extras, known);
+    if(typeof existing.v === 'number' && Number.isInteger(existing.v) && existing.v > 1) stored.v = existing.v;
+  }
+  persist.setItem(PREFS_KEY, JSON.stringify(stored));
+}
+function loadGamePrefs(){
+  if(typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.loadPrefs){
+    return TurdanoidStorage.loadPrefs(persist);
+  }
+  const prefs = {
+    v: 1,
+    best: fallbackScore(persist.getItem(STORAGE_KEY)),
+    soundOn: persist.getItem(SOUND_KEY) !== '0',
+    ambientOn: persist.getItem(AMBIENT_KEY) === '1',
+    hapticOn: persist.getItem(HAPTIC_KEY) !== '0',
+    bossBest: fallbackScore(persist.getItem(BOSS_BEST_KEY))
+  };
+  let existing = null;
+  try {
+    const prev = JSON.parse(persist.getItem(PREFS_KEY) || 'null');
+    if(prev && typeof prev === 'object' && !Array.isArray(prev)){
+      existing = prev;
+      if(Object.prototype.hasOwnProperty.call(prev,'best')) prefs.best = adoptFallbackScore(prev.best, prefs.best);
+      if(Object.prototype.hasOwnProperty.call(prev,'soundOn')) prefs.soundOn = adoptFallbackBool(prev.soundOn, prefs.soundOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'ambientOn')) prefs.ambientOn = adoptFallbackBool(prev.ambientOn, prefs.ambientOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'hapticOn')) prefs.hapticOn = adoptFallbackBool(prev.hapticOn, prefs.hapticOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'bossBest')) prefs.bossBest = adoptFallbackScore(prev.bossBest, prefs.bossBest);
+    }
+  } catch (e) {}
+  const rawBlob = persist.getItem(PREFS_KEY);
+  const hasLegacy = persist.getItem(STORAGE_KEY) !== null
+    || persist.getItem(SOUND_KEY) !== null
+    || persist.getItem(AMBIENT_KEY) !== null
+    || persist.getItem(HAPTIC_KEY) !== null
+    || persist.getItem(BOSS_BEST_KEY) !== null;
+  if(rawBlob !== null || hasLegacy){
+    remirrorFallbackPrefs(prefs, existing);
+  }
+  return prefs;
+}
+function persistPrefs(patch){
+  if(typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.savePrefs){
+    const next = TurdanoidStorage.savePrefs(persist, patch);
+    best = next.best;
+    bossBest = next.bossBest;
+    soundOn = next.soundOn;
+    ambientOn = next.ambientOn;
+    hapticOn = next.hapticOn;
+    return next;
+  }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'best')){ best = patch.best; }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'bossBest')){ bossBest = patch.bossBest; }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'soundOn')){ soundOn = !!patch.soundOn; persist.setItem(SOUND_KEY, soundOn?'1':'0'); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'ambientOn')){ ambientOn = !!patch.ambientOn; persist.setItem(AMBIENT_KEY, ambientOn?'1':'0'); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'hapticOn')){ hapticOn = patch.hapticOn !== false; persist.setItem(HAPTIC_KEY, hapticOn?'1':'0'); }
+  let prev = null;
+  try {
+    const parsed = JSON.parse(persist.getItem(PREFS_KEY) || 'null');
+    if(parsed && typeof parsed === 'object' && !Array.isArray(parsed)) prev = parsed;
+  } catch (e) {}
+  best = mergeFallbackScores(best, prev && prev.best, persist.getItem(STORAGE_KEY));
+  bossBest = mergeFallbackScores(bossBest, prev && prev.bossBest, persist.getItem(BOSS_BEST_KEY));
+  persist.setItem(STORAGE_KEY, String(best));
+  persist.setItem(BOSS_BEST_KEY, String(bossBest));
+  const known = { v:1, best, soundOn, ambientOn, hapticOn, bossBest };
+  let stored = known;
+  if(prev){
+    const extras = {};
+    Object.keys(prev).forEach((k)=>{ if(!Object.prototype.hasOwnProperty.call(known, k)) extras[k] = prev[k]; });
+    stored = Object.assign({}, extras, known);
+    if(typeof prev.v === 'number' && Number.isInteger(prev.v) && prev.v > 1) stored.v = prev.v;
+  }
+  persist.setItem(PREFS_KEY, JSON.stringify(stored));
+  return known;
+}
+const prefs = loadGamePrefs();
+let best = Number.isFinite(prefs.best) ? prefs.best : 0;
+let bossBest = Number.isFinite(prefs.bossBest) ? prefs.bossBest : 0;
+let soundOn = prefs.soundOn !== false;
 function suiteMuted(){
   try {
     if (window.Suite && typeof Suite.isMuted === 'function') return !!Suite.isMuted();
@@ -445,8 +571,8 @@ function suiteMuted(){
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
-let ambientOn = persist.getItem(AMBIENT_KEY) === '1';
-let hapticOn = persist.getItem(HAPTIC_KEY) !== '0';
+let ambientOn = !!prefs.ambientOn;
+let hapticOn = prefs.hapticOn !== false;
 let gameMode = 'classic';
 let runStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
 let levelStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
@@ -1249,7 +1375,7 @@ btnSound.addEventListener('click', ()=>{
   } else {
     soundOn = false;
   }
-  persist.setItem(SOUND_KEY, soundOn?'1':'0');
+  persistPrefs({ soundOn });
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
@@ -1496,10 +1622,10 @@ function gameOver(won){
   cancelLevelTransition();
   if(gameMode === 'boss'){
     bossBest = Math.max(bossBest, score);
-    persist.setItem(BOSS_BEST_KEY, String(bossBest));
+    persistPrefs({ bossBest });
   } else {
     best = Math.max(best, score);
-    persist.setItem(STORAGE_KEY, String(best));
+    persistPrefs({ best });
   }
   updateSideStats();
   tEnd.classList.toggle('is-win', !!won);
@@ -3294,6 +3420,9 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get boss(){ return boss; },
     get sludges(){ return sludges; },
     get remainingBreakable(){ return breakableLeft(); },
+    get best(){ return best; },
+    get soundOn(){ return soundOn; },
+    persistPrefs, loadGamePrefs,
     set level(v){ level = Math.max(1, Math.floor(v)); },
     get powerTypes(){ return TQA ? TQA.POWER_TYPES : POWERS.map(p => p.t); },
     get timedPowerTypes(){ return TQA ? TQA.TIMED_POWER_TYPES : []; }
