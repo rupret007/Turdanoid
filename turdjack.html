@@ -2124,7 +2124,7 @@
 
     .welcome-card {
       position: relative;
-      width: min(560px, 100%);
+      width: min(640px, 100%);
       border: 1px solid rgba(255, 215, 106, 0.45);
       border-radius: 18px;
       background:
@@ -2180,8 +2180,8 @@
       list-style: none;
       margin: 8px 0 12px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 5px 10px;
+      grid-template-columns: 1fr;
+      gap: 5px;
       font-size: 0.84rem;
       line-height: 1.4;
       color: var(--ink);
@@ -2426,7 +2426,7 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .welcome-card { padding: 16px; }
-      .welcome-card ul { grid-template-columns: 1fr; gap: 4px; }
+      .welcome-card ul { gap: 4px; }
       .welcome-actions .btn {
         flex: 1 1 140px;
       }
