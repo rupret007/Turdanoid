@@ -822,6 +822,21 @@
     return spawned;
   }
 
+  /**
+   * Bounded paddle overlap for falling hazards. A drip that has already
+   * passed below the seat must not keep dealing damage.
+   */
+  function hazardHitsPaddle(sl, paddle) {
+    if (!sl || !paddle) {
+      return false;
+    }
+    const r = Number(sl.r) || 0;
+    const half = (Number(paddle.w) || 0) / 2;
+    return sl.y + r >= paddle.y
+      && sl.y - r <= paddle.y + (Number(paddle.h) || 0)
+      && Math.abs(sl.x - paddle.x) < half + r + 4;
+  }
+
   root.TurdanoidLevels = {
     BASE_PATTERN_NAMES,
     EXTRA_PATTERN_NAMES,
@@ -842,6 +857,7 @@
     applyDamage,
     isClearable,
     hazardIntervalFrames,
-    collectDripSpawns
+    collectDripSpawns,
+    hazardHitsPaddle
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

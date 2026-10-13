@@ -37,6 +37,27 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(hudMetrics(1280).left).toBe(10);
   });
 
+  it('does not restore an inner lives margin under the 420px or 360px rules', () => {
+    const block = (max) => {
+      const re = new RegExp(`@media \\(max-width:${max}px\\)\\{([\\s\\S]*?)\\n  \\}`);
+      const m = html.match(re);
+      return m ? m[1] : '';
+    };
+    const phone = block(520);
+    const compact = block(420);
+    const tiny = block(360);
+    expect(phone).toMatch(/\.hud\{[^}]*right:108px/);
+    expect(phone).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
+    expect(compact).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
+    expect(tiny).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
+    expect(compact).not.toMatch(/\.hud \.right\{margin-right:(?:9|10)\d+px/);
+    expect(tiny).not.toMatch(/\.hud \.right\{margin-right:(?:9|10)\d+px/);
+    for (const width of [360, 390, 430]) {
+      expect(hudMetrics(width).innerRightMargin).toBe(0);
+      expect(hudMetrics(width).right).toBe(108);
+    }
+  });
+
   it('stages the title as a poster with a kicker and staggered entrance', () => {
     expect(html).toContain('title-poster');
     expect(html).toContain('title-kicker');

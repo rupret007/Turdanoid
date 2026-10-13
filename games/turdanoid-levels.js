@@ -22,3 +22,4 @@ export const applyDamage = api.applyDamage;
 export const isClearable = api.isClearable;
 export const hazardIntervalFrames = api.hazardIntervalFrames;
 export const collectDripSpawns = api.collectDripSpawns;
+export const hazardHitsPaddle = api.hazardHitsPaddle;
