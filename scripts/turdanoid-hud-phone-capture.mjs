@@ -4,11 +4,11 @@
  */
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
-import { extname, join, dirname } from 'node:path';
+import { extname, join, dirname, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.argv[2]) || 8167;
 const outDir = join(root, 'docs/turdanoid-hud-fix');
 
@@ -22,13 +22,43 @@ const MIME = {
 
 const WIDTHS = [360, 390, 430];
 
-function startServer() {
-  return new Promise((resolve) => {
+/**
+ * Decode a request path, resolve it against the repo root, and reject
+ * anything that lands outside (including encoded /..%2f..%2f traversal).
+ */
+export function resolveSafeFilePath(urlPath, repoRoot = root) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath);
+  } catch {
+    return null;
+  }
+  const requested = decoded === '/' || decoded === '' ? 'index.html' : decoded.replace(/^[/\\]+/, '');
+  const resolvedRoot = resolve(repoRoot);
+  const filePath = resolve(resolvedRoot, requested);
+  const rel = relative(resolvedRoot, filePath);
+  if (rel.startsWith('..') || isAbsolute(rel)) {
+    return null;
+  }
+  return filePath;
+}
+
+function requestPath(req) {
+  const raw = req.url || '/';
+  const cut = raw.split('?')[0].split('#')[0];
+  return cut || '/';
+}
+
+export function startServer(listenPort = port) {
+  return new Promise((ready) => {
     const server = createServer(async (req, res) => {
       try {
-        const urlPath = decodeURIComponent(new URL(req.url, `http://127.0.0.1:${port}`).pathname);
-        const safePath = urlPath.replace(/^(\.\.[/\\])+/, '');
-        const filePath = join(root, safePath === '/' ? 'index.html' : safePath);
+        const filePath = resolveSafeFilePath(requestPath(req));
+        if (!filePath) {
+          res.writeHead(403);
+          res.end('forbidden');
+          return;
+        }
         const body = await readFile(filePath);
         res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
         res.end(body);
@@ -37,7 +67,7 @@ function startServer() {
         res.end('not found');
       }
     });
-    server.listen(port, '127.0.0.1', () => resolve(server));
+    server.listen(listenPort, '127.0.0.1', () => ready(server));
   });
 }
 
@@ -100,7 +130,13 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const launchedDirectly =
+  Boolean(process.argv[1]) &&
+  resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1]);
+
+if (launchedDirectly) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
