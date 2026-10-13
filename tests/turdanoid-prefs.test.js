@@ -34,6 +34,28 @@ function makeCtxStub() {
   });
 }
 
+function bootPageWithoutModulePrefs(seed = {}) {
+  const dom = new JSDOM(html, {
+    runScripts: 'dangerously',
+    url: 'http://localhost/TurdAnoid.html',
+    beforeParse(window) {
+      window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
+      window.requestAnimationFrame = () => 0;
+      window.cancelAnimationFrame = () => {};
+      window.eval(levelsCore);
+      window.eval(storageCore);
+      delete window.TurdanoidStorage.loadPrefs;
+      delete window.TurdanoidStorage.savePrefs;
+      Object.entries(seed).forEach(([key, value]) => window.localStorage.setItem(key, value));
+    }
+  });
+  const g = dom.window.__turdanoid;
+  if (!g) {
+    throw new Error('TurdAnoid test hook (window.__turdanoid) missing');
+  }
+  return { dom, g, ls: dom.window.localStorage };
+}
+
 function bootPage(seed = {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
@@ -207,5 +229,64 @@ describe('TurdAnoid page prefs persistence', () => {
     });
     expect(g.best).toBe(0);
     expect(readPrefs(ls)).toEqual(DEFAULT_PREFS);
+  });
+
+  it('repairs an invalid future blob on boot without dropping extras', () => {
+    const { g, ls } = bootPage({
+      [PREFS_KEY]: JSON.stringify({
+        v: 2,
+        best: -9,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 1,
+        extra: 'keep'
+      })
+    });
+    expect(g.best).toBe(0);
+    expect(readPrefs(ls)).toEqual({
+      extra: 'keep',
+      v: 2,
+      best: 0,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+  });
+
+  it('does not use parseInt for preference scores in the page', () => {
+    expect(html).not.toMatch(/parseInt\s*\(\s*persist\.getItem/);
+    expect(html).toContain('fallbackScore');
+    expect(html).toContain('/^(?:0|[1-9]\\d*)$/');
+  });
+
+  it('page fallback rejects parseInt-prefix scores and keeps future extras', () => {
+    const { g, ls, dom } = bootPageWithoutModulePrefs({
+      turdanoid_v2_best: '4200garbage',
+      [PREFS_KEY]: JSON.stringify({
+        v: 2,
+        best: 12,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 1,
+        extra: 'keep'
+      })
+    });
+    expect(g.best).toBe(12);
+    expect(g.soundOn).toBe(true);
+    dom.window.document.getElementById('btnSound').click();
+    expect(g.soundOn).toBe(false);
+    expect(readPrefs(ls)).toEqual({
+      extra: 'keep',
+      v: 2,
+      best: 12,
+      soundOn: false,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
   });
 });

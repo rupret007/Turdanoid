@@ -303,6 +303,58 @@ describe('Turdanoid versioned prefs migration', () => {
     });
   });
 
+  it('repairs invalid known fields on a future blob without downgrading or dropping extras', () => {
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 2,
+        best: -9,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 1,
+        extra: 'keep',
+        theme: 'dark'
+      })
+    });
+    expect(loadPrefs(store)).toEqual({
+      v: 1,
+      best: 0,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual({
+      extra: 'keep',
+      theme: 'dark',
+      v: 2,
+      best: 0,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    const prefix = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 2,
+        best: '4200garbage',
+        soundOn: false,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 4,
+        extra: 'keep'
+      })
+    });
+    expect(loadPrefs(prefix).best).toBe(0);
+    expect(JSON.parse(prefix.data[PREFS_KEY])).toMatchObject({
+      v: 2,
+      extra: 'keep',
+      best: 0,
+      soundOn: false,
+      bossBest: 4
+    });
+  });
+
   it('rewrites a raw invalid score when sanitize would hide the damage', () => {
     const store = memoryPrimary({
       [PREFS_KEY]: JSON.stringify({ v: 1, best: -9 })

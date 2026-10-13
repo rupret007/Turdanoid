@@ -153,6 +153,23 @@
     return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= SCORE_MAX;
   }
 
+  function readPrefsVersion(value) {
+    if (typeof value === 'number') {
+      if (!Number.isInteger(value) || value < 1) {
+        return 0;
+      }
+      return value;
+    }
+    if (typeof value === 'string' && WELL_FORMED_INT.test(value)) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 1) {
+        return 0;
+      }
+      return n;
+    }
+    return 0;
+  }
+
   function sanitizeBool(value, fallback) {
     if (value === true || value === '1' || value === 'true') {
       return true;
@@ -247,7 +264,7 @@
 
   function writePrefs(storage, prefs, existingBlob) {
     const next = sanitizePrefs(prefs);
-    const existingVersion = existingBlob ? sanitizeScore(existingBlob.v, 0) : 0;
+    const existingVersion = existingBlob ? readPrefsVersion(existingBlob.v) : 0;
     const stored = Object.assign({}, copyUnknownFields(existingBlob), next);
     if (existingVersion > PREFS_VERSION) {
       stored.v = existingVersion;
@@ -265,13 +282,13 @@
     const blob = parsePrefsBlob(readRaw(storage, PREFS_KEY));
     const legacy = readLegacyPrefs(storage);
     if (blob) {
-      const blobVersion = sanitizeScore(blob.v, 0);
+      const blobVersion = readPrefsVersion(blob.v);
       const merged = sanitizePrefs({ ...legacy, ...blob }, legacy);
       const rawInvalid = !knownPrefsAreCanonical(blob);
       const mergedDiffers = !prefsEqual(sanitizePrefs(blob, DEFAULT_PREFS), merged);
       const repaired = rawInvalid || mergedDiffers;
       const oldVersion = blobVersion > 0 && blobVersion < PREFS_VERSION;
-      if ((repaired || oldVersion) && blobVersion <= PREFS_VERSION) {
+      if (repaired || oldVersion) {
         return writePrefs(storage, merged, blob);
       }
       return merged;
