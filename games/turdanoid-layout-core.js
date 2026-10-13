@@ -42,9 +42,14 @@
     const narrow = vw > 0 && vw <= 520;
     const pillReserve = narrow ? 68 : 0;
     const left = Math.max(10, Math.floor(safeLeft) + pillReserve);
+    // Phone chrome reserves the mute/pause cluster once, via the HUD box
+    // inset (`right`). The lives column must not add a second inner margin.
+    const right = narrow ? 108 : 10;
     return {
       narrow,
       left,
+      right,
+      innerRightMargin: narrow ? 0 : 104,
       top: 10,
       minTap: 44,
       trackingHud: 0.02,

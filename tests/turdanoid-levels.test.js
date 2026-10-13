@@ -14,7 +14,8 @@ import {
   computeBallSpeed,
   computeDropChance,
   hazardIntervalFrames,
-  collectDripSpawns
+  collectDripSpawns,
+  hazardHitsPaddle
 } from '../games/turdanoid-levels.js';
 
 describe('Turdanoid campaign definitions', () => {
@@ -109,6 +110,16 @@ describe('Turdanoid campaign definitions', () => {
     expect(collectDripSpawns([brick], 1, 12)).toHaveLength(0);
     brick.hazardCd = 0;
     expect(collectDripSpawns([{ x: 0, y: 0, w: 8, h: 8 }], 8, 12)).toHaveLength(0);
+  });
+
+  it('only counts a drip that still overlaps the paddle band', () => {
+    const paddle = { x: 100, y: 400, w: 80, h: 18 };
+    expect(hazardHitsPaddle({ x: 100, y: 408, r: 8 }, paddle)).toBe(true);
+    expect(hazardHitsPaddle({ x: 100, y: 400, r: 8 }, paddle)).toBe(true);
+    expect(hazardHitsPaddle({ x: 100, y: 430, r: 8 }, paddle)).toBe(false);
+    expect(hazardHitsPaddle({ x: 100, y: 450, r: 8 }, paddle)).toBe(false);
+    expect(hazardHitsPaddle({ x: 200, y: 408, r: 8 }, paddle)).toBe(false);
+    expect(hazardHitsPaddle(null, paddle)).toBe(false);
   });
 
   it('rejects a boxed-in required brick as uncleared', () => {

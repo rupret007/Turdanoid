@@ -220,6 +220,7 @@
   }
   @media (max-width:420px){
     .hud{font-size:clamp(11px,2.9vw,13px)}
+    .hud .right,.hud .center{margin-right:0;text-align:center}
     .hud .val{font-size:1.28em;text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px #000}
     .topbtns{gap:4px}
     .iconbtn{width:44px;height:44px;font-size:16px}
@@ -230,6 +231,7 @@
     .how-card p{font-size:12px}
   }
   @media (max-width:360px){
+    .hud .right,.hud .center{margin-right:0}
     .hud .center .val{font-size:1.2em}
     .life-pip{width:9px;height:11px}
   }
@@ -458,6 +460,7 @@ let flash = 0;
 let hitStop = 0;
 let pointerFromTouch = false;
 let waitingLaunch = true;
+let lifeGrace = 0;
 let levelTransition = false;
 let levelTimeoutId = 0;
 let bricks = [];
@@ -822,6 +825,7 @@ const FEEL_PADDLE_ENGLISH = 1.12;
 const FEEL_SHAKE_DECAY = 0.6;
 const FEEL_HIT_STOP_BREAK = 2;
 const FEEL_BALL_DANGER_START = 0.68;
+const LIFE_GRACE_FRAMES = 90;
 function tryLightHaptic(ms){
   if(!hapticOn || (reducedMotion && reducedMotion.matches)) return;
   try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){}
@@ -1044,6 +1048,7 @@ function newLevel(){
   levelStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
   bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
   sludges = [];
+  lifeGrace = 0;
   const campaign = TLEVELS && TLEVELS.definitionForLevel ? TLEVELS.definitionForLevel(level) : null;
   const cols = campaign ? campaign.cols : Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = campaign ? campaign.rows : Math.min(10, 4 + Math.floor(level/2));
@@ -1346,7 +1351,7 @@ function startBossGame(){
 function beginRun(){
   resize();
   paddle = newPaddle();
-  score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0;
+  score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
   runStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
   shards = []; impactRings = []; confettiBits = []; clearParty = null; boss = null; sludges = [];
   activePowers = {};
@@ -2003,6 +2008,7 @@ function step(dt){
 
   if(shake>0) shake = Math.max(0, shake - FEEL_SHAKE_DECAY*ts);
   if(flash>0) flash = Math.max(0, flash - 0.05*ts);
+  if(lifeGrace>0) lifeGrace = Math.max(0, lifeGrace - ts);
   stink = Math.min(1, stink + 0.0006*ts);
 
   if(!physicsFrozen){
@@ -2316,22 +2322,33 @@ function step(dt){
     const sl = sludges[i];
     sl.y += sl.vy * ts;
     if(sl.y > H + 20){ sludges.splice(i,1); continue; }
-    if(sl.y + sl.r >= paddle.y && Math.abs(sl.x - paddle.x) < paddle.w/2 + sl.r + 4){
-      sludges.splice(i,1);
-      if(activePowers.shield){
-        activePowers.shield = Math.max(0, activePowers.shield - 30);
-        floatText('BLOCKED', paddle.x, paddle.y - 24, '#7ae6ff');
-      } else {
-        lives--;
-        sfx.death();
-        shake = Math.max(shake, 10);
-        tryLightHaptic(28);
-        if(lives <= 0){ gameOver(false); return; }
-        balls = [ newBall(true) ];
-        waitingLaunch = true;
-        btnLaunch.classList.add('show');
-      }
+    const hitPaddle = TLEVELS && TLEVELS.hazardHitsPaddle
+      ? TLEVELS.hazardHitsPaddle(sl, paddle)
+      : (sl.y + sl.r >= paddle.y && sl.y - sl.r <= paddle.y + paddle.h && Math.abs(sl.x - paddle.x) < paddle.w/2 + sl.r + 4);
+    if(!hitPaddle) continue;
+    sludges.splice(i,1);
+    if(activePowers.shield){
+      activePowers.shield = Math.max(0, activePowers.shield - 30);
+      floatText('BLOCKED', paddle.x, paddle.y - 24, '#7ae6ff');
+      continue;
     }
+    // Same completed-wall protection as the ball-loss branch: a drip on the
+    // last life must not skip the level-clear / finale check.
+    if(gameMode !== 'boss' && (levelTransition || breakableLeft() === 0)){
+      continue;
+    }
+    if(lifeGrace > 0){
+      continue;
+    }
+    lives--;
+    sfx.death();
+    shake = Math.max(shake, 10);
+    tryLightHaptic(28);
+    lifeGrace = LIFE_GRACE_FRAMES;
+    if(lives <= 0){ gameOver(false); return; }
+    balls = [ newBall(true) ];
+    waitingLaunch = true;
+    btnLaunch.classList.add('show');
   }
 
   if(clearParty){
@@ -3254,6 +3271,9 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     set score(v){ score = v; },
     get level(){ return level; },
     get lives(){ return lives; },
+    set lives(v){ lives = Math.max(0, Math.floor(v)); },
+    get lifeGrace(){ return lifeGrace; },
+    get lifeGraceFrames(){ return LIFE_GRACE_FRAMES; },
     get balls(){ return balls; },
     set balls(v){ balls = v; },
     get bricks(){ return bricks; },
