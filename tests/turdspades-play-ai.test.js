@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { pickAiPlayCard, countRemainingSpades } from '../games/turdspades-play-ai.js';
+import {
+  pickAiPlayCard,
+  countRemainingSpades,
+  unseenSpadesForPlayer
+} from '../games/turdspades-play-ai.js';
 
 function beats(card, best, lead) {
   if (!best) {
@@ -40,11 +44,89 @@ function winnerEntry(trick) {
   return best;
 }
 
+function allSpades() {
+  return Array.from({ length: 13 }, (_, i) => ({
+    id: `S${i + 2}`,
+    suit: 'S',
+    rank: i + 2
+  }));
+}
+
+function fourHandTableWithBotSpades(botPlayer, botCount) {
+  const spades = allSpades();
+  const botSpades = spades.slice(0, botCount);
+  const rest = spades.slice(botCount);
+  const hands = [[], [], [], []];
+  hands[botPlayer] = [...botSpades, { id: 'C3', suit: 'C', rank: 3 }];
+  rest.forEach((card, i) => {
+    const seat = (botPlayer + 1 + (i % 3)) % 4;
+    hands[seat].push(card);
+  });
+  return { hands, botSpades };
+}
+
+const playHelpers = {
+  beats,
+  winnerEntry,
+  pickNilCoverCard: () => null,
+  low: (c) => c.slice().sort((a, b) => a.rank - b.rank)[0],
+  high: (c) => c.slice().sort((a, b) => b.rank - a.rank)[0]
+};
+
 describe('turdspades-play-ai', () => {
   it('counts remaining spades from hands and trick', () => {
     const hands = [[{ suit: 'S', rank: 14 }], [], [], []];
     const trick = [{ card: { suit: 'S', rank: 2 } }];
     expect(countRemainingSpades(hands, trick, [])).toBe(11);
+  });
+
+  it('counts 11 unseen trump when the acting bot holds two and none are public', () => {
+    const { hands } = fourHandTableWithBotSpades(1, 2);
+    const state = { hands, trick: [], playedThisRound: [] };
+    expect(unseenSpadesForPlayer(state, 1)).toBe(11);
+  });
+
+  it('deduplicates a public spade that appears in both the trick and history', () => {
+    const own = [
+      { id: 'SA', suit: 'S', rank: 14 },
+      { id: 'SK', suit: 'S', rank: 13 }
+    ];
+    const publicSpade = { id: 'S2-0', suit: 'S', rank: 2 };
+    expect(countRemainingSpades([own], [{ card: publicSpade }], [publicSpade])).toBe(10);
+    const { hands } = fourHandTableWithBotSpades(1, 2);
+    const oppSeat = hands.findIndex((hand, i) => i !== 1 && hand.some((c) => c.suit === 'S'));
+    const idx = hands[oppSeat].findIndex((c) => c.suit === 'S');
+    const fromHand = hands[oppSeat].splice(idx, 1)[0];
+    const state = {
+      hands,
+      trick: [{ player: oppSeat, card: fromHand }],
+      playedThisRound: [{ id: fromHand.id, suit: fromHand.suit, rank: fromHand.rank }]
+    };
+    expect(unseenSpadesForPlayer(state, 1)).toBe(10);
+  });
+
+  it('does not dump trump just because opponents still hold hidden spades', () => {
+    const { hands } = fourHandTableWithBotSpades(1, 2);
+    const state = {
+      bids: [4, 3, 4, 3],
+      tricks: [4, 3, 4, 3],
+      trick: [],
+      hands,
+      playedThisRound: []
+    };
+    const legal = [
+      { id: 'C3', suit: 'C', rank: 3 },
+      { id: 'SA', suit: 'S', rank: 14 }
+    ];
+    const card = pickAiPlayCard({
+      state,
+      player: 1,
+      legal,
+      difficulty: 'normal',
+      helpers: playHelpers
+    });
+    expect(unseenSpadesForPlayer(state, 1)).toBe(11);
+    expect(card.id).toBe('C3');
   });
 
   it('covers partner Nil with cheapest winner', () => {
