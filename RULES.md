@@ -67,8 +67,11 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 ### Level Progression
 
-- **30 total levels**, 18 rotating wall patterns (13 classics + 5 new: Fortress, Ring, Columns, Plunger X, Drip Wall)
-- Brick HP ramps up from level 3; metal bricks appear at level 6+
+- **30 unique data-driven walls** across five worlds of six (Bathroom Tiles, Sewer Pipes, Toxic Lagoon, Candy Clog, Golden Throne). Every level has its own layout — not a rotating stamp
+- Early walls are 1-hit and approachable. 2-hit tiles start on level 5, metal on 9, slime drips on 11, steel (indestructible) on world-boss keeps from level 6
+- Each world's sixth stage is a fortress boss beat (levels 6, 12, 18, 24, 30)
+- Brick HP total, ball speed, and drip-hazard count climb monotonically; power-up drops stay generous early and settle to the 12% floor
+- Steel bricks bounce the ball and never count toward a clear. Drip bricks leak sludge until you break them
 - Ball and paddle speed scale with level (capped)
 - Enlarge and Shrink last until their timers die, including across a wall clear. Losing a life still resets the paddle
 - Win by clearing level 30

@@ -11,10 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { JSDOM } from 'jsdom';
 
-const html = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), '..', 'TurdAnoid.html'),
-  'utf8'
-);
+const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
+const levelsCore = readFileSync(join(rootDir, 'games/turdanoid-levels-core.js'), 'utf8');
 
 const FRAME = 1000 / 60;
 
@@ -47,6 +46,7 @@ function bootAt(url) {
       // No rAF loop: tests drive step() manually for determinism.
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
+      window.eval(levelsCore);
     }
   });
   return dom;
@@ -69,6 +69,7 @@ function bootGameWithPrefs(prefs = {}) {
       window.HTMLCanvasElement.prototype.getContext = () => makeCtxStub();
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
+      window.eval(levelsCore);
       Object.entries(prefs).forEach(([key, value]) => window.localStorage.setItem(key, value));
     }
   });
@@ -598,6 +599,45 @@ describe('TurdAnoid Pages debug surface', () => {
   it('hides the test hook on file URLs', () => {
     const dom = bootAt('file:///TurdAnoid.html');
     expect(dom.window.__turdanoid).toBeUndefined();
+  });
+});
+
+describe('TurdAnoid campaign walls', () => {
+  it('starts on a 1-hit lesson wall with no steel or drips', () => {
+    const { g } = bootGame();
+    g.startGame();
+    expect(g.level).toBe(1);
+    expect(g.bricks.length).toBe(22);
+    expect(g.bricks.every((b) => b.hp === 1 && !b.indestructible && !b.hazard)).toBe(true);
+  });
+
+  it('jumps to world-boss steel and first drip on schedule', () => {
+    const { g } = bootGame();
+    g.startGame();
+    g.qaJumpToLevel(6);
+    expect(g.level).toBe(6);
+    expect(g.bricks.some((b) => b.indestructible)).toBe(true);
+    expect(g.remainingBreakable).toBeLessThan(g.bricks.length);
+    g.qaJumpToLevel(11);
+    expect(g.bricks.some((b) => b.hazard === 'drip')).toBe(true);
+    g.qaJumpToLevel(30);
+    expect(g.bricks.filter((b) => b.material === 'gold').length).toBeGreaterThan(0);
+    expect(g.bricks.filter((b) => b.hazard === 'drip').length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('clears a wall when only steel remains', () => {
+    const { g } = bootGame();
+    g.startGame();
+    g.qaJumpToLevel(6);
+    const lives = g.lives;
+    g.bricks = g.bricks.filter((b) => b.indestructible);
+    expect(g.bricks.length).toBeGreaterThan(0);
+    expect(g.remainingBreakable).toBe(0);
+    g.step(1000 / 60);
+    expect(g.levelTransition).toBe(true);
+    expect(g.lives).toBe(lives);
+    g.skipClearTally();
+    expect(g.level).toBe(7);
   });
 });
 
