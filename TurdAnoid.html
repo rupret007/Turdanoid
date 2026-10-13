@@ -1033,16 +1033,25 @@ function newBall(stuck=true){
 
 /* ---- Level generation ---- */
 const PATTERN_NAMES = TLEVELS ? TLEVELS.allPatternNames() : ['Classic Wall','Checker','Tunnel','Wave','Pyramid','Diamond','Cross','Spiral','Hourglass','Brick House','Skull','Funhouse','Sewer Maze'];
+function steel(br){ return !!(br && br.indestructible); }
+function breakableLeft(){ return TLEVELS ? TLEVELS.remainingBreakable(bricks) : bricks.filter(b => !b.indestructible).length; }
+function paintSpecialBrick(b){
+  if(!BRICK_ART || !b.material || !BRICK_ART.MATERIAL_PALETTES[b.material]) return;
+  const pal = BRICK_ART.MATERIAL_PALETTES[b.material];
+  b.c1 = pal[0]; b.c2 = pal[1]; b.glow = pal[2];
+}
 function newLevel(){
   levelStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
   bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
-  const cols = Math.max(8, Math.min(13, Math.floor(W/52)));
-  const rows = Math.min(10, 4 + Math.floor(level/2));
+  sludges = [];
+  const campaign = TLEVELS && TLEVELS.definitionForLevel ? TLEVELS.definitionForLevel(level) : null;
+  const cols = campaign ? campaign.cols : Math.max(8, Math.min(13, Math.floor(W/52)));
+  const rows = campaign ? campaign.rows : Math.min(10, 4 + Math.floor(level/2));
   const top = 70;
   const padX = Math.max(10, W*0.04);
   const bw = (W - padX*2)/cols - 6;
   const bh = Math.max(16, Math.min(26, H*0.028));
-  const pat = PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
+  const pat = campaign ? campaign.pattern : PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
   brickSpriteCache.clear();
   if(gameMode === 'boss'){
     spawnBossFight();
@@ -1055,56 +1064,59 @@ function newLevel(){
     return;
   }
 
-  function add(c,r,hp){
+  function add(c,r,hp,flags){
     const x = padX + c*(bw+6) + 3;
     const y = top + r*(bh+5);
     const wi = TWORLDS ? TWORLDS.worldIndexForLevel(level) : 0;
+    const forced = flags && flags.material;
     const colors = BRICK_ART ? BRICK_ART.assignBrickStyle(r, rows, c, level, Math.random, wi) : brickColors(r, rows);
-    bricks.push({x,y,w:bw,h:bh,hp,maxHp:hp,c1:colors.c1,c2:colors.c2,glow:colors.glow,material:colors.material||'sewer',wob:Math.random()*Math.PI*2,hitFlash:0});
+    const brick = {x,y,w:bw,h:bh,hp,maxHp:hp,c1:colors.c1,c2:colors.c2,glow:colors.glow,material:forced || colors.material||'sewer',wob:Math.random()*Math.PI*2,hitFlash:0,metal:!!(flags&&flags.metal),indestructible:!!(flags&&flags.indestructible),hazard:flags&&flags.hazard||null,hazardCd:0};
+    if(forced) paintSpecialBrick(brick);
+    bricks.push(brick);
   }
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      let place = TLEVELS ? TLEVELS.shouldPlaceBrick(pat, c, r, cols, rows, level) : true;
-      // HP ramp: levels 1-2 are pure 1-HP (snap-easy starter loop).
-      // Levels 3-5 sprinkle a few 2-HP. Levels 6+ start adding tougher rows.
-      let hp;
-      if(level <= 2)      hp = 1;
-      else if(level <= 5) hp = 1 + (Math.random() < 0.14 ? 1 : 0);
-      else                hp = 1 + Math.floor(r/3) + (level>8 ? Math.floor(Math.random()*1.4) : 0);
-      if(!TLEVELS){
-        switch(pat){
-          case 'Checker': place = (c+r)%2===0; break;
-          case 'Tunnel': place = !(c>1 && c<cols-2 && r>0 && r<rows-1); break;
-          case 'Wave': place = (r + Math.round(Math.sin(c*0.7)*1.5)) % 2 === 0; break;
-          case 'Pyramid': place = (c >= r && c < cols - r); break;
-          case 'Diamond': { const cc = cols/2 - 0.5, rc = rows/2 - 0.5; place = Math.abs(c-cc)+Math.abs(r-rc) < rows*0.6; break; }
-          case 'Cross': place = (Math.abs(c-(cols-1)/2) < 2) || (Math.abs(r-(rows-1)/2) < 2); break;
-          case 'Spiral': place = ((c+r) % 3) !== 0; break;
-          case 'Hourglass': place = !((r > rows*0.3 && r < rows*0.7) && (c < cols*0.3 || c > cols*0.7)); break;
-          case 'Brick House': place = (r%2===0) ? (c%2===0) : (c%2===1); break;
-          case 'Skull': place = !((r===0 && (c<2||c>cols-3)) || (r===rows-1 && (c%2===0))); break;
-          case 'Funhouse': place = Math.random() > 0.18; break;
-          case 'Sewer Maze': place = !((r%2===1) && (c%3===0)); break;
-          default: place = true;
-        }
-      }
-      // Random toughness bumps — very rare on early levels
-      if(place && level >= 3 && Math.random() < 0.02 + (level-2)*0.005) hp += 1;
-      if(place) add(c,r,hp);
+  if(campaign && TLEVELS.buildCampaignCells){
+    const cells = TLEVELS.buildCampaignCells(level);
+    for(const cell of cells){
+      add(cell.c, cell.r, cell.hp, cell);
     }
-  }
-  // Metal bricks only at level 6+ (originally 4) — they were spoiling the early flow
-  if(level >= 6){
-    const metal = Math.min(7, Math.floor((level - 5) * 0.55));
-    for(let i=0;i<metal;i++){
-      const b = bricks[Math.floor(Math.random()*bricks.length)];
-      if(b){
-        b.hp = Math.min(5, b.hp + 2);
-        b.metal = true;
-        b.material = 'metal';
-        if(BRICK_ART && BRICK_ART.MATERIAL_PALETTES.metal){
-          const pal = BRICK_ART.MATERIAL_PALETTES.metal;
-          b.c1 = pal[0]; b.c2 = pal[1]; b.glow = pal[2];
+  } else {
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        let place = TLEVELS ? TLEVELS.shouldPlaceBrick(pat, c, r, cols, rows, level) : true;
+        let hp;
+        if(level <= 2)      hp = 1;
+        else if(level <= 5) hp = 1 + (Math.random() < 0.14 ? 1 : 0);
+        else                hp = 1 + Math.floor(r/3) + (level>8 ? Math.floor(Math.random()*1.4) : 0);
+        if(!TLEVELS){
+          switch(pat){
+            case 'Checker': place = (c+r)%2===0; break;
+            case 'Tunnel': place = !(c>1 && c<cols-2 && r>0 && r<rows-1); break;
+            case 'Wave': place = (r + Math.round(Math.sin(c*0.7)*1.5)) % 2 === 0; break;
+            case 'Pyramid': place = (c >= r && c < cols - r); break;
+            case 'Diamond': { const cc = cols/2 - 0.5, rc = rows/2 - 0.5; place = Math.abs(c-cc)+Math.abs(r-rc) < rows*0.6; break; }
+            case 'Cross': place = (Math.abs(c-(cols-1)/2) < 2) || (Math.abs(r-(rows-1)/2) < 2); break;
+            case 'Spiral': place = ((c+r) % 3) !== 0; break;
+            case 'Hourglass': place = !((r > rows*0.3 && r < rows*0.7) && (c < cols*0.3 || c > cols*0.7)); break;
+            case 'Brick House': place = (r%2===0) ? (c%2===0) : (c%2===1); break;
+            case 'Skull': place = !((r===0 && (c<2||c>cols-3)) || (r===rows-1 && (c%2===0))); break;
+            case 'Funhouse': place = Math.random() > 0.18; break;
+            case 'Sewer Maze': place = !((r%2===1) && (c%3===0)); break;
+            default: place = true;
+          }
+        }
+        if(place && level >= 3 && Math.random() < 0.02 + (level-2)*0.005) hp += 1;
+        if(place) add(c,r,hp);
+      }
+    }
+    if(level >= 6){
+      const metal = Math.min(7, Math.floor((level - 5) * 0.55));
+      for(let i=0;i<metal;i++){
+        const b = bricks[Math.floor(Math.random()*bricks.length)];
+        if(b){
+          b.hp = Math.min(5, b.hp + 2);
+          b.metal = true;
+          b.material = 'metal';
+          paintSpecialBrick(b);
         }
       }
     }
@@ -1115,7 +1127,8 @@ function newLevel(){
   waitingLaunch = true;
   btnLaunch.classList.add('show');
   levelIntro = 1;
-  const introMsg = TWORLDS ? TWORLDS.levelIntroLine(level, pat) : `Level ${level}, ${pat}`;
+  const introPat = campaign ? campaign.name : pat;
+  const introMsg = TWORLDS ? TWORLDS.levelIntroLine(level, introPat) : `Level ${level}, ${introPat}`;
   setHype(introMsg, 90);
   announce(introMsg);
 }
@@ -1607,6 +1620,14 @@ function qaShowGameOver(won){
   clearTally = null;
   gameOver(!!won);
 }
+function qaJumpToLevel(n){
+  cancelLevelTransition();
+  clearParty = null;
+  sludges = [];
+  level = Math.max(1, Math.min(30, Math.floor(n) || 1));
+  newLevel();
+  updateHud();
+}
 function qaJumpLevel(n){
   if(state !== 'playing' && state !== 'paused'){
     gameMode = 'classic';
@@ -1627,7 +1648,7 @@ function updateSideStats(){
   if(elB) elB.textContent = bossBest.toLocaleString();
 }
 function maybeDrop(x,y){
-  const remaining = bricks.length;
+  const remaining = breakableLeft();
   // High drop rate early to hook the player, settling to a steady flow mid-game.
   // L1 = 32%, L2 = 28%, L3 = 24%, L5 = 18%, L8 = 14%, L12+ = 12% floor.
   let chance;
@@ -1726,6 +1747,7 @@ function megaFlush(){
   for(let i=bricks.length-1;i>=0;i--){
     if(bricks[i].y >= maxY - 8){
       const b = bricks[i];
+      if(steel(b)) continue;
       bricks.splice(i,1);
       killBrick(b);
       maybeDrop(b.x+b.w/2, b.y+b.h/2);
@@ -1797,6 +1819,7 @@ function detonate(){
     const b = bricks[i];
     const dx = (b.x+b.w/2) - W/2, dy = (b.y+b.h/2) - H/2;
     if(Math.hypot(dx,dy) < radius){
+      if(steel(b)) continue;
       b.hp -= 2;
       if(b.hp <= 0){
         bricks.splice(i,1);
@@ -2046,6 +2069,27 @@ function step(dt){
         const px = br.w/2 + b.r - Math.abs(dx);
         const py = br.h/2 + b.r - Math.abs(dy);
         let scoreEvent = true;
+        if(steel(br)){
+          if(b.ghost>0){
+            // Ghost slides past steel without melting it.
+          } else if(b.fire>0){
+            if(px < py){ b.vx = dx>0 ? Math.abs(b.vx) : -Math.abs(b.vx); }
+            else        { b.vy = dy>0 ? Math.abs(b.vy) : -Math.abs(b.vy); }
+          } else {
+            if(px < py){ b.vx = dx>0 ? Math.abs(b.vx) : -Math.abs(b.vx); }
+            else        { b.vy = dy>0 ? Math.abs(b.vy) : -Math.abs(b.vy); }
+          }
+          if(scoreEvent){
+            if(br.metal) sfx.metal();
+            else sfx.brick();
+            spawnImpactRing(br.x+br.w/2, br.y+br.h/2, br.c1);
+            spawnHitSpark(b.x,b.y,br.c1);
+            br.hitFlash = 10;
+          }
+          hits++;
+          if(hits>2) break;
+          continue;
+        }
         if(b.ghost>0){
           // Ghost: don't bounce. Damage-over-time while overlapping, scaled by
           // real elapsed time so 120 Hz displays don't melt bricks twice as fast.
@@ -2115,7 +2159,7 @@ function step(dt){
 
   // No life lost while a level transition is pending, or when the wall was
   // cleared this same frame (the clear block below will start the transition).
-  if(balls.length === 0 && !levelTransition && bricks.length > 0){
+  if(balls.length === 0 && !levelTransition && breakableLeft() > 0){
     lives--;
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
@@ -2150,6 +2194,10 @@ function step(dt){
     for(let j=bricks.length-1;j>=0;j--){
       const br = bricks[j];
       if(l.x > br.x && l.x < br.x+br.w && l.y < br.y+br.h && l.y+18 > br.y){
+        if(steel(br)){
+          spawnHitSpark(l.x, br.y+br.h, br.c1);
+          lasers.splice(i,1); removed = true; break;
+        }
         br.hp--;
         spawnHitSpark(l.x, br.y+br.h, br.c1);
         score += 5*level;
@@ -2172,6 +2220,7 @@ function step(dt){
             const b2 = bricks[k];
             const cx = b2.x + b2.w/2, cy = b2.y + b2.h/2;
             if(Math.hypot(cx - s.x, cy - s.y) < 50){
+              if(steel(b2)) continue;
               b2.hp -= (b2 === br) ? 2 : 1;
               if(b2.hp<=0){ bricks.splice(k,1); killBrick(b2); sfx.break(); maybeDrop(cx, cy); score += (activePowers.gold?2:1)*5*level; }
             }
@@ -2184,6 +2233,7 @@ function step(dt){
           shake = Math.max(shake, 6);
           sfx.break();
         } else {
+          if(steel(br)){ spawnHitSpark(s.x,s.y,'#fff'); hit=true; break; }
           br.hp -= 1; spawnHitSpark(s.x,s.y,'#fff');
           if(br.hp<=0){ bricks.splice(j,1); killBrick(br); sfx.break(); maybeDrop(br.x+br.w/2,br.y+br.h/2); score += (activePowers.gold?2:1)*5*level; }
         }
@@ -2208,6 +2258,7 @@ function step(dt){
           const br = bricks[j];
           const cx = br.x+br.w/2, cy = br.y+br.h/2;
           if(Math.hypot(cx - p.x, cy - p.y) < p.r){
+            if(steel(br)) continue;
             br.hp -= 1;
             if(br.hp<=0){ bricks.splice(j,1); killBrick(br); sfx.brick(); maybeDrop(cx,cy); score += (activePowers.gold?2:1)*4*level; }
           }
@@ -2257,25 +2308,28 @@ function step(dt){
         r: 9 + boss.phase*2
       });
     }
-    for(let i=sludges.length-1;i>=0;i--){
-      const sl = sludges[i];
-      sl.y += sl.vy * ts;
-      if(sl.y > H + 20){ sludges.splice(i,1); continue; }
-      if(sl.y + sl.r >= paddle.y && Math.abs(sl.x - paddle.x) < paddle.w/2 + sl.r + 4){
-        sludges.splice(i,1);
-        if(activePowers.shield){
-          activePowers.shield = Math.max(0, activePowers.shield - 30);
-          floatText('BLOCKED', paddle.x, paddle.y - 24, '#7ae6ff');
-        } else {
-          lives--;
-          sfx.death();
-          shake = Math.max(shake, 10);
-          tryLightHaptic(28);
-          if(lives <= 0){ gameOver(false); return; }
-          balls = [ newBall(true) ];
-          waitingLaunch = true;
-          btnLaunch.classList.add('show');
-        }
+  } else if(TLEVELS && TLEVELS.collectDripSpawns){
+    const extra = TLEVELS.collectDripSpawns(bricks, ts, level);
+    for(let i=0;i<extra.length;i++) sludges.push(extra[i]);
+  }
+  for(let i=sludges.length-1;i>=0;i--){
+    const sl = sludges[i];
+    sl.y += sl.vy * ts;
+    if(sl.y > H + 20){ sludges.splice(i,1); continue; }
+    if(sl.y + sl.r >= paddle.y && Math.abs(sl.x - paddle.x) < paddle.w/2 + sl.r + 4){
+      sludges.splice(i,1);
+      if(activePowers.shield){
+        activePowers.shield = Math.max(0, activePowers.shield - 30);
+        floatText('BLOCKED', paddle.x, paddle.y - 24, '#7ae6ff');
+      } else {
+        lives--;
+        sfx.death();
+        shake = Math.max(shake, 10);
+        tryLightHaptic(28);
+        if(lives <= 0){ gameOver(false); return; }
+        balls = [ newBall(true) ];
+        waitingLaunch = true;
+        btnLaunch.classList.add('show');
       }
     }
   }
@@ -2285,7 +2339,7 @@ function step(dt){
     if(clearParty.t > 45) clearParty = null;
   }
 
-  if(bricks.length === 0 && !levelTransition && !clearTally && gameMode !== 'boss'){
+  if(breakableLeft() === 0 && !levelTransition && !clearTally && gameMode !== 'boss'){
     levelTransition = true;
     const clearedLevel = level;
     const bonus = 200 + clearedLevel * 50;
@@ -3193,7 +3247,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
   window.__turdanoid = {
     startGame, step, newLevel, quitToMenu, doPause, doResume,
     applyPower, spawnMulti, handleWindowBlur, pointerMove, launch, skipClearTally,
-    qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers, qaJumpLevel,
+    qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers, qaJumpToLevel, qaJumpLevel,
     beginClearTally, gameOver, suiteMuted, soundBlocked, beep,
     get state(){ return state; },
     get score(){ return score; },
@@ -3218,6 +3272,9 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get H(){ return H; },
     get gameMode(){ return gameMode; },
     get boss(){ return boss; },
+    get sludges(){ return sludges; },
+    get remainingBreakable(){ return breakableLeft(); },
+    set level(v){ level = Math.max(1, Math.floor(v)); },
     get powerTypes(){ return TQA ? TQA.POWER_TYPES : POWERS.map(p => p.t); },
     get timedPowerTypes(){ return TQA ? TQA.TIMED_POWER_TYPES : []; }
   };
