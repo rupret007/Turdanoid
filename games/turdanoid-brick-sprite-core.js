@@ -23,8 +23,9 @@
 
     ctx.clearRect(0, 0, w, h);
     const sprites = root.TurdanoidSprites;
+    let bevel = null;
     if (sprites && typeof sprites.paintBrickBevel === 'function') {
-      sprites.paintBrickBevel(ctx, w, h, { c1: c1, c2: c2, glow: glow });
+      bevel = sprites.paintBrickBevel(ctx, w, h, { c1: c1, c2: c2, glow: glow });
     } else {
       ctx.fillStyle = 'rgba(0,0,0,.42)';
       roundRect(ctx, 1, h - 1, w, 4, 2);
@@ -43,22 +44,15 @@
       ctx.shadowBlur = 0;
     }
 
+    const depth = (bevel && bevel.depth) || Math.max(3.2, Math.min(5.6, h * 0.34));
+    const fx = (bevel && bevel.fx) || 0.7;
+    const fy = (bevel && bevel.fy) || 0.5;
+    const fw = (bevel && bevel.fw) || Math.max(4, w - depth - 1.1);
+    const fh = (bevel && bevel.fh) || Math.max(4, h - depth - 0.9);
+    ctx.save();
+    roundRect(ctx, fx, fy, fw, fh, 3);
+    ctx.clip();
     paintMaterialTexture(ctx, w, h, material);
-    const topGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
-    topGrad.addColorStop(0, 'rgba(255,255,255,.78)');
-    topGrad.addColorStop(0.35, 'rgba(255,255,255,.28)');
-    topGrad.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = topGrad;
-    roundRect(ctx, 1.5, 1, w - 3, h * 0.52, 4);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,.48)';
-    ctx.fillRect(2, h - 3, w - 4, 2.5);
-    ctx.strokeStyle = 'rgba(255,255,255,.35)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(3, 2.5);
-    ctx.lineTo(w - 3, 2.5);
-    ctx.stroke();
 
     if (metal) {
       const mg = ctx.createLinearGradient(0, 0, w, h);
@@ -66,29 +60,26 @@
       mg.addColorStop(0.5, 'rgba(180,195,210,.2)');
       mg.addColorStop(1, 'rgba(60,70,85,.35)');
       ctx.fillStyle = mg;
-      roundRect(ctx, 2, 2, w - 4, h - 4, 4);
+      roundRect(ctx, fx + 1.4, fy + 1.4, fw - 2.8, fh - 2.8, 3);
       ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.7)';
       ctx.beginPath();
-      ctx.arc(5, h / 2, 2, 0, 6.283);
+      ctx.arc(fx + 5, fy + fh / 2, 2, 0, 6.283);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(w - 5, h / 2, 2, 0, 6.283);
+      ctx.arc(fx + fw - 5, fy + fh / 2, 2, 0, 6.283);
       ctx.fill();
       ctx.fillStyle = 'rgba(220,230,240,.35)';
-      for (let s = 8; s < w - 8; s += 3) {
-        ctx.fillRect(s, h / 2 - 0.5, 2.5, 1);
+      for (let s = fx + 8; s < fx + fw - 8; s += 3) {
+        ctx.fillRect(s, fy + fh / 2 - 0.5, 2.5, 1);
       }
     }
 
     if (stage >= 1) {
       paintCracks(ctx, w, h, stage);
     }
-
-    ctx.strokeStyle = 'rgba(0,0,0,.32)';
-    ctx.lineWidth = 1.2;
-    roundRect(ctx, 0.5, 0.5, w - 1, h - 1, 4.5);
-    ctx.stroke();
+    ctx.restore();
+    return { ceramic: true, depth: depth, extruded: !!(bevel && bevel.extruded) };
   }
 
   function paintMaterialTexture(ctx, w, h, material) {

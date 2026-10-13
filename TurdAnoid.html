@@ -110,22 +110,44 @@
   .iconbtn:focus-visible,.overlay button:focus-visible,#btnCoachNext:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 
   /* Overlay screens */
-  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;border-radius:18px;z-index:10;overflow:hidden;
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;border-radius:18px;z-index:10;overflow:hidden;
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity .38s ease,visibility .38s ease;
     background:
       radial-gradient(circle at 50% 30%,rgba(10,24,32,.4),rgba(6,16,24,.92) 70%),
       var(--suite-tiles, none);
     background-size:auto,96px 48px}
   .overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(232,197,106,.1),transparent 60%);pointer-events:none}
   .overlay > *{position:relative}
-  .overlay.show{display:flex;animation:fadeIn .35s ease}
-  @keyframes fadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-  .overlay h1{font-size:clamp(38px,11vw,76px);letter-spacing:.04em;margin-bottom:6px;line-height:1;
-    background:linear-gradient(180deg,#fff2c4 0%,var(--gold) 45%,#e0962a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
-    filter:drop-shadow(0 0 22px rgba(255,215,106,.45)) drop-shadow(0 5px 0 rgba(90,50,0,.6)) drop-shadow(0 12px 22px rgba(0,0,0,.6))}
-  .overlay h1 .sub{display:block;font-size:.36em;letter-spacing:.14em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.45);filter:none}
-  #titleScreen h1{animation:titleBob 3.2s ease-in-out infinite}
-  @keyframes titleBob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
-  .overlay p{max-width:480px;font-size:clamp(14px,3.4vw,16px);line-height:1.5;color:var(--ink);opacity:.9;margin:14px 0}
+  .overlay.show{opacity:1;visibility:visible;pointer-events:auto}
+  .overlay.show > *{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) both}
+  .overlay.show > *:nth-child(1){animation-delay:.04s}
+  .overlay.show > *:nth-child(2){animation-delay:.1s}
+  .overlay.show > *:nth-child(3){animation-delay:.16s}
+  .overlay.show > *:nth-child(4){animation-delay:.22s}
+  .overlay.show > *:nth-child(5){animation-delay:.28s}
+  .overlay.show > *:nth-child(6){animation-delay:.34s}
+  .overlay.show > *:nth-child(7){animation-delay:.4s}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .overlay h1{font-size:clamp(36px,9vw,56px);letter-spacing:-.03em;margin-bottom:6px;line-height:.92;font-weight:800;
+    background:linear-gradient(180deg,#fff8d8 0%,var(--gold) 42%,#c88820 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 28px rgba(255,215,106,.5)) drop-shadow(0 6px 0 rgba(70,40,0,.55)) drop-shadow(0 16px 28px rgba(0,0,0,.7))}
+  .overlay h1 .sub{display:block;font-size:.34em;letter-spacing:.12em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.45);filter:none}
+  .title-kicker{margin:0 0 8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.35)}
+  .title-kicker::before,.title-kicker::after{content:"";display:inline-block;width:28px;height:1px;margin:0 10px 4px;vertical-align:middle;background:linear-gradient(90deg,transparent,var(--ta-brass,#e8c56a),transparent)}
+  .title-deck{max-width:22ch !important;font-size:clamp(16px,4vw,20px) !important;line-height:1.35 !important;font-weight:600;letter-spacing:0}
+  #titleScreen.overlay{justify-content:flex-end;padding:24px 22px max(28px, calc(var(--safe-bot) + 22px));
+    background:linear-gradient(180deg,rgba(6,16,24,.02) 0%,rgba(6,16,24,.16) 40%,rgba(6,16,24,.82) 64%,rgba(4,12,16,.96) 100%)}
+  #titleScreen.overlay::after{content:"";position:absolute;inset:auto 10% 46% 10%;height:110px;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(232,197,106,.2),transparent 72%)}
+  #playShell:has(#titleScreen.show) .hud{visibility:hidden}
+  #titleScreen h1{position:relative}
+  #titleScreen h1::after{content:"";display:block;width:76px;height:3px;margin:12px auto 0;border-radius:99px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  #titleScreen.show h1{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) both, titleBob 3.6s ease-in-out .5s infinite}
+  #titleScreen.show #btnStart{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) .22s both, ctaPulse 2.4s ease-in-out .8s infinite}
+  @keyframes titleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes ctaPulse{0%,100%{box-shadow:0 12px 28px rgba(232,197,106,.32),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}50%{box-shadow:0 16px 42px rgba(232,197,106,.55),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}}
+  .overlay p{max-width:34ch;font-size:clamp(14px,3.4vw,16px);line-height:1.55;letter-spacing:0;color:var(--ink);opacity:.92;margin:12px 0}
   .overlay .quip{color:var(--hot);font-style:italic;font-size:clamp(12px,3vw,14px);margin-top:6px;min-height:1.4em}
   .overlay button{margin-top:22px;padding:14px 34px;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:linear-gradient(180deg,#f6e2a4 0%,var(--ta-brass,#e8c56a) 45%,#c89628 100%);color:#1a1408;border:0;border-radius:14px;cursor:pointer;box-shadow:0 12px 28px rgba(232,197,106,.32),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .15s,box-shadow .15s;font-family:inherit}
   .overlay button:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(232,197,106,.42),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}
@@ -148,8 +170,8 @@
   .tally-line.active{border-color:rgba(255,215,106,.55);box-shadow:0 0 20px rgba(255,215,106,.15)}
   .tally-line .tl-val{color:var(--gold);font-size:1.25em;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(255,215,106,.35)}
   #tallyHint{margin-top:16px;font-size:12px;opacity:.7;letter-spacing:.14em;text-transform:uppercase}
-  .overlay .helprow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center;font-size:13px}
-  .overlay .helprow span{background:var(--panel);padding:7px 12px;border-radius:999px;border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);letter-spacing:.02em}
+  .overlay .helprow{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--ta-muted,#9ab4aa)}
+  .overlay .helprow span{background:transparent;padding:0;border:0;box-shadow:none;letter-spacing:.02em}
   .menu-secondary{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
   .menu-secondary button{padding:9px 16px;font-size:13px;letter-spacing:.04em;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--panel);color:var(--ink);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 18px rgba(0,0,0,.3);margin-top:0}
   .menu-secondary button:hover{border-color:var(--ta-brass,#e8c56a)}
@@ -190,7 +212,8 @@
     .hud .center .val{font-size:1.2em}
   }
   @media (prefers-reduced-motion:reduce){
-    #titleScreen h1,#mobileLaunch.show,.chip,.hud .col.critical{animation:none}
+    #titleScreen h1,#titleScreen.show h1,#titleScreen.show #btnStart,#mobileLaunch.show,.chip,.hud .col.critical,
+    .overlay,.overlay.show,.overlay.show > *{animation:none;transition:none}
   }
   #coachOverlay{position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
   #coachOverlay.show{display:flex}
@@ -243,25 +266,26 @@
     </div>
 
     <!-- Title screen -->
-    <div class="overlay show" id="titleScreen">
-      <h1>TurdAnoid<span class="sub">— Turbo Edition —</span></h1>
-      <p>Smash bricks. Catch unhinged power-ups. Survive the stink. The sewer's most ridiculous brick-breaker, remastered for your phone.</p>
+    <div class="overlay show title-poster" id="titleScreen">
+      <p class="title-kicker">Midnight Porcelain Arcade</p>
+      <h1>TurdAnoid</h1>
+      <p class="title-deck">Smash the wall. Catch the weird stuff. Don't get flushed.</p>
       <div class="helprow">
-        <span>📱 Drag to move paddle</span>
-        <span>👆 Tap to launch</span>
-        <span>⌨️ ←/→ + Space</span>
+        <span>Drag to move</span>
+        <span>Tap to launch</span>
+        <span>← → Space</span>
       </div>
       <button id="btnStart">START FLUSHING</button>
       <div class="menu-secondary">
         <button id="btnBoss" type="button">Boss Flush</button>
         <button id="btnHowTo">How To Play</button>
-        <button id="btnHub" onclick="location.href='./'">🏠 Game Hub</button>
+        <button id="btnHub" onclick="location.href='./'">Game Hub</button>
       </div>
       <p class="quip" id="titleQuip"></p>
     </div>
 
     <!-- Pause -->
-    <div class="overlay" id="pauseScreen">
+    <div class="overlay" id="pauseScreen" inert>
       <h1>Paused<span class="sub">take a breather</span></h1>
       <p>The stink waits for no one. Or does it? It does, but only because you paused.</p>
       <div class="helprow">
@@ -276,7 +300,7 @@
     </div>
 
     <!-- How to play -->
-    <div class="overlay" id="howScreen">
+    <div class="overlay" id="howScreen" inert>
       <h1>How To Play<span class="sub">it's brick breaker, but worse</span></h1>
       <p style="text-align:left;max-width:520px">
         🎯 Bounce the turd off the toilet seat to break every brick.<br><br>
@@ -288,14 +312,14 @@
       <button id="btnHowBack">BACK</button>
     </div>
 
-    <div class="overlay tally-overlay" id="clearTally" role="dialog" aria-labelledby="clearTallyTitle" aria-modal="true" tabindex="-1">
+    <div class="overlay tally-overlay" id="clearTally" role="dialog" aria-labelledby="clearTallyTitle" aria-modal="true" tabindex="-1" inert>
       <h1 id="clearTallyTitle">Level clear</h1>
       <div id="tallyLines"></div>
       <p id="tallyHint">Space or tap to skip</p>
     </div>
 
     <!-- Game Over / Win -->
-    <div class="overlay" id="endScreen">
+    <div class="overlay" id="endScreen" inert>
       <h1 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h1>
       <p class="quip" id="endQuip"></p>
       <div class="stats">
@@ -823,49 +847,63 @@ function spawnConfetti(n){
 }
 function drawTitleAttract(rts){
   if(!titleDemoReady){
-    titleDemoBall.x = W * 0.22;
-    titleDemoBall.y = H * 0.38;
+    titleDemoBall.x = W * 0.28;
+    titleDemoBall.y = H * 0.28;
     titleDemoReady = true;
   }
-  const top = H * 0.12;
-  const demoH = H * 0.42;
+  const top = H * 0.065;
+  const now = performance.now();
+  const calm = !!(reducedMotion && reducedMotion.matches);
   ctx.save();
-  ctx.globalAlpha = 0.92;
-  ctx.fillStyle = 'rgba(6,20,26,.75)';
-  roundRect(ctx, W*0.06, top, W*0.88, demoH, 16); ctx.fill();
-  const cols = 7, bw = (W*0.8)/cols - 4;
-  for(let r=0;r<3;r++){
+  const cols = 8, rows = 4, gap = 6;
+  const bw = (W * 0.86 - gap * (cols - 1)) / cols;
+  const bh = Math.max(15, bw * 0.44);
+  const wallBottom = top + 12 + rows * (bh + gap);
+  const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
+    ? TurdanoidTheme.rowPalettes()
+    : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58'],['#d878a8','#7a2858']];
+  for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
-      const bx = W*0.1 + c*(bw+4) + (r%2)*(bw*0.5), by = top + 24 + r*(bw*0.55);
-      const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
-        ? TurdanoidTheme.rowPalettes()
-        : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58']];
-      const dc1 = (demoPal[r] && demoPal[r][0]) || '#3ecf9a';
-      const dc2 = (demoPal[r] && demoPal[r][1]) || '#1a7a58';
+      const bx = W*0.07 + c*(bw+gap), by = top + 12 + r*(bh+gap);
+      const pal = demoPal[r % demoPal.length];
+      const dc1 = pal[0], dc2 = pal[1] || pal[0];
       if(TSPRITE){
         ctx.save(); ctx.translate(bx, by);
-        TSPRITE.paintBrickBevel(ctx, bw, bw*0.45, { c1: dc1, c2: dc2 });
+        TSPRITE.paintBrickBevel(ctx, bw, bh, { c1: dc1, c2: dc2 });
         ctx.restore();
       } else {
         ctx.fillStyle = dc1;
-        roundRect(ctx, bx, by, bw, bw*0.45, 4); ctx.fill();
+        roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
       }
     }
   }
   titleDemoBall.x += titleDemoBall.vx * rts;
   titleDemoBall.y += titleDemoBall.vy * rts;
   if(titleDemoBall.x < W*0.12 || titleDemoBall.x > W*0.88) titleDemoBall.vx *= -1;
-  if(titleDemoBall.y < top + 20) titleDemoBall.vy = Math.abs(titleDemoBall.vy);
-  if(titleDemoBall.y > top + demoH - 40){
-    titleDemoBall.y = top + demoH - 40;
+  if(titleDemoBall.y < top + 16) titleDemoBall.vy = Math.abs(titleDemoBall.vy);
+  if(titleDemoBall.y > wallBottom + 36){
+    titleDemoBall.y = wallBottom + 36;
     titleDemoBall.vy = -Math.abs(titleDemoBall.vy);
   }
-  ctx.fillStyle = 'rgba(158,255,200,.5)';
-  roundRect(ctx, W*0.15, top + demoH - 28, W*0.7, 10, 5); ctx.fill();
-  ctx.fillStyle = '#8a5a30';
-  ctx.shadowColor = '#9effc8'; ctx.shadowBlur = 12;
-  ctx.beginPath(); ctx.arc(titleDemoBall.x, titleDemoBall.y, titleDemoBall.r, 0, 6.283); ctx.fill();
-  ctx.shadowBlur = 0;
+  const seat = { x: W*0.5, y: wallBottom + 26, w: Math.min(150, W*0.4), h: 16, recoil: 0 };
+  if(TSPRITE){
+    TSPRITE.paintPaddle(ctx, seat, {}, now, { W, H, reducedMotion: calm });
+    TSPRITE.paintBall(ctx, {
+      x: titleDemoBall.x, y: titleDemoBall.y, r: titleDemoBall.r,
+      vx: titleDemoBall.vx, vy: titleDemoBall.vy, fire: 0, ghost: 0, trail: [], squash: 0
+    }, { reducedMotion: true });
+    TSPRITE.paintCapsule(ctx, {
+      x: W * 0.14, y: wallBottom + 22, col: '#5ec8e0', e: '🔫', lab: 'Laser', wob: now * 0.004
+    }, now, { reducedMotion: calm });
+    TSPRITE.paintCapsule(ctx, {
+      x: W * 0.86, y: wallBottom + 18, col: '#ff6d5a', e: '🔥', lab: 'Fire', wob: now * 0.004 + 1.2
+    }, now, { reducedMotion: calm });
+  } else {
+    ctx.fillStyle = '#c02830';
+    roundRect(ctx, seat.x - seat.w/2, seat.y, seat.w, seat.h, 8); ctx.fill();
+    ctx.fillStyle = '#8a5a30';
+    ctx.beginPath(); ctx.arc(titleDemoBall.x, titleDemoBall.y, titleDemoBall.r, 0, 6.283); ctx.fill();
+  }
   ctx.restore();
 }
 function maybeShowCoach(){
@@ -1267,8 +1305,16 @@ function beginRun(){
   announce(gameMode === 'boss' ? 'Boss Flush started.' : 'Game started. Break every brick.');
   maybeShowCoach();
 }
-function showOverlay(el){ el.classList.add('show'); }
-function hideOverlay(el){ el.classList.remove('show'); }
+function showOverlay(el){
+  el.classList.add('show');
+  el.removeAttribute('inert');
+  el.setAttribute('aria-hidden', 'false');
+}
+function hideOverlay(el){
+  el.classList.remove('show');
+  el.setAttribute('inert', '');
+  el.setAttribute('aria-hidden', 'true');
+}
 function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); syncPauseButton(); }
 function doResume(){
   if(state!=='paused') return;
@@ -1457,13 +1503,16 @@ const POWERS = [
 function powerDef(type){
   return POWERS.find(p => p.t === type);
 }
-function qaSpawnCapsule(type, yRatio){
+function qaSpawnCapsule(type, yRatio, xRatio){
   const p = powerDef(type);
   if(!p || state !== 'playing') return false;
-  powerups = powerups.filter(u => !u._qa);
+  if(xRatio == null){
+    powerups = powerups.filter(u => !u._qa);
+  }
   const y = H * (yRatio != null ? yRatio : 0.38);
+  const x = W * (xRatio != null ? xRatio : 0.5);
   powerups.push({
-    x: W * 0.5, y, vy: 0, t: p.t, e: p.e,
+    x, y, vy: 0, t: p.t, e: p.e,
     lab: p.lab || p.t.slice(0, 2).toUpperCase(),
     col: p.col, bad: !!p.bad, wob: 0, spin: 0, _qa: true
   });
@@ -2233,6 +2282,11 @@ function render(){
     side.addColorStop(0, 'rgba(0,0,0,.4)'); side.addColorStop(0.22, 'rgba(0,0,0,0)');
     side.addColorStop(0.78, 'rgba(0,0,0,0)'); side.addColorStop(1, 'rgba(0,0,0,.4)');
     ctx.fillStyle = side; ctx.fillRect(0,0,W,H);
+  }
+  if(TSPRITE && TSPRITE.paintAtmosphere){
+    TSPRITE.paintAtmosphere(ctx, {
+      W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches)
+    });
   }
 
   // Parallax sewer layers — driven by wall-clock time so they drift on the
