@@ -206,6 +206,13 @@ describe('Turdanoid versioned prefs migration', () => {
       sanitizePrefs({ best: -4, bossBest: Infinity, soundOn: 'maybe' }, DEFAULT_PREFS)
     ).toEqual(DEFAULT_PREFS);
     expect(sanitizePrefs({ best: '<script>1e999</script>', ambientOn: '1' }).best).toBe(0);
+    expect(sanitizePrefs({ best: '4200garbage' }).best).toBe(0);
+    expect(sanitizePrefs({ best: '1e999', bossBest: '1e3' }).best).toBe(0);
+    expect(sanitizePrefs({ best: '1e999', bossBest: '1e3' }).bossBest).toBe(0);
+    expect(sanitizePrefs({ best: '4200', bossBest: '0' })).toMatchObject({
+      best: 4200,
+      bossBest: 0
+    });
     expect(sanitizePrefs({ best: 12.8, ambientOn: '1' })).toMatchObject({
       best: 12,
       ambientOn: true
@@ -215,6 +222,23 @@ describe('Turdanoid versioned prefs migration', () => {
       turdanoid_v2_best: '80'
     });
     expect(loadPrefs(store).best).toBe(80);
+  });
+
+  it('rejects malformed score strings that parseInt would accept', () => {
+    expect(sanitizePrefs({ best: '4200garbage' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ bossBest: '900xyz' }, DEFAULT_PREFS).bossBest).toBe(0);
+    expect(sanitizePrefs({ best: '1e999' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ best: '1e3' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ best: '012' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ best: '+7' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ best: '12.8' }, DEFAULT_PREFS).best).toBe(0);
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({ v: 1, best: '4200garbage', bossBest: '1e999' })
+    });
+    expect(loadPrefs(store)).toEqual(DEFAULT_PREFS);
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual(DEFAULT_PREFS);
+    const legacy = memoryPrimary({ turdanoid_v2_best: '4200garbage' });
+    expect(loadPrefs(legacy).best).toBe(0);
   });
 
   it('reads a future blob version without downgrading it', () => {
@@ -237,6 +261,73 @@ describe('Turdanoid versioned prefs migration', () => {
       bossBest: 1
     });
     expect(JSON.parse(store.data[PREFS_KEY])).toEqual(future);
+  });
+
+  it('saves a patch onto a future blob without downgrading or dropping unknown fields', () => {
+    const future = {
+      v: 2,
+      best: 12,
+      soundOn: false,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1,
+      extra: 'keep'
+    };
+    const store = memoryPrimary({ [PREFS_KEY]: JSON.stringify(future) });
+    const saved = savePrefs(store, { soundOn: true, best: 6400 });
+    expect(saved).toEqual({
+      v: 1,
+      best: 6400,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual({
+      extra: 'keep',
+      v: 2,
+      best: 6400,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    expect(store.getItem(LEGACY_KEYS.best)).toBe('6400');
+    expect(store.getItem(LEGACY_KEYS.sound)).toBe('1');
+    expect(savePrefs(store, { hapticOn: false }).hapticOn).toBe(false);
+    expect(JSON.parse(store.data[PREFS_KEY])).toMatchObject({
+      v: 2,
+      extra: 'keep',
+      hapticOn: false,
+      best: 6400
+    });
+  });
+
+  it('rewrites a raw invalid score when sanitize would hide the damage', () => {
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({ v: 1, best: -9 })
+    });
+    expect(loadPrefs(store)).toEqual(DEFAULT_PREFS);
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual(DEFAULT_PREFS);
+    const poisoned = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 80,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: -3
+      })
+    });
+    expect(loadPrefs(poisoned).bossBest).toBe(0);
+    expect(JSON.parse(poisoned.data[PREFS_KEY])).toEqual({
+      v: 1,
+      best: 80,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 0
+    });
   });
 
   it('saves a patch to the blob and every legacy alias', () => {

@@ -21,6 +21,15 @@
     bossBest: 0
   };
   const SCORE_MAX = 1e9;
+  const KNOWN_PREF_KEYS = {
+    v: true,
+    best: true,
+    soundOn: true,
+    ambientOn: true,
+    hapticOn: true,
+    bossBest: true
+  };
+  const WELL_FORMED_INT = /^(?:0|[1-9]\d*)$/;
 
   function probeStorage(owner) {
     try {
@@ -118,12 +127,30 @@
     }
   }
 
-  function sanitizeScore(value, fallback) {
-    const n = typeof value === 'number' ? value : parseInt(String(value ?? ''), 10);
-    if (!Number.isFinite(n) || n < 0 || n > SCORE_MAX) {
-      return fallback;
+  function parseWellFormedScore(value) {
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value) || value < 0 || value > SCORE_MAX) {
+        return null;
+      }
+      return Math.floor(value);
     }
-    return Math.floor(n);
+    if (typeof value === 'string' && WELL_FORMED_INT.test(value)) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0 || n > SCORE_MAX) {
+        return null;
+      }
+      return n;
+    }
+    return null;
+  }
+
+  function sanitizeScore(value, fallback) {
+    const n = parseWellFormedScore(value);
+    return n === null ? fallback : n;
+  }
+
+  function isCanonicalScore(value) {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= SCORE_MAX;
   }
 
   function sanitizeBool(value, fallback) {
@@ -190,9 +217,42 @@
     );
   }
 
-  function writePrefs(storage, prefs) {
+  function knownPrefsAreCanonical(blob) {
+    return (
+      !!blob &&
+      typeof blob === 'object' &&
+      !Array.isArray(blob) &&
+      isCanonicalScore(blob.v) &&
+      blob.v >= 1 &&
+      isCanonicalScore(blob.best) &&
+      isCanonicalScore(blob.bossBest) &&
+      (blob.soundOn === true || blob.soundOn === false) &&
+      (blob.ambientOn === true || blob.ambientOn === false) &&
+      (blob.hapticOn === true || blob.hapticOn === false)
+    );
+  }
+
+  function copyUnknownFields(blob) {
+    const extras = {};
+    if (!blob || typeof blob !== 'object' || Array.isArray(blob)) {
+      return extras;
+    }
+    Object.keys(blob).forEach((key) => {
+      if (!Object.prototype.hasOwnProperty.call(KNOWN_PREF_KEYS, key)) {
+        extras[key] = blob[key];
+      }
+    });
+    return extras;
+  }
+
+  function writePrefs(storage, prefs, existingBlob) {
     const next = sanitizePrefs(prefs);
-    writeRaw(storage, PREFS_KEY, JSON.stringify(next));
+    const existingVersion = existingBlob ? sanitizeScore(existingBlob.v, 0) : 0;
+    const stored = Object.assign({}, copyUnknownFields(existingBlob), next);
+    if (existingVersion > PREFS_VERSION) {
+      stored.v = existingVersion;
+    }
+    writeRaw(storage, PREFS_KEY, JSON.stringify(stored));
     writeRaw(storage, LEGACY_KEYS.best, String(next.best));
     writeRaw(storage, LEGACY_KEYS.sound, next.soundOn ? '1' : '0');
     writeRaw(storage, LEGACY_KEYS.ambient, next.ambientOn ? '1' : '0');
@@ -207,10 +267,12 @@
     if (blob) {
       const blobVersion = sanitizeScore(blob.v, 0);
       const merged = sanitizePrefs({ ...legacy, ...blob }, legacy);
-      const repaired = !prefsEqual(sanitizePrefs(blob, DEFAULT_PREFS), merged);
+      const rawInvalid = !knownPrefsAreCanonical(blob);
+      const mergedDiffers = !prefsEqual(sanitizePrefs(blob, DEFAULT_PREFS), merged);
+      const repaired = rawInvalid || mergedDiffers;
       const oldVersion = blobVersion > 0 && blobVersion < PREFS_VERSION;
       if ((repaired || oldVersion) && blobVersion <= PREFS_VERSION) {
-        return writePrefs(storage, merged);
+        return writePrefs(storage, merged, blob);
       }
       return merged;
     }
@@ -223,7 +285,8 @@
   function savePrefs(storage, patch) {
     const current = loadPrefs(storage);
     const src = patch && typeof patch === 'object' && !Array.isArray(patch) ? patch : {};
-    return writePrefs(storage, { ...current, ...src, v: PREFS_VERSION });
+    const existingBlob = parsePrefsBlob(readRaw(storage, PREFS_KEY));
+    return writePrefs(storage, { ...current, ...src }, existingBlob);
   }
 
   root.TurdanoidStorage = {

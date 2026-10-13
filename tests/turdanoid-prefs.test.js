@@ -172,4 +172,40 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(g.best).toBe(0);
     expect(g.soundOn).toBe(true);
   });
+
+  it('does not downgrade a future prefs blob when muting', () => {
+    const future = {
+      v: 2,
+      best: 12,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1,
+      extra: 'keep'
+    };
+    const { g, ls, dom } = bootPage({ [PREFS_KEY]: JSON.stringify(future) });
+    expect(g.best).toBe(12);
+    expect(g.soundOn).toBe(true);
+    expect(readPrefs(ls)).toEqual(future);
+    dom.window.document.getElementById('btnSound').click();
+    expect(g.soundOn).toBe(false);
+    expect(readPrefs(ls)).toEqual({
+      extra: 'keep',
+      v: 2,
+      best: 12,
+      soundOn: false,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 1
+    });
+    expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
+  });
+
+  it('rewrites a raw negative best with no legacy keys', () => {
+    const { g, ls } = bootPage({
+      [PREFS_KEY]: JSON.stringify({ v: 1, best: -9 })
+    });
+    expect(g.best).toBe(0);
+    expect(readPrefs(ls)).toEqual(DEFAULT_PREFS);
+  });
 });
