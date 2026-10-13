@@ -12,7 +12,9 @@ import {
   paintWorldStage,
   worldStageSpec,
   worldBasinColors,
-  worldBubbleColor
+  worldBubbleColor,
+  worldAtmosphereColors,
+  tileFaceColors
 } from '../games/turdanoid-sprites.js';
 import { TOKENS } from '../games/turdanoid-theme.js';
 
@@ -88,6 +90,7 @@ describe('Turdanoid play-object sprites', () => {
     const drawn = paintBrickBevel(ctx, 40, 18, { c1: TOKENS.slime, c2: TOKENS.slimeDeep });
     expect(drawn.extruded).toBe(true);
     expect(drawn.inset).toBe(true);
+    expect(drawn.glaze).toBe(true);
     expect(drawn.depth).toBeGreaterThan(2);
     expect(ctx.calls.filter((c) => c === 'fill').length).toBeGreaterThanOrEqual(6);
     expect(ctx.calls).toContain('ellipse');
@@ -110,6 +113,8 @@ describe('Turdanoid play-object sprites', () => {
       H: 844
     });
     expect(box.w).toBe(90);
+    expect(box.plunger).toBe(true);
+    expect(box.enamel).toBe(true);
     expect(ctx.calls.some((c) => Array.isArray(c) && c[0] === 'fillRect')).toBe(true);
   });
 
@@ -117,7 +122,7 @@ describe('Turdanoid play-object sprites', () => {
     const trail = [{ x: 10, y: 10 }, { x: 12, y: 12 }, { x: 14, y: 14 }];
     const ball = { x: 40, y: 80, r: 7, vx: 2, vy: -3, fire: 0, ghost: 0, trail, squash: 0 };
     const motion = recordCtx();
-    paintBall(motion, ball, { reducedMotion: false });
+    expect(paintBall(motion, ball, { reducedMotion: false }).glaze).toBe(true);
     expect(motion.calls).toContain('ellipse');
     const calm = recordCtx();
     paintBall(calm, ball, { reducedMotion: true });
@@ -139,11 +144,14 @@ describe('Turdanoid play-object sprites', () => {
 
   it('paints a ceiling light cone for stage atmosphere', () => {
     const ctx = recordCtx();
-    const air = paintAtmosphere(ctx, { W: 390, H: 844, nowMs: 0, reducedMotion: true });
+    const air = paintAtmosphere(ctx, { W: 390, H: 844, nowMs: 0, reducedMotion: true, world: { id: 'bathroom' } });
     expect(air.cone).toBe(true);
     expect(air.motes).toBeGreaterThanOrEqual(10);
+    expect(air.tint).toBe('bathroom');
     expect(ctx.calls).toContain('ellipse');
     expect(ctx.calls.some((c) => Array.isArray(c) && c[0] === 'fillRect')).toBe(true);
+    expect(worldAtmosphereColors({ id: 'bathroom' }).mid).not.toBe(worldAtmosphereColors({ id: 'sewer' }).mid);
+    expect(worldAtmosphereColors({ id: 'throne' }).hi).toContain('255,230,160');
   });
 
   it('paints faceted shards and a readable boss bar', () => {
@@ -175,7 +183,9 @@ describe('Turdanoid play-object sprites', () => {
     expect(sewer.tile).toBe('bond');
     expect(throne.tile).toBe('slab');
     expect(bathroom.wainscot).toBe(true);
+    expect(bathroom.filled).toBe(true);
     expect(bathroom.tiles).toBeGreaterThan(20);
+    expect(tileFaceColors('square').face).not.toBe(tileFaceColors('slab').face);
     expect(worldStageSpec({ id: 'candy' }).tile).toBe('diamond');
     expect(worldBasinColors({ id: 'bathroom' }).crest).toContain('232,244,239');
     expect(worldBasinColors({ id: 'throne' }).hi).toContain('232,197,106');

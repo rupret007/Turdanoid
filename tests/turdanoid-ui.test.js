@@ -70,8 +70,15 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toContain('worldBubbleColor');
     expect(html).toContain('worldDripColors');
     expect(html).toContain('qaJumpLevel');
+    expect(html).toMatch(/paintAtmosphere\(ctx, \{[\s\S]*world/);
     expect(html).not.toContain('rgba(158,255,200,.55)');
     expect(html).not.toContain("ctx.strokeStyle = 'rgba(158,255,200,0.16)'");
+  });
+
+  it('glazes HUD chips with a brass hairline', () => {
+    expect(html).toContain('0 0 0 1px rgba(232,197,106,.26)');
+    expect(html).toContain('rgba(255,248,220,.12)');
+    expect(html).toContain('inset 0 1px 0 rgba(255,255,255,.85)');
   });
 
   it('stages result, tally, and how-to screens as porcelain posters', () => {

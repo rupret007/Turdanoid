@@ -93,7 +93,7 @@ describe('Turdanoid FX (reduced motion)', () => {
       lineWidth: 1
     };
     expect(paintSpark(ctx, spark)).toBe(true);
-    expect(ctxCalls).toEqual(['save', 'fill', 'restore']);
+    expect(ctxCalls).toEqual(['save', 'fill', 'fill', 'restore']);
     expect(paintImpactRing(ctx, { x: 1, y: 2, r: 8, life: 10, col: TOKENS.slime })).toBe(true);
     expect(paintImpactRing(ctx, { x: 1, y: 2, r: 8, life: 0 })).toBe(false);
   });

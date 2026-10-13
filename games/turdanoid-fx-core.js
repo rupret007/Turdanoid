@@ -140,6 +140,14 @@
     ctx.lineTo(0, p.r * 0.55);
     ctx.closePath();
     ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.beginPath();
+    ctx.moveTo(-p.r * 0.7, 0);
+    ctx.lineTo(0, -p.r * 0.22);
+    ctx.lineTo(p.r * 0.7, 0);
+    ctx.lineTo(0, p.r * 0.22);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
     return true;
   }
@@ -149,11 +157,18 @@
       return false;
     }
     ctx.save();
+    const fade = Math.max(0, ring.life / 14);
     ctx.strokeStyle = ring.col || themeTokens().slime;
-    ctx.globalAlpha = Math.max(0, ring.life / 14) * 0.72;
+    ctx.globalAlpha = fade * 0.72;
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.arc(ring.x, ring.y, ring.r, 0, 6.283);
+    ctx.stroke();
+    ctx.strokeStyle = themeTokens().porcelain;
+    ctx.globalAlpha = fade * 0.35;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, ring.r * 0.72, 0, 6.283);
     ctx.stroke();
     ctx.restore();
     return true;
