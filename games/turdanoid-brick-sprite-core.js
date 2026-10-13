@@ -22,21 +22,26 @@
     const glow = opts.glow || (theme && root.TurdanoidTheme.glow(theme.slime, 0.45)) || 'rgba(62,207,154,.45)';
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(0,0,0,.42)';
-    roundRect(ctx, 1, h - 1, w, 4, 2);
-    ctx.fill();
+    const sprites = root.TurdanoidSprites;
+    if (sprites && typeof sprites.paintBrickBevel === 'function') {
+      sprites.paintBrickBevel(ctx, w, h, { c1: c1, c2: c2, glow: glow });
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,.42)';
+      roundRect(ctx, 1, h - 1, w, 4, 2);
+      ctx.fill();
 
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 10;
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, c1);
-    g.addColorStop(0.42, c1);
-    g.addColorStop(0.72, c2);
-    g.addColorStop(1, c2);
-    ctx.fillStyle = g;
-    roundRect(ctx, 0, 0, w, h, 5);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 10;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, c1);
+      g.addColorStop(0.42, c1);
+      g.addColorStop(0.72, c2);
+      g.addColorStop(1, c2);
+      ctx.fillStyle = g;
+      roundRect(ctx, 0, 0, w, h, 5);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
 
     paintMaterialTexture(ctx, w, h, material);
     const topGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
