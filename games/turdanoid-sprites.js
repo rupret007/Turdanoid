@@ -17,4 +17,6 @@ export const worldStageSpec = api.worldStageSpec;
 export const worldBasinColors = api.worldBasinColors;
 export const worldBubbleColor = api.worldBubbleColor;
 export const worldDripColors = api.worldDripColors;
+export const worldAtmosphereColors = api.worldAtmosphereColors;
+export const tileFaceColors = api.tileFaceColors;
 export const roundRect = api.roundRect;

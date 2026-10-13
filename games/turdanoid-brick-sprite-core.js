@@ -84,8 +84,8 @@
 
   function paintMaterialTexture(ctx, w, h, material) {
     if (material === 'porcelain') {
-      ctx.strokeStyle = 'rgba(255,255,255,.4)';
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = 'rgba(255,255,255,.42)';
+      ctx.lineWidth = 0.7;
       for (let i = 0; i < 3; i++) {
         const y = 4 + i * (h / 4);
         ctx.beginPath();
@@ -96,6 +96,11 @@
       ctx.beginPath();
       ctx.arc(w * 0.22, h * 0.35, w * 0.07, 0, 6.283);
       ctx.stroke();
+      ctx.strokeStyle = 'rgba(8,20,24,.18)';
+      ctx.beginPath();
+      ctx.moveTo(w * 0.55, 3);
+      ctx.lineTo(w * 0.62, h - 3);
+      ctx.stroke();
     } else if (material === 'slime') {
       ctx.fillStyle = 'rgba(140,255,120,.4)';
       ctx.beginPath();
@@ -105,12 +110,18 @@
       ctx.beginPath();
       ctx.ellipse(w * 0.35, h * 0.6, w * 0.15, 2.5, 0, 0, 6.283);
       ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.22)';
+      ctx.beginPath();
+      ctx.arc(w * 0.7, h * 0.35, 1.4, 0, 6.283);
+      ctx.fill();
     } else if (material === 'tar') {
       ctx.fillStyle = 'rgba(0,0,0,.35)';
       roundRect(ctx, 2, h * 0.42, w - 4, h * 0.45, 3);
       ctx.fill();
       ctx.fillStyle = 'rgba(80,80,90,.2)';
       ctx.fillRect(4, h * 0.5, w - 8, 1);
+      ctx.fillStyle = 'rgba(255,255,255,.08)';
+      ctx.fillRect(5, h * 0.46, w * 0.25, 1.2);
     } else if (material === 'candy') {
       ctx.fillStyle = 'rgba(255,255,255,.35)';
       for (let i = 0; i < 4; i++) {
@@ -120,6 +131,12 @@
         ctx.arc(sx, sy, 2.2, 0, 6.283);
         ctx.fill();
       }
+      ctx.strokeStyle = 'rgba(255,255,255,.2)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(4, h * 0.5);
+      ctx.lineTo(w - 4, h * 0.5);
+      ctx.stroke();
     } else if (material === 'gold') {
       const sg = ctx.createLinearGradient(0, 0, w, h);
       sg.addColorStop(0, 'rgba(255,250,200,.75)');
@@ -135,6 +152,13 @@
       ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,.5)';
       ctx.fillRect(4, 4, w * 0.35, 2);
+    } else if (material === 'sewer' || material === 'metal') {
+      ctx.strokeStyle = 'rgba(255,255,255,.12)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(4, h * 0.38);
+      ctx.lineTo(w - 4, h * 0.38);
+      ctx.stroke();
     }
   }
 
