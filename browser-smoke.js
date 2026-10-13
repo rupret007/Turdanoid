@@ -68,6 +68,16 @@ async function launchBrowser() {
   }
 }
 
+/** Quick Start can deal Ace-up insurance/even money; that modal steals Table Menu clicks. */
+async function declineJackConfirmIfOpen(page) {
+  const overlay = page.locator('#jackConfirmOverlay');
+  if (!(await overlay.isVisible())) {
+    return;
+  }
+  await page.locator('#jackConfirmNo').click();
+  await overlay.waitFor({ state: 'hidden', timeout: 4000 });
+}
+
 async function checkPhoneHub(page, name, firstScreen = true) {
   const layout = await page.evaluate(() => ({
     width: innerWidth,
@@ -1164,6 +1174,7 @@ async function main() {
       actions: async (page) => {
         await page.getByRole('button', { name: 'Quick Start' }).click();
         await page.waitForTimeout(200);
+        await declineJackConfirmIfOpen(page);
         await page.evaluate(() => {
           createShoe(4);
           const pull = (rank, suit) => {
@@ -1178,9 +1189,11 @@ async function main() {
           bankroll = 1000;
           currentBet = 20;
           lastBet = 20;
+          roundActive = false;
           startRound();
         });
         await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 3000 });
+        await declineJackConfirmIfOpen(page);
         await page.locator('.mobile-menu summary').click();
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
