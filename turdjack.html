@@ -2124,7 +2124,7 @@
 
     .welcome-card {
       position: relative;
-      width: min(560px, 100%);
+      width: min(640px, 100%);
       border: 1px solid rgba(255, 215, 106, 0.45);
       border-radius: 18px;
       background:
@@ -2180,8 +2180,8 @@
       list-style: none;
       margin: 8px 0 12px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 5px 10px;
+      grid-template-columns: 1fr;
+      gap: 5px;
       font-size: 0.84rem;
       line-height: 1.4;
       color: var(--ink);
@@ -2426,7 +2426,7 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .welcome-card { padding: 16px; }
-      .welcome-card ul { grid-template-columns: 1fr; gap: 4px; }
+      .welcome-card ul { gap: 4px; }
       .welcome-actions .btn {
         flex: 1 1 140px;
       }
@@ -2718,15 +2718,17 @@
     <div class="welcome-card">
           <h2>Crapjack 21</h2>
       <p>Beat the dealer without busting. Manage bankroll, pick smart actions, and use house rules to your advantage.</p>
+      <p>On phones, tap the on-screen pit buttons:</p>
       <ul>
-        <li><strong>Deal:</strong> N</li>
-        <li><strong>Hit:</strong> H</li>
-        <li><strong>Stand:</strong> S</li>
-        <li><strong>Double:</strong> D (first action only)</li>
-        <li><strong>Split:</strong> P (when pair eligible)</li>
-        <li><strong>Surrender:</strong> X (if enabled)</li>
-        <li><strong>Clear Bet:</strong> C</li>
+        <li><strong>Deal:</strong> start a hand</li>
+        <li><strong>Hit:</strong> take another card</li>
+        <li><strong>Stand:</strong> keep your hand</li>
+        <li><strong>Double:</strong> double your bet (first action only)</li>
+        <li><strong>Split:</strong> play two hands (when pair eligible)</li>
+        <li><strong>Surrender:</strong> give up half your bet (if enabled)</li>
+        <li><strong>Clear Bet (Clear on phones):</strong> remove your bet before dealing</li>
       </ul>
+      <p><strong>Keyboard (optional):</strong> N deal · H hit · S stand · D double · P split · X surrender · C clear bet.</p>
       <p>Tip: adjust table rules on the right, then follow the strategy hint for cleaner decisions.</p>
       <div class="welcome-actions">
         <button class="btn" id="quickGuideBtn">Quick Start</button>
