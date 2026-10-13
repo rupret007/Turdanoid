@@ -54,6 +54,16 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toContain('id="endScreen" inert');
   });
 
+  it('keeps phone HUD labels visible and uses porcelain life pips', () => {
+    expect(html).toContain('class="life-pip"');
+    expect(html).toContain('data-count="3"');
+    expect(html).toContain('#playShell:has(#pauseScreen.show) .hud');
+    expect(html).toContain('.hype-kicker');
+    expect(html).toContain('.life-pip{');
+    expect(html).not.toMatch(/\.hud \.lbl\{position:absolute;width:1px/);
+    expect(html).toMatch(/prefers-reduced-motion:reduce[\s\S]*#hype[\s\S]*#toast/);
+  });
+
   it('stages result, tally, and how-to screens as porcelain posters', () => {
     expect(html).toContain('result-kicker');
     expect(html).toContain('id="endKicker"');

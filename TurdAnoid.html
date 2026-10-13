@@ -54,7 +54,7 @@
   #app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:max(8px,var(--safe-top)) 8px max(8px,var(--safe-bot))}
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;gap:0}
   #playShell{position:relative;width:100%;height:100%;flex:0 0 auto;max-width:100%;max-height:100%}
-  #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px rgba(158,255,200,.18)}
+  #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px var(--panel-border)}
   canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:none}
   .side-gutter{flex:1 1 0;min-width:0;max-width:min(420px,22vw);display:none;pointer-events:none;padding:max(12px,var(--safe-top)) 10px max(12px,var(--safe-bot));align-self:stretch}
   #stage.layout-wide .side-gutter{display:flex;flex-direction:column;justify-content:center}
@@ -63,9 +63,9 @@
   .side-stat{font-size:13px;font-weight:700;line-height:1.45;color:var(--accent);margin-bottom:6px}
   .side-stat.gold{color:var(--gold)}
   .side-deco{margin-top:14px;height:120px;border-radius:12px;opacity:.85;background:
-    repeating-linear-gradient(90deg,rgba(158,255,200,.06) 0 8px,transparent 8px 16px),
-    radial-gradient(ellipse 80% 60% at 50% 40%,rgba(178,144,255,.22),transparent 70%),
-    linear-gradient(180deg,rgba(20,50,42,.5),rgba(8,20,16,.8))}
+    repeating-linear-gradient(90deg,rgba(232,197,106,.08) 0 8px,transparent 8px 16px),
+    radial-gradient(ellipse 80% 60% at 50% 40%,rgba(138,130,216,.18),transparent 70%),
+    linear-gradient(180deg,rgba(10,24,32,.5),rgba(6,16,22,.8))}
   #sideRight .side-art{text-align:right}
   #stage.layout-wide #powers{left:auto;right:10px;top:max(88px,calc(var(--safe-top) + 72px));bottom:auto;width:min(148px,38vw);flex-direction:column;align-items:stretch;justify-content:flex-start;gap:5px}
   #stage.layout-wide #powers .chip{font-size:10px;min-width:0;width:100%}
@@ -80,7 +80,10 @@
   .hud .center{text-align:center}
   .hud .center .val{color:var(--hot);text-shadow:0 0 16px rgba(255,109,90,.45),0 2px 6px rgba(0,0,0,.75)}
   .hud .col{white-space:nowrap}
-  .hud .lives{display:inline-flex;gap:3px;font-size:1.05em;letter-spacing:0;white-space:nowrap;flex-wrap:nowrap}
+  .hud .lives{display:inline-flex;align-items:center;gap:3px;font-size:1.05em;letter-spacing:0;white-space:nowrap;flex-wrap:nowrap}
+  .life-pip{display:inline-block;width:10px;height:12px;border-radius:40% 40% 48% 48%;background:linear-gradient(180deg,#f6ead0 0%,var(--ta-brass,#e8c56a) 48%,#8a6410 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(0,0,0,.5)}
+  .hud .col.critical .life-pip{background:linear-gradient(180deg,#ffc4b4 0%,var(--ta-coral,#ff6d5a) 48%,#8a2018 100%)}
+  .life-extra{margin-left:2px;color:var(--gold);font-size:.82em}
   .hud .val.bump{animation:hudBump .32s cubic-bezier(.2,1.6,.4,1)}
   @keyframes hudBump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
   .hud .col.critical{border-color:rgba(255,120,96,.62);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 22px rgba(255,100,80,.28),0 10px 24px rgba(0,0,0,.35);animation:livesPulse 1.05s ease-in-out infinite}
@@ -91,8 +94,10 @@
   #combo.show{transform:translate(-50%,-50%) scale(1);opacity:1}
 
   /* Hype line — level banner */
-  #hype{position:absolute;top:58%;left:50%;transform:translateX(-50%) translateY(-6px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:clamp(13px,3.4vw,18px);color:var(--accent);text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1);padding:7px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--panel-border);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+  #hype{position:absolute;top:58%;left:50%;transform:translateX(-50%) translateY(-6px);display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;letter-spacing:.04em;text-transform:none;font-size:clamp(13px,3.4vw,17px);color:var(--ink);text-shadow:0 2px 8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.4,1);padding:10px 16px 11px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 12px 28px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:normal;text-align:center;line-height:1.25;max-width:min(320px,calc(100% - 28px))}
   #hype.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #hype .hype-kicker{font-size:.68em;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 12px rgba(232,197,106,.35)}
+  #hype .hype-title{letter-spacing:.02em;color:var(--ink);white-space:nowrap}
 
   /* Power chips */
   #powers{position:absolute;left:8px;right:8px;bottom:max(120px,calc(var(--safe-bot) + 110px));display:flex;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:none}
@@ -141,6 +146,7 @@
     background:linear-gradient(180deg,rgba(6,16,24,.02) 0%,rgba(6,16,24,.16) 40%,rgba(6,16,24,.82) 64%,rgba(4,12,16,.96) 100%)}
   #titleScreen.overlay::after{content:"";position:absolute;inset:auto 10% 46% 10%;height:110px;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(232,197,106,.2),transparent 72%)}
   #playShell:has(#titleScreen.show) .hud,
+  #playShell:has(#pauseScreen.show) .hud,
   #playShell:has(#endScreen.show) .hud,
   #playShell:has(#clearTally.show) .hud,
   #playShell:has(#howScreen.show) .hud,
@@ -206,19 +212,17 @@
     .hud .col{padding:4px 9px 5px;min-width:0}
   }
   @media (max-width:520px){
-    .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:108px;padding:3px 4px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0}
-    .hud .right{margin-right:0}
-    .hud .col{padding:5px 8px 6px;min-width:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
+    .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:108px;padding:4px 2px 5px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0;align-items:stretch}
+    .hud .right,.hud .center{margin-right:0;text-align:center}
+    .hud .col{padding:3px 7px 4px;min-width:0;flex:1 1 0;align-items:center;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
+    .hud .col + .col{border-left:1px solid rgba(232,197,106,.18)}
+    .hud .lbl{display:block;position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:.66em;letter-spacing:.06em;text-shadow:0 1px 4px #000}
   }
   @media (max-width:420px){
-    .hud{font-size:clamp(11px,2.9vw,13px);gap:4px}
-    .hud .col{padding:5px 8px 6px;min-width:0;border-color:var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 20px rgba(0,0,0,.5)}
-    .hud .lbl{text-shadow:0 1px 4px #000}
-    .hud .val{font-size:1.35em;text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px #000}
-    .hud .right{margin-right:100px}
+    .hud{font-size:clamp(11px,2.9vw,13px)}
+    .hud .val{font-size:1.28em;text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px #000}
     .topbtns{gap:4px}
     .iconbtn{width:44px;height:44px;font-size:16px}
-    .hud .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
     .overlay{padding:18px 14px}
     .overlay h1{font-size:clamp(32px,10vw,64px)}
     .overlay button{padding:13px 22px;font-size:16px}
@@ -226,12 +230,13 @@
     .how-card p{font-size:12px}
   }
   @media (max-width:360px){
-    .hud .right{margin-right:96px}
     .hud .center .val{font-size:1.2em}
+    .life-pip{width:9px;height:11px}
   }
   @media (prefers-reduced-motion:reduce){
     #titleScreen h1,#titleScreen.show h1,#titleScreen.show #btnStart,#mobileLaunch.show,.chip,.hud .col.critical,
-    .overlay,.overlay.show,.overlay.show > *{animation:none;transition:none}
+    .overlay,.overlay.show,.overlay.show > *,
+    #combo,#hype,#toast,.hud .val.bump,#endScreen.show .stat{animation:none;transition:none}
   }
   #coachOverlay{position:absolute;inset:0;z-index:12;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,12,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
   #coachOverlay.show{display:flex}
@@ -261,7 +266,7 @@
     <div class="hud" aria-hidden="true">
       <div class="col"><span class="lbl">Score</span><span class="val" id="hudScore">0</span></div>
       <div class="col center"><span class="lbl">Level</span><span class="val" id="hudLevel">1</span></div>
-      <div class="col right"><span class="lbl">Lives</span><span class="val lives" id="hudLives">💩💩💩</span></div>
+      <div class="col right"><span class="lbl">Lives</span><span class="val lives" id="hudLives" data-count="3"><i class="life-pip" aria-hidden="true"></i><i class="life-pip" aria-hidden="true"></i><i class="life-pip" aria-hidden="true"></i></span></div>
     </div>
 
     <div class="topbtns">
@@ -482,7 +487,7 @@ let sludges = [];
 const brickSpriteCache = new Map();
 let FX_MAX = 160;
 let perfCaps = { particles: 160, shards: 52, confetti: 70, fxParticles: 160, tier: 'high' };
-const HUD_DRAG_TOP = 56;
+const HUD_DRAG_TOP = 64;
 const FX = typeof TurdanoidFX !== 'undefined' ? TurdanoidFX : null;
 const BRICK_ART = typeof TurdanoidBrick !== 'undefined' ? TurdanoidBrick : null;
 const BRICK_SPRITE = typeof TurdanoidBrickSprite !== 'undefined' ? TurdanoidBrickSprite : null;
@@ -1238,7 +1243,19 @@ if(tClearTally){
 
 /* ---- UI helpers ---- */
 function setHype(msg, frames=80){
-  elHype.textContent = msg;
+  const split = TLAYOUT && TLAYOUT.splitHypeLine ? TLAYOUT.splitHypeLine(msg) : { kicker:'', title: String(msg||'') };
+  elHype.replaceChildren();
+  if(split.kicker){
+    const kicker = document.createElement('span');
+    kicker.className = 'hype-kicker';
+    kicker.textContent = split.kicker;
+    const title = document.createElement('span');
+    title.className = 'hype-title';
+    title.textContent = split.title;
+    elHype.append(kicker, title);
+  } else {
+    elHype.textContent = split.title;
+  }
   elHype.classList.add('show');
   clearTimeout(setHype._t);
   setHype._t = setTimeout(()=>elHype.classList.remove('show'), frames*16);
@@ -1258,6 +1275,7 @@ function showToast(msg){
   showToast._t = setTimeout(()=>elToast.classList.remove('show'), 900);
 }
 function bumpHud(el){
+  if(reducedMotion && reducedMotion.matches) return;
   el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 }
 function updateHud(){
@@ -1265,8 +1283,12 @@ function updateHud(){
   if(hudScore.textContent !== scoreText){ hudScore.textContent = scoreText; bumpHud(hudScore); }
   const levelText = String(level);
   if(hudLevel.textContent !== levelText){ hudLevel.textContent = levelText; bumpHud(hudLevel); }
-  const livesText = lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—';
-  if(hudLives.textContent !== livesText){ hudLives.textContent = livesText; bumpHud(hudLives); }
+  const livesKey = String(Math.max(0, lives|0));
+  if(hudLives.dataset.count !== livesKey){
+    hudLives.dataset.count = livesKey;
+    hudLives.innerHTML = TLAYOUT && TLAYOUT.lifePipsHtml ? TLAYOUT.lifePipsHtml(lives) : (lives>0 ? '💩'.repeat(Math.min(lives,5)) + (lives>5?` ×${lives}`:'') : '—');
+    bumpHud(hudLives);
+  }
   const livesCol = hudLives.closest('.col');
   if(livesCol) livesCol.classList.toggle('critical', lives === 1 && state === 'playing');
 }
@@ -2583,19 +2605,20 @@ function render(){
   ctx.globalAlpha = 1;
 
   if(waitingLaunch && state==='playing'){
+    const t = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.TOKENS) || {};
     const txt = 'TAP / SPACE TO LAUNCH';
-    ctx.font = 'bold 12px Trebuchet MS, system-ui, sans-serif';
+    ctx.font = `bold 12px ${t.font || '"Segoe UI", system-ui, sans-serif'}`;
     ctx.textAlign='center';
     const m = ctx.measureText(txt);
     const tw = ((m && m.width) || 150) + 30;
-    ctx.fillStyle = 'rgba(4,16,12,.62)';
+    ctx.fillStyle = t.glass || 'rgba(6,16,22,.78)';
     roundRect(ctx, W/2 - tw/2, paddle.y - 50, tw, 24, 12); ctx.fill();
-    ctx.strokeStyle = 'rgba(158,255,200,.4)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.strokeStyle = t.glassBorder || 'rgba(232,197,106,.32)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = t.inkText || 'rgba(234,246,240,.92)';
     ctx.fillText(txt, W/2, paddle.y - 34);
-    const bob = Math.sin(nowMs*0.008)*2;
+    const bob = (reducedMotion && reducedMotion.matches) ? 0 : Math.sin(nowMs*0.008)*2;
     ctx.beginPath(); ctx.moveTo(W/2,paddle.y-22+bob); ctx.lineTo(W/2-6,paddle.y-14+bob); ctx.lineTo(W/2+6,paddle.y-14+bob); ctx.closePath();
-    ctx.fillStyle='#9effc8'; ctx.fill();
+    ctx.fillStyle = t.slime || '#3ecf9a'; ctx.fill();
   }
 
   const danger = ballDangerRatio();
@@ -2621,21 +2644,22 @@ function render(){
   if(levelIntro > 0.02 && state === 'playing'){
     levelIntro = Math.max(0, levelIntro - 0.018 * rts);
     const a = levelIntro * 0.85;
+    const t = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.TOKENS) || {};
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.font = 'bold 22px Trebuchet MS, system-ui, sans-serif';
+    ctx.font = `bold 22px ${t.font || '"Segoe UI", system-ui, sans-serif'}`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(4,16,12,.72)';
+    ctx.fillStyle = t.glass || 'rgba(6,16,22,.78)';
     const banner = `LEVEL ${level}`;
     const tw = ctx.measureText(banner).width + 48;
     roundRect(ctx, W/2 - tw/2, 88, tw, 36, 14); ctx.fill();
-    ctx.strokeStyle = 'rgba(158,255,200,.55)'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#9effc8';
-    ctx.shadowColor = '#9effc8'; ctx.shadowBlur = 16;
+    ctx.strokeStyle = t.glassBorder || 'rgba(232,197,106,.32)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = t.slime || '#3ecf9a';
+    ctx.shadowColor = t.slime || '#3ecf9a'; ctx.shadowBlur = reducedMotion && reducedMotion.matches ? 0 : 16;
     ctx.fillText(banner, W/2, 102);
     if(world){
-      ctx.font = 'bold 12px Trebuchet MS, system-ui, sans-serif';
-      ctx.fillStyle = '#ffd76a';
+      ctx.font = `bold 12px ${t.font || '"Segoe UI", system-ui, sans-serif'}`;
+      ctx.fillStyle = t.brass || '#e8c56a';
       ctx.fillText(world.name, W/2, 122);
     }
     ctx.shadowBlur = 0;
