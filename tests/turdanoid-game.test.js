@@ -634,6 +634,160 @@ describe('TurdAnoid Pages debug surface', () => {
   });
 });
 
+function placeDrip(g, { xOffset = 0, yOffset = 0, vy = 1.2, r = 8 } = {}) {
+  return {
+    x: g.paddle.x + xOffset,
+    y: g.paddle.y + 4 + yOffset,
+    vy,
+    r
+  };
+}
+
+describe('TurdAnoid drip damage and life transitions', () => {
+  let g;
+
+  beforeEach(() => {
+    ({ g } = bootGame());
+    g.startGame();
+  }, 20000);
+
+  it('loses only one life when several drips hit the paddle in one volley', () => {
+    const before = g.lives;
+    g.sludges.length = 0;
+    g.sludges.push(placeDrip(g, { xOffset: -12 }), placeDrip(g), placeDrip(g, { xOffset: 12 }));
+    g.step(FRAME);
+    expect(g.lives).toBe(before - 1);
+    expect(g.state).toBe('playing');
+    expect(g.lifeGrace).toBeGreaterThan(0);
+    expect(g.waitingLaunch).toBe(true);
+    expect(g.sludges).toHaveLength(0);
+
+    g.sludges.push(placeDrip(g), placeDrip(g, { xOffset: 8 }));
+    g.step(FRAME);
+    expect(g.lives).toBe(before - 1);
+    expect(g.lifeGrace).toBeGreaterThan(0);
+    expect(g.state).toBe('playing');
+  });
+
+  it('gives the replacement life a grace window after a drip hit', () => {
+    g.sludges.length = 0;
+    g.sludges.push(placeDrip(g));
+    g.step(FRAME);
+    expect(g.lifeGrace).toBeGreaterThan(FRAME);
+    expect(g.lifeGrace).toBeLessThanOrEqual(g.lifeGraceFrames);
+
+    const lives = g.lives;
+    stepFrames(g, 8);
+    expect(g.lifeGrace).toBeGreaterThan(0);
+    g.sludges.push(placeDrip(g));
+    g.step(FRAME);
+    expect(g.lives).toBe(lives);
+    expect(g.state).toBe('playing');
+  });
+
+  it('clears the wall instead of Game Over when the last brick and last life collide with a drip', () => {
+    g.lives = 1;
+    g.bricks = [];
+    g.sludges.length = 0;
+    g.sludges.push(placeDrip(g));
+    g.step(FRAME);
+    expect(g.state).not.toBe('gameover');
+    expect(g.lives).toBe(1);
+    expect(g.levelTransition).toBe(true);
+    expect(g.clearTally).toBeTruthy();
+  });
+
+  it('still reaches the campaign finale when a last-life drip lands on a completed L30 wall', () => {
+    g.qaJumpToLevel(30);
+    g.lives = 1;
+    g.bricks = [];
+    g.sludges.length = 0;
+    g.sludges.push(placeDrip(g));
+    g.step(FRAME);
+    expect(g.state).not.toBe('gameover');
+    expect(g.levelTransition).toBe(true);
+    expect(g.clearTally).toBeTruthy();
+    g.skipClearTally();
+    expect(g.state).toBe('win');
+    expect(g.level).toBe(31);
+  });
+
+  it('does not take a life from a drip that has already fallen past the paddle', () => {
+    const lives = g.lives;
+    g.sludges.length = 0;
+    g.sludges.push({
+      x: g.paddle.x,
+      y: g.paddle.y + g.paddle.h + 28,
+      vy: 2,
+      r: 8
+    });
+    g.step(FRAME);
+    expect(g.lives).toBe(lives);
+    expect(g.lifeGrace).toBe(0);
+    expect(g.state).toBe('playing');
+    expect(g.waitingLaunch).toBe(true);
+  });
+
+  it('still damages when a drip is actually on the paddle', () => {
+    const lives = g.lives;
+    g.sludges.length = 0;
+    g.sludges.push(placeDrip(g));
+    g.step(FRAME);
+    expect(g.lives).toBe(lives - 1);
+    expect(g.lifeGrace).toBeGreaterThan(0);
+  });
+});
+
+describe('TurdAnoid phone HUD widths', () => {
+  function mediaMaxWidth(mediaText) {
+    const m = String(mediaText || '').match(/max-width:\s*(\d+)px/i);
+    return m ? Number(m[1]) : null;
+  }
+
+  function effectiveHudChrome(dom, width) {
+    let hudRight = null;
+    let innerMargin = null;
+    const sheets = [...dom.window.document.styleSheets];
+    for (const sheet of sheets) {
+      let rules;
+      try {
+        rules = [...sheet.cssRules];
+      } catch {
+        continue;
+      }
+      for (const rule of rules) {
+        if (rule.type === dom.window.CSSRule.MEDIA_RULE) {
+          const max = mediaMaxWidth(rule.conditionText || rule.media.mediaText);
+          if (max === null || width > max) {
+            continue;
+          }
+          for (const inner of rule.cssRules) {
+            const sel = inner.selectorText || '';
+            if (sel === '.hud' && inner.style.right) {
+              hudRight = inner.style.right;
+            }
+            if ((sel === '.hud .right' || sel.includes('.hud .right')) && inner.style.marginRight) {
+              innerMargin = inner.style.marginRight;
+            }
+          }
+        } else if (rule.selectorText === '.hud .right' && rule.style.marginRight && innerMargin === null) {
+          innerMargin = rule.style.marginRight;
+        }
+      }
+    }
+    return { hudRight, innerMargin };
+  }
+
+  it('keeps a single control reserve at 360, 390, and 430px', () => {
+    const { dom } = bootGame();
+    for (const width of [360, 390, 430]) {
+      const chrome = effectiveHudChrome(dom, width);
+      expect(chrome.hudRight, `${width}px HUD inset`).toBe('108px');
+      expect(chrome.innerMargin, `${width}px lives margin`).toBe('0px');
+    }
+  });
+});
+
 describe('TurdAnoid campaign walls', () => {
   it('starts on a 1-hit lesson wall with no steel or drips', () => {
     const { g } = bootGame();

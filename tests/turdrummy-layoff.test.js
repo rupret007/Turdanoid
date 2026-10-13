@@ -70,6 +70,18 @@ const GIN = {
   ...HIGH,
   knocker: ['H3', 'H4', 'H5', 'C9', 'D9', 'H9', 'S9', 'C10', 'D10', 'S10']
 };
+// analyzeHand keeps H4–H6 and S8–SQ, leaving C5/D5 (10). Joint search keeps
+// the 5s and S8–SQ, lays H6 onto H7–H9, and retains only H4 (4).
+const JOINT = {
+  knocker: ['H7', 'H8', 'H9', 'D9', 'D10', 'D11', 'C1', 'D1', 'H1', 'S5'],
+  defender: ['H4', 'H5', 'H6', 'C5', 'D5', 'S8', 'S9', 'S10', 'S11', 'S12'],
+  laidOff: ['H6'],
+  analyzeDeadwood: ['C5', 'D5'],
+  analyzeScore: 10,
+  knockerDeadwood: 5,
+  after: 4,
+  remaining: ['H4']
+};
 
 function cards(ids) {
   return ids.map((id) => {
@@ -225,6 +237,55 @@ describe('the live TurdRummy layoff search', () => {
     };
     checkLayoff(page, fixture);
   });
+
+  it('searches defender meld partitions together with layoffs, not only analyzeHand deadwood', () => {
+    const page = boot();
+    page.w.__fixtureHands = fixtureHands(JOINT);
+    const result = page.value(`(() => {
+      const hands = __fixtureHands;
+      const knocker = analyzeHand(hands.knocker);
+      const defender = analyzeHand(hands.defender);
+      const inputBefore = JSON.stringify([hands, knocker.melds]);
+      const result = applyLayoff(hands.defender, knocker.melds);
+      function replayReceipt(index, table) {
+        if (index === result.laidOffCards.length) return true;
+        const card = result.laidOffCards[index];
+        return table.some((meld, destination) => {
+          if (!canCardAttachToMeld(card, meld)) return false;
+          const nextTable = cloneMelds(table);
+          attachCardToMeld(card, nextTable[destination]);
+          return replayReceipt(index + 1, nextTable);
+        });
+      }
+      const reversed = applyLayoff(hands.defender.slice().reverse(), knocker.melds.slice().reverse());
+      return {
+        knockerDeadwood: knocker.deadwoodScore,
+        analyzeScore: defender.deadwoodScore,
+        analyzeDeadwood: defender.deadwoodCards.map(card => card.id).sort(),
+        score: result.deadwoodScore,
+        laidOff: result.laidOffCards.map(card => card.id).sort(),
+        deadwood: result.deadwoodCards.map(card => card.id).sort(),
+        receiptScore: result.deadwoodCards.reduce((total, card) => total + cardDeadwoodValue(card), 0),
+        legalReceipt: replayReceipt(0, knocker.melds),
+        unchanged: JSON.stringify([hands, knocker.melds]) === inputBefore,
+        reversedScore: reversed.deadwoodScore,
+        reversedLaidOff: reversed.laidOffCards.map(card => card.id).sort(),
+        reversedDeadwood: reversed.deadwoodCards.map(card => card.id).sort()
+      };
+    })()`);
+    expect(result.knockerDeadwood).toBe(JOINT.knockerDeadwood);
+    expect(result.analyzeScore).toBe(JOINT.analyzeScore);
+    expect(result.analyzeDeadwood).toEqual(JOINT.analyzeDeadwood.slice().sort());
+    expect(result.score).toBe(JOINT.after);
+    expect(result.laidOff).toEqual(JOINT.laidOff.slice().sort());
+    expect(result.deadwood).toEqual(JOINT.remaining.slice().sort());
+    expect(result.score).toBe(result.receiptScore);
+    expect(result.legalReceipt).toBe(true);
+    expect(result.unchanged).toBe(true);
+    expect(result.reversedScore).toBe(JOINT.after);
+    expect(result.reversedLaidOff).toEqual(JOINT.laidOff.slice().sort());
+    expect(result.reversedDeadwood).toEqual(JOINT.remaining.slice().sort());
+  });
 });
 
 function prepareRound(page, fixture, humanKnocker = true) {
@@ -333,6 +394,54 @@ describe('live TurdRummy round scoring after layoffs', () => {
     expect(receipt.over).toBe(true);
     expect(receipt.summary).toContain('Undercut! You gain +26.');
     expect(receipt.summary).toContain('defender deadwood: 0');
+    expect(receipt.stats.undercuts).toBe(1);
+    expect(receipt.stats.playerRoundWins).toBe(1);
+    expect(receipt.stats.aiRoundWins).toBe(0);
+    expect(receipt.stats.roundsPlayed).toBe(1);
+    expect(receipt.discard).toBe('C13');
+    expect(receipt.playerHandCount).toBe(10);
+    expect(receipt.aiHandCount).toBe(10);
+    assertPhysicalDeck(page);
+  });
+
+  it('the human Knock button awards the defending AI the joint-search undercut', () => {
+    const page = boot();
+    prepareRound(page, JOINT);
+    const button = page.w.document.getElementById('knockBtn');
+    expect(button.disabled).toBe(false);
+    button.click();
+    const receipt = roundReceipt(page);
+    expect(receipt.player).toBe(0);
+    expect(receipt.ai).toBe(26);
+    expect(receipt.playerDisplay).toBe('0');
+    expect(receipt.aiDisplay).toBe('26');
+    expect(receipt.over).toBe(true);
+    expect(receipt.summary).toContain('Undercut! AI gain +26.');
+    expect(receipt.message).toContain('defender deadwood: 4');
+    expect(receipt.summary).toContain('6♥');
+    expect(receipt.stats.undercuts).toBe(1);
+    expect(receipt.stats.aiRoundWins).toBe(1);
+    expect(receipt.stats.playerRoundWins).toBe(0);
+    expect(receipt.stats.roundsPlayed).toBe(1);
+    expect(receipt.discard).toBe('C13');
+    expect(receipt.playerHandCount).toBe(10);
+    expect(receipt.aiHandCount).toBe(10);
+    assertPhysicalDeck(page);
+  });
+
+  it('an actual AI knock awards the human defender the same joint-search undercut', () => {
+    const page = boot();
+    prepareRound(page, JOINT, false);
+    page.w.aiTurn();
+    const receipt = roundReceipt(page);
+    expect(receipt.player).toBe(26);
+    expect(receipt.ai).toBe(0);
+    expect(receipt.playerDisplay).toBe('26');
+    expect(receipt.aiDisplay).toBe('0');
+    expect(receipt.over).toBe(true);
+    expect(receipt.summary).toContain('Undercut! You gain +26.');
+    expect(receipt.summary).toContain('defender deadwood: 4');
+    expect(receipt.summary).toContain('6♥');
     expect(receipt.stats.undercuts).toBe(1);
     expect(receipt.stats.playerRoundWins).toBe(1);
     expect(receipt.stats.aiRoundWins).toBe(0);
