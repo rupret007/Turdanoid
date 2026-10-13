@@ -144,9 +144,11 @@ describe('Turdanoid play-object sprites', () => {
     paintShard(shardCtx, { x: 8, y: 8, w: 6, h: 5, rot: 0.2, c1: '#fff', c2: '#000', alpha: 0.8 });
     expect(shardCtx.calls).toContain('fill');
     const bossCtx = recordCtx();
-    const pct = paintBoss(bossCtx, { x: 100, y: 40, w: 80, h: 28, hp: 4, maxHp: 8 });
-    expect(pct).toBe(0.5);
+    const drawn = paintBoss(bossCtx, { x: 100, y: 40, w: 80, h: 28, hp: 4, maxHp: 8 });
+    expect(drawn.pct).toBe(0.5);
+    expect(drawn.crown).toBe(true);
     expect(bossCtx.calls).toContainEqual(['fillText', 'SEWER KING']);
+    expect(bossCtx.calls).toContain('ellipse');
   });
 
   it('shades pipes with a specular line', () => {

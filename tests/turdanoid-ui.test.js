@@ -43,7 +43,7 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toContain('Midnight Porcelain Arcade');
     expect(html).toContain('@keyframes riseIn');
     expect(html).toContain('@keyframes ctaPulse');
-    expect(html).toContain('#playShell:has(#titleScreen.show) .hud{visibility:hidden}');
+    expect(html).toContain('#playShell:has(#titleScreen.show) .hud');
     expect(html).toMatch(/prefers-reduced-motion:reduce[\s\S]*\.overlay\.show > \*/);
   });
 
@@ -52,5 +52,19 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toContain('id="pauseScreen" inert');
     expect(html).toContain('id="howScreen" inert');
     expect(html).toContain('id="endScreen" inert');
+  });
+
+  it('stages result, tally, and how-to screens as porcelain posters', () => {
+    expect(html).toContain('result-kicker');
+    expect(html).toContain('id="endKicker"');
+    expect(html).toContain('#endScreen.is-win');
+    expect(html).toContain('#endScreen.is-loss');
+    expect(html).toContain('tally-card');
+    expect(html).toContain('Stage bonus');
+    expect(html).toContain('how-grid');
+    expect(html).toContain('House rules');
+    expect(html).toContain('#playShell:has(#endScreen.show) .hud');
+    expect(html).toContain('#playShell:has(#clearTally.show) .hud');
+    expect(html).toContain('#playShell:has(#howScreen.show) .hud');
   });
 });

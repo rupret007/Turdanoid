@@ -97,7 +97,35 @@ async function main() {
     await phone.evaluate(() => window.__turdanoid.doPause());
     await phone.waitForTimeout(180);
     written.push(await shot(phone, 'pause-390'));
+    await phone.evaluate(() => window.__turdanoid.doResume());
+    await phone.evaluate(() => window.__turdanoid.qaShowGameOver(false));
+    await phone.waitForTimeout(280);
+    written.push(await shot(phone, 'end-390'));
+    await phone.evaluate(() => window.__turdanoid.qaShowGameOver(true));
+    await phone.waitForTimeout(280);
+    written.push(await shot(phone, 'win-390'));
+    await phone.evaluate(() => {
+      const g = window.__turdanoid;
+      g.qaBeginClearTally();
+      if (g.clearTally) {
+        g.clearTally.lineDur = 99999;
+        g.clearTally.lineIdx = Math.min(3, Math.max(0, g.clearTally.lines.length - 2));
+      }
+    });
+    await phone.waitForTimeout(220);
+    written.push(await shot(phone, 'tally-390'));
+    await phone.evaluate(() => window.__turdanoid.qaBossSetPhase(2));
+    await phone.waitForFunction(() => window.__turdanoid && window.__turdanoid.boss, { timeout: 15000 });
+    await phone.waitForTimeout(360);
+    written.push(await shot(phone, 'boss-390'));
     await phone.close();
+
+    const how = await openGame(browser, 390, 844);
+    await how.evaluate(() => document.getElementById('btnHowTo').click());
+    await how.waitForSelector('#howScreen.show', { timeout: 8000 });
+    await how.waitForTimeout(280);
+    written.push(await shot(how, 'how-390'));
+    await how.close();
 
     const desktop = await openGame(browser, 1280, 800);
     written.push(await shot(desktop, 'title-1280'));
