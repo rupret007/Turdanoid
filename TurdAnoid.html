@@ -21,6 +21,7 @@
 <script src="games/turdanoid-shards-core.js"></script>
 <script src="games/turdanoid-boss-core.js"></script>
 <script src="games/turdanoid-coach-core.js"></script>
+<script src="games/turdanoid-storage-core.js"></script>
 <script src="games/turdanoid-perf-core.js"></script>
 <script src="games/turdanoid-tally-core.js"></script>
 <script src="games/turdanoid-layout-core.js"></script>
@@ -350,18 +351,49 @@ const SOUND_KEY = 'turdanoid_v2_sound';
 const AMBIENT_KEY = 'turdanoid_v3_ambient';
 const HAPTIC_KEY = 'turdanoid_v3_haptic';
 const BOSS_BEST_KEY = typeof TurdanoidBoss !== 'undefined' ? TurdanoidBoss.BOSS_BEST_KEY : 'turdanoid_boss_best_v1';
-let best = parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);
-let bossBest = parseInt(localStorage.getItem(BOSS_BEST_KEY)||'0',10);
-let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
+function probeLocalStorage(){
+  try {
+    const ls = window.localStorage;
+    if(!ls) return null;
+    void ls.length;
+    return ls;
+  } catch (e) { return null; }
+}
+function createSafeStorage(primary){
+  const memory = Object.create(null);
+  return {
+    getItem(key){
+      if(Object.prototype.hasOwnProperty.call(memory, key)) return memory[key];
+      if(!primary) return null;
+      try {
+        const value = primary.getItem(key);
+        return (value === null || value === undefined) ? null : String(value);
+      } catch (e) { return null; }
+    },
+    setItem(key, value){
+      const str = String(value);
+      if(primary){
+        try { primary.setItem(key, str); delete memory[key]; return; } catch (e) {}
+      }
+      memory[key] = str;
+    }
+  };
+}
+const persist = (typeof TurdanoidStorage !== 'undefined')
+  ? TurdanoidStorage.createSafeStorage(TurdanoidStorage.probeStorage(window))
+  : createSafeStorage(probeLocalStorage());
+let best = parseInt(persist.getItem(STORAGE_KEY)||'0',10);
+let bossBest = parseInt(persist.getItem(BOSS_BEST_KEY)||'0',10);
+let soundOn = persist.getItem(SOUND_KEY) !== '0';
 function suiteMuted(){
   try {
     if (window.Suite && typeof Suite.isMuted === 'function') return !!Suite.isMuted();
-    return localStorage.getItem('turdsuite_muted') === '1';
+    return persist.getItem('turdsuite_muted') === '1';
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
-let ambientOn = localStorage.getItem(AMBIENT_KEY) === '1';
-let hapticOn = localStorage.getItem(HAPTIC_KEY) !== '0';
+let ambientOn = persist.getItem(AMBIENT_KEY) === '1';
+let hapticOn = persist.getItem(HAPTIC_KEY) !== '0';
 let gameMode = 'classic';
 let runStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
 let levelStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
@@ -837,7 +869,7 @@ function drawTitleAttract(rts){
   ctx.restore();
 }
 function maybeShowCoach(){
-  if(!TCOACH || TCOACH.coachSeen(localStorage)) return;
+  if(!TCOACH || TCOACH.coachSeen(persist)) return;
   coachStep = 0;
   updateCoachCard();
   $('coachOverlay').classList.add('show');
@@ -855,7 +887,7 @@ function advanceCoach(){
   const steps = TCOACH ? TCOACH.STEPS : [];
   if(coachStep < steps.length - 1){ coachStep++; updateCoachCard(); return; }
   $('coachOverlay').classList.remove('show');
-  if(TCOACH) TCOACH.markCoachSeen(localStorage);
+  if(TCOACH) TCOACH.markCoachSeen(persist);
 }
 function ballDangerRatio(){
   const threshold = H * FEEL_BALL_DANGER_START;
@@ -1129,12 +1161,12 @@ btnSound.addEventListener('click', ()=>{
     soundOn = true;
     try {
       if (window.Suite && typeof Suite.setMuted === 'function') Suite.setMuted(false);
-      else localStorage.setItem('turdsuite_muted', '0');
+      else persist.setItem('turdsuite_muted', '0');
     } catch (e) {}
   } else {
     soundOn = false;
   }
-  localStorage.setItem(SOUND_KEY, soundOn?'1':'0');
+  persist.setItem(SOUND_KEY, soundOn?'1':'0');
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
@@ -1356,10 +1388,10 @@ function gameOver(won){
   cancelLevelTransition();
   if(gameMode === 'boss'){
     bossBest = Math.max(bossBest, score);
-    localStorage.setItem(BOSS_BEST_KEY, String(bossBest));
+    persist.setItem(BOSS_BEST_KEY, String(bossBest));
   } else {
     best = Math.max(best, score);
-    localStorage.setItem(STORAGE_KEY, String(best));
+    persist.setItem(STORAGE_KEY, String(best));
   }
   updateSideStats();
   $('endTitle').firstChild.textContent = won ? (gameMode==='boss' ? 'King Flushed!' : 'You Win!') : 'Flushed.';
