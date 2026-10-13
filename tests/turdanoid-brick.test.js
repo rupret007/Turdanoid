@@ -33,7 +33,7 @@ describe('Turdanoid brick art', () => {
     expect(pickMaterial(0, 2, 8, () => 0)).toBe('porcelain');
   });
 
-  it('uses rainbow row hues for sewer bricks (not one flat mint)', () => {
+  it('uses distinct ceramic row glazes for sewer bricks (not one flat mint)', () => {
     const top = brickColors(0, 6, 'sewer', 0, 0);
     const mid = brickColors(3, 6, 'sewer', 0, 0);
     const bot = brickColors(5, 6, 'sewer', 0, 0);
