@@ -64,6 +64,16 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toMatch(/prefers-reduced-motion:reduce[\s\S]*#hype[\s\S]*#toast/);
   });
 
+  it('paints a world-dressed stage instead of leftover mint sludge', () => {
+    expect(html).toContain('paintWorldStage');
+    expect(html).toContain('worldBasinColors');
+    expect(html).toContain('worldBubbleColor');
+    expect(html).toContain('worldDripColors');
+    expect(html).toContain('qaJumpLevel');
+    expect(html).not.toContain('rgba(158,255,200,.55)');
+    expect(html).not.toContain("ctx.strokeStyle = 'rgba(158,255,200,0.16)'");
+  });
+
   it('stages result, tally, and how-to screens as porcelain posters', () => {
     expect(html).toContain('result-kicker');
     expect(html).toContain('id="endKicker"');

@@ -86,6 +86,25 @@ async function main() {
     written.push(await shot(phone, 'play-390'));
     await phone.evaluate(() => {
       const g = window.__turdanoid;
+      if (g.qaJumpLevel) {
+        g.qaJumpLevel(7);
+      }
+    });
+    await phone.waitForTimeout(360);
+    written.push(await shot(phone, 'sewer-390'));
+    await phone.evaluate(() => {
+      const g = window.__turdanoid;
+      if (g.qaJumpLevel) {
+        g.qaJumpLevel(25);
+      }
+    });
+    await phone.waitForTimeout(360);
+    written.push(await shot(phone, 'throne-390'));
+    await phone.evaluate(() => {
+      const g = window.__turdanoid;
+      if (g.qaJumpLevel) {
+        g.qaJumpLevel(1);
+      }
       if (g.qaSpawnCapsule) {
         g.qaSpawnCapsule('laser', 0.42, 0.28);
         g.qaSpawnCapsule('fire', 0.48, 0.5);
