@@ -37,6 +37,49 @@ describe.each(pages)('%s welcome guide copy', (file, guideSelector, closeSelecto
   });
 });
 
+describe('table guides teach tap controls before optional keyboard shortcuts', () => {
+  it('names the Crapjack pit buttons and maps the phone Clear label', () => {
+    const dom = new JSDOM(readFileSync(join(root, 'turdjack.html'), 'utf8'));
+    try {
+      const document = dom.window.document;
+      const guide = document.querySelector('#welcomeGuide');
+      const copy = guide.textContent.replace(/\s+/g, ' ');
+      const [touchCopy, keyboardCopy] = copy.split('Keyboard (optional):');
+      expect(touchCopy).toMatch(/tap the on-screen pit buttons/i);
+      for (const action of ['deal', 'hit', 'stand', 'double', 'split', 'surrender', 'clearBet']) {
+        const label = document.getElementById(`${action}Btn`).textContent.trim();
+        expect(touchCopy).toContain(label);
+      }
+      const clear = document.querySelector('[data-mobile-action="clear-bet"]').textContent.trim();
+      expect(touchCopy).toContain(`Clear Bet (${clear} on phones)`);
+      expect(touchCopy).toMatch(/Double.*first action only/);
+      expect(touchCopy).toMatch(/Split.*pair eligible/);
+      expect(touchCopy).toMatch(/Surrender.*if enabled/);
+      expect(keyboardCopy).toMatch(/N.*deal.*H.*hit.*S.*stand.*D.*double.*P.*split.*X.*surrender.*C.*clear bet/i);
+    } finally {
+      dom.window.close();
+    }
+  });
+
+  it('names Spades bid buttons and the tap-card confirmation path', () => {
+    const dom = new JSDOM(readFileSync(join(root, 'turdspades.html'), 'utf8'));
+    try {
+      const document = dom.window.document;
+      const copy = document.querySelector('#guide').textContent.replace(/\s+/g, ' ');
+      const [touchCopy, keyboardCopy] = copy.split('Keyboard (optional):');
+      expect(touchCopy).toMatch(/tap.*\+.*[−-].*bid/i);
+      for (const id of ['bidNil', 'lockBid', 'playBtn']) {
+        expect(touchCopy).toContain(document.getElementById(id).textContent.trim());
+      }
+      expect(touchCopy).toMatch(/tap a card.*Play Selected/i);
+      expect(touchCopy).not.toMatch(/press|Enter/);
+      expect(keyboardCopy).toMatch(/N.*Nil.*Enter.*confirm/i);
+    } finally {
+      dom.window.close();
+    }
+  });
+});
+
 const closeGuideLocator = "getByRole('button', { name: 'Close Guide' })";
 const staleReviewLocator = "getByRole('button', { name: 'Review Then Start' })";
 
