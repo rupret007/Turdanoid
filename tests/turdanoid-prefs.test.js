@@ -296,6 +296,65 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(html).toContain('/^(?:0|[1-9]\\d*)$/');
   });
 
+  it('page fallback never overwrites a valid legacy high score with a zero blob score', () => {
+    const { g, ls, dom } = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 0,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls)).toMatchObject({
+      v: 1,
+      best: 8800,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 300
+    });
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+    dom.window.document.getElementById('btnSound').click();
+    expect(g.soundOn).toBe(false);
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+  });
+
+  it('page fallback treats an out-of-range blob score as invalid and keeps the legacy best', () => {
+    const { g, ls } = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 1e9 + 1,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 1e9 + 2
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(readPrefs(ls).bossBest).toBe(300);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+  });
+
   it('page fallback keeps a valid legacy high score when the blob score is invalid', () => {
     const { g, ls } = bootPageWithoutModulePrefs({
       [PREFS_KEY]: JSON.stringify({
@@ -363,6 +422,33 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(ls.getItem(LEGACY_KEYS.ambient)).toBe('1');
     expect(ls.getItem(LEGACY_KEYS.haptic)).toBe('0');
     expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('900');
+  });
+
+  it('keeps a valid legacy high score on the live page when the blob score is zero', () => {
+    const { g, ls, dom } = bootPage({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 0,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(readPrefs(ls).bossBest).toBe(300);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+    dom.window.document.getElementById('btnSound').click();
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
   });
 
   it('keeps a valid legacy high score on the live page when the blob score is invalid', () => {

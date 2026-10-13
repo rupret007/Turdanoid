@@ -359,6 +359,46 @@ describe('Turdanoid versioned prefs migration', () => {
     expect(recoveredAll.getItem(LEGACY_KEYS.bossBest)).toBe('900');
   });
 
+  it('never overwrites a valid legacy high score with a zero blob score', () => {
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 0,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(loadPrefs(store)).toEqual({
+      v: 1,
+      best: 8800,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 300
+    });
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual({
+      v: 1,
+      best: 8800,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 300
+    });
+    expect(store.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(store.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+    expect(savePrefs(store, { soundOn: false }).best).toBe(8800);
+    expect(store.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(JSON.parse(store.data[PREFS_KEY])).toMatchObject({
+      best: 8800,
+      soundOn: false,
+      bossBest: 300
+    });
+  });
+
   it('resets a malformed prefs blob when no legacy keys exist', () => {
     for (const raw of ['{not-json', 'null', '[]', '"nope"', '0']) {
       const store = memoryPrimary({ [PREFS_KEY]: raw });

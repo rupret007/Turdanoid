@@ -438,25 +438,34 @@ const persist = (typeof TurdanoidStorage !== 'undefined')
   : createSafeStorage(probeLocalStorage());
 function parseFallbackScore(raw){
   if(typeof raw === 'number'){
-    return (Number.isInteger(raw) && raw >= 0) ? raw : null;
+    return (Number.isInteger(raw) && raw >= 0 && raw <= 1e9) ? raw : null;
   }
   const s = String(raw ?? '');
   if(!/^(?:0|[1-9]\d*)$/.test(s)) return null;
   const n = Number(s);
-  return Number.isInteger(n) ? n : null;
+  return (Number.isInteger(n) && n <= 1e9) ? n : null;
 }
 function fallbackScore(raw){
   const n = parseFallbackScore(raw);
   return n === null ? 0 : n;
 }
+function keepRecoverableScore(incoming, existing){
+  const next = parseFallbackScore(incoming);
+  const stored = parseFallbackScore(existing);
+  if((next === null || next === 0) && stored !== null && stored > 0) return stored;
+  return next === null ? 0 : next;
+}
 function adoptFallbackScore(raw, current){
   const n = parseFallbackScore(raw);
-  return n === null ? current : n;
+  if(n === null || (n === 0 && current > 0)) return current;
+  return n;
 }
 function adoptFallbackBool(raw, current){
   return (raw === true || raw === false) ? raw : current;
 }
 function remirrorFallbackPrefs(prefs, existing){
+  prefs.best = keepRecoverableScore(prefs.best, persist.getItem(STORAGE_KEY));
+  prefs.bossBest = keepRecoverableScore(prefs.bossBest, persist.getItem(BOSS_BEST_KEY));
   persist.setItem(STORAGE_KEY, String(prefs.best));
   persist.setItem(SOUND_KEY, prefs.soundOn?'1':'0');
   persist.setItem(AMBIENT_KEY, prefs.ambientOn?'1':'0');
@@ -517,11 +526,15 @@ function persistPrefs(patch){
     hapticOn = next.hapticOn;
     return next;
   }
-  if(patch && Object.prototype.hasOwnProperty.call(patch,'best')){ best = patch.best; persist.setItem(STORAGE_KEY, String(best)); }
-  if(patch && Object.prototype.hasOwnProperty.call(patch,'bossBest')){ bossBest = patch.bossBest; persist.setItem(BOSS_BEST_KEY, String(bossBest)); }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'best')){ best = patch.best; }
+  if(patch && Object.prototype.hasOwnProperty.call(patch,'bossBest')){ bossBest = patch.bossBest; }
   if(patch && Object.prototype.hasOwnProperty.call(patch,'soundOn')){ soundOn = !!patch.soundOn; persist.setItem(SOUND_KEY, soundOn?'1':'0'); }
   if(patch && Object.prototype.hasOwnProperty.call(patch,'ambientOn')){ ambientOn = !!patch.ambientOn; persist.setItem(AMBIENT_KEY, ambientOn?'1':'0'); }
   if(patch && Object.prototype.hasOwnProperty.call(patch,'hapticOn')){ hapticOn = patch.hapticOn !== false; persist.setItem(HAPTIC_KEY, hapticOn?'1':'0'); }
+  best = keepRecoverableScore(best, persist.getItem(STORAGE_KEY));
+  bossBest = keepRecoverableScore(bossBest, persist.getItem(BOSS_BEST_KEY));
+  persist.setItem(STORAGE_KEY, String(best));
+  persist.setItem(BOSS_BEST_KEY, String(bossBest));
   const known = { v:1, best, soundOn, ambientOn, hapticOn, bossBest };
   let stored = known;
   try {

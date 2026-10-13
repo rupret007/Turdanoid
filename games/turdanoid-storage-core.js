@@ -146,7 +146,16 @@
 
   function sanitizeScore(value, fallback) {
     const n = parseWellFormedScore(value);
-    return n === null ? fallback : n;
+    if (n === null) {
+      return fallback;
+    }
+    if (n === 0) {
+      const recovered = parseWellFormedScore(fallback);
+      if (recovered !== null && recovered > 0) {
+        return recovered;
+      }
+    }
+    return n;
   }
 
   function isCanonicalScore(value) {
@@ -274,6 +283,11 @@
 
   function writePrefs(storage, prefs, existingBlob) {
     const next = sanitizePrefs(prefs);
+    next.best = sanitizeScore(next.best, sanitizeScore(readRaw(storage, LEGACY_KEYS.best), 0));
+    next.bossBest = sanitizeScore(
+      next.bossBest,
+      sanitizeScore(readRaw(storage, LEGACY_KEYS.bossBest), 0)
+    );
     const existingVersion = existingBlob ? readPrefsVersion(existingBlob.v) : 0;
     const stored = Object.assign({}, copyUnknownFields(existingBlob), next);
     if (existingVersion > PREFS_VERSION) {
