@@ -24,21 +24,65 @@ function defaultSortDesc(a, b) {
   return rankVal(b) - rankVal(a) || (SUIT_ORDER[b.suit] ?? 0) - (SUIT_ORDER[a.suit] ?? 0);
 }
 
+function publicSpadeKeys(card) {
+  if (!card || card.suit !== 'S') {
+    return [];
+  }
+  const keys = [];
+  if (card.id !== undefined && card.id !== null && String(card.id) !== '') {
+    keys.push(`id:${card.id}`);
+  }
+  if (card.rank !== undefined && card.rank !== null) {
+    keys.push(`sr:${card.suit}:${card.rank}`);
+  }
+  return keys;
+}
+
+function countPublicSpades(trick, played) {
+  const seen = new Set();
+  let n = 0;
+  const consider = (card) => {
+    const keys = publicSpadeKeys(card);
+    if (!keys.length) {
+      return;
+    }
+    if (keys.some((key) => seen.has(key))) {
+      return;
+    }
+    for (const key of keys) {
+      seen.add(key);
+    }
+    n += 1;
+  };
+  if (Array.isArray(trick)) {
+    for (const entry of trick) {
+      consider(entry?.card);
+    }
+  }
+  if (Array.isArray(played)) {
+    for (const card of played) {
+      consider(card);
+    }
+  }
+  return n;
+}
+
 export function countRemainingSpades(hands, trick, played = []) {
   let inPlay = 0;
-  for (const hand of hands) {
+  for (const hand of hands || []) {
     if (!Array.isArray(hand)) {
       continue;
     }
     inPlay += hand.filter((c) => c.suit === 'S').length;
   }
-  if (Array.isArray(trick)) {
-    inPlay += trick.filter((e) => e.card?.suit === 'S').length;
-  }
-  if (Array.isArray(played)) {
-    inPlay += played.filter((c) => c.suit === 'S').length;
-  }
+  inPlay += countPublicSpades(trick, played);
   return Math.max(0, 13 - inPlay);
+}
+
+/** Unseen trump from the acting seat: own hand plus unique public cards. */
+export function unseenSpadesForPlayer(state, player) {
+  const ownHand = Array.isArray(state?.hands?.[player]) ? state.hands[player] : [];
+  return countRemainingSpades([ownHand], state?.trick, state?.playedThisRound || []);
 }
 
 export function spadesPlayedHigh(played) {
@@ -86,7 +130,7 @@ export function pickAiPlayCard(ctx) {
   }
 
   const played = state.playedThisRound || [];
-  const spadesLeft = countRemainingSpades(state.hands, state.trick, played);
+  const spadesLeft = unseenSpadesForPlayer(state, player);
   const topSpadeSeen = spadesPlayedHigh(played);
 
   if (!state.trick.length) {
