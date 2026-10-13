@@ -321,6 +321,42 @@ describe('Turdanoid versioned prefs migration', () => {
     expect(loadPrefs(recovered).best).toBe(8800);
     expect(JSON.parse(recovered.data[PREFS_KEY]).best).toBe(8800);
     expect(recovered.getItem(LEGACY_KEYS.best)).toBe('8800');
+    const recoveredAll = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: '4200garbage',
+        soundOn: 'nope',
+        ambientOn: 'maybe',
+        hapticOn: 'nope',
+        bossBest: 3.5
+      }),
+      turdanoid_v2_best: '4200',
+      turdanoid_v2_sound: '0',
+      turdanoid_v3_ambient: '1',
+      turdanoid_v3_haptic: '0',
+      turdanoid_boss_best_v1: '900'
+    });
+    expect(loadPrefs(recoveredAll)).toEqual({
+      v: 1,
+      best: 4200,
+      soundOn: false,
+      ambientOn: true,
+      hapticOn: false,
+      bossBest: 900
+    });
+    expect(JSON.parse(recoveredAll.data[PREFS_KEY])).toEqual({
+      v: 1,
+      best: 4200,
+      soundOn: false,
+      ambientOn: true,
+      hapticOn: false,
+      bossBest: 900
+    });
+    expect(recoveredAll.getItem(LEGACY_KEYS.best)).toBe('4200');
+    expect(recoveredAll.getItem(LEGACY_KEYS.sound)).toBe('0');
+    expect(recoveredAll.getItem(LEGACY_KEYS.ambient)).toBe('1');
+    expect(recoveredAll.getItem(LEGACY_KEYS.haptic)).toBe('0');
+    expect(recoveredAll.getItem(LEGACY_KEYS.bossBest)).toBe('900');
   });
 
   it('resets a malformed prefs blob when no legacy keys exist', () => {

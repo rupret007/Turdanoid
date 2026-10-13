@@ -436,14 +436,25 @@ function createSafeStorage(primary){
 const persist = (typeof TurdanoidStorage !== 'undefined')
   ? TurdanoidStorage.createSafeStorage(TurdanoidStorage.probeStorage(window))
   : createSafeStorage(probeLocalStorage());
-function fallbackScore(raw){
+function parseFallbackScore(raw){
   if(typeof raw === 'number'){
-    return (Number.isInteger(raw) && raw >= 0) ? raw : 0;
+    return (Number.isInteger(raw) && raw >= 0) ? raw : null;
   }
   const s = String(raw ?? '');
-  if(!/^(?:0|[1-9]\d*)$/.test(s)) return 0;
+  if(!/^(?:0|[1-9]\d*)$/.test(s)) return null;
   const n = Number(s);
-  return Number.isInteger(n) ? n : 0;
+  return Number.isInteger(n) ? n : null;
+}
+function fallbackScore(raw){
+  const n = parseFallbackScore(raw);
+  return n === null ? 0 : n;
+}
+function adoptFallbackScore(raw, current){
+  const n = parseFallbackScore(raw);
+  return n === null ? current : n;
+}
+function adoptFallbackBool(raw, current){
+  return (raw === true || raw === false) ? raw : current;
 }
 function remirrorFallbackPrefs(prefs, existing){
   persist.setItem(STORAGE_KEY, String(prefs.best));
@@ -478,11 +489,11 @@ function loadGamePrefs(){
     const prev = JSON.parse(persist.getItem(PREFS_KEY) || 'null');
     if(prev && typeof prev === 'object' && !Array.isArray(prev)){
       existing = prev;
-      if(Object.prototype.hasOwnProperty.call(prev,'best')) prefs.best = fallbackScore(prev.best);
-      if(prev.soundOn === true || prev.soundOn === false) prefs.soundOn = prev.soundOn;
-      if(prev.ambientOn === true || prev.ambientOn === false) prefs.ambientOn = prev.ambientOn;
-      if(prev.hapticOn === true || prev.hapticOn === false) prefs.hapticOn = prev.hapticOn;
-      if(Object.prototype.hasOwnProperty.call(prev,'bossBest')) prefs.bossBest = fallbackScore(prev.bossBest);
+      if(Object.prototype.hasOwnProperty.call(prev,'best')) prefs.best = adoptFallbackScore(prev.best, prefs.best);
+      if(Object.prototype.hasOwnProperty.call(prev,'soundOn')) prefs.soundOn = adoptFallbackBool(prev.soundOn, prefs.soundOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'ambientOn')) prefs.ambientOn = adoptFallbackBool(prev.ambientOn, prefs.ambientOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'hapticOn')) prefs.hapticOn = adoptFallbackBool(prev.hapticOn, prefs.hapticOn);
+      if(Object.prototype.hasOwnProperty.call(prev,'bossBest')) prefs.bossBest = adoptFallbackScore(prev.bossBest, prefs.bossBest);
     }
   } catch (e) {}
   const rawBlob = persist.getItem(PREFS_KEY);

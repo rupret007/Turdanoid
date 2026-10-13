@@ -296,6 +296,99 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(html).toContain('/^(?:0|[1-9]\\d*)$/');
   });
 
+  it('page fallback keeps a valid legacy high score when the blob score is invalid', () => {
+    const { g, ls } = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 12.8,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: -3
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls)).toMatchObject({
+      v: 1,
+      best: 8800,
+      soundOn: true,
+      ambientOn: false,
+      hapticOn: true,
+      bossBest: 300
+    });
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+  });
+
+  it('page fallback keeps every valid legacy pref when blob fields are invalid', () => {
+    const { g, ls } = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: '4200garbage',
+        soundOn: 'nope',
+        ambientOn: 'maybe',
+        hapticOn: 'nope',
+        bossBest: '1e999'
+      }),
+      turdanoid_v2_best: '4200',
+      turdanoid_v2_sound: '0',
+      turdanoid_v3_ambient: '1',
+      turdanoid_v3_haptic: '0',
+      turdanoid_boss_best_v1: '900'
+    });
+    expect(g.best).toBe(4200);
+    expect(g.soundOn).toBe(false);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 4200,
+      soundOn: false,
+      ambientOn: true,
+      hapticOn: false,
+      bossBest: 900
+    });
+    expect(readPrefs(ls)).toMatchObject({
+      best: 4200,
+      soundOn: false,
+      ambientOn: true,
+      hapticOn: false,
+      bossBest: 900
+    });
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('4200');
+    expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
+    expect(ls.getItem(LEGACY_KEYS.ambient)).toBe('1');
+    expect(ls.getItem(LEGACY_KEYS.haptic)).toBe('0');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('900');
+  });
+
+  it('keeps a valid legacy high score on the live page when the blob score is invalid', () => {
+    const { g, ls } = bootPage({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 12.8,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 'nope'
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(readPrefs(ls).bossBest).toBe(300);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+  });
+
   it('page fallback remirrors stale aliases and resets a malformed blob', () => {
     const stale = bootPageWithoutModulePrefs({
       [PREFS_KEY]: JSON.stringify({
