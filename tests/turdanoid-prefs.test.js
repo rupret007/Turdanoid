@@ -172,7 +172,11 @@ describe('TurdAnoid page prefs persistence', () => {
       hapticOn: false,
       bossBest: 300
     });
-    expect(ls.getItem(LEGACY_KEYS.best)).toBe('12');
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
+    expect(ls.getItem(LEGACY_KEYS.ambient)).toBe('1');
+    expect(ls.getItem(LEGACY_KEYS.haptic)).toBe('0');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
   });
 
   it('recovers a malformed blob from the legacy high score', () => {
@@ -223,6 +227,37 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
   });
 
+  it('resets a malformed blob with no legacy keys and keeps later saves valid', () => {
+    const { g, ls } = bootPage({
+      [PREFS_KEY]: '{not-json'
+    });
+    expect(g.best).toBe(0);
+    expect(readPrefs(ls)).toEqual(DEFAULT_PREFS);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('0');
+    g.startGame();
+    g.score = 1500;
+    g.gameOver(false);
+    expect(g.best).toBe(1500);
+    expect(readPrefs(ls).best).toBe(1500);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('1500');
+  });
+
+  it('rejects a fractional stored best on the live page', () => {
+    const { g, ls } = bootPage({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 12.8,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      })
+    });
+    expect(g.best).toBe(0);
+    expect(readPrefs(ls).best).toBe(0);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('0');
+  });
+
   it('rewrites a raw negative best with no legacy keys', () => {
     const { g, ls } = bootPage({
       [PREFS_KEY]: JSON.stringify({ v: 1, best: -9 })
@@ -259,6 +294,33 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(html).not.toMatch(/parseInt\s*\(\s*persist\.getItem/);
     expect(html).toContain('fallbackScore');
     expect(html).toContain('/^(?:0|[1-9]\\d*)$/');
+  });
+
+  it('page fallback remirrors stale aliases and resets a malformed blob', () => {
+    const stale = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 8800,
+        soundOn: false,
+        ambientOn: true,
+        hapticOn: false,
+        bossBest: 300
+      }),
+      turdanoid_v2_best: '12',
+      turdanoid_v2_sound: '1'
+    });
+    expect(stale.g.best).toBe(8800);
+    expect(stale.g.soundOn).toBe(false);
+    expect(stale.ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(stale.ls.getItem(LEGACY_KEYS.sound)).toBe('0');
+    expect(stale.ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+
+    const broken = bootPageWithoutModulePrefs({
+      [PREFS_KEY]: '{not-json'
+    });
+    expect(broken.g.best).toBe(0);
+    expect(readPrefs(broken.ls)).toEqual(DEFAULT_PREFS);
+    expect(broken.ls.getItem(LEGACY_KEYS.best)).toBe('0');
   });
 
   it('page fallback rejects parseInt-prefix scores and keeps future extras', () => {

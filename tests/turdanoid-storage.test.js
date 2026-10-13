@@ -11,6 +11,7 @@ import {
   loadPrefs,
   savePrefs
 } from '../games/turdanoid-storage.js';
+import { readHubStatBadge } from '../assets/suite-hub-stats.js';
 
 function memoryPrimary(seed = {}) {
   const data = { ...seed };
@@ -174,6 +175,53 @@ describe('Turdanoid versioned prefs migration', () => {
       hapticOn: true,
       bossBest: 250
     });
+    expect(store.data.turdanoid_v2_best).toBe('8800');
+    expect(store.data.turdanoid_v2_sound).toBe('0');
+    expect(store.data.turdanoid_v3_ambient).toBe('1');
+    expect(store.data.turdanoid_v3_haptic).toBe('1');
+    expect(store.data.turdanoid_boss_best_v1).toBe('250');
+  });
+
+  it('remirrors stale and missing legacy aliases so hub readers match the blob', () => {
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 8800,
+        soundOn: false,
+        ambientOn: true,
+        hapticOn: false,
+        bossBest: 300
+      }),
+      turdanoid_v2_best: '12',
+      turdanoid_v2_sound: '1',
+      turdanoid_boss_best_v1: '1'
+    });
+    expect(loadPrefs(store).best).toBe(8800);
+    expect(store.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(store.getItem(LEGACY_KEYS.sound)).toBe('0');
+    expect(store.getItem(LEGACY_KEYS.ambient)).toBe('1');
+    expect(store.getItem(LEGACY_KEYS.haptic)).toBe('0');
+    expect(store.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+    expect(readHubStatBadge((key) => store.getItem(key), 'TurdAnoid.html')?.text).toBe(
+      'Best 8,800 · Boss 300'
+    );
+
+    const blobOnly = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 4200,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      })
+    });
+    expect(loadPrefs(blobOnly).best).toBe(4200);
+    expect(blobOnly.getItem(LEGACY_KEYS.best)).toBe('4200');
+    expect(blobOnly.getItem(LEGACY_KEYS.sound)).toBe('1');
+    expect(readHubStatBadge((key) => blobOnly.getItem(key), 'TurdAnoid.html')?.text).toBe(
+      'Best 4,200'
+    );
   });
 
   it('fills missing blob fields from legacy keys and writes the repair', () => {
@@ -214,7 +262,7 @@ describe('Turdanoid versioned prefs migration', () => {
       bossBest: 0
     });
     expect(sanitizePrefs({ best: 12.8, ambientOn: '1' })).toMatchObject({
-      best: 12,
+      best: 0,
       ambientOn: true
     });
     const store = memoryPrimary({
@@ -232,6 +280,9 @@ describe('Turdanoid versioned prefs migration', () => {
     expect(sanitizePrefs({ best: '012' }, DEFAULT_PREFS).best).toBe(0);
     expect(sanitizePrefs({ best: '+7' }, DEFAULT_PREFS).best).toBe(0);
     expect(sanitizePrefs({ best: '12.8' }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ best: 12.8 }, DEFAULT_PREFS).best).toBe(0);
+    expect(sanitizePrefs({ bossBest: 9.1 }, DEFAULT_PREFS).bossBest).toBe(0);
+    expect(sanitizePrefs({ best: 12.0 }, DEFAULT_PREFS).best).toBe(12);
     const store = memoryPrimary({
       [PREFS_KEY]: JSON.stringify({ v: 1, best: '4200garbage', bossBest: '1e999' })
     });
@@ -239,6 +290,50 @@ describe('Turdanoid versioned prefs migration', () => {
     expect(JSON.parse(store.data[PREFS_KEY])).toEqual(DEFAULT_PREFS);
     const legacy = memoryPrimary({ turdanoid_v2_best: '4200garbage' });
     expect(loadPrefs(legacy).best).toBe(0);
+  });
+
+  it('rejects fractional numeric scores instead of truncating them', () => {
+    expect(sanitizePrefs({ best: 12.8, bossBest: 3.5 }, DEFAULT_PREFS)).toEqual(DEFAULT_PREFS);
+    expect(sanitizePrefs({ best: -1.2 }, DEFAULT_PREFS).best).toBe(0);
+    const store = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 12.8,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 3.5
+      })
+    });
+    expect(loadPrefs(store)).toEqual(DEFAULT_PREFS);
+    expect(JSON.parse(store.data[PREFS_KEY])).toEqual(DEFAULT_PREFS);
+    const recovered = memoryPrimary({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: 12.8,
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: 0
+      }),
+      turdanoid_v2_best: '8800'
+    });
+    expect(loadPrefs(recovered).best).toBe(8800);
+    expect(JSON.parse(recovered.data[PREFS_KEY]).best).toBe(8800);
+    expect(recovered.getItem(LEGACY_KEYS.best)).toBe('8800');
+  });
+
+  it('resets a malformed prefs blob when no legacy keys exist', () => {
+    for (const raw of ['{not-json', 'null', '[]', '"nope"', '0']) {
+      const store = memoryPrimary({ [PREFS_KEY]: raw });
+      expect(loadPrefs(store)).toEqual(DEFAULT_PREFS);
+      expect(store.data[PREFS_KEY]).toBe(JSON.stringify(DEFAULT_PREFS));
+      expect(store.getItem(LEGACY_KEYS.best)).toBe('0');
+      expect(store.getItem(LEGACY_KEYS.sound)).toBe('1');
+    }
+    const empty = memoryPrimary();
+    expect(loadPrefs(empty)).toEqual(DEFAULT_PREFS);
+    expect(empty.data).toEqual({});
   });
 
   it('reads a future blob version without downgrading it', () => {

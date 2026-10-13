@@ -437,10 +437,29 @@ const persist = (typeof TurdanoidStorage !== 'undefined')
   ? TurdanoidStorage.createSafeStorage(TurdanoidStorage.probeStorage(window))
   : createSafeStorage(probeLocalStorage());
 function fallbackScore(raw){
+  if(typeof raw === 'number'){
+    return (Number.isInteger(raw) && raw >= 0) ? raw : 0;
+  }
   const s = String(raw ?? '');
   if(!/^(?:0|[1-9]\d*)$/.test(s)) return 0;
   const n = Number(s);
-  return Number.isFinite(n) ? n : 0;
+  return Number.isInteger(n) ? n : 0;
+}
+function remirrorFallbackPrefs(prefs, existing){
+  persist.setItem(STORAGE_KEY, String(prefs.best));
+  persist.setItem(SOUND_KEY, prefs.soundOn?'1':'0');
+  persist.setItem(AMBIENT_KEY, prefs.ambientOn?'1':'0');
+  persist.setItem(HAPTIC_KEY, prefs.hapticOn?'1':'0');
+  persist.setItem(BOSS_BEST_KEY, String(prefs.bossBest));
+  const known = { v:1, best:prefs.best, soundOn:prefs.soundOn, ambientOn:prefs.ambientOn, hapticOn:prefs.hapticOn, bossBest:prefs.bossBest };
+  let stored = known;
+  if(existing && typeof existing === 'object' && !Array.isArray(existing)){
+    const extras = {};
+    Object.keys(existing).forEach((k)=>{ if(!Object.prototype.hasOwnProperty.call(known, k)) extras[k] = existing[k]; });
+    stored = Object.assign({}, extras, known);
+    if(typeof existing.v === 'number' && Number.isInteger(existing.v) && existing.v > 1) stored.v = existing.v;
+  }
+  persist.setItem(PREFS_KEY, JSON.stringify(stored));
 }
 function loadGamePrefs(){
   if(typeof TurdanoidStorage !== 'undefined' && TurdanoidStorage.loadPrefs){
@@ -454,9 +473,11 @@ function loadGamePrefs(){
     hapticOn: persist.getItem(HAPTIC_KEY) !== '0',
     bossBest: fallbackScore(persist.getItem(BOSS_BEST_KEY))
   };
+  let existing = null;
   try {
     const prev = JSON.parse(persist.getItem(PREFS_KEY) || 'null');
     if(prev && typeof prev === 'object' && !Array.isArray(prev)){
+      existing = prev;
       if(Object.prototype.hasOwnProperty.call(prev,'best')) prefs.best = fallbackScore(prev.best);
       if(prev.soundOn === true || prev.soundOn === false) prefs.soundOn = prev.soundOn;
       if(prev.ambientOn === true || prev.ambientOn === false) prefs.ambientOn = prev.ambientOn;
@@ -464,6 +485,15 @@ function loadGamePrefs(){
       if(Object.prototype.hasOwnProperty.call(prev,'bossBest')) prefs.bossBest = fallbackScore(prev.bossBest);
     }
   } catch (e) {}
+  const rawBlob = persist.getItem(PREFS_KEY);
+  const hasLegacy = persist.getItem(STORAGE_KEY) !== null
+    || persist.getItem(SOUND_KEY) !== null
+    || persist.getItem(AMBIENT_KEY) !== null
+    || persist.getItem(HAPTIC_KEY) !== null
+    || persist.getItem(BOSS_BEST_KEY) !== null;
+  if(rawBlob !== null || hasLegacy){
+    remirrorFallbackPrefs(prefs, existing);
+  }
   return prefs;
 }
 function persistPrefs(patch){

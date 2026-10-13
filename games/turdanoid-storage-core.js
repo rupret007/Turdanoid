@@ -129,14 +129,14 @@
 
   function parseWellFormedScore(value) {
     if (typeof value === 'number') {
-      if (!Number.isFinite(value) || value < 0 || value > SCORE_MAX) {
+      if (!Number.isInteger(value) || value < 0 || value > SCORE_MAX) {
         return null;
       }
-      return Math.floor(value);
+      return value;
     }
     if (typeof value === 'string' && WELL_FORMED_INT.test(value)) {
       const n = Number(value);
-      if (!Number.isFinite(n) || n < 0 || n > SCORE_MAX) {
+      if (!Number.isInteger(n) || n < 0 || n > SCORE_MAX) {
         return null;
       }
       return n;
@@ -223,6 +223,16 @@
     return Object.values(LEGACY_KEYS).some((key) => readRaw(storage, key) !== null);
   }
 
+  function aliasesInSync(storage, prefs) {
+    return (
+      readRaw(storage, LEGACY_KEYS.best) === String(prefs.best) &&
+      readRaw(storage, LEGACY_KEYS.sound) === (prefs.soundOn ? '1' : '0') &&
+      readRaw(storage, LEGACY_KEYS.ambient) === (prefs.ambientOn ? '1' : '0') &&
+      readRaw(storage, LEGACY_KEYS.haptic) === (prefs.hapticOn ? '1' : '0') &&
+      readRaw(storage, LEGACY_KEYS.bossBest) === String(prefs.bossBest)
+    );
+  }
+
   function prefsEqual(a, b) {
     return (
       a.v === b.v &&
@@ -279,7 +289,8 @@
   }
 
   function loadPrefs(storage) {
-    const blob = parsePrefsBlob(readRaw(storage, PREFS_KEY));
+    const raw = readRaw(storage, PREFS_KEY);
+    const blob = parsePrefsBlob(raw);
     const legacy = readLegacyPrefs(storage);
     if (blob) {
       const blobVersion = readPrefsVersion(blob.v);
@@ -288,13 +299,17 @@
       const mergedDiffers = !prefsEqual(sanitizePrefs(blob, DEFAULT_PREFS), merged);
       const repaired = rawInvalid || mergedDiffers;
       const oldVersion = blobVersion > 0 && blobVersion < PREFS_VERSION;
-      if (repaired || oldVersion) {
+      const staleAliases = !aliasesInSync(storage, merged);
+      if (repaired || oldVersion || staleAliases) {
         return writePrefs(storage, merged, blob);
       }
       return merged;
     }
     if (hasLegacyKeys(storage)) {
       return writePrefs(storage, legacy);
+    }
+    if (raw !== null) {
+      return writePrefs(storage, DEFAULT_PREFS);
     }
     return { ...DEFAULT_PREFS };
   }
