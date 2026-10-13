@@ -1607,6 +1607,19 @@ function qaShowGameOver(won){
   clearTally = null;
   gameOver(!!won);
 }
+function qaJumpLevel(n){
+  if(state !== 'playing' && state !== 'paused'){
+    gameMode = 'classic';
+    beginRun();
+  }
+  level = Math.max(1, Math.floor(Number(n) || 1));
+  newLevel();
+  hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tClearTally);
+  state = 'playing';
+  paused = false;
+  updateHud();
+  return level;
+}
 function updateSideStats(){
   const elC = $('sideBestClassic');
   const elB = $('sideBestBoss');
@@ -2336,6 +2349,12 @@ function render(){
       W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches)
     });
   }
+  if(TSPRITE && TSPRITE.paintWorldStage){
+    TSPRITE.paintWorldStage(ctx, world, {
+      W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches),
+      fixtures: state === 'playing' || state === 'paused'
+    });
+  }
 
   // Parallax sewer layers — driven by wall-clock time so they drift on the
   // title screen too and stay frame-rate independent.
@@ -2394,9 +2413,10 @@ function render(){
     ctx.save();
     ctx.translate(d.x, 0);
     const dg = ctx.createLinearGradient(0, 0, 0, len + 8);
-    dg.addColorStop(0, 'rgba(150,220,140,.95)');
-    dg.addColorStop(0.7, 'rgba(110,190,110,.7)');
-    dg.addColorStop(1, 'rgba(90,170,100,.35)');
+    const drip = TSPRITE && TSPRITE.worldDripColors ? TSPRITE.worldDripColors(world) : ['rgba(150,220,140,.95)','rgba(110,190,110,.7)','rgba(90,170,100,.35)'];
+    dg.addColorStop(0, drip[0]);
+    dg.addColorStop(0.7, drip[1]);
+    dg.addColorStop(1, drip[2]);
     ctx.fillStyle = dg;
     ctx.beginPath();
     ctx.moveTo(-d.w/2, 0); ctx.lineTo(d.w/2, 0);
@@ -2417,7 +2437,7 @@ function render(){
     s.y -= 0.22 + s.r*0.18;
     if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
     ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
-    ctx.fillStyle = 'rgba(158,255,200,.55)';
+    ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.7)';
     ctx.beginPath(); ctx.arc(s.x - s.r*0.35, s.y - s.r*0.35, s.r*0.3, 0, 6.283); ctx.fill();
@@ -2434,11 +2454,12 @@ function render(){
     for(let x=12; x<=W+12; x+=12) ctx.lineTo(Math.min(x,W), surf(x));
     ctx.lineTo(W, H); ctx.closePath();
     const sl = ctx.createLinearGradient(0, base-4, 0, H);
-    sl.addColorStop(0, `rgba(${96+stink*30},${150+stink*20},70,.8)`);
-    sl.addColorStop(0.4, 'rgba(58,96,46,.88)');
-    sl.addColorStop(1, 'rgba(28,46,26,.96)');
+    const basin = (TSPRITE && TSPRITE.worldBasinColors) ? TSPRITE.worldBasinColors(world) : { hi:`rgba(${96+stink*30},${150+stink*20},70,.8)`, mid:'rgba(58,96,46,.88)', lo:'rgba(28,46,26,.96)', crest:'rgba(190,255,170,.38)' };
+    sl.addColorStop(0, basin.hi);
+    sl.addColorStop(0.4, basin.mid);
+    sl.addColorStop(1, basin.lo);
     ctx.fillStyle = sl; ctx.fill();
-    ctx.strokeStyle = 'rgba(190,255,170,.38)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = basin.crest; ctx.lineWidth = 1.5;
     ctx.beginPath();
     for(let x=0; x<=W+12; x+=12){ const xx = Math.min(x,W), y = surf(xx) - 0.5; if(x===0) ctx.moveTo(xx,y); else ctx.lineTo(xx,y); }
     ctx.stroke();
@@ -2459,7 +2480,7 @@ function render(){
     ctx.fillRect(0,0,W,H);
   }
 
-  ctx.strokeStyle = 'rgba(158,255,200,0.16)';
+  ctx.strokeStyle = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.TOKENS && TurdanoidTheme.TOKENS.glassBorder) || 'rgba(232,197,106,.28)';
   ctx.lineWidth = 2;
   ctx.strokeRect(2,2,W-4,H-4);
   ctx.strokeStyle = 'rgba(0,0,0,0.35)';
@@ -3169,7 +3190,7 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
   window.__turdanoid = {
     startGame, step, newLevel, quitToMenu, doPause, doResume,
     applyPower, spawnMulti, handleWindowBlur, pointerMove, launch, skipClearTally,
-    qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers,
+    qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers, qaJumpLevel,
     beginClearTally, gameOver, suiteMuted, soundBlocked, beep,
     get state(){ return state; },
     get score(){ return score; },

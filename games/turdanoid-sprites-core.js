@@ -451,6 +451,267 @@
     return { cone: true, flicker: flicker, motes: moteCount };
   }
 
+  function worldId(world) {
+    return (world && world.id) || 'bathroom';
+  }
+
+  function worldStageSpec(world) {
+    const id = worldId(world);
+    const staged = world && world.stage;
+    const tiles = {
+      bathroom: 'square',
+      sewer: 'bond',
+      toxic: 'algae',
+      candy: 'diamond',
+      throne: 'slab'
+    };
+    return {
+      id: id,
+      tile: (staged && staged.tile) || tiles[id] || 'square',
+      rail: (staged && staged.rail) || 'brass'
+    };
+  }
+
+  function worldBasinColors(world) {
+    const id = worldId(world);
+    if (id === 'throne') {
+      return {
+        hi: 'rgba(232,197,106,.78)',
+        mid: 'rgba(120,80,24,.9)',
+        lo: 'rgba(40,28,10,.96)',
+        crest: 'rgba(240,212,120,.55)'
+      };
+    }
+    if (id === 'candy') {
+      return {
+        hi: 'rgba(216,120,168,.75)',
+        mid: 'rgba(90,28,70,.9)',
+        lo: 'rgba(28,8,22,.96)',
+        crest: 'rgba(232,160,200,.5)'
+      };
+    }
+    if (id === 'sewer' || id === 'toxic') {
+      return {
+        hi: 'rgba(96,150,70,.8)',
+        mid: 'rgba(58,96,46,.88)',
+        lo: 'rgba(28,46,26,.96)',
+        crest: 'rgba(190,255,170,.38)'
+      };
+    }
+    return {
+      hi: 'rgba(184,212,200,.72)',
+      mid: 'rgba(40,80,96,.88)',
+      lo: 'rgba(10,28,36,.96)',
+      crest: 'rgba(232,244,239,.42)'
+    };
+  }
+
+  function worldBubbleColor(world) {
+    const id = worldId(world);
+    if (id === 'throne') {
+      return 'rgba(232,197,106,.5)';
+    }
+    if (id === 'candy') {
+      return 'rgba(216,120,168,.5)';
+    }
+    if (id === 'sewer' || id === 'toxic') {
+      return 'rgba(134,216,106,.5)';
+    }
+    return 'rgba(94,200,224,.48)';
+  }
+
+  function worldDripColors(world) {
+    const id = worldId(world);
+    if (id === 'throne') {
+      return ['rgba(232,197,106,.9)', 'rgba(168,120,28,.7)', 'rgba(90,64,16,.4)'];
+    }
+    if (id === 'candy') {
+      return ['rgba(232,160,200,.9)', 'rgba(180,80,140,.7)', 'rgba(90,28,70,.4)'];
+    }
+    if (id === 'bathroom') {
+      return ['rgba(184,212,200,.9)', 'rgba(94,200,224,.65)', 'rgba(40,90,110,.35)'];
+    }
+    return ['rgba(150,220,140,.95)', 'rgba(110,190,110,.7)', 'rgba(90,170,100,.35)'];
+  }
+
+  function paintTileGrid(ctx, spec, view) {
+    const W = view.W;
+    const startY = 46;
+    const endY = view.H * 0.78;
+    const tile = spec.tile;
+    let tw = 40;
+    let th = 40;
+    let grout = 'rgba(232,244,239,.48)';
+    let wash = 'rgba(232,244,239,.12)';
+    if (tile === 'bond' || tile === 'algae') {
+      tw = 62;
+      th = 26;
+      grout = tile === 'algae' ? 'rgba(134,216,106,.42)' : 'rgba(62,207,154,.4)';
+      wash = tile === 'algae' ? 'rgba(134,216,106,.14)' : 'rgba(26,122,88,.16)';
+    } else if (tile === 'diamond') {
+      tw = 36;
+      th = 36;
+      grout = 'rgba(216,120,168,.46)';
+      wash = 'rgba(216,120,168,.14)';
+    } else if (tile === 'slab') {
+      tw = 88;
+      th = 64;
+      grout = 'rgba(232,197,106,.5)';
+      wash = 'rgba(240,212,120,.12)';
+    }
+    ctx.save();
+    ctx.strokeStyle = grout;
+    ctx.lineWidth = 1.45;
+    let drawn = 0;
+    if (tile === 'diamond') {
+      for (let y = startY; y < endY; y += th) {
+        for (let x = -tw / 2; x < W + tw; x += tw) {
+          const cx = x + tw / 2;
+          const cy = y + th / 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, y);
+          ctx.lineTo(x + tw, cy);
+          ctx.lineTo(cx, y + th);
+          ctx.lineTo(x, cy);
+          ctx.closePath();
+          ctx.stroke();
+          drawn += 1;
+        }
+      }
+    } else {
+      for (let row = 0, y = startY; y < endY; row += 1, y += th) {
+        const ox = (tile === 'bond' || tile === 'algae') && row % 2 === 1 ? tw / 2 : 0;
+        for (let x = -ox; x < W + tw; x += tw) {
+          ctx.strokeRect(x, y, tw - 1.2, th - 1.2);
+          if ((row + Math.floor(x / tw)) % 3 === 0) {
+            ctx.fillStyle = wash;
+            ctx.fillRect(x + 1.4, y + 1.4, tw - 4, th - 4);
+          }
+          drawn += 1;
+        }
+      }
+    }
+    ctx.restore();
+    return { tile: tile, count: drawn, tw: tw, th: th };
+  }
+
+  function paintStageFixtures(ctx, spec, view) {
+    const t = tokens();
+    const W = view.W;
+    const H = view.H;
+    const y = H * 0.4;
+    ctx.save();
+    if (spec.id === 'bathroom') {
+      ctx.fillStyle = t.brass;
+      roundRect(ctx, 14, y, 7, 78, 2);
+      ctx.fill();
+      roundRect(ctx, 52, y, 7, 78, 2);
+      ctx.fill();
+      ctx.fillStyle = t.metal || '#c4d0dc';
+      ctx.fillRect(18, y + 10, 38, 3.2);
+      ctx.fillRect(18, y + 64, 38, 3.2);
+      ctx.fillStyle = t.porcelainDim;
+      roundRect(ctx, 20, y + 16, 32, 42, 4);
+      ctx.fill();
+      ctx.fillStyle = t.porcelain;
+      roundRect(ctx, W - 64, y + 28, 48, 16, 6);
+      ctx.fill();
+      ctx.strokeStyle = t.brass;
+      ctx.lineWidth = 1.4;
+      roundRect(ctx, W - 64, y + 28, 48, 16, 6);
+      ctx.stroke();
+    } else if (spec.id === 'sewer' || spec.id === 'toxic') {
+      ctx.strokeStyle = spec.id === 'toxic' ? '#86d86a' : t.slime;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(28, y + 36, 16, 0, 6.283);
+      ctx.stroke();
+      ctx.fillStyle = t.metal || '#c4d0dc';
+      ctx.beginPath();
+      ctx.arc(28, y + 36, 5, 0, 6.283);
+      ctx.fill();
+      ctx.fillRect(W - 22, y + 8, 8, 70);
+    } else if (spec.id === 'candy') {
+      ctx.fillStyle = t.rose;
+      ctx.beginPath();
+      ctx.arc(26, y + 22, 14, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = t.candy || t.rose;
+      ctx.fillRect(24, y + 34, 4, 40);
+      ctx.beginPath();
+      ctx.arc(W - 28, y + 50, 12, 0, 6.283);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = t.gold;
+      ctx.beginPath();
+      ctx.moveTo(22, y + 8);
+      ctx.lineTo(38, y + 26);
+      ctx.lineTo(28, y + 26);
+      ctx.lineTo(28, y + 40);
+      ctx.lineTo(16, y + 40);
+      ctx.lineTo(16, y + 26);
+      ctx.lineTo(6, y + 26);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    return spec.id;
+  }
+
+  function paintWorldStage(ctx, world, view) {
+    const W = (view && view.W) || 390;
+    const H = (view && view.H) || 844;
+    const spec = worldStageSpec(world);
+    const t = tokens();
+    const railY = H * 0.56;
+    ctx.save();
+    const grid = paintTileGrid(ctx, spec, { W: W, H: H });
+    const wainscot = ctx.createLinearGradient(0, railY, 0, H * 0.82);
+    if (spec.id === 'throne') {
+      wainscot.addColorStop(0, 'rgba(232,197,106,.28)');
+      wainscot.addColorStop(1, 'rgba(80,56,16,.32)');
+    } else if (spec.id === 'candy') {
+      wainscot.addColorStop(0, 'rgba(216,120,168,.24)');
+      wainscot.addColorStop(1, 'rgba(60,16,48,.3)');
+    } else if (spec.id === 'sewer' || spec.id === 'toxic') {
+      wainscot.addColorStop(0, 'rgba(62,207,154,.22)');
+      wainscot.addColorStop(1, 'rgba(12,40,28,.3)');
+    } else {
+      wainscot.addColorStop(0, 'rgba(232,244,239,.28)');
+      wainscot.addColorStop(1, 'rgba(94,200,224,.18)');
+    }
+    ctx.fillStyle = wainscot;
+    ctx.fillRect(0, railY, W, H * 0.26);
+    ctx.fillStyle = spec.rail === 'gold' || spec.rail === 'brass'
+      ? t.brass
+      : (spec.rail === 'rose' ? t.rose : (spec.rail === 'hazard' ? '#e4bc48' : t.slime));
+    ctx.fillRect(0, railY, W, 6);
+    ctx.fillStyle = 'rgba(255,255,255,.28)';
+    ctx.fillRect(0, railY, W, 1.1);
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillRect(0, railY + 4, W, 2);
+    if (!view || view.fixtures !== false) {
+      paintStageFixtures(ctx, spec, { W: W, H: H });
+    }
+    ctx.fillStyle = t.brass;
+    ctx.beginPath();
+    ctx.ellipse(W * 0.5, H - 11, 20, 4.5, 0, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = t.inkDeep;
+    ctx.beginPath();
+    ctx.ellipse(W * 0.5, H - 11, 11, 2.4, 0, 0, 6.283);
+    ctx.fill();
+    ctx.restore();
+    return {
+      id: spec.id,
+      tile: spec.tile,
+      rail: spec.rail,
+      tiles: grid.count,
+      wainscot: true,
+      basin: true
+    };
+  }
+
   function paintPipe(ctx, spec) {
     const t = tokens();
     const x = spec.x;
@@ -586,6 +847,11 @@
     paintShard,
     paintBoss,
     paintAtmosphere,
+    paintWorldStage,
+    worldStageSpec,
+    worldBasinColors,
+    worldBubbleColor,
+    worldDripColors,
     roundRect
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

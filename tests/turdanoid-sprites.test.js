@@ -8,7 +8,11 @@ import {
   paintPipe,
   paintShard,
   paintBoss,
-  paintAtmosphere
+  paintAtmosphere,
+  paintWorldStage,
+  worldStageSpec,
+  worldBasinColors,
+  worldBubbleColor
 } from '../games/turdanoid-sprites.js';
 import { TOKENS } from '../games/turdanoid-theme.js';
 
@@ -46,6 +50,9 @@ function recordCtx() {
     },
     fillRect(...args) {
       calls.push(['fillRect', args]);
+    },
+    strokeRect(...args) {
+      calls.push(['strokeRect', args]);
     },
     fillText(text) {
       calls.push(['fillText', text]);
@@ -149,6 +156,37 @@ describe('Turdanoid play-object sprites', () => {
     expect(drawn.crown).toBe(true);
     expect(bossCtx.calls).toContainEqual(['fillText', 'SEWER KING']);
     expect(bossCtx.calls).toContain('ellipse');
+  });
+
+  it('dresses each world with a distinct tile and basin', () => {
+    const bathroom = paintWorldStage(recordCtx(), { id: 'bathroom', stage: { tile: 'square', rail: 'brass' } }, {
+      W: 390,
+      H: 844
+    });
+    const sewer = paintWorldStage(recordCtx(), { id: 'sewer', stage: { tile: 'bond', rail: 'slime' } }, {
+      W: 390,
+      H: 844
+    });
+    const throne = paintWorldStage(recordCtx(), { id: 'throne', stage: { tile: 'slab', rail: 'gold' } }, {
+      W: 390,
+      H: 844
+    });
+    expect(bathroom.tile).toBe('square');
+    expect(sewer.tile).toBe('bond');
+    expect(throne.tile).toBe('slab');
+    expect(bathroom.wainscot).toBe(true);
+    expect(bathroom.tiles).toBeGreaterThan(20);
+    expect(worldStageSpec({ id: 'candy' }).tile).toBe('diamond');
+    expect(worldBasinColors({ id: 'bathroom' }).crest).toContain('232,244,239');
+    expect(worldBasinColors({ id: 'throne' }).hi).toContain('232,197,106');
+    expect(worldBubbleColor({ id: 'bathroom' })).not.toBe(worldBubbleColor({ id: 'sewer' }));
+    const attract = recordCtx();
+    paintWorldStage(attract, { id: 'bathroom', stage: { tile: 'square', rail: 'brass' } }, {
+      W: 390,
+      H: 844,
+      fixtures: false
+    });
+    expect(attract.calls.filter((c) => c === 'arc').length).toBeLessThan(2);
   });
 
   it('shades pipes with a specular line', () => {

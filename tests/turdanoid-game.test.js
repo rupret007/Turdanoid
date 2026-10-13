@@ -603,6 +603,16 @@ describe('TurdAnoid Pages debug surface', () => {
     expect(typeof dom.window.__turdanoid.startGame).toBe('function');
   });
 
+  it('jumps a classic campaign level for visual capture', () => {
+    const { g } = bootGame();
+    g.startGame();
+    expect(g.qaJumpLevel(7)).toBe(7);
+    expect(g.level).toBe(7);
+    expect(g.state).toBe('playing');
+    expect(g.qaJumpLevel(25)).toBe(25);
+    expect(g.level).toBe(25);
+  });
+
   it('exposes the test hook on the local smoke host', () => {
     const dom = bootAt('http://127.0.0.1:8123/TurdAnoid.html');
     expect(dom.window.__turdanoid).toBeTruthy();

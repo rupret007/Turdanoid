@@ -85,5 +85,6 @@ describe('Turdanoid theme consumed by bricks and worlds', () => {
     expect(WORLDS[4].accent).toBe(TOKENS.brass);
     const accents = new Set(WORLDS.map((w) => w.accent));
     expect(accents.size).toBe(5);
+    expect(WORLDS.map((w) => w.stage.tile)).toEqual(['square', 'bond', 'algae', 'diamond', 'slab']);
   });
 });

@@ -113,7 +113,8 @@
         accent: TOKENS.porcelainDim,
         wallMortar: TOKENS.inkDeep,
         pipe: [TOKENS.inkMid, TOKENS.aqua, '#2a5560'],
-        playWallTint: glow(TOKENS.aqua, 0.12)
+        playWallTint: glow(TOKENS.aqua, 0.12),
+        stage: { tile: 'square', rail: 'brass' }
       },
       {
         id: 'sewer',
@@ -122,7 +123,8 @@
         accent: TOKENS.slime,
         wallMortar: TOKENS.inkDeep,
         pipe: ['#0f2b24', TOKENS.slimeDeep, '#1d4a3c'],
-        playWallTint: glow(TOKENS.slime, 0.11)
+        playWallTint: glow(TOKENS.slime, 0.11),
+        stage: { tile: 'bond', rail: 'slime' }
       },
       {
         id: 'toxic',
@@ -131,7 +133,8 @@
         accent: '#86d86a',
         wallMortar: '#061208',
         pipe: ['#1a3020', '#3d7a48', '#254a30'],
-        playWallTint: glow('#86d86a', 0.1)
+        playWallTint: glow('#86d86a', 0.1),
+        stage: { tile: 'algae', rail: 'hazard' }
       },
       {
         id: 'candy',
@@ -140,7 +143,8 @@
         accent: TOKENS.rose,
         wallMortar: '#120810',
         pipe: [TOKENS.roseDeep, TOKENS.candy, '#6a2860'],
-        playWallTint: glow(TOKENS.rose, 0.12)
+        playWallTint: glow(TOKENS.rose, 0.12),
+        stage: { tile: 'diamond', rail: 'rose' }
       },
       {
         id: 'throne',
@@ -149,7 +153,8 @@
         accent: TOKENS.brass,
         wallMortar: '#100c08',
         pipe: [TOKENS.brassDeep, TOKENS.gold, '#5a4018'],
-        playWallTint: glow(TOKENS.brass, 0.12)
+        playWallTint: glow(TOKENS.brass, 0.12),
+        stage: { tile: 'slab', rail: 'gold' }
       }
     ];
   }
