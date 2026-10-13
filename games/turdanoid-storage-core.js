@@ -127,16 +127,19 @@
     }
   }
 
-  function parseWellFormedScore(value) {
+  /* Single score validator for every prefs read/write path.
+     Accept only a finite integer number, or a plain decimal digit string
+     (legacy localStorage). Never String()-coerce arrays/objects/bools. */
+  function parseScore(value) {
     if (typeof value === 'number') {
-      if (!Number.isInteger(value) || value < 0 || value > SCORE_MAX) {
+      if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0 || value > SCORE_MAX) {
         return null;
       }
       return value;
     }
     if (typeof value === 'string' && WELL_FORMED_INT.test(value)) {
       const n = Number(value);
-      if (!Number.isInteger(n) || n < 0 || n > SCORE_MAX) {
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > SCORE_MAX) {
         return null;
       }
       return n;
@@ -144,22 +147,19 @@
     return null;
   }
 
-  function sanitizeScore(value, fallback) {
-    const n = parseWellFormedScore(value);
-    if (n === null) {
-      return fallback;
-    }
-    if (n === 0) {
-      const recovered = parseWellFormedScore(fallback);
-      if (recovered !== null && recovered > 0) {
-        return recovered;
+  function mergeScores() {
+    let highest = null;
+    for (let i = 0; i < arguments.length; i++) {
+      const n = parseScore(arguments[i]);
+      if (n !== null && (highest === null || n > highest)) {
+        highest = n;
       }
     }
-    return n;
+    return highest === null ? 0 : highest;
   }
 
   function isCanonicalScore(value) {
-    return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= SCORE_MAX;
+    return typeof value === 'number' && parseScore(value) === value;
   }
 
   function readPrefsVersion(value) {
@@ -194,11 +194,11 @@
     const fb = fallback && typeof fallback === 'object' ? fallback : DEFAULT_PREFS;
     return {
       v: PREFS_VERSION,
-      best: sanitizeScore(src.best, sanitizeScore(fb.best, DEFAULT_PREFS.best)),
+      best: mergeScores(src.best, fb.best, DEFAULT_PREFS.best),
       soundOn: sanitizeBool(src.soundOn, fb.soundOn !== false),
       ambientOn: sanitizeBool(src.ambientOn, !!fb.ambientOn),
       hapticOn: sanitizeBool(src.hapticOn, fb.hapticOn !== false),
-      bossBest: sanitizeScore(src.bossBest, sanitizeScore(fb.bossBest, DEFAULT_PREFS.bossBest))
+      bossBest: mergeScores(src.bossBest, fb.bossBest, DEFAULT_PREFS.bossBest)
     };
   }
 
@@ -220,11 +220,11 @@
   function readLegacyPrefs(storage) {
     return {
       v: PREFS_VERSION,
-      best: sanitizeScore(readRaw(storage, LEGACY_KEYS.best), 0),
+      best: mergeScores(readRaw(storage, LEGACY_KEYS.best)),
       soundOn: readRaw(storage, LEGACY_KEYS.sound) !== '0',
       ambientOn: readRaw(storage, LEGACY_KEYS.ambient) === '1',
       hapticOn: readRaw(storage, LEGACY_KEYS.haptic) !== '0',
-      bossBest: sanitizeScore(readRaw(storage, LEGACY_KEYS.bossBest), 0)
+      bossBest: mergeScores(readRaw(storage, LEGACY_KEYS.bossBest))
     };
   }
 
@@ -283,10 +283,15 @@
 
   function writePrefs(storage, prefs, existingBlob) {
     const next = sanitizePrefs(prefs);
-    next.best = sanitizeScore(next.best, sanitizeScore(readRaw(storage, LEGACY_KEYS.best), 0));
-    next.bossBest = sanitizeScore(
+    next.best = mergeScores(
+      next.best,
+      existingBlob ? existingBlob.best : null,
+      readRaw(storage, LEGACY_KEYS.best)
+    );
+    next.bossBest = mergeScores(
       next.bossBest,
-      sanitizeScore(readRaw(storage, LEGACY_KEYS.bossBest), 0)
+      existingBlob ? existingBlob.bossBest : null,
+      readRaw(storage, LEGACY_KEYS.bossBest)
     );
     const existingVersion = existingBlob ? readPrefsVersion(existingBlob.v) : 0;
     const stored = Object.assign({}, copyUnknownFields(existingBlob), next);
@@ -342,6 +347,9 @@
     DEFAULT_PREFS,
     probeStorage,
     createSafeStorage,
+    SCORE_MAX,
+    parseScore,
+    mergeScores,
     sanitizePrefs,
     parsePrefsBlob,
     loadPrefs,

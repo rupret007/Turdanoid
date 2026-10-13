@@ -6,6 +6,9 @@ import {
   PREFS_VERSION,
   LEGACY_KEYS,
   DEFAULT_PREFS,
+  SCORE_MAX,
+  parseScore,
+  mergeScores,
   sanitizePrefs,
   parsePrefsBlob,
   loadPrefs,
@@ -573,6 +576,133 @@ describe('Turdanoid versioned prefs migration', () => {
     expect(savePrefs(store, { hapticOn: false, bossBest: 15 }).hapticOn).toBe(false);
     expect(store.getItem(LEGACY_KEYS.haptic)).toBe('0');
     expect(store.getItem(LEGACY_KEYS.bossBest)).toBe('15');
+  });
+
+  it('parseScore accepts only finite integers and plain digit strings', () => {
+    const accepted = [
+      ['number zero', 0, 0],
+      ['positive integer', 4200, 4200],
+      ['integer-valued float', 12.0, 12],
+      ['score cap', SCORE_MAX, SCORE_MAX],
+      ['digit string zero', '0', 0],
+      ['digit string', '4200', 4200],
+      ['digit string cap', String(SCORE_MAX), SCORE_MAX]
+    ];
+    for (const [label, value, expected] of accepted) {
+      expect(parseScore(value), label).toBe(expected);
+    }
+  });
+
+  it('parseScore rejects arrays, objects, bools, non-integers, and coerced strings', () => {
+    const rejected = [
+      ['json array [500]', [500]],
+      ['json array [1]', [1]],
+      ['nested array [[500]]', [[500]]],
+      ['stringified array "[500]"', '[500]'],
+      ['stringified array "[1]"', '[1]'],
+      ['array of digit string', ['500']],
+      ['empty object', {}],
+      ['score-shaped object', { best: 500 }],
+      ['nested blob', { nested: { best: 500 } }],
+      ['toString spoof', { toString: () => '500' }],
+      ['boolean true', true],
+      ['boolean false', false],
+      ['null', null],
+      ['undefined', undefined],
+      ['NaN', Number.NaN],
+      ['Infinity', Number.POSITIVE_INFINITY],
+      ['-Infinity', Number.NEGATIVE_INFINITY],
+      ['negative integer', -4],
+      ['negative fraction', -1.2],
+      ['positive fraction', 12.8],
+      ['boss fraction', 3.5],
+      ['exponent string', '1e3'],
+      ['huge exponent string', '1e999'],
+      ['hex string', '0x10'],
+      ['leading-zero string', '012'],
+      ['plus-prefix string', '+7'],
+      ['fraction string', '12.8'],
+      ['empty string', ''],
+      ['whitespace string', ' '],
+      ['parseInt prefix', '4200garbage'],
+      ['out of range', SCORE_MAX + 1]
+    ];
+    for (const [label, value] of rejected) {
+      expect(parseScore(value), label).toBeNull();
+    }
+  });
+
+  it('mergeScores takes the max of valid candidates and ignores invalid ones', () => {
+    expect(mergeScores()).toBe(0);
+    expect(mergeScores(null, undefined, [500], '[500]', {})).toBe(0);
+    expect(mergeScores(0, 8800)).toBe(8800);
+    expect(mergeScores(50, 8800)).toBe(8800);
+    expect(mergeScores(8800, 100)).toBe(8800);
+    expect(mergeScores([500], 8800, '[500]', { best: 9000 })).toBe(8800);
+    expect(mergeScores('4200garbage', 12.8, true, '900')).toBe(900);
+    expect(mergeScores(SCORE_MAX + 1, 12)).toBe(12);
+  });
+
+  it('never lowers or overwrites a valid stored score with an invalid or smaller candidate', () => {
+    const cases = [
+      [
+        'json array blob',
+        { v: 1, best: [500], soundOn: true, ambientOn: false, hapticOn: true, bossBest: [300] }
+      ],
+      [
+        'stringified array blob',
+        { v: 1, best: '[500]', soundOn: true, ambientOn: false, hapticOn: true, bossBest: '[300]' }
+      ],
+      [
+        'object blob score',
+        {
+          v: 1,
+          best: { score: 500 },
+          soundOn: true,
+          ambientOn: false,
+          hapticOn: true,
+          bossBest: { score: 300 }
+        }
+      ],
+      [
+        'nested blob score',
+        {
+          v: 1,
+          best: { nested: [500] },
+          soundOn: true,
+          ambientOn: false,
+          hapticOn: true,
+          bossBest: { nested: 300 }
+        }
+      ],
+      [
+        'boolean blob score',
+        { v: 1, best: true, soundOn: true, ambientOn: false, hapticOn: true, bossBest: false }
+      ],
+      [
+        'smaller valid blob',
+        { v: 1, best: 50, soundOn: true, ambientOn: false, hapticOn: true, bossBest: 10 }
+      ]
+    ];
+    for (const [label, blob] of cases) {
+      const store = memoryPrimary({
+        [PREFS_KEY]: JSON.stringify(blob),
+        turdanoid_v2_best: '8800',
+        turdanoid_boss_best_v1: '300'
+      });
+      expect(loadPrefs(store), label).toMatchObject({
+        best: 8800,
+        bossBest: 300
+      });
+      expect(JSON.parse(store.data[PREFS_KEY]).best, label).toBe(8800);
+      expect(JSON.parse(store.data[PREFS_KEY]).bossBest, label).toBe(300);
+      expect(store.getItem(LEGACY_KEYS.best), label).toBe('8800');
+      expect(store.getItem(LEGACY_KEYS.bossBest), label).toBe('300');
+      expect(savePrefs(store, { soundOn: false }).best, label).toBe(8800);
+      expect(savePrefs(store, { best: 50 }).best, label).toBe(8800);
+      expect(savePrefs(store, { best: [500] }).best, label).toBe(8800);
+      expect(store.getItem(LEGACY_KEYS.best), label).toBe('8800');
+    }
   });
 
   it('survives throwing storage through the safe wrapper', () => {

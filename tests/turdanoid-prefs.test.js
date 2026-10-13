@@ -34,7 +34,7 @@ function makeCtxStub() {
   });
 }
 
-function bootPageWithoutModulePrefs(seed = {}) {
+function bootPageWithoutModulePrefs(seed = {}, hideScoreHelpers = false) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url: 'http://localhost/TurdAnoid.html',
@@ -46,6 +46,10 @@ function bootPageWithoutModulePrefs(seed = {}) {
       window.eval(storageCore);
       delete window.TurdanoidStorage.loadPrefs;
       delete window.TurdanoidStorage.savePrefs;
+      if (hideScoreHelpers) {
+        delete window.TurdanoidStorage.parseScore;
+        delete window.TurdanoidStorage.mergeScores;
+      }
       Object.entries(seed).forEach(([key, value]) => window.localStorage.setItem(key, value));
     }
   });
@@ -294,6 +298,8 @@ describe('TurdAnoid page prefs persistence', () => {
     expect(html).not.toMatch(/parseInt\s*\(\s*persist\.getItem/);
     expect(html).toContain('fallbackScore');
     expect(html).toContain('/^(?:0|[1-9]\\d*)$/');
+    expect(html).toContain('TurdanoidStorage.parseScore');
+    expect(html).not.toMatch(/String\(\s*raw/);
   });
 
   it('page fallback never overwrites a valid legacy high score with a zero blob score', () => {
@@ -529,5 +535,102 @@ describe('TurdAnoid page prefs persistence', () => {
       bossBest: 1
     });
     expect(ls.getItem(LEGACY_KEYS.sound)).toBe('0');
+  });
+
+  it('page fallback rejects JSON arrays and never lowers a valid legacy high score', () => {
+    const cases = [
+      [
+        'json array',
+        { v: 1, best: [500], soundOn: true, ambientOn: false, hapticOn: true, bossBest: [300] }
+      ],
+      [
+        'stringified array',
+        { v: 1, best: '[500]', soundOn: true, ambientOn: false, hapticOn: true, bossBest: '[300]' }
+      ],
+      [
+        'nested array',
+        { v: 1, best: [[500]], soundOn: true, ambientOn: false, hapticOn: true, bossBest: [[300]] }
+      ],
+      [
+        'object score',
+        {
+          v: 1,
+          best: { score: 500 },
+          soundOn: true,
+          ambientOn: false,
+          hapticOn: true,
+          bossBest: { score: 300 }
+        }
+      ],
+      [
+        'nested blob',
+        {
+          v: 1,
+          best: { nested: [500] },
+          soundOn: true,
+          ambientOn: false,
+          hapticOn: true,
+          bossBest: { nested: 300 }
+        }
+      ],
+      [
+        'boolean score',
+        { v: 1, best: true, soundOn: true, ambientOn: false, hapticOn: true, bossBest: false }
+      ],
+      [
+        'smaller valid',
+        { v: 1, best: 50, soundOn: true, ambientOn: false, hapticOn: true, bossBest: 10 }
+      ]
+    ];
+    for (const hideScoreHelpers of [false, true]) {
+      for (const [label, blob] of cases) {
+        const seed = {
+          [PREFS_KEY]: JSON.stringify(blob),
+          turdanoid_v2_best: '8800',
+          turdanoid_boss_best_v1: '300'
+        };
+        const { g, ls, dom } = bootPageWithoutModulePrefs(seed, hideScoreHelpers);
+        const tag = `${hideScoreHelpers ? 'last-resort' : 'shared'} ${label}`;
+        expect(g.best, tag).toBe(8800);
+        expect(g.loadGamePrefs(), tag).toMatchObject({
+          best: 8800,
+          bossBest: 300
+        });
+        expect(readPrefs(ls).best, tag).toBe(8800);
+        expect(readPrefs(ls).bossBest, tag).toBe(300);
+        expect(ls.getItem(LEGACY_KEYS.best), tag).toBe('8800');
+        expect(ls.getItem(LEGACY_KEYS.bossBest), tag).toBe('300');
+        dom.window.document.getElementById('btnSound').click();
+        expect(readPrefs(ls).best, tag).toBe(8800);
+        expect(ls.getItem(LEGACY_KEYS.best), tag).toBe('8800');
+      }
+    }
+  });
+
+  it('live page rejects JSON array blob scores and keeps the legacy best', () => {
+    const { g, ls, dom } = bootPage({
+      [PREFS_KEY]: JSON.stringify({
+        v: 1,
+        best: [500],
+        soundOn: true,
+        ambientOn: false,
+        hapticOn: true,
+        bossBest: [300]
+      }),
+      turdanoid_v2_best: '8800',
+      turdanoid_boss_best_v1: '300'
+    });
+    expect(g.best).toBe(8800);
+    expect(g.loadGamePrefs()).toMatchObject({
+      best: 8800,
+      bossBest: 300
+    });
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(readPrefs(ls).bossBest).toBe(300);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
+    expect(ls.getItem(LEGACY_KEYS.bossBest)).toBe('300');
+    dom.window.document.getElementById('btnSound').click();
+    expect(readPrefs(ls).best).toBe(8800);
+    expect(ls.getItem(LEGACY_KEYS.best)).toBe('8800');
   });
 });
