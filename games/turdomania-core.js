@@ -159,14 +159,27 @@ export function popGroup(board, col, row) {
 }
 
 /** Full game state helpers (immutable). */
-export function newGame(levelKey = 'normal', seed = Date.now()) {
+/**
+ * Board size that keeps every tile at least `minCell` px inside `availW` x `availH`.
+ * The level's full size is used whenever it fits; narrow phones get fewer columns/rows
+ * (never below 6 x 8) with the same kinds, rules and scoring.
+ */
+export function fitDims(levelKey, availW, availH, minCell = 32) {
   const level = LEVELS[levelKey] || LEVELS.normal;
-  const board = createBoard(level.cols, level.rows, level.kinds, seed);
+  const fit = (n, avail, floor) => Math.max(Math.min(n, floor), Math.min(n, Math.floor(avail / minCell)));
+  return { cols: fit(level.cols, availW, 6), rows: fit(level.rows, availH, 8) };
+}
+
+export function newGame(levelKey = 'normal', seed = Date.now(), dims = null) {
+  const level = LEVELS[levelKey] || LEVELS.normal;
+  const cols = dims && dims.cols > 0 ? Math.min(level.cols, dims.cols | 0) : level.cols;
+  const rows = dims && dims.rows > 0 ? Math.min(level.rows, dims.rows | 0) : level.rows;
+  const board = createBoard(cols, rows, level.kinds, seed);
   return {
     level: LEVELS[levelKey] ? levelKey : 'normal',
     seed: Number(seed) >>> 0,
-    cols: level.cols,
-    rows: level.rows,
+    cols,
+    rows,
     board,
     score: 0,
     moves: 0,

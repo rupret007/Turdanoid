@@ -194,3 +194,34 @@ describe('Turdomania best score storage', () => {
     expect(Core.recordBest(memoryStorage(), 'bogus', 10)).toBe(false);
   });
 });
+
+describe('turdomania fit + page (re-gate soft findings)', () => {
+  it('fitDims keeps the full board when it fits and >=32px tiles when it does not', () => {
+    expect(Core.fitDims('hard', 2000, 2000)).toEqual({ cols: 12, rows: 14 });
+    const narrow = Core.fitDims('hard', 284, 398);
+    expect(narrow.cols * 32).toBeLessThanOrEqual(284);
+    expect(narrow.rows * 32).toBeLessThanOrEqual(398);
+    expect(Core.fitDims('hard', 10, 10)).toEqual({ cols: 6, rows: 8 });
+  });
+  it('newGame honours fitted dims without changing kinds or level', () => {
+    const g = Core.newGame('hard', 7, { cols: 8, rows: 12 });
+    expect(g.level).toBe('hard');
+    expect(g.board).toHaveLength(8);
+    expect(g.board[0]).toHaveLength(12);
+    expect(Core.newGame('hard', 7, { cols: 99, rows: 99 }).cols).toBe(12);
+  });
+  it('page pre-size table matches LEVELS, keeps names, and carries noindex/description/main', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const html = readFileSync(resolve(process.cwd(), 'turdomania.html'), 'utf8');
+    const dims = JSON.parse(html.match(/TM_DIMS = (\{[^}]+\})/)[1].replace(/(\w+):/g, '"$1":'));
+    for (const [k, v] of Object.entries(Core.LEVELS)) {
+      expect(dims[k]).toEqual([v.cols, v.rows]);
+    }
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).toMatch(/<meta name="description" content="[^"]{40,}">/);
+    expect(html).toMatch(/<main class="tm"/);
+    expect(html).toContain(`getItem('${Core.PREFS_KEY}')`);
+    expect(html).toContain('Blowout · 5 kinds');
+  });
+});

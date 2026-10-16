@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="Turdomania: a free click-to-pop puzzle in the Turdanoid suite. Pop matching piles of 2 or more, bigger piles score more, flush the whole board for a bonus.">
 <meta name="theme-color" content="#1a120c">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="assets/turdsuite.css">
@@ -38,8 +40,10 @@ h1 { font-size: clamp(1.15rem, 5vw, 1.7rem); letter-spacing: .04em; color: var(-
 .stat { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px; padding: 4px 10px; font-size: .85rem; min-width: 70px; text-align: center; }
 .stat b { display: block; font-size: 1.05rem; color: #fff; }
 .tagline { font-size: .8rem; opacity: .8; text-align: center; width: 100%; }
+main.tm { display: contents; }
 #boardWrap { position: relative; margin: 6px auto; padding: 6px; border-radius: 14px; background: rgba(0,0,0,.35); border: 2px solid var(--panel-border); }
-#board { position: relative; outline: none; border-radius: 8px; }
+#board { position: relative; outline: none; border-radius: 8px; width: var(--board-w, 320px); height: var(--board-h, 384px); }
+#board [role="row"] { display: contents; }
 #board:focus-visible { box-shadow: 0 0 0 3px var(--accent-2); }
 .tile {
   position: absolute; left: 0; top: 0; width: var(--cell); height: var(--cell);
@@ -80,9 +84,9 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   .stat b { font-size: .95rem; }
   .tagline { display: none; }
   #boardWrap { margin: 4px auto; padding: 4px; }
-  .dock { margin-top: 6px; gap: 6px; flex-wrap: nowrap; }
+  .dock { margin-top: 6px; gap: 6px; flex-wrap: wrap; }
   .dock button, .dock select { padding: 0 10px; font-size: .85rem; white-space: nowrap; }
-  .dock select { min-width: 0; flex: 1 1 auto; max-width: 120px; }
+  .dock select { min-width: 0; flex: 1 1 100%; max-width: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tile, .float { transition: none !important; animation: none !important; }
@@ -98,6 +102,7 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   <div class="stat">Left<b id="left">0</b></div>
   <p class="tagline" id="tagline">Pop matching piles. Bigger piles stink more. Flush the whole board for +1000.</p>
 </header>
+<main class="tm" aria-label="Turdomania">
 <div id="boardWrap">
   <div id="board" role="grid" tabindex="0" aria-label="Turdomania board. Arrow keys move, Enter pops a pile, U undoes."></div>
   <div id="overlay" role="dialog" aria-modal="false" aria-labelledby="overTitle">
@@ -121,6 +126,28 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
     <option value="hard">Blowout · 5 kinds</option>
   </select>
 </div>
+<script>
+// Reserve the board's final size before first paint (no layout shift). Mirrors layout() below;
+// tests keep TM_DIMS in sync with games/turdomania-core.js LEVELS.
+window.TM_DIMS = { easy: [8, 10], normal: [10, 12], hard: [12, 14] };
+window.tmFit = function (levelKey) {
+  var d = TM_DIMS[levelKey] || TM_DIMS.normal;
+  var vw = Math.min(window.innerWidth, 760), availW = vw - 36;
+  var compact = matchMedia('(max-width: 360px), (max-height: 600px)').matches;
+  var availH = window.innerHeight - (compact ? 170 : 230);
+  var fit = function (n, avail, floor) { return Math.max(Math.min(n, floor), Math.min(n, Math.floor(avail / 32))); };
+  return { availW: availW, availH: availH, cols: fit(d[0], availW, 6), rows: fit(d[1], availH, 8) };
+};
+(function () {
+  var q = new URLSearchParams(location.search), lvl = q.get('level');
+  if (!TM_DIMS[lvl]) { try { lvl = (JSON.parse(localStorage.getItem('turdomania_prefs_v1') || 'null') || {}).level; } catch (e) { lvl = null; } }
+  var f = tmFit(TM_DIMS[lvl] ? lvl : 'normal');
+  var cell = Math.max(22, Math.min(56, Math.floor(Math.min(f.availW / f.cols, f.availH / f.rows))));
+  var st = document.documentElement.style;
+  st.setProperty('--cell', cell + 'px'); st.setProperty('--board-w', cell * f.cols + 'px'); st.setProperty('--board-h', cell * f.rows + 'px');
+})();
+</script>
+</main>
 <p class="help">Tap a pile of 2+ touching matches. Stuff falls, empty columns slide left. Score = (pile − 2)². Keys: arrows, Enter/Space, U undo, N new.</p>
 <div id="live" class="sr-only" aria-live="polite"></div>
 
@@ -162,8 +189,10 @@ const tileEls = new Map();
 const fixedSeed = qs.has('seed') ? Number(qs.get('seed')) >>> 0 : null;
 
 function start(levelKey, seed) {
-  state = Core.newGame(levelKey, seed ?? (fixedSeed ?? ((Math.random() * 2 ** 32) >>> 0)));
+  const fit = window.tmFit ? window.tmFit(levelKey) : null;
+  state = Core.newGame(levelKey, seed ?? (fixedSeed ?? ((Math.random() * 2 ** 32) >>> 0)), fit && !qs.has('fullsize') ? Core.fitDims(levelKey, fit.availW, fit.availH) : null);
   boardEl.innerHTML = '';
+  rowEls.length = 0;
   tileEls.clear();
   cursor = { c: 0, r: 0 };
   overlay.classList.remove('show');
@@ -176,16 +205,34 @@ function layout() {
   const vw = Math.min(window.innerWidth, 760);
   const availW = vw - 36;
   const compact = matchMedia('(max-width: 360px), (max-height: 600px)').matches;
-  const availH = window.innerHeight - (compact ? 130 : 230);
+  const availH = window.innerHeight - (compact ? 170 : 230);
   cell = Math.max(22, Math.min(56, Math.floor(Math.min(availW / state.cols, availH / state.rows))));
-  document.documentElement.style.setProperty('--cell', cell + 'px');
-  boardEl.style.width = cell * state.cols + 'px';
-  boardEl.style.height = cell * state.rows + 'px';
+  const st = document.documentElement.style;
+  st.setProperty('--cell', cell + 'px');
+  st.setProperty('--board-w', cell * state.cols + 'px');
+  st.setProperty('--board-h', cell * state.rows + 'px');
+}
+
+// Grid semantics: one role="row" per visual row (top to bottom); each tile lives in its row.
+// Rows are display:contents, so tiles stay positioned against #board.
+const rowEls = [];
+function syncRows() {
+  while (rowEls.length < state.rows) {
+    const row = document.createElement('div');
+    row.setAttribute('role', 'row');
+    row.setAttribute('aria-rowindex', rowEls.length + 1);
+    boardEl.appendChild(row);
+    rowEls.push(row);
+  }
+  while (rowEls.length > state.rows) rowEls.pop().remove();
+  boardEl.setAttribute('aria-rowcount', state.rows);
+  boardEl.setAttribute('aria-colcount', state.cols);
 }
 
 function posFor(c, r) { return `translate(${c * cell}px, ${(state.rows - 1 - r) * cell}px)`; }
 
 function render() {
+  syncRows();
   const live = new Set();
   state.board.forEach((col, c) => col.forEach((t, r) => {
     if (!t) return;
@@ -200,15 +247,26 @@ function render() {
       el.textContent = kind.emoji;
       el.style.setProperty('--k', kind.color);
       el.dataset.id = t.id;
-      boardEl.appendChild(el);
       tileEls.set(t.id, el);
     }
     el.classList.remove('popping');
     el.dataset.col = c; el.dataset.row = r;
+    const rowEl = rowEls[state.rows - 1 - r];
+    if (el.parentNode !== rowEl) {
+      const from = el.parentNode ? el.style.transform : '';
+      rowEl.appendChild(el);
+      if (from) { // re-parenting drops the transition start; replay it from the old spot
+        el.style.transition = 'none';
+        el.style.transform = from;
+        void el.offsetWidth;
+        el.style.transition = '';
+      }
+    }
     const pos = posFor(c, r);
     el.style.setProperty('--pos', pos);
     el.style.transform = pos;
     el.setAttribute('aria-label', `${kind.name}, column ${c + 1}, row ${r + 1}`);
+    el.setAttribute('aria-colindex', c + 1);
   }));
   for (const [id, el] of tileEls) if (!live.has(id)) { el.remove(); tileEls.delete(id); }
   els.score.textContent = state.score;
@@ -259,6 +317,7 @@ function floatText(text, c, r) {
   f.textContent = text;
   f.style.left = c * cell + cell / 2 + 'px';
   f.style.top = (state.rows - 1 - r) * cell + 'px';
+  f.setAttribute('aria-hidden', 'true');
   boardEl.appendChild(f);
   setTimeout(() => f.remove(), 850);
 }

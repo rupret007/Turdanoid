@@ -2377,10 +2377,12 @@ async function main() {
         actions: async (page) => {
           await page.waitForFunction(() => window.__turdomania && window.__turdomania.state);
           const boot = await page.evaluate(() => {
+            const st = window.__turdomania.state;
             const board = document.getElementById('board').getBoundingClientRect();
             const tile = document.querySelector('.tile').getBoundingClientRect();
             return {
               tiles: document.querySelectorAll('.tile').length,
+              full: st.cols * st.rows, cols: st.cols, rows: st.rows,
               left: board.left, right: board.right, bottom: board.bottom,
               tileSize: tile.width,
               scrollW: document.documentElement.scrollWidth,
@@ -2388,7 +2390,12 @@ async function main() {
               back: !!document.querySelector('.suite-back-pill')
             };
           });
-          if (boot.tiles !== 120) fail(name, `seeded normal board should have 120 tiles, saw ${boot.tiles}`);
+          // Normal is 10x12 wherever 32px tiles fit; narrow phones get a smaller full board, never sub-32px tiles.
+          const N = boot.full;
+          if (boot.tiles !== N) fail(name, `seeded board should be full (${N} tiles), saw ${boot.tiles}`);
+          if (viewport.width >= 390 && N !== 120) fail(name, `normal board should be the full 10x12 at ${viewport.width}px, saw ${boot.cols}x${boot.rows}`);
+          if (viewport.width < 390 && (boot.cols < 6 || boot.rows < 8)) fail(name, `fitted board too small: ${boot.cols}x${boot.rows}`);
+          if (boot.tileSize < 32) fail(name, `tiles must be at least 32px: ${boot.tileSize}`);
           if (boot.left < 0 || boot.right > viewport.width) fail(name, `board escapes the viewport: ${JSON.stringify(boot)}`);
           if (boot.scrollW > viewport.width) fail(name, `page scrolls sideways: ${boot.scrollW}`);
           if (boot.tileSize < 22) fail(name, `tiles too small to tap: ${boot.tileSize}`);
@@ -2428,7 +2435,7 @@ async function main() {
             left: Number(document.getElementById('left').textContent),
             undoDisabled: document.getElementById('undoBtn').disabled
           }));
-          if (after.tiles !== 120 - target.n || after.left !== 120 - target.n) fail(name, `tap did not pop the group: ${JSON.stringify({ target, after })}`);
+          if (after.tiles !== N - target.n || after.left !== N - target.n) fail(name, `tap did not pop the group: ${JSON.stringify({ target, after })}`);
           if (after.score !== target.pts) fail(name, `score should be (n-2)^2 = ${target.pts}, saw ${after.score}`);
           if (after.undoDisabled) fail(name, 'Undo should be live after a pop');
           if (process.env.TURDOMANIA_SHOT_DIR) {
@@ -2440,7 +2447,7 @@ async function main() {
             tiles: document.querySelectorAll('.tile').length,
             score: Number(document.getElementById('score').textContent)
           }));
-          if (undone.tiles !== 120 || undone.score !== 0) fail(name, `Undo did not restore the board: ${JSON.stringify(undone)}`);
+          if (undone.tiles !== N || undone.score !== 0) fail(name, `Undo did not restore the board: ${JSON.stringify(undone)}`);
           // Keyboard: focus the board and pop with Enter somewhere legal.
           await page.locator('#board').focus();
           await page.keyboard.press('ArrowRight');
