@@ -195,7 +195,7 @@ describe('per-game Stalemate playlist wiring', () => {
     });
 
     const dom = new JSDOM(
-      `<!DOCTYPE html><body><button id="deal" type="button">Deal</button></body>`,
+      '<!DOCTYPE html><body><button id="deal" type="button">Deal</button></body>',
       { runScripts: 'dangerously', url: 'http://localhost/turdjack.html' }
     );
     dom.window.Suite = {

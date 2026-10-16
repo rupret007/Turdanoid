@@ -25,16 +25,16 @@ const SKIP_DIR_NAMES = new Set([
 
 function walkScanFiles(dirRel) {
   const abs = path.join(ROOT, dirRel);
-  if (!fs.existsSync(abs)) return [];
+  if (!fs.existsSync(abs)) {return [];}
   return fs.readdirSync(abs, { withFileTypes: true }).flatMap((entry) => {
     const rel = path.join(dirRel, entry.name);
     if (entry.isDirectory()) {
-      if (SKIP_DIR_NAMES.has(entry.name)) return [];
+      if (SKIP_DIR_NAMES.has(entry.name)) {return [];}
       return walkScanFiles(rel);
     }
     const ext = path.extname(entry.name);
-    if (!SCAN_EXTENSIONS.has(ext)) return [];
-    if (entry.name === 'package-lock.json') return [];
+    if (!SCAN_EXTENSIONS.has(ext)) {return [];}
+    if (entry.name === 'package-lock.json') {return [];}
     return [rel];
   });
 }
