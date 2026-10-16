@@ -99,6 +99,7 @@ body[data-suite-back="top"] .suite-back-pill {
     left: max(8px, calc(var(--suite-safe-left) + 6px));
     width: 44px;
     padding: 0;
+    flex-direction: column;
     justify-content: center;
     gap: 0;
     letter-spacing: 0;
@@ -110,7 +111,10 @@ body[data-suite-back="top"] .suite-back-pill {
     opacity: 1;
   }
   body:not([data-suite-back="bottom"]) .suite-back-pill .suite-back-pill-label {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
   }
   /* Duplicate in-page Hub exits share one job with the suite pill on phones.
      Header/topbar links, overlay Back to Hub, Game Hub, and chrome Hub
@@ -125,6 +129,7 @@ body[data-suite-back="top"] .suite-back-pill {
   }
 }
 .suite-back-pill:hover { background: rgba(20, 50, 40, 0.85); transform: translateY(-1px); border-color: rgba(158, 255, 200, 0.6); }
+.suite-back-pill:focus-visible { outline: 2px solid var(--suite-accent); outline-offset: 3px; background: #143228; }
 .suite-back-pill:active { transform: scale(0.95); }
 .suite-back-pill .arrow { font-size: 13px; opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
@@ -195,13 +200,17 @@ body[data-suite-back="top"]:has(.suite-back-pill) {
     min-width: 44px;
     min-height: 44px;
     padding: 0;
+    flex-direction: column;
     justify-content: center;
     gap: 0;
     font-size: 0;
     letter-spacing: 0;
   }
   body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .suite-back-pill-label {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
   }
   body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .arrow {
     font-size: 18px;

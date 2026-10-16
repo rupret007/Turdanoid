@@ -47,9 +47,10 @@ Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 i
 
 ## Back pill placement
 
-- **Default:** bottom-left on wide viewports; **top-left 44×44 icon** at ≤520px, **~8px below safe-area** so header toolbars and Rules buttons stay tappable.
+- **Default:** bottom-left on wide viewports; **top-left 44×44 arrow with a Hub caption** at ≤520px, **~8px below safe-area** so header toolbars and Rules buttons stay tappable. The same caption appears in Spades' compact control through 920px. A high-contrast focus ring identifies the keyboard destination.
 - **Override:** `body data-suite-back="bottom"` keeps bottom dock; `data-suite-back="top"` forces top on all widths.
 - Duplicate in-page Hub exits are hidden (`display: none`) at ≤520px when `.suite-back-pill` is present: header/topbar Hub links, overlay **Back to Hub** (`.dialog-hub`), title-screen **Game Hub** (`#btnHub`), and chrome Hub buttons (`onclick` home). Desktop 1280×800 keeps a named Hub control. The pill still goes home (`href="./"`, `aria-label="Back to game hub"`). Physical overlap **NOT RUN**.
+- Crappy Eights dialogs cycle keyboard focus through visible controls and the shared Hub when their own Hub exit is hidden. Enter follows the focused Hub link; the guide shortcut leaves native link activation intact.
 - Helpers: `assets/suite-back-pill.js` (`resolveBackPillPlacement`, overlap math, `DUPLICATE_INPAGE_HUB_INNER_SELECTORS`) for unit tests and Playwright overlap checks.
 
 ## Checklist (testable)
