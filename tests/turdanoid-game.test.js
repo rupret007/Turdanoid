@@ -213,7 +213,7 @@ describe('TurdAnoid game regressions', () => {
   });
 
   describe('new-wall power continuity', () => {
-    it('carries still-active ball powers through a real wall clear', () => {
+    it('resets every timed ball power on a real round change (Arkanoid rule)', () => {
       g.activePowers.slow = 120;
       g.activePowers.fast = 120;
       g.activePowers.fire = 120;
@@ -227,14 +227,15 @@ describe('TurdAnoid game regressions', () => {
 
       const [ball] = g.balls;
       const baseSpeed = 5.4 + 2 * 0.16;
-      const expectedSpeed = Math.max(3.5, baseSpeed * 0.7) * 1.35;
       expect(g.levelTransition).toBe(false);
       expect(g.level).toBe(2);
+      expect(Object.keys(g.activePowers)).toHaveLength(0);
       expect(ball.baseSpeed).toBeCloseTo(baseSpeed, 6);
-      expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(expectedSpeed, 6);
-      expect(ball.speed).toBeCloseTo(expectedSpeed, 6);
-      expect(ball.fire).toBe(119);
-      expect(ball.ghost).toBe(119);
+      expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed, 6);
+      expect(ball.speed).toBeCloseTo(baseSpeed, 6);
+      expect(ball.fire || 0).toBe(0);
+      expect(ball.ghost || 0).toBe(0);
+      expect(dom.window.document.getElementById('powers').textContent).toBe('');
     });
 
     it('restores the natural speed as slow and fast expire independently', () => {
@@ -258,11 +259,10 @@ describe('TurdAnoid game regressions', () => {
       expect(Math.hypot(ball.vx, ball.vy)).toBeCloseTo(baseSpeed, 6);
     });
 
-    it('keeps Enlarge paddle width through a real wall clear', () => {
+    it('returns Enlarge to base paddle width on a real round change (Arkanoid rule)', () => {
       const baseW = g.paddle.baseW;
       g.applyPower({ t: 'enlarge' });
-      const wide = g.paddle.w;
-      expect(wide).toBeGreaterThan(baseW);
+      expect(g.paddle.w).toBeGreaterThan(baseW);
 
       g.bricks = [];
       g.step(FRAME);
@@ -272,10 +272,9 @@ describe('TurdAnoid game regressions', () => {
 
       expect(g.levelTransition).toBe(false);
       expect(g.level).toBe(2);
-      expect(g.activePowers.big).toBeGreaterThan(0);
-      expect(g.paddle.w).toBeCloseTo(wide, 6);
-      expect(g.paddle.w).toBeGreaterThan(g.paddle.baseW);
-      expect(dom.window.document.getElementById('powers').textContent).toContain('Wide');
+      expect(g.activePowers.big).toBeUndefined();
+      expect(g.paddle.w).toBe(baseW);
+      expect(dom.window.document.getElementById('powers').textContent).not.toContain('Wide');
       expect(g.paddle.x).toBeGreaterThanOrEqual(g.paddle.w / 2);
       expect(g.paddle.x).toBeLessThanOrEqual(g.W - g.paddle.w / 2);
     });

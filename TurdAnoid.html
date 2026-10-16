@@ -1135,8 +1135,8 @@ function scalePointerLerp(ts, perFrame){
   return 1 - Math.pow(1 - base, Math.max(0, ts));
 }
 function paddleKeepsTimedSize(){
-  // Enlarge/Shrink chips survive a wall clear the same way Slow/Fire/Ghost do.
-  // Death is the path that clears activePowers and returns to base width.
+  // Round advance (finishClearTally) and death both clear activePowers first,
+  // so this only keeps size across a direct newLevel() rebuild (QA/restart churn).
   return !!(activePowers.big || activePowers.shrink);
 }
 function computeTimedBallSpeed(baseSpeed){
@@ -1161,8 +1161,8 @@ function syncTimedBallSpeeds(){
 function newBall(stuck=true){
   const r = Math.max(8, Math.min(11, W*0.018));
   const baseSpeed = 5.4 + Math.min(level*0.16, 3.0);
-  // Timed power chips survive a wall clear, so the replacement ball must
-  // keep the ball-scoped effects they still advertise.
+  // Death and round changes clear activePowers first; any chip still alive
+  // (direct newLevel() rebuilds) keeps its ball-scoped effect on the new ball.
   const speed = computeTimedBallSpeed(baseSpeed);
   const ang = -Math.PI/2 + (Math.random()-0.5)*0.4;
   return {
@@ -1569,7 +1569,11 @@ function finishClearTally(){
   if(level > 30){ levelTransition = false; gameOver(true); return; }
   levelTransition = false;
   stink = Math.max(0, stink - 0.3);
+  // Jeff's rule (like Arkanoid): every timed power-up ends when the round changes.
+  activePowers = {};
+  paddle.w = paddle.baseW;
   newLevel();
+  updatePowers();
   updateHud();
 }
 function skipClearTally(){
