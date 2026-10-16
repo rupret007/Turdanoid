@@ -16,7 +16,7 @@ The hub lineup, in order:
 
 | Game | File | What you get |
 |------|------|----------------|
-| **TurdAnoid Turbo** | `TurdAnoid.html` | Brick-breaker, five worlds, 19 capsules, optional Boss Flush, coach |
+| **Turdanoid** | `TurdAnoid.html` | Brick-breaker, five worlds, 19 capsules, optional Boss Flush, coach |
 | **Turdtris** | `turdtris.html` | Guideline stacker, Sprint 40L / Ultra 2:00, desktop 5-piece cabinet |
 | **Crapjack 21** | `turdjack.html` | Blackjack, chips on felt, in-page pit modals, table-first phones |
 | **Crappy Eights** | `crapeights.html` | You vs 3 bots, action cards, three AI levels, race to 200 |
