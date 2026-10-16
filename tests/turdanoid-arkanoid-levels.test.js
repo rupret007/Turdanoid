@@ -4,6 +4,7 @@ import {
   CAMPAIGN_COLS,
   MIN_BRICK_W,
   MIN_BRICK_H,
+  MAX_ROWS,
   brickGeometry,
   campaignLevelCount,
   definitionForLevel,
@@ -21,7 +22,8 @@ describe('Arkanoid-style campaign data', () => {
     expect(LEVELS.length).toBeGreaterThanOrEqual(12);
     for (const def of LEVELS) {
       expect(def.grid.length, def.name).toBe(def.rows);
-      expect(def.rows, def.name).toBeLessThanOrEqual(11);
+      expect(def.rows, def.name).toBeLessThanOrEqual(MAX_ROWS);
+      expect(MAX_ROWS).toBe(9);
       for (const row of def.grid) {
         expect(row.length, `${def.name} "${row}"`).toBe(9);
         for (const ch of row) {
@@ -79,13 +81,19 @@ describe('Brick size on phones', () => {
   it('keeps every round at least MIN_BRICK_W x MIN_BRICK_H on a 320px phone', () => {
     expect(MIN_BRICK_W).toBeGreaterThanOrEqual(28);
     expect(MIN_BRICK_H).toBeGreaterThanOrEqual(20);
-    for (const H of [568, 640, 700]) {
+    // Real canvases: 320x568 screen -> 304x552, 320x480 -> 304x464 (Karen B1).
+    for (const [CW, H] of [
+      [304, 552],
+      [304, 464],
+      [320, 568],
+      [320, 640]
+    ]) {
       for (const def of LEVELS) {
-        const g = brickGeometry(320, H, def.cols, def.rows);
-        expect(g.bw, `${def.name} @320x${H}`).toBeGreaterThanOrEqual(MIN_BRICK_W);
-        expect(g.bh, `${def.name} @320x${H}`).toBeGreaterThanOrEqual(MIN_BRICK_H);
+        const g = brickGeometry(CW, H, def.cols, def.rows);
+        expect(g.bw, `${def.name} @${CW}x${H}`).toBeGreaterThanOrEqual(MIN_BRICK_W);
+        expect(g.bh, `${def.name} @${CW}x${H}`).toBeGreaterThanOrEqual(MIN_BRICK_H);
         const right = g.padX + def.cols * g.bw + (def.cols - 1) * g.gap;
-        expect(right).toBeLessThanOrEqual(320 - g.padX + 0.001);
+        expect(right).toBeLessThanOrEqual(CW - g.padX + 0.001);
         expect(g.top + def.rows * (g.bh + g.rowGap)).toBeLessThanOrEqual(H * 0.6 + 0.001);
       }
     }

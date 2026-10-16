@@ -105,25 +105,25 @@
     { level: 20, name: 'Hourglass', pattern: 'Hourglass', blurb: 'Steel pinch in the middle.',
       grid: ['444444444', '.4444444.', '..D444D..', '...X4X...', '...X4X...', '..34443..', '.3344433.', '333DGD333', 'TTTTTTTTT'] },
     { level: 21, name: 'Diamond Flush', pattern: 'Diamond', blurb: 'A gold-cored diamond in steel brackets.',
-      grid: ['X...4...X', 'X..444..X', '..44G44..', '.44GDG44.', '444DGD444', '.44GDG44.', '..44G44..', 'X..444..X', 'X...4...X', '444444444'] },
+      grid: ['X..444..X', 'X.44444.X', '..44G44..', '.44GDG44.', '444D4D444', '.44GDG44.', '..44G44..', 'X.44444.X', 'X..444..X'] },
     { level: 22, name: 'Skull Bowl', pattern: 'Skull', blurb: '4-hit skull, gold eyes, dripping grin.',
       grid: ['..44444..', '.4444444.', '44GG4GG44', '44GG4GG44', '.4444444.', '..4DDD4..', '..4.D.4..', '.TTTTTTT.', 'MMMMMMMMM'] },
     { level: 23, name: 'Clog Lattice', pattern: 'Mesh', blurb: 'Steel lattice with tar pockets.',
-      grid: ['4T4T4T4T4', 'X.X.X.X.X', '4D4G4G4D4', 'X.X.X.X.X', '4T4T4T4T4', 'X.X.X.X.X', '4G4D4D4G4', '444444444', '444444444', 'MMMMMMMMM'] },
+      grid: ['4T4T4T4T4', 'X4X4X4X4X', '4D4G4G4D4', 'X.X.X.X.X', '4T4T4T4T4', 'X4X4X4X4X', '4G4D4D4G4', '444444444', 'MMMMMMMMM'] },
     { level: 24, name: 'Royal Flush', pattern: 'Crown', blurb: 'Candy boss. A crown of gold and steel.',
       grid: ['4.4.4.4.4', '4X4X4X4X4', '444444444', '4GDG4GDG4', '444444444', 'MMMMMMMMM', 'TTTTTTTTT', 'X..DDD..X', '444444444'] },
     { level: 25, name: 'Twin Pipes', pattern: 'Split', blurb: 'Two steel pipes split the board.',
-      grid: ['44.X.X.44', '4G.XDX.G4', '44DX.XD44', 'TT.X.X.TT', '44.X4X.44', 'MM.X4X.MM', '44D.4.D44', 'TTTTTTTTT', '444444444', 'MMMMMMMMM', 'TTTTTTTTT'] },
+      grid: ['444X4X444', '4G4XDX4G4', '44DX4XD44', 'MM4X4X4MM', '444X4X444', 'MM4X4X4MM', '44D444D44', 'TTTTTTTTT', 'TTTTTTTTT'] },
     { level: 26, name: 'Sludge Spiral', pattern: 'Spiral', blurb: 'Follow the spiral in to the gold core.',
-      grid: ['444444444', '4...D...4', '4.44444.4', '4.4DGD4.4', '4.4G.G4.4', '4.4D4D4.4', '4.4...4.4', '4.44444.4', 'MMMMMMMMM', 'MMMMMMMMM'] },
+      grid: ['444444444', '44..D..44', '4.44444.4', '4.4DGD4.4', '4.4G4G4.4', '4.4D4D4.4', '4.44444.4', '4.44444.4', 'MMMMMMMMM'] },
     { level: 27, name: 'Cathedral', pattern: 'Arches', blurb: 'Steel arches over gold windows.',
-      grid: ['XX44444XX', 'X4GGGGG4X', '44G4D4G44', '44GD4DG44', '44G4D4G44', 'X4GGGGG4X', '4.4.D.4.4', 'TTTTTTTTT', 'MMMMMMMMM', '444444444'] },
+      grid: ['XX44444XX', 'X4GGGGG4X', '44G4D4G44', '44GD4DG44', '44G4D4G44', 'X4GGGGG4X', '4.4.D.4.4', 'MMMMMMMMM', '444444444'] },
     { level: 28, name: 'Septic Fort', pattern: 'Fortress', blurb: 'Every wall fights back.',
-      grid: ['X4X4X4X4X', '4DMMMMMD4', '4M44G44M4', '4MGDGDGM4', '4M44G44M4', '4DMMMMMD4', 'TTTTTTTTT', '444444444', 'GGGGGGGGG', '4X4.4.4X4'] },
+      grid: ['X4X4X4X4X', '4DMMMMMD4', '4M44G44M4', '4MGDGDGM4', '4M44G44M4', '4DMMMMMD4', '444444444', 'GGGGGGGGG', '4X4.4.4X4'] },
     { level: 29, name: 'Last Wipe', pattern: 'Gauntlet', blurb: 'Dense tar and gold before the king.',
-      grid: ['GGGGGGGGG', '4D4G4G4D4', 'MMMMMMMMM', '4G4D4D4G4', 'TTTTTTTTT', '444444444', 'GDGGGGGDG', 'MMMMMMMMM', 'X4X4X4X4X', '444444444'] },
+      grid: ['GGGGGGGGG', '4D4G4G4D4', 'MMMMMMMMM', '4G4D4D4G4', '444444444', 'GDGGGGGDG', 'MMMMMMMMM', 'X4X4X4X4X', '444444444'] },
     { level: 30, name: 'Sewer King', pattern: 'Boss Wall', blurb: 'Final boss. Gold, steel and eight drips.',
-      grid: ['X4GGGGG4X', 'DMMMMMMMD', '4G4D4D4G4', 'MMMMMMMMM', 'G4DGGGD4G', 'TTTTTTTTT', '4D44G44D4', 'MMMMMMMMM', 'GGGGGGGGG', '444444444', 'X4X4X4X4X'] }
+      grid: ['44GGGGG44', 'DMMMMMMMD', '4G4D4D4G4', 'MMMMMMMMM', 'G4DGGGD4G', '4D44G44D4', 'MMMMMMMMM', 'GGGGGGGGG', '4X44444X4'] }
   ];
 
   function allPatternNames() {
@@ -267,6 +267,8 @@
   /** Smallest brick the campaign may draw, measured on a 320px phone. */
   const MIN_BRICK_W = 28;
   const MIN_BRICK_H = 20;
+  /** Tallest wall; keeps 20px bricks inside 60% of a 320x480 phone (304x464 canvas). */
+  const MAX_ROWS = 9;
 
   /**
    * Brick placement for a playfield. Fewer, wider columns (9) with a 0.7
@@ -279,13 +281,17 @@
     const top = 70;
     const padX = Math.max(8, Math.round(W * 0.03));
     const gap = W < 420 ? 4 : 6;
-    const rowGap = 4;
+    let rowGap = 4;
     const bw = (W - padX * 2 - gap * (n - 1)) / n;
     let bh = Math.max(MIN_BRICK_H, Math.min(32, Math.round(bw * 0.7)));
     const maxWallH = H * 0.6 - top;
-    const r = Math.max(1, Math.floor(rows) || 1);
+    const r = Math.max(1, Math.min(MAX_ROWS, Math.floor(rows) || 1));
+    // Short phones: tighten the row gap first, then shrink toward (never below) MIN_BRICK_H.
     if (r * (bh + rowGap) > maxWallH) {
-      bh = Math.max(18, Math.floor(maxWallH / r - rowGap));
+      rowGap = 2;
+    }
+    if (r * (bh + rowGap) > maxWallH) {
+      bh = Math.max(MIN_BRICK_H, Math.floor(maxWallH / r - rowGap));
     }
     return { top, padX, gap, rowGap, bw, bh };
   }
@@ -530,6 +536,7 @@
     CAMPAIGN_COLS,
     MIN_BRICK_W,
     MIN_BRICK_H,
+    MAX_ROWS,
     brickGeometry,
     allPatternNames,
     shouldPlaceBrick,

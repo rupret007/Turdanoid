@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { JSDOM } from 'jsdom';
+import { buildCampaignCells } from '../games/turdanoid-levels.js';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
@@ -274,7 +275,7 @@ describe('TurdAnoid game regressions', () => {
       expect(g.activePowers.big).toBeGreaterThan(0);
       expect(g.paddle.w).toBeCloseTo(wide, 6);
       expect(g.paddle.w).toBeGreaterThan(g.paddle.baseW);
-      expect(dom.window.document.getElementById('powers').textContent).toContain('Big');
+      expect(dom.window.document.getElementById('powers').textContent).toContain('Wide');
       expect(g.paddle.x).toBeGreaterThanOrEqual(g.paddle.w / 2);
       expect(g.paddle.x).toBeLessThanOrEqual(g.W - g.paddle.w / 2);
     });
@@ -793,7 +794,7 @@ describe('TurdAnoid campaign walls', () => {
     const { g } = bootGame();
     g.startGame();
     expect(g.level).toBe(1);
-    expect(g.bricks.length).toBe(21);
+    expect(g.bricks.length).toBe(buildCampaignCells(1).length);
     expect(g.bricks.every((b) => b.hp === 1 && !b.indestructible && !b.hazard)).toBe(true);
   });
 

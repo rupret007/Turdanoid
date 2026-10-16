@@ -8,6 +8,7 @@ export const CELL_TYPES = api.CELL_TYPES;
 export const CAMPAIGN_COLS = api.CAMPAIGN_COLS;
 export const MIN_BRICK_W = api.MIN_BRICK_W;
 export const MIN_BRICK_H = api.MIN_BRICK_H;
+export const MAX_ROWS = api.MAX_ROWS;
 export const brickGeometry = api.brickGeometry;
 export const allPatternNames = api.allPatternNames;
 export const shouldPlaceBrick = api.shouldPlaceBrick;
