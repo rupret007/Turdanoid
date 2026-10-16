@@ -425,8 +425,8 @@ async function main() {
         if (!(result.big > 0)) {
           fail('turdanoid-paddle-size-across-walls', 'Enlarge timer should survive the wall');
         }
-        if (!result.chip.includes('Big')) {
-          fail('turdanoid-paddle-size-across-walls', `HUD should still say Big, saw ${JSON.stringify(result.chip)}`);
+        if (!result.chip.includes('Wide')) {
+          fail('turdanoid-paddle-size-across-walls', `HUD should still say Wide, saw ${JSON.stringify(result.chip)}`);
         }
         if (!result.xOk) {
           fail('turdanoid-paddle-size-across-walls', 'sized paddle must stay on court after the wall change');

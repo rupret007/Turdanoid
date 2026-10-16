@@ -39,3 +39,48 @@ Research done before the TurdAnoid "Arkanoid pass" (bigger bricks + hand-designe
 6. NamuWiki, *DX-Ball* — https://en.namu.wiki/w/DX-Ball
 7. Steam guide, *DX-Ball 2: A Complete Guide to Mechanics* — https://steamcommunity.com/sharedfiles/filedetails/?id=1573212121
 8. Game Developer, *Breaking Down Breakout: System and Level Design for Breakout-style Games* — https://www.gamedeveloper.com/design/breaking-down-breakout-system-and-level-design-for-breakout-style-games
+
+# Power-ups (capsules)
+
+## Classic Arkanoid (1986) capsules
+
+| Capsule | Effect | Source |
+|---|---|---|
+| S — Slow (orange) | Slows the ball. | [2], [4] |
+| C — Catch (green) | Ball sticks to the Vaus; release to aim. | [2], [4] |
+| E — Expand (blue) | Lengthens the Vaus. | [2], [4] |
+| D — Disruption (cyan) | Splits the ball into three. | [2], [4] |
+| L — Laser (red) | Vaus fires twin lasers that break bricks. | [1], [2] |
+| B — Break (pink) | Opens a warp gate in the side wall: exit to skip the round, with a bonus. | [1], [2] |
+| P — Player (grey) | Extra Vaus (life). | [1], [2] |
+
+Capsules fall from broken colour bricks, only one is active at a time (except the extra life), and the C64 port picks them from a frame counter, not a shuffle [1].
+
+## Notable clone power-ups
+
+- **Arkanoid DS (2008):** adds Barrier (a floor layer that saves misses), Megaball (passes through everything but gold), Reduction (bad: shrinks the paddle), Vanish (every brick of the colour you hit next takes a hit) and a rare gold **Warp** that clears the stage. A second Laser upgrades the shot to pierce a whole column. [9], [10], [11]
+- **DX-Ball / DX-Ball 2:** Fireball (blast radius), Brick-Thru, Zap Bricks, Expand/Shrink, Split Ball, Fall/Kill Paddle and other bad pickups, Set-Off Exploding, and colour-coded capsules (blue good, red bad) so you know whether to catch them. [6], [7], [12]
+- **Takeaway:** keep the classic seven so it feels like Arkanoid; make bad pickups visibly different; let a few one-shot "screen clear" items exist but keep them rare.
+
+## TurdAnoid power-up set (Jeff: funny, unique, bathroom + punk)
+
+| Arkanoid | TurdAnoid | Effect |
+|---|---|---|
+| E | 🍑 Wide Load | Fat paddle (stacks to 1.8×) |
+| S | 🌸 Air Freshener | Ball slows |
+| C | 🪠 Plunger Catch | Ball sticks to the paddle |
+| D | 🤘 Mosh Pit | Three balls |
+| L | 🧻 TP Cannon | Twin TP rolls that unspool a paper tail |
+| B | 🚽 Flush Warp | The wall swirls down the drain; round skipped with points (rare) |
+| P | ❤️ Spare Roll | Extra life |
+| Barrier | 🛡️ Seat Cover | Bounces misses back |
+| Megaball | 👻 Ghost Poo | Ball phases through bricks |
+| Fireball | 🌶️ Chili Fire / 💣 Cherry Bomb | Burning balls / central blast |
+| Vanish-style | 🎸 Power Chord | Every breakable brick takes one hit, "KERRANG!" |
+| Ours | 🧽 Mega Wipe, 💦 Spitwad Spread, 🌭 Wiener Rockets, 🧲 Dookie Magnet, 🦨 Skunk Cloud, 💰 Golden Throne | Row clear, V-shot, arcing rockets, capsule magnet, brick-eating cloud, 2× points |
+| Bad | 😬 Shrinkage, 💨 Bad Curry, 🔄 Backwash | Small paddle, fast ball, flipped controls (red capsules, level 6+) |
+
+9. GameFAQs, *Arkanoid DS FAQ* — https://gamefaqs.gamespot.com/ds/942703-arkanoid-ds/faqs/51658
+10. GameFAQs, *Arkanoid DS FAQ* (inviso87) — https://gamefaqs.gamespot.com/ds/942703-arkanoid-ds/faqs/53571
+11. Worthplaying, *Arkanoid DS review* — https://www.worthplaying.com/article/2008/7/26/reviews/53291-nds-review-arkanoid-ds/
+12. GameFAQs, *DX-Ball Board Editor FAQ* — https://gamefaqs.gamespot.com/pc/578845-dx-ball/faqs/24296

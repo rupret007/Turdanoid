@@ -57,8 +57,8 @@ describe('TurdAnoid Balance Logic', () => {
   });
 
   describe('Power-up catalogue', () => {
-    it('has the 19 shipped power-up types', () => {
-      expect(POWERS.length).toBe(19);
+    it('has the 21 shipped power-up types', () => {
+      expect(POWERS.length).toBe(21);
       const names = POWERS.map((p) => p.t);
       for (const expected of [
         'enlarge',
@@ -79,7 +79,9 @@ describe('TurdAnoid Balance Logic', () => {
         'gold',
         'shrink',
         'speed',
-        'reverse'
+        'reverse',
+        'warp',
+        'chord'
       ]) {
         expect(names).toContain(expected);
       }
@@ -94,7 +96,7 @@ describe('TurdAnoid Balance Logic', () => {
         'life',
         'laser'
       ]);
-      expect(unlockedPowers(8).length).toBe(19);
+      expect(unlockedPowers(8).length).toBe(21);
     });
 
     it('never selects bad pickups before level 6', () => {
