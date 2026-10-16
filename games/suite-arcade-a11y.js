@@ -49,7 +49,7 @@ export const BRICK_MATERIAL_TOP_CB = {
   sewer: '#0072b2',
   slime: '#009e73',
   candy: '#cc79a7',
-  tar: '#b3b3b3',
+  tar: '#6e6e78',
   metal: '#999999',
   gold: '#e69f00'
 };
@@ -73,7 +73,7 @@ export function safeStorage(storage) {
 
 export function readColorblindEnabled(storage) {
   const store = safeStorage(storage);
-  if (!store) return false;
+  if (!store) {return false;}
   try {
     return store.getItem(COLORBLIND_STORAGE_KEY) === '1';
   } catch {
@@ -83,7 +83,7 @@ export function readColorblindEnabled(storage) {
 
 export function writeColorblindEnabled(storage, on) {
   const store = safeStorage(storage);
-  if (!store) return false;
+  if (!store) {return false;}
   try {
     store.setItem(COLORBLIND_STORAGE_KEY, on ? '1' : '0');
     return true;
@@ -119,7 +119,7 @@ export function motionIntensity(reduced) {
 export function parseHexColor(hex) {
   const raw = String(hex || '').trim();
   const m = /^#?([0-9a-f]{6})$/i.exec(raw);
-  if (!m) return null;
+  if (!m) {return null;}
   const n = parseInt(m[1], 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
@@ -135,7 +135,7 @@ export function relativeLuminance({ r, g, b }) {
 export function contrastRatio(fgHex, bgHex) {
   const fg = parseHexColor(fgHex);
   const bg = parseHexColor(bgHex);
-  if (!fg || !bg) return 0;
+  if (!fg || !bg) {return 0;}
   const l1 = relativeLuminance(fg);
   const l2 = relativeLuminance(bg);
   const lighter = Math.max(l1, l2);
@@ -160,7 +160,7 @@ export function turdtrisPieceColors(colorblind) {
 }
 
 export function turdomaniaKindColor(kindIndex, colorblind, fallback) {
-  if (!colorblind) return fallback;
+  if (!colorblind) {return fallback;}
   const i = Math.max(0, Math.floor(kindIndex));
   return TURDOMANIA_KIND_COLORS_CB[i % TURDOMANIA_KIND_COLORS_CB.length] || fallback;
 }
@@ -169,10 +169,10 @@ export function turdomaniaKindColor(kindIndex, colorblind, fallback) {
  * @param {{ c1: string, c2?: string, glow?: string, material?: string }} colors
  */
 export function remapBrickColors(colors, colorblind) {
-  if (!colorblind || !colors) return colors;
+  if (!colorblind || !colors) {return colors;}
   const mat = colors.material;
   const top = mat && BRICK_MATERIAL_TOP_CB[mat];
-  if (!top) return colors;
+  if (!top) {return colors;}
   return {
     ...colors,
     c1: top,
@@ -182,7 +182,7 @@ export function remapBrickColors(colors, colorblind) {
 }
 
 export function applyColorblindCssVars(doc, enabled) {
-  if (!doc || !doc.documentElement) return;
+  if (!doc || !doc.documentElement) {return;}
   const root = doc.documentElement;
   root.classList.toggle('suite-colorblind', !!enabled);
   const vars = enabled ? CB_SUITE_CSS_VARS : CB_SUITE_CSS_VARS;
@@ -196,16 +196,16 @@ export function applyColorblindCssVars(doc, enabled) {
 }
 
 export function syncReducedMotionClass(doc, reduced) {
-  if (!doc || !doc.documentElement) return;
+  if (!doc || !doc.documentElement) {return;}
   doc.documentElement.classList.toggle('suite-motion-reduce', !!reduced);
 }
 
 export function suitPatternId(suit) {
   const s = String(suit || '').toUpperCase();
-  if (s === 'H') return 'hearts';
-  if (s === 'D') return 'diamonds';
-  if (s === 'S') return 'spades';
-  if (s === 'C') return 'clubs';
+  if (s === 'H') {return 'hearts';}
+  if (s === 'D') {return 'diamonds';}
+  if (s === 'S') {return 'spades';}
+  if (s === 'C') {return 'clubs';}
   return 'unknown';
 }
 
@@ -279,15 +279,50 @@ export function attachSuiteArcadeA11y(Suite, storage, doc, hooks = {}) {
   };
 }
 
+function resolveA11yToggleMount(doc) {
+  const explicit = doc.getElementById('suite-arcade-a11y-mount');
+  if (explicit) {
+    return { parent: explicit, mode: 'inline' };
+  }
+  const masthead = doc.querySelector('.masthead .meta-row');
+  if (masthead) {
+    return { parent: masthead, mode: 'hub' };
+  }
+  const topbtns = doc.querySelector('.topbtns');
+  if (topbtns) {
+    return { parent: topbtns, mode: 'topbtns', insert: 'first' };
+  }
+  const titleMenu = doc.querySelector('#titleScreen .menu-secondary');
+  if (titleMenu) {
+    return { parent: titleMenu, mode: 'title' };
+  }
+  const topbar = doc.querySelector('.topbar');
+  if (topbar) {
+    return { parent: topbar, mode: 'topbar' };
+  }
+  const hud = doc.querySelector('header.hud');
+  if (hud) {
+    return { parent: hud, mode: 'hud' };
+  }
+  const hudRail = doc.querySelector('.hud');
+  if (hudRail) {
+    return { parent: hudRail, mode: 'hud' };
+  }
+  return { parent: doc.body, mode: 'fallback' };
+}
+
 export function createArcadeA11yToggle(doc, Suite) {
-  if (!doc || !doc.body || !Suite) return null;
+  if (!doc || !doc.body || !Suite) {
+    return null;
+  }
   if (doc.getElementById('suite-arcade-a11y-toggle')) {
     return doc.getElementById('suite-arcade-a11y-toggle');
   }
   const btn = doc.createElement('button');
   btn.type = 'button';
   btn.id = 'suite-arcade-a11y-toggle';
-  btn.className = 'suite-arcade-a11y-toggle';
+  const mount = resolveA11yToggleMount(doc);
+  btn.className = `suite-arcade-a11y-toggle suite-arcade-a11y-toggle--${mount.mode}`;
   function sync() {
     const on = Suite.isColorblindMode();
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -304,6 +339,10 @@ export function createArcadeA11yToggle(doc, Suite) {
     Suite.setColorblindMode(!Suite.isColorblindMode());
     sync();
   });
-  doc.body.appendChild(btn);
+  if (mount.insert === 'first') {
+    mount.parent.insertBefore(btn, mount.parent.firstChild);
+  } else {
+    mount.parent.appendChild(btn);
+  }
   return btn;
 }

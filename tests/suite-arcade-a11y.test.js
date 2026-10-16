@@ -47,6 +47,7 @@ function memoryStorage(initial = {}) {
 
 describe('suite-arcade-a11y core', () => {
   it('persists colorblind toggle in localStorage', () => {
+    expect(COLORBLIND_STORAGE_KEY).toBe('turdsuite_colorblind_v1');
     const storage = memoryStorage();
     expect(readColorblindEnabled(storage)).toBe(false);
     writeColorblindEnabled(storage, true);
@@ -79,6 +80,12 @@ describe('suite-arcade-a11y core', () => {
     expect(remapBrickColors(base, false)).toEqual(base);
     const cb = remapBrickColors(base, true);
     expect(cb.c1).toBe(BRICK_MATERIAL_TOP_CB.sewer);
+  });
+
+  it('keeps tar and metal separable in colorblind brick palettes', () => {
+    expect(BRICK_MATERIAL_TOP_CB.tar).not.toBe(BRICK_MATERIAL_TOP_CB.metal);
+    expect(BRICK_MATERIAL_TOP_CB.tar).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(contrastRatio(BRICK_MATERIAL_TOP_CB.tar, BRICK_MATERIAL_TOP_CB.metal)).toBeGreaterThan(1.15);
   });
 });
 

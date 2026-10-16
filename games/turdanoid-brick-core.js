@@ -88,7 +88,7 @@
         const on = root.Suite && root.Suite.isColorblindMode && root.Suite.isColorblindMode();
         return root.SuiteArcadeA11y.remapBrickColors(colors, on);
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
     return colors;
   }
 

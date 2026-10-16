@@ -921,10 +921,8 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
 
 /* ---------- Arcade accessibility toggle (colorblind-safe palettes) ---------- */
 .suite-arcade-a11y-toggle {
-  position: fixed;
-  z-index: 10001;
-  right: max(12px, var(--suite-safe-right));
-  bottom: max(64px, calc(var(--suite-safe-bottom) + 52px));
+  position: relative;
+  z-index: 1;
   margin: 0;
   padding: 10px 14px;
   min-height: 44px;
@@ -938,16 +936,22 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
   border: 1px solid var(--suite-edge, rgba(120, 255, 213, 0.32));
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
   -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.suite-arcade-a11y-toggle--topbtns {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .suite-arcade-a11y-toggle:hover,
 .suite-arcade-a11y-toggle:focus-visible {
   border-color: rgba(158, 255, 200, 0.65);
   outline: 2px solid var(--suite-accent, #78ffd5);
   outline-offset: 2px;
-}
-body.suite-hub-door .suite-arcade-a11y-toggle {
-  bottom: max(12px, var(--suite-safe-bottom));
-  right: max(12px, calc(var(--suite-safe-right) + 56px));
 }
 
 html.suite-colorblind button.card.red .card-index-rank,
