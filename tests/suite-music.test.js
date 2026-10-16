@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  MUSIC_PREF_KEY,
   STALEMATE_PLAYLIST,
   advanceTrackIndex,
   createSuiteMusic,
-  readTrackIndex
+  readMusicEnabled,
+  readTrackIndex,
+  writeMusicEnabled
 } from '../assets/suite-music.js';
 
 function memoryStorage(initial = {}) {
@@ -104,6 +107,14 @@ describe('suite-music playlist', () => {
     expect(audio.src).toContain('andrea.m4a');
     expect(player.trackTitle).toBe('Andrea');
     expect(storage.data.turdsuite_music_track_v1).toBe('1');
+  });
+
+  it('reads and writes stalemate.music on/off', () => {
+    const storage = memoryStorage();
+    expect(readMusicEnabled(storage)).toBe(true);
+    writeMusicEnabled(storage, false);
+    expect(storage.data[MUSIC_PREF_KEY]).toBe('off');
+    expect(readMusicEnabled(storage)).toBe(false);
   });
 
   it('pauses immediately when suite mute is on', () => {

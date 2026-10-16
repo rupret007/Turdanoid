@@ -2047,6 +2047,11 @@ function armAudio(event) {
   audioArmed = true;
   if (window.__turdtrisAudio) window.__turdtrisAudio.arm();
   unlockAudio();
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.armFromGesture(); });
+    }
+  } catch (e) { /* ignore */ }
 }
 document.addEventListener('pointerdown', armAudio, { capture: true });
 document.addEventListener('keydown', armAudio, { capture: true });
@@ -2060,7 +2065,13 @@ function updateMusic() {
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
-  try { localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0'); } catch (e) {}
+  try {
+    if (window.Suite && typeof Suite.setMusicEnabled === 'function') {
+      Suite.setMusicEnabled(musicEnabled);
+    } else {
+      localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0');
+    }
+  } catch (e) {}
   syncSettings();
   updateMusic();
   syncSuiteMusic();
@@ -3758,8 +3769,20 @@ if (canvas) {
   }, { passive: true });
 }
 
-try { musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0'; } catch (e) {}
+try {
+  if (window.Suite && typeof Suite.isMusicEnabled === 'function') {
+    musicEnabled = Suite.isMusicEnabled();
+  } else {
+    const siteMusic = localStorage.getItem('stalemate.music');
+    if (siteMusic === 'off') musicEnabled = false;
+    else if (siteMusic === 'on') musicEnabled = true;
+    else musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0';
+  }
+} catch (e) {}
 function suiteMusicBlocked() {
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch (e) { /* ignore */ }
   return suiteMuted() || !soundEnabled || !musicEnabled;
 }
 function syncSuiteMusic() {

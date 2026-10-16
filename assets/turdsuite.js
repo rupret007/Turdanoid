@@ -18,6 +18,29 @@
   let muted = false;
   try { muted = localStorage.getItem('turdsuite_muted') === '1'; } catch (e) {}
 
+  const STALEMATE_MUSIC_KEY = 'stalemate.music';
+  function migrateStalemateMusic() {
+    try {
+      if (localStorage.getItem(STALEMATE_MUSIC_KEY) !== null) return;
+      if (localStorage.getItem('turdtrisMusic_v1') === '0') {
+        localStorage.setItem(STALEMATE_MUSIC_KEY, 'off');
+      }
+    } catch (e) {}
+  }
+  function readMusicEnabled() {
+    migrateStalemateMusic();
+    try {
+      const v = localStorage.getItem(STALEMATE_MUSIC_KEY);
+      if (v === 'off') return false;
+      if (v === 'on') return true;
+    } catch (e) {}
+    return true;
+  }
+  function writeMusicEnabled(on) {
+    try { localStorage.setItem(STALEMATE_MUSIC_KEY, on ? 'on' : 'off'); } catch (e) {}
+  }
+  let musicEnabled = readMusicEnabled();
+
   function ctx() {
     if (!actx) {
       try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -46,9 +69,21 @@
     setMuted(b) {
       muted = !!b;
       try { localStorage.setItem('turdsuite_muted', b ? '1' : '0'); } catch (e) {}
-      if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
     },
     isMuted() { return muted; },
+    isMusicEnabled() { return musicEnabled; },
+    setMusicEnabled(on) {
+      musicEnabled = !!on;
+      writeMusicEnabled(musicEnabled);
+      syncMusicToggleUi();
+      if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
+    },
+    playManic() {
+      if (!musicEnabled) return;
+      Suite.music().then(function (player) {
+        if (player && typeof player.playTrackAt === 'function') player.playTrackAt(0);
+      }).catch(function () {});
+    },
     setMusicGameBlocked(fn) {
       musicGameBlocked = typeof fn === 'function' ? fn : function () { return false; };
       if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
@@ -195,7 +230,7 @@
       musicPromise = suiteImport('./suite-music.js').then(function (m) {
         if (!m) return null;
         musicEngine = m.createSuiteMusic({
-          isSuiteMuted: function () { return muted; },
+          isSuiteMuted: function () { return !musicEnabled; },
           isGameBlocked: function () { return musicGameBlocked(); },
           isDocumentHidden: function () {
             try { return !!document.hidden; } catch (e) { return false; }
@@ -462,6 +497,58 @@
   // table waiting. The static "no sign-in" badge reassures first-timers; a
   // player who already has a live table is better served by the shortcut.
   // Reads the same validated continue list the cards use; writes no storage.
+  function syncMusicToggleUi() {
+    try {
+      const btn = document.getElementById('suite-music-toggle');
+      if (!btn) return;
+      const on = musicEnabled;
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.setAttribute('aria-label', on ? 'Stalemate music on, tap to turn music off' : 'Stalemate music off, tap to turn music on');
+        btn.textContent = on ? '🎵' : '🔇';
+    } catch (e) {}
+  }
+
+  function injectMusicToggle() {
+    try {
+      if (document.getElementById('suite-music-toggle')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'suite-music-toggle';
+      btn.className = 'suite-music-toggle';
+      document.body.appendChild(btn);
+      syncMusicToggleUi();
+      btn.addEventListener('click', function () {
+        Suite.setMusicEnabled(!musicEnabled);
+        if (musicEnabled) {
+          ctx();
+          Suite.music().then(function (player) {
+            if (player) player.armFromGesture();
+          }).catch(function () {});
+        }
+      });
+    } catch (e) {}
+  }
+
+  function injectListenManic() {
+    try {
+      if (!isSuiteHubPage(currentPageName())) return;
+      if (document.getElementById('suite-listen-manic')) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'suite-listen-manic';
+      btn.className = 'suite-listen-manic';
+      btn.textContent = 'Listen to Manic';
+      btn.setAttribute('aria-label', 'Listen to Manic by Stalemate on this site');
+      document.body.appendChild(btn);
+      btn.addEventListener('click', function () {
+        Suite.music().then(function (player) {
+          if (player) player.armFromGesture();
+          Suite.playManic();
+        }).catch(function () {});
+      });
+    } catch (e) {}
+  }
+
   function wireHubMuteToggle() {
     try {
       const btn = document.getElementById('suite-hub-mute');
@@ -510,8 +597,17 @@
 
   // ---------- Boot ----------
   function boot() {
+    migrateStalemateMusic();
+    musicEnabled = readMusicEnabled();
+    try {
+      if (isSuiteHubPage(currentPageName())) {
+        document.body.classList.add('suite-hub-door');
+      }
+    } catch (e) {}
     injectAmbientBg();
     injectBackPill();
+    injectMusicToggle();
+    injectListenManic();
     enhancePhoneHud();
     preventDoubleTapZoom();
     recordLastGame();

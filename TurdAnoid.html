@@ -192,7 +192,8 @@
   }
   @media (max-width:520px){
     .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:108px;padding:4px 2px 5px;border-radius:16px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.26),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0;align-items:stretch}
-    .hud .right,.hud .center{margin-right:0;text-align:center}
+    .hud .right{margin-right:0px;text-align:center}
+    .hud .center{margin-right:0px;text-align:center}
     .hud .col{padding:3px 7px 4px;min-width:0;flex:1 1 0;align-items:center;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
     .hud .col + .col{border-left:1px solid rgba(232,197,106,.18)}
     /* The HUD box already starts right of the back pill (left:68px). turdsuite.css
@@ -202,7 +203,8 @@
   }
   @media (max-width:420px){
     .hud{font-size:clamp(11px,2.9vw,13px)}
-    .hud .right,.hud .center{margin-right:0;text-align:center}
+    .hud .right{margin-right:0px;text-align:center}
+    .hud .center{margin-right:0px;text-align:center}
     .hud .val{font-size:1.28em;text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px #000}
     .topbtns{gap:4px}
     .iconbtn{width:44px;height:44px;font-size:16px}
@@ -213,7 +215,8 @@
     .how-card p{font-size:12px}
   }
   @media (max-width:360px){
-    .hud .right,.hud .center{margin-right:0}
+    .hud .right{margin-right:0px}
+    .hud .center{margin-right:0px}
     .hud .center .val{font-size:1.2em}
     .life-pip{width:9px;height:11px}
   }
@@ -578,6 +581,12 @@ function suiteMuted(){
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
+function suiteMusicBlocked(){
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch (e) { /* ignore */ }
+  return soundBlocked();
+}
 function syncSuiteMusic(){
   try {
     if (window.Suite && typeof Suite.music === 'function') {
@@ -587,7 +596,7 @@ function syncSuiteMusic(){
 }
 try {
   if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
-    Suite.setMusicGameBlocked(function () { return soundBlocked(); });
+    Suite.setMusicGameBlocked(function () { return suiteMusicBlocked(); });
   }
 } catch (e) {}
 let ambientOn = !!prefs.ambientOn;

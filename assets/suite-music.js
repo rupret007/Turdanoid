@@ -3,7 +3,56 @@
  * Advances on track end (no loop), persists index across games, honours mute + game gates.
  */
 export const MUTE_STORAGE_KEY = 'turdsuite_muted';
+export const MUSIC_PREF_KEY = 'stalemate.music';
 export const TRACK_INDEX_KEY = 'turdsuite_music_track_v1';
+
+const LEGACY_MUSIC_OFF = [
+  ['turdtrisMusic_v1', (v) => v === '0']
+];
+
+/**
+ * @param {Storage|null|undefined} storage
+ */
+export function migrateMusicPref(storage) {
+  if (!storage) return;
+  try {
+    if (storage.getItem(MUSIC_PREF_KEY) !== null) return;
+    for (const [key, isOff] of LEGACY_MUSIC_OFF) {
+      const raw = storage.getItem(key);
+      if (raw !== null && isOff(raw)) {
+        storage.setItem(MUSIC_PREF_KEY, 'off');
+        return;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** @param {Storage|null|undefined} storage */
+export function readMusicEnabled(storage) {
+  migrateMusicPref(storage);
+  try {
+    const v = storage && storage.getItem(MUSIC_PREF_KEY);
+    if (v === 'off') return false;
+    if (v === 'on') return true;
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+/**
+ * @param {Storage|null|undefined} storage
+ * @param {boolean} on
+ */
+export function writeMusicEnabled(storage, on) {
+  try {
+    if (storage) storage.setItem(MUSIC_PREF_KEY, on ? 'on' : 'off');
+  } catch {
+    /* ignore */
+  }
+}
 
 export const STALEMATE_PLAYLIST = [
   { path: 'stalemate/manic.m4a', title: 'Manic' },
@@ -142,11 +191,22 @@ export function createSuiteMusic(opts) {
     get audioElement() {
       return audio;
     },
+    isPlaying() {
+      return armed && !blocked() && !audio.paused;
+    },
     armFromGesture() {
       if (armed) {
         sync();
         return;
       }
+      armed = true;
+      sync();
+    },
+    playTrackAt(nextIndex) {
+      const len = playlist.length;
+      if (len <= 0) return;
+      const idx = Math.max(0, Math.floor(nextIndex)) % len;
+      loadIndex(idx);
       armed = true;
       sync();
     },

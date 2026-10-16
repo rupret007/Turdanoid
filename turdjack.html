@@ -981,6 +981,9 @@
       color: #ffe566;
       text-shadow: 0 0 30px rgba(255, 215, 106, 0.95), 0 4px 16px rgba(0, 0, 0, 0.65);
       padding: 10px 22px;
+      min-width: 44px;
+      min-height: 44px;
+      box-sizing: border-box;
       border-radius: 14px;
       border: 2px solid rgba(255, 215, 106, 0.55);
       background: linear-gradient(180deg, rgba(50, 35, 8, 0.92), rgba(20, 12, 4, 0.88));
@@ -3276,6 +3279,27 @@
       }
     }
 
+    function suiteMusicBlocked() {
+      try {
+        if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+      } catch (e) { /* ignore */ }
+      return !soundEnabled || suiteMutedGlobal();
+    }
+
+    function syncSuiteMusic() {
+      try {
+        if (window.Suite && typeof Suite.music === 'function') {
+          Suite.music().then(function (player) { if (player) player.sync(); });
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    try {
+      if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+        Suite.setMusicGameBlocked(suiteMusicBlocked);
+      }
+    } catch (e) { /* ignore */ }
+
     function unlockAudio() {
       if (!soundEnabled || suiteMutedGlobal()) return;
       if (window.__turdjackAudio) {
@@ -3348,6 +3372,7 @@
       syncKitSoundFlag();
       saveSoundPref();
       updateSoundButtons();
+      syncSuiteMusic();
       if (soundEnabled) {
         unlockAudio();
         setStatus('Sound on. Toilet dealer is noisy again.');

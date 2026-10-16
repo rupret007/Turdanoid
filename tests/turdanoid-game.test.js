@@ -766,8 +766,9 @@ describe('TurdAnoid phone HUD widths', () => {
             if (sel === '.hud' && inner.style.right) {
               hudRight = inner.style.right;
             }
-            if ((sel === '.hud .right' || sel.includes('.hud .right')) && inner.style.marginRight) {
-              innerMargin = inner.style.marginRight;
+            if (sel === '.hud .right' || sel.includes('.hud .right')) {
+              const mr = inner.style.marginRight || inner.style.getPropertyValue('margin-right');
+              if (mr) innerMargin = mr === '0' ? '0px' : mr;
             }
           }
         } else if (rule.selectorText === '.hud .right' && rule.style.marginRight && innerMargin === null) {
