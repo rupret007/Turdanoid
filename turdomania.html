@@ -453,6 +453,28 @@ if (window.Suite && Suite.difficulty) {
 let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
 
+function armSuiteMusic() {
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then((player) => { if (player) player.armFromGesture(); });
+    }
+  } catch { /* optional */ }
+}
+function suiteMusicBlocked() {
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch { /* optional */ }
+  return false;
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(suiteMusicBlocked);
+  }
+} catch { /* optional */ }
+
+boardEl.addEventListener('pointerdown', armSuiteMusic, { once: true, passive: true });
+boardEl.addEventListener('keydown', armSuiteMusic, { once: true });
+
 const startLevel = pinnedLevel
   || (window.TM_INIT && window.TM_INIT.level)
   || suiteBoardLevel()

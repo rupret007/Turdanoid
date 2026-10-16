@@ -2026,6 +2026,18 @@
     window.high = high;
     window.render = render;
 
+    function suiteMusicBlocked() {
+      try {
+        if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+      } catch (e) { /* ignore */ }
+      return false;
+    }
+    try {
+      if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+        Suite.setMusicGameBlocked(suiteMusicBlocked);
+      }
+    } catch (e) { /* ignore */ }
+
     bind();
     const restoredTable = tryRestoreTable();
     if (!restoredTable) startMatch();
