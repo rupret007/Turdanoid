@@ -4509,6 +4509,27 @@
       else resumeAiFromBackground();
     });
 
+    function suiteMusicBlocked() {
+      try {
+        if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+      } catch (err) { /* ignore */ }
+      return !(audioPlayer && audioPlayer.isEnabled());
+    }
+
+    function syncSuiteMusic() {
+      try {
+        if (window.Suite && typeof Suite.music === 'function') {
+          Suite.music().then(function (player) { if (player) player.sync(); });
+        }
+      } catch (err) { /* ignore */ }
+    }
+
+    try {
+      if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+        Suite.setMusicGameBlocked(suiteMusicBlocked);
+      }
+    } catch (err) { /* ignore */ }
+
     (function setupAudioUnlock() {
       if (!audioPlayer) return;
       const unlockOnce = () => {
@@ -4519,6 +4540,10 @@
       window.addEventListener("pointerdown", unlockOnce, { once: true });
       window.addEventListener("keydown", unlockOnce, { once: true });
     })();
+
+    if (el.soundToggleBtn) {
+      el.soundToggleBtn.addEventListener('click', () => { syncSuiteMusic(); });
+    }
 
     init();
   

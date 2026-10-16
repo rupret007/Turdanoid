@@ -895,6 +895,7 @@
 
     function toggleSound() {
       soundEnabled = !soundEnabled;
+      syncSuiteMusic();
       saveSoundPref();
       tableAudio.syncMute();
       updateSoundButtons();
@@ -1930,6 +1931,27 @@
         if (e.code === 'KeyA' || e.code === 'Enter') { e.preventDefault(); smartMove(); return; }
       });
     }
+
+    function suiteMusicBlocked() {
+      try {
+        if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+      } catch (err) { /* ignore */ }
+      return !soundEnabled;
+    }
+
+    function syncSuiteMusic() {
+      try {
+        if (window.Suite && typeof Suite.music === 'function') {
+          Suite.music().then(function (player) { if (player) player.sync(); });
+        }
+      } catch (err) { /* ignore */ }
+    }
+
+    try {
+      if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+        Suite.setMusicGameBlocked(suiteMusicBlocked);
+      }
+    } catch (err) { /* ignore */ }
 
     function init() {
       players = createPlayers();
