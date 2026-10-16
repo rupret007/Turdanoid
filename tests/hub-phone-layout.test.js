@@ -146,11 +146,11 @@ function measureHub(firstScreen) {
     actionOverlap: actionOverlap.map((card) => card.name),
     mute: mute
       ? {
-        tabIndex: mute.tabIndex,
-        label: mute.getAttribute('aria-label'),
-        height: muteBox.height,
-        width: muteBox.width
-      }
+          tabIndex: mute.tabIndex,
+          label: mute.getAttribute('aria-label'),
+          height: muteBox.height,
+          width: muteBox.width
+        }
       : null
   };
 }
@@ -196,7 +196,10 @@ function resumeEdges() {
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('hub phone first-screen layout', () => {
-  for (const viewport of [{ width: 390, height: 844 }, { width: 414, height: 896 }]) {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 414, height: 896 }
+  ]) {
     for (const returning of [false, true]) {
       it(`centers the ${returning ? 'returning' : 'new'} player hub at ${viewport.width}×${viewport.height}`, async () => {
         const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
@@ -207,7 +210,10 @@ function resumeEdges() {
           const bottomSpace = viewport.height - shell.y - shell.height;
           expect(topSpace).toBeGreaterThan(10);
           expect(bottomSpace).toBeGreaterThan(10);
-          expect(Math.abs(topSpace - bottomSpace), 'balanced space above and below the hub').toBeLessThanOrEqual(2);
+          expect(
+            Math.abs(topSpace - bottomSpace),
+            'balanced space above and below the hub'
+          ).toBeLessThanOrEqual(2);
           const layout = await page.evaluate(measureHub, true);
           expect(layout.cards).toHaveLength(7);
           expect(layout.offFirst).toEqual([]);
@@ -218,6 +224,20 @@ function resumeEdges() {
       });
     }
   }
+
+  it('shows every game blurb in full (no ellipsis) at 320px', async () => {
+    if (!hasBrowser) return;
+    const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
+    try {
+      await openHub(page);
+      const cut = await page.$$eval('.game-card .game-info p', (ps) =>
+        ps.filter((p) => p.scrollWidth > p.clientWidth + 0.5).map((p) => p.textContent.trim())
+      );
+      expect(cut).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  });
 
   it('keeps expanded content reachable by keyboard in a short portrait viewport', async () => {
     const viewport = { width: 320, height: 480 };

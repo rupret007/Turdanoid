@@ -32,7 +32,7 @@ const rules = readRepoFile('RULES.md');
 describe('RULES.md follows the shipped games', () => {
   it('records TurdAnoid timed powers ending at each round change', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function paddleKeepsTimedSize()');
     expect(game).toContain('if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW');
@@ -44,7 +44,7 @@ describe('RULES.md follows the shipped games', () => {
 
   it('records TurdAnoid Bomb destroy scoring', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function brickDestroyPoints()');
     expect(game).toContain('function detonate()');
@@ -58,7 +58,7 @@ describe('RULES.md follows the shipped games', () => {
 
   it('records TurdAnoid Mega Flush scoring', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function flushDestroyPoints()');
     expect(game).toContain('function megaFlush()');
