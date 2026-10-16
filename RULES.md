@@ -463,3 +463,44 @@ npm run test:watch # Watch mode
 npm run lint       # Lint code
 npm run format     # Format code
 ```
+
+---
+
+## Turdomania (Clickomania)
+
+### Overview
+
+Turdomania (`turdomania.html`) is a Clickomania / SameGame puzzle. The board is filled with poop-themed tiles (💩 🌽 🟢 🧻 🫘). Rules live in `games/turdomania-core.js`.
+
+### Rules
+
+- Tap (or press Enter on) a tile that touches at least one same-kind tile up, down, left or right. The whole connected pile disappears. Lone tiles cannot be popped.
+- Tiles above the gap fall straight down. A column that becomes empty closes up: columns to its right slide left.
+- The game ends when no two same-kind tiles touch, or the board is empty.
+
+### Scoring
+
+| Action | Points |
+|--------|--------|
+| Pop a pile of n | (n − 2)² (pairs score 0) |
+| Clear the whole board | +1000 |
+
+### Difficulty
+
+| Level | Board | Kinds |
+|-------|-------|-------|
+| Squirt | 8 × 10 | 3 |
+| Log | 10 × 12 | 4 |
+| Blowout | 12 × 14 | 5 |
+
+### Controls
+
+- **Tap / click**: pop a pile (mouse hover previews the pile)
+- **Arrow keys**: move the cursor on the focused board; **Enter / Space** pops
+- **U** or **Ctrl/⌘+Z**: undo (unlimited, back to the first move); **N**: new board
+
+### Storage
+
+- `turdomania_best_v1`: `{ v: 1, best: { easy, normal, hard } }`
+- `turdomania_prefs_v1`: last difficulty
+- `?seed=<n>&level=<easy|normal|hard>` gives a deterministic board (tests); `?reducedMotion=1` forces reduced motion.

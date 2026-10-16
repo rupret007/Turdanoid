@@ -98,7 +98,7 @@ async function checkPhoneHub(page, name, firstScreen = true) {
     })
   }));
   if (layout.scrollWidth > layout.width) fail(name, 'hub should not scroll horizontally');
-  if (layout.cards.length !== 6) fail(name, 'phone hub must keep exactly six launch links');
+  if (layout.cards.length !== 7) fail(name, 'phone hub must keep exactly seven launch links');
   for (const card of layout.cards) {
     if (card.rect.height < 44) fail(name, `${card.name} needs a full-row touch target`);
     if (firstScreen && (card.rect.top < 0 || card.rect.bottom > layout.height)) {
@@ -158,11 +158,11 @@ async function main() {
     await runCheck(browser, 'root-hub', '', {
       assert: async (page) => {
         const cards = await page.locator('.game-card').count();
-        if (cards !== 6) fail('root-hub', `expected 6 game cards, saw ${cards}`);
+        if (cards !== 7) fail('root-hub', `expected 7 game cards, saw ${cards}`);
         const hrefs = await page.locator('.game-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('href')));
-        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html'];
         if (JSON.stringify(hrefs) !== JSON.stringify(expected)) {
-          fail('root-hub', `expected the six-game lineup, saw ${JSON.stringify(hrefs)}`);
+          fail('root-hub', `expected the seven-game lineup, saw ${JSON.stringify(hrefs)}`);
         }
         if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 1) {
           fail('root-hub', 'expected one secondary link to the original Neon Arkanoid game');
@@ -285,7 +285,7 @@ async function main() {
           if (href !== links[links.length - 1]) await page.keyboard.press('Tab');
         }
         await Promise.all([
-          page.waitForURL(`${baseUrl}/turdspades.html`),
+          page.waitForURL(`${baseUrl}/turdomania.html`),
           page.keyboard.press('Enter')
         ]);
       }
@@ -294,8 +294,8 @@ async function main() {
     await runCheck(browser, 'legacy-hub-redirect', 'hub.html', {
       assert: async (page) => {
         if (!page.url().endsWith('/')) fail('legacy-hub-redirect', `expected redirect to root, saw ${page.url()}`);
-        if ((await page.locator('.game-card').count()) !== 6) {
-          fail('legacy-hub-redirect', 'legacy hub URL did not land on the six-game lineup');
+        if ((await page.locator('.game-card').count()) !== 7) {
+          fail('legacy-hub-redirect', 'legacy hub URL did not land on the seven-game lineup');
         }
       }
     });
@@ -1919,7 +1919,7 @@ async function main() {
             resumeText: resume?.textContent || ''
           };
         });
-        if (marked.cards !== 6) fail('hub-last-played', `hub should still show six games, saw ${marked.cards}`);
+        if (marked.cards !== 7) fail('hub-last-played', `hub should still show seven games, saw ${marked.cards}`);
         if (marked.href !== 'turdspades.html') {
           fail('hub-last-played', `last opened game should be marked, saw ${marked.href}`);
         }
@@ -1947,15 +1947,15 @@ async function main() {
           play: document.querySelector('.game-card.in-progress .play')?.textContent || '',
           hrefs: Array.from(document.querySelectorAll('.game-card')).map((card) => card.getAttribute('href'))
         }));
-        if (afterJunk.cards !== 6 || afterJunk.last !== 0) {
+        if (afterJunk.cards !== 7 || afterJunk.last !== 0) {
           fail('hub-last-played', `malformed last-played data should not invent a mark, saw ${JSON.stringify(afterJunk)}`);
         }
         if (afterJunk.continuing !== 'turdspades.html' || !afterJunk.play.includes('Continue')) {
           fail('hub-last-played', `junk last-played data should not wipe a real table, saw ${JSON.stringify(afterJunk)}`);
         }
-        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html'];
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html'];
         if (JSON.stringify(afterJunk.hrefs) !== JSON.stringify(expected)) {
-          fail('hub-last-played', `six-game door drifted, saw ${JSON.stringify(afterJunk.hrefs)}`);
+          fail('hub-last-played', `seven-game door drifted, saw ${JSON.stringify(afterJunk.hrefs)}`);
         }
       }
     });
@@ -2450,8 +2450,164 @@ async function main() {
           href: document.querySelector('.game-card.in-progress')?.getAttribute('href') || '',
           play: document.querySelector('.game-card.in-progress .play')?.textContent || ''
         }));
-        if (hub.cards !== 6 || hub.href !== 'turdjack.html' || !hub.play.includes('Continue')) {
+        if (hub.cards !== 7 || hub.href !== 'turdjack.html' || !hub.play.includes('Continue')) {
           fail('turdjack-continue-restore', `hub should mark the live Crapjack hand Continue, saw ${JSON.stringify(hub)}`);
+        }
+      }
+    });
+
+    for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 1440, height: 900, desktop: true }]) {
+      const name = `turdomania-${viewport.width}`;
+      await runCheck(browser, name, 'turdomania.html?seed=2026&level=normal', {
+        mobile: !viewport.desktop,
+        context: { viewport: { width: viewport.width, height: viewport.height }, ...(viewport.desktop ? {} : { hasTouch: true, isMobile: true }) },
+        actions: async (page) => {
+          await page.waitForFunction(() => window.__turdomania && window.__turdomania.state);
+          const boot = await page.evaluate(() => {
+            const st = window.__turdomania.state;
+            const board = document.getElementById('board').getBoundingClientRect();
+            const tile = document.querySelector('.tile').getBoundingClientRect();
+            return {
+              tiles: document.querySelectorAll('.tile').length,
+              full: st.cols * st.rows, cols: st.cols, rows: st.rows,
+              left: board.left, right: board.right, bottom: board.bottom,
+              tileSize: tile.width,
+              scrollW: document.documentElement.scrollWidth,
+              undoDisabled: document.getElementById('undoBtn').disabled,
+              back: !!document.querySelector('.suite-back-pill')
+            };
+          });
+          // Normal is 10x12 wherever 32px tiles fit; narrow phones get a smaller full board, never sub-32px tiles.
+          const N = boot.full;
+          if (boot.tiles !== N) fail(name, `seeded board should be full (${N} tiles), saw ${boot.tiles}`);
+          if (viewport.width >= 390 && N !== 120) fail(name, `normal board should be the full 10x12 at ${viewport.width}px, saw ${boot.cols}x${boot.rows}`);
+          if (viewport.width < 390 && (boot.cols < 6 || boot.rows < 8)) fail(name, `fitted board too small: ${boot.cols}x${boot.rows}`);
+          if (boot.tileSize < 32) fail(name, `tiles must be at least 32px: ${boot.tileSize}`);
+          if (boot.left < 0 || boot.right > viewport.width) fail(name, `board escapes the viewport: ${JSON.stringify(boot)}`);
+          if (boot.scrollW > viewport.width) fail(name, `page scrolls sideways: ${boot.scrollW}`);
+          if (boot.tileSize < 22) fail(name, `tiles too small to tap: ${boot.tileSize}`);
+          if (!boot.undoDisabled) fail(name, 'Undo must be disabled before the first pop');
+          if (!boot.back) fail(name, 'missing the Hub back pill');
+          if (boot.bottom > viewport.height) fail(name, `board bottom is below the first screen: ${boot.bottom}`);
+          const dockFit = await page.evaluate(() => ['undoBtn', 'newBtn'].map((id) => {
+            const r = document.getElementById(id).getBoundingClientRect();
+            return { id, top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height };
+          }));
+          for (const b of dockFit) {
+            if (b.bottom > viewport.height || b.top < 0 || b.left < 0 || b.right > viewport.width || b.h < 44) {
+              fail(name, `${b.id} must be a full 44px control on the first screen: ${JSON.stringify(b)}`);
+            }
+          }
+          if (process.env.TURDOMANIA_SHOT_DIR) {
+            await page.screenshot({ path: path.join(process.env.TURDOMANIA_SHOT_DIR, `${name}-start.png`) });
+          }
+          // Find a legal group via the rules core, then tap the real tile.
+          const target = await page.evaluate(() => {
+            const { state, Core } = window.__turdomania;
+            for (let c = 0; c < state.board.length; c++) {
+              for (let r = 0; r < state.board[c].length; r++) {
+                const g = Core.findGroup(state.board, c, r);
+                if (g.length >= 3) return { id: state.board[c][r].id, n: g.length, pts: Core.scoreForGroup(g.length) };
+              }
+            }
+            return null;
+          });
+          if (!target) { fail(name, 'seeded board has no group of 3+'); return; }
+          const tile = page.locator(`#tile-${target.id}`);
+          if (viewport.desktop) await tile.click(); else await tile.tap();
+          await page.waitForTimeout(450);
+          const after = await page.evaluate(() => ({
+            tiles: document.querySelectorAll('.tile').length,
+            score: Number(document.getElementById('score').textContent),
+            left: Number(document.getElementById('left').textContent),
+            undoDisabled: document.getElementById('undoBtn').disabled
+          }));
+          if (after.tiles !== N - target.n || after.left !== N - target.n) fail(name, `tap did not pop the group: ${JSON.stringify({ target, after })}`);
+          if (after.score !== target.pts) fail(name, `score should be (n-2)^2 = ${target.pts}, saw ${after.score}`);
+          if (after.undoDisabled) fail(name, 'Undo should be live after a pop');
+          if (process.env.TURDOMANIA_SHOT_DIR) {
+            await page.screenshot({ path: path.join(process.env.TURDOMANIA_SHOT_DIR, `${name}-after-pop.png`) });
+          }
+          await page.locator('#undoBtn').click();
+          await page.waitForTimeout(150);
+          const undone = await page.evaluate(() => ({
+            tiles: document.querySelectorAll('.tile').length,
+            score: Number(document.getElementById('score').textContent)
+          }));
+          if (undone.tiles !== N || undone.score !== 0) fail(name, `Undo did not restore the board: ${JSON.stringify(undone)}`);
+          // Keyboard: focus the board and pop with Enter somewhere legal.
+          await page.locator('#board').focus();
+          await page.keyboard.press('ArrowRight');
+          await page.keyboard.press('ArrowUp');
+          const active = await page.evaluate(() => document.getElementById('board').getAttribute('aria-activedescendant'));
+          if (!active) fail(name, 'keyboard cursor does not expose aria-activedescendant');
+        }
+      });
+    }
+
+    // Pinned board sizes (cols x rows) per phone width: deterministic, never read back from app state.
+    const TM_SIZES = [
+      { width: 320, height: 568, easy: '8x10', normal: '8x12', hard: '8x12' },
+      { width: 375, height: 667, easy: '8x10', normal: '10x12', hard: '10x13' },
+      { width: 390, height: 844, easy: '8x10', normal: '10x12', hard: '11x14' },
+      { width: 412, height: 915, easy: '8x10', normal: '10x12', hard: '11x14' },
+      { width: 430, height: 932, easy: '8x10', normal: '10x12', hard: '12x14' }
+    ];
+    for (const vp of TM_SIZES) {
+      for (const level of ['easy', 'normal', 'hard']) {
+        const name = `turdomania-size-${vp.width}-${level}`;
+        await runCheck(browser, name, `turdomania.html?seed=11&level=${level}`, {
+          mobile: true,
+          context: { viewport: { width: vp.width, height: vp.height }, hasTouch: true, isMobile: true },
+          actions: async (page) => {
+            await page.waitForSelector('.tile');
+            await page.waitForTimeout(400); // let the deal-in transition settle before measuring
+            const m = await page.evaluate(() => {
+              const tiles = [...document.querySelectorAll('.tile')];
+              const xs = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left)));
+              const ys = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().top)));
+              const sizes = tiles.map((t) => t.getBoundingClientRect());
+              const board = document.getElementById('board').getBoundingClientRect();
+              return {
+                dims: `${xs.size}x${ys.size}`,
+                minW: Math.min(...sizes.map((r) => r.width)), minH: Math.min(...sizes.map((r) => r.height)),
+                right: board.right, scrollW: document.documentElement.scrollWidth
+              };
+            });
+            if (m.dims !== vp[level]) fail(name, `board should be ${vp[level]}, saw ${m.dims}`);
+            if (m.minW < 32 || m.minH < 32) fail(name, `tiles must be >=32px, saw ${m.minW}x${m.minH}`);
+            if (m.right > vp.width || m.scrollW > vp.width) fail(name, `board escapes ${vp.width}px: ${JSON.stringify(m)}`);
+          }
+        });
+      }
+    }
+
+    await runCheck(browser, 'turdomania-reduced-motion', 'turdomania.html?seed=7&level=easy', {
+      mobile: true,
+      context: { reducedMotion: 'reduce' },
+      actions: async (page) => {
+        await page.waitForFunction(() => window.__turdomania && window.__turdomania.state);
+        const tr = await page.evaluate(() => getComputedStyle(document.querySelector('.tile')).transitionDuration);
+        if (!/^0s(, 0s)*$/.test(tr)) fail('turdomania-reduced-motion', `tiles still animate under reduced motion: ${tr}`);
+        // Play greedily to the end; a finished game must show the result and save a best.
+        const finished = await page.evaluate(() => {
+          for (let i = 0; i < 400; i++) {
+            const { state, Core } = window.__turdomania;
+            if (state.over) break;
+            let done = false;
+            for (let c = 0; c < state.board.length && !done; c++) {
+              for (let r = 0; r < state.board[c].length && !done; r++) {
+                if (Core.findGroup(state.board, c, r).length >= 2) { window.__turdomaniaPop(c, r); done = true; }
+              }
+            }
+          }
+          const { state } = window.__turdomania;
+          return { over: state.over, score: state.score, overlay: document.getElementById('overlay').classList.contains('show'), best: localStorage.getItem('turdomania_best_v1') };
+        });
+        if (!finished.over || !finished.overlay) fail('turdomania-reduced-motion', `game never reached its end screen: ${JSON.stringify(finished)}`);
+        if (finished.score > 0 && !(finished.best || '').includes(String(finished.score))) fail('turdomania-reduced-motion', `best score not saved: ${JSON.stringify(finished)}`);
+        if (process.env.TURDOMANIA_SHOT_DIR) {
+          await page.screenshot({ path: path.join(process.env.TURDOMANIA_SHOT_DIR, 'turdomania-390-game-over.png') });
         }
       }
     });
@@ -2469,7 +2625,7 @@ async function main() {
             cards: document.querySelectorAll('.game-card').length
           };
         });
-        if (marked.cards !== 6 || marked.href !== 'TurdAnoid.html') {
+        if (marked.cards !== 7 || marked.href !== 'TurdAnoid.html') {
           fail('hub-turdanoid-last-played', `TurdAnoid should record last-played now that it loads the suite, saw ${JSON.stringify(marked)}`);
         }
         if (!marked.play.includes('Play again')) {
