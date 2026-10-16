@@ -34,7 +34,8 @@
   /**
    * Cell alphabet for campaign grids.
    * . empty  1-4 HP  M metal(4)  S silver(2)  X steel (indestructible)
-   * D drip(2)  G gold(3)  T tar(3)  a-f one-hit colour bricks (palette 0-5)
+   * D drip(2)  G gold(3)  T tar(3)  H heavy steel(6)  Y heavy gold(5)
+   * a-f one-hit colour bricks (palette 0-5)
    */
   const CELL_TYPES = {
     1: { hp: 1 },
@@ -47,6 +48,8 @@
     G: { hp: 3, material: 'gold' },
     T: { hp: 3, material: 'tar' },
     S: { hp: 2, metal: true, material: 'metal', silver: true },
+    H: { hp: 6, metal: true, material: 'metal', heavy: true },
+    Y: { hp: 5, material: 'gold', heavy: true },
     a: { hp: 1, color: 0 },
     b: { hp: 1, color: 1 },
     c: { hp: 1, color: 2 },
@@ -110,20 +113,20 @@
       grid: ['4444.MMMM', '4.....DM.', '4..TTT..M', '4.TGGGT.4', 'MDTGDGTD4', '4.TGGGT.4', 'M..TTT..4', '.MD.....4', 'MMMM.4444'] },
     { level: 23, name: 'Starburst', pattern: 'Star', blurb: 'A gold star blasts out in eight rays.',
       grid: ['4T4.M.4T4', 'T4T.M.T4T', '4.4GMG4.4', '..DGGGD..', 'MMGGDGGMM', '..DGGGD..', '4.4GMG4.4', 'T4T.M.T4T', '4T4.M.4T4'] },
-    { level: 24, name: 'Royal Flush', pattern: 'Crown', blurb: 'Candy boss. A crown of gold and steel.',
-      grid: ['4.4.4.4.4', '4X4X4X4X4', '444444444', '4GDG4GDG4', '444444444', 'MMMMMMMMM', 'TTTTTTTTT', 'X..DDD..X', '444444444'] },
+    { level: 24, name: 'Royal Flush', pattern: 'Crown', blurb: 'Candy boss. A heavy gold crown with jewels.',
+      grid: ['Y.Y.Y.Y.Y', 'YY..Y..YY', 'YYY.Y.YYY', 'YYYYYYYYY', 'YDYTDTYDY', 'HHHDHDHHH'] },
     { level: 25, name: 'Close Encounter', pattern: 'Alien', blurb: 'A big grey alien head. Black almond eyes.',
-      grid: ['..MMMMM..', '.MMMMMMM.', 'MMMMMMMMM', 'MTTMMMTTM', 'MTTTMTTTM', 'MMMTMTMMM', '.MMMMMMM.', '.DMMDMMD.', '..DMMMD..'] },
-    { level: 26, name: 'Skull Bowl', pattern: 'Skull', blurb: '4-hit skull, gold eyes, dripping grin.',
-      grid: ['..44444..', '.4444444.', '44GG4GG44', '44GG4GG44', '.4444444.', '4.4DDD4.4', '4D4.D.4D4', 'TTTTTTTTT', 'MMMMMMMMM'] },
-    { level: 27, name: 'Sludge Spiral', pattern: 'Spiral', blurb: 'Follow the spiral in to the gold core.',
-      grid: ['444444444', '4SSSSSSS4', '4S44444S4', '4S4DGD4S4', '4S4G4G4D4', '4S4DS44S4', '4S44444S4', '4DSSSSSD4', 'MMMMMaMMM'] },
-    { level: 28, name: 'Septic Fort', pattern: 'Fortress', blurb: 'Every wall fights back.',
-      grid: ['X4X4X4X4X', '4DMMMMMD4', '4M44G44M4', '4MGDGDGM4', '4M44G44M4', '4DMMMMMD4', '444444444', 'GGGGGGGGG', '4X4.4.4X4'] },
-    { level: 29, name: 'Last Wipe', pattern: 'Gauntlet', blurb: 'Dense tar and gold before the king.',
-      grid: ['GGGGGGGGG', '4D4G4G4D4', 'MMMMMMMMM', '4G4D4D4G4', '444444444', 'GDGGGGGDG', 'TTTTTTTTT', 'X4X4X4X4X', '444444444'] },
+      grid: ['..MMMMM..', '.MSSSSSM.', 'MMSSSSSMM', 'MTTSSSTTM', 'MTTTSTTTM', 'MMMTSTMMM', '.MMSSSMM.', '.DMMDMMD.', '..DMMMD..'] },
+    { level: 26, name: 'Skull Bowl', pattern: 'Skull', blurb: 'Heavy steel skull, hollow eyes, dripping grin.',
+      grid: ['..HHHHH..', '.HHHDHHH.', 'HH..H..HH', 'HHD.H.DHH', '.HHH.HHH.', '..HHDHH..', '..H.D.H..', '..S.S.S..'] },
+    { level: 27, name: 'Sludge Drain', pattern: 'Drain', blurb: 'Steel rings swirl down to a slime plug.',
+      grid: ['.MMHDHMM.', 'H...D...H', 'H.HMDMH.H', 'H.H...H.H', '..H.D.H..', 'H.H...H.H', 'H.HMDMH.H', 'H.......H', '.MMHMHMM.'] },
+    { level: 28, name: 'Septic Fort', pattern: 'Fortress', blurb: 'Heavy steel walls round a gold vault.',
+      grid: ['HDH.H.HDH', 'MMMMMMMMM', 'HD.....DH', 'H..YYY..H', 'H..YDY..H', 'H..YYY..H', 'H.......H', 'MMHHDHHMM'] },
+    { level: 29, name: 'Last Wipe', pattern: 'Gauntlet', blurb: 'Gold bars and steel rails before the king.',
+      grid: ['YYYYYYYYY', 'H...D...H', 'H.MMMMM.H', '..D...D..', 'YYYYYYYYY', 'H...D...H', 'H.......H', '..D...D..', 'HHHH.HHHH'] },
     { level: 30, name: 'Anarchy Throne', pattern: 'Anarchy', blurb: 'Final boss. Smash the anarchy sign.',
-      grid: ['TTMMMMMTT', 'TM44G44MT', 'M4DG4GD4M', 'M44G4G44M', 'MGGGGGGGM', 'M4GD4DG4M', 'MDG444GDM', 'TMG444GMT', 'DTMMMMMTD'] }
+      grid: ['..HHHHH..', '.HH.Y.HH.', 'H..Y.Y..H', 'HYYYYYYYH', 'H.Y...Y.H', 'H.Y...Y.H', '.HD...DH.', '..HDHDH..', '.D.D.D.D.'] }
   ];
 
   function allPatternNames() {
@@ -537,7 +540,7 @@
    */
   const ENDGAME_MAX_BRICKS = 3;
   const ENDGAME_IDLE_FRAMES = 360;
-  const ENDGAME_TURN_RAD = 0.035;
+  const ENDGAME_TURN_RAD = 0.0175;
 
   function endgameAssistActive(breakable, idleFrames) {
     return breakable > 0 && breakable <= ENDGAME_MAX_BRICKS && idleFrames >= ENDGAME_IDLE_FRAMES;

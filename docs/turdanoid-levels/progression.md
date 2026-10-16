@@ -52,12 +52,12 @@ Arkanoid pass (see `docs/arkanoid-level-research.md`; Oct 2026 progression redes
 | 21 | Candy | Diamond Flush | A gold-cored diamond in steel brackets. | 180 | 8.40 | 5 | 8 | Diamond |
 | 22 | Candy | Pinwheel | Four arms whirl round a gold hub. | 190 | 8.40 | 5 | 0 | Spiral Arms |
 | 23 | Candy | Starburst | A gold star blasts out in eight rays. | 208 | 8.40 | 5 | 0 | Star |
-| 24 | Candy | Royal Flush | Candy boss. A crown of gold and steel. | 245 | 8.40 | 5 | 6 | Crown |
-| 25 | Throne | Close Encounter | A big grey alien head. Black almond eyes. | 246 | 8.40 | 5 | 0 | Alien |
-| 26 | Throne | Skull Bowl | 4-hit skull, gold eyes, dripping grin. | 247 | 8.40 | 6 | 0 | Skull |
-| 27 | Throne | Sludge Spiral | Follow the spiral in to the gold core. | 262 | 8.40 | 6 | 0 | Spiral |
-| 28 | Throne | Septic Fort | Every wall fights back. | 262 | 8.40 | 6 | 7 | Fortress |
-| 29 | Throne | Last Wipe | Dense tar and gold before the king. | 263 | 8.40 | 6 | 5 | Gauntlet |
-| 30 | Throne | Anarchy Throne | Final boss. Smash the anarchy sign. | 280 | 8.40 | 8 | 0 | Anarchy |
+| 24 | Candy | Royal Flush | Candy boss. A heavy gold crown with jewels. | 208 | 8.40 | 5 | 0 | Crown |
+| 25 | Throne | Close Encounter | A big grey alien head. Black almond eyes. | 210 | 8.40 | 5 | 0 | Alien |
+| 26 | Throne | Skull Bowl | Heavy steel skull, hollow eyes, dripping grin. | 214 | 8.40 | 5 | 0 | Skull |
+| 27 | Throne | Sludge Drain | Steel rings swirl down to a slime plug. | 218 | 8.40 | 5 | 0 | Drain |
+| 28 | Throne | Septic Fort | Heavy steel walls round a gold vault. | 218 | 8.40 | 6 | 0 | Fortress |
+| 29 | Throne | Last Wipe | Gold bars and steel rails before the king. | 218 | 8.40 | 6 | 0 | Gauntlet |
+| 30 | Throne | Anarchy Throne | Final boss. Smash the anarchy sign. | 218 | 8.40 | 8 | 0 | Anarchy |
 
-Steel never counts toward a clear. Drip bricks leak sludge (the same hazard as Boss Flush) until they break. World-boss beats are 6 / 12 / 18 / 24 / 30.
+From round 24 the walls thin out so each picture reads; heavy gold (Y, 5 hits) and heavy steel (H, 6 hits) keep total HP climbing. Steel never counts toward a clear. Drip bricks leak sludge (the same hazard as Boss Flush) until they break. World-boss beats are 6 / 12 / 18 / 24 / 30.

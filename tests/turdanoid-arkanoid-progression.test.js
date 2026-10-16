@@ -111,7 +111,7 @@ describe('Arkanoid progression shape', () => {
 
   it('draws mostly mirror-symmetric pictures, like classic Arkanoid rounds', () => {
     const sym = LEVELS.filter(mirrored).length;
-    expect(sym).toBeGreaterThanOrEqual(26);
+    expect(sym).toBeGreaterThanOrEqual(28);
   });
 
   it('ramps multi-hit density from the early to the late rounds', () => {
@@ -134,18 +134,32 @@ describe('Arkanoid progression shape', () => {
     const last = LEVELS[29];
     expect(last.pattern).toBe('Anarchy');
     expect(mirrored(last)).toBe(true);
-    // Circle: the outer ring is metal; the A (gold-ish, with drips) sits inside it.
+    // A clear Ⓐ: a heavy-steel ring, a heavy-gold A, and empty space between them.
     const g = last.grid;
-    expect(g[0].slice(2, 7)).toBe('MMMMM');
-    expect(g[8].slice(2, 7)).toBe('MMMMM');
-    for (const r of [2, 3, 4, 5, 6]) {
-      expect(g[r][0], `ring row ${r}`).toBe('M');
-    }
-    expect(g[4].slice(1, 8)).toBe('GGGGGGG'); // the A crossbar
-    expect(g[1][4]).toBe('G'); // the apex
-    for (const r of [5, 6, 7]) {
-      expect(/[GD]/.test(g[r][2]) && /[GD]/.test(g[r][6]), `legs row ${r}`).toBe(true);
-    }
+    expect(g).toEqual([
+      '..HHHHH..',
+      '.HH.Y.HH.',
+      'H..Y.Y..H',
+      'HYYYYYYYH',
+      'H.Y...Y.H',
+      'H.Y...Y.H',
+      '.HD...DH.',
+      '..HDHDH..',
+      '.D.D.D.D.'
+    ]);
+    const cells = g.join('');
+    expect(cells).not.toMatch(/[1-4a-f]/); // no pink or colour filler
+    const ring = [...cells].filter((ch) => ch === 'H').length;
+    const letter = [...cells].filter((ch) => ch === 'Y').length;
+    expect(ring).toBeGreaterThanOrEqual(22);
+    expect(letter).toBeGreaterThanOrEqual(13);
+    // Ring and A are different materials (steel vs gold) so they contrast.
+    const spec = (ch) => buildCampaignCells(30).find((c) => g[c.r][c.c] === ch);
+    expect(spec('H').material).toBe('metal');
+    expect(spec('Y').material).toBe('gold');
+    // At least a third of the inside of the ring is empty, so the A pops.
+    const inside = g.slice(1, 7).map((row) => row.slice(1, 8)).join('');
+    expect((inside.match(/\./g) || []).length / inside.length).toBeGreaterThan(0.4);
   });
 });
 
@@ -161,12 +175,12 @@ describe('Alien round (Jeff, Oct 2026)', () => {
     const g = alien.grid;
     expect(g).toEqual([
       '..MMMMM..',
-      '.MMMMMMM.',
-      'MMMMMMMMM',
-      'MTTMMMTTM',
-      'MTTTMTTTM',
-      'MMMTMTMMM',
-      '.MMMMMMM.',
+      '.MSSSSSM.',
+      'MMSSSSSMM',
+      'MTTSSSTTM',
+      'MTTTSTTTM',
+      'MMMTSTMMM',
+      '.MMSSSMM.',
       '.DMMDMMD.',
       '..DMMMD..'
     ]);
@@ -183,6 +197,10 @@ describe('Alien round (Jeff, Oct 2026)', () => {
     // Almond: wide on top, slanting down to a point toward the nose.
     expect(g[4].slice(1, 4)).toBe('TTT');
     expect(g[5].slice(1, 4)).toBe('MMT');
+    // Eyes are near-black tar against a light silver face.
+    const cellAt = (ch) => buildCampaignCells(alien.level).find((c) => g[c.r][c.c] === ch);
+    expect(cellAt('T').material).toBe('tar');
+    expect(cellAt('S').material).toBe('metal');
     expect(g[3].slice(1, 3)).toBe('TT');
     // Green slime around the chin, no steel anywhere.
     expect(g.slice(7).join('')).toMatch(/D/);
@@ -194,14 +212,30 @@ describe('Alien round (Jeff, Oct 2026)', () => {
 });
 
 describe('Toughness ramp', () => {
-  it('never drops total brick HP or drip count from one round to the next', () => {
+  it('never drops total brick HP from one round to the next', () => {
     const hpOf = (def) => buildCampaignCells(def.level)
       .filter((c) => !c.indestructible)
       .reduce((s, c) => s + c.hp, 0);
-    const dripsOf = (def) => buildCampaignCells(def.level).filter((c) => c.hazard === 'drip').length;
     for (let i = 1; i < LEVELS.length; i += 1) {
       expect(hpOf(LEVELS[i]), `HP L${i + 1}`).toBeGreaterThanOrEqual(hpOf(LEVELS[i - 1]));
-      expect(dripsOf(LEVELS[i]), `drips L${i + 1}`).toBeGreaterThanOrEqual(dripsOf(LEVELS[i - 1]));
+    }
+    // Toughness keeps climbing even as late walls thin out: hits per brick rise.
+    const perBrick = (def) => hpOf(def) / buildCampaignCells(def.level).filter((c) => !c.indestructible).length;
+    expect(perBrick(LEVELS[29])).toBeGreaterThan(perBrick(LEVELS[22]));
+    expect(Math.min(...LEVELS.slice(25).map(perBrick))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('thins the late pictures (24, 26-30) with real negative space', () => {
+    for (const lv of [24, 26, 27, 28, 29, 30]) {
+      const def = LEVELS[lv - 1];
+      const filled = def.grid.join('').replace(/\./g, '').length;
+      expect(filled, def.name).toBeLessThanOrEqual(48);
+    }
+  });
+
+  it('keeps slime drips in every round from level 11 on', () => {
+    for (const def of LEVELS.slice(10)) {
+      expect(buildCampaignCells(def.level).some((c) => c.hazard === 'drip'), def.name).toBe(true);
     }
   });
 
@@ -264,7 +298,7 @@ describe('Last-bricks assist', () => {
     const out = endgameSteer(ball, [brick(0, 100)], ENDGAME_IDLE_FRAMES);
     const before = Math.atan2(ball.vy, ball.vx);
     const after = Math.atan2(out.vy, out.vx);
-    expect(Math.abs(after - before)).toBeLessThanOrEqual(0.0351);
+    expect(Math.abs(after - before)).toBeLessThanOrEqual(0.0176);
   });
 
   it('is wired into the live loop and resets when a brick is touched', () => {
