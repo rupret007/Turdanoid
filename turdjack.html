@@ -10,7 +10,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
+  <script src="games/suite-arcade-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/suite-arcade-bridge.js"></script>
   <title>Crapjack 21</title>
   <style>
     :root {
@@ -4723,6 +4725,20 @@
       else playSfx('push');
       renderCards();
       updateHud();
+      if (window.TurdSuiteArcadeBridge) {
+        window.TurdSuiteArcadeBridge.touchRun({
+          bucket: 'default',
+          score: bankroll,
+          level: stats.hands || 0
+        });
+        if (window.Suite && Suite.arcade) {
+          Suite.arcade.recordLeaderboard('turdjack.html', {
+            bucket: 'default',
+            value: bankroll,
+            rank: 'high'
+          });
+        }
+      }
       };
 
       const playDealerHits = () => {

@@ -283,6 +283,7 @@
         <span>← → Space</span>
       </div>
       <button id="btnStart">START FLUSHING</button>
+      <button type="button" id="btnArcadeResume" class="menu-secondary" hidden>Continue saved run</button>
       <div class="menu-secondary">
         <button id="btnBoss" type="button">Boss Flush</button>
         <button id="btnHowTo">How To Play</button>
@@ -341,6 +342,7 @@
         <div class="stat"><span class="l">Max combo</span><span class="v" id="endCombo">0</span></div>
         <div class="stat"><span class="l">Time</span><span class="v" id="endTime">0:00</span></div>
       </div>
+      <div class="suite-arcade-host" id="anoidArcadeHost"></div>
       <button id="btnRestart">PLAY AGAIN</button>
       <div class="menu-secondary">
         <button id="btnEndQuit">MAIN MENU</button>
@@ -361,6 +363,7 @@
 
 <!-- Keep classic dependencies ordered, after the title markup so it can paint during loading. -->
 <script src="games/table-continue-core.js"></script>
+<script src="games/suite-arcade-core.js"></script>
 <script src="games/turdanoid-theme-core.js"></script>
 <script src="games/turdanoid-fx-core.js"></script>
 <script src="games/turdanoid-brick-core.js"></script>
@@ -378,6 +381,7 @@
 <script src="games/turdanoid-layout-core.js"></script>
 <script src="games/turdanoid-qa-core.js"></script>
 <script src="assets/turdsuite.js"></script>
+<script src="games/suite-arcade-bridge.js"></script>
 <script>
   if (typeof TurdanoidTheme !== 'undefined') {
     TurdanoidTheme.applyCssVars(document.documentElement);
@@ -1519,10 +1523,30 @@ function startBossGame(){
   gameMode = 'boss';
   beginRun();
 }
-function beginRun(){
+function anoidArcadeBucket(){ return gameMode === 'boss' ? 'boss' : 'classic'; }
+function syncAnoidArcadeProgress(){
+  const bridge = window.TurdSuiteArcadeBridge;
+  if(!bridge || state !== 'playing' || waitingLaunch || levelTransition) return;
+  if(lives <= 0) return;
+  bridge.touchRun({ bucket: anoidArcadeBucket(), score, level, data: { lives, gameMode } });
+}
+function applyAnoidArcadeResume(saved){
+  if(!saved) return false;
+  gameMode = saved.data && saved.data.gameMode === 'boss' ? 'boss' : 'classic';
+  score = saved.score || 0;
+  level = Math.max(1, saved.level || 1);
+  lives = saved.data && saved.data.lives ? saved.data.lives : 3;
+  beginRun(true);
+  return true;
+}
+function beginRun(resuming){
+  if(!resuming && window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
   resize();
   paddle = newPaddle();
-  score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
+  if(!resuming){
+    score=0; level=1; lives=3;
+  }
+  comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
   runStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
   shards = []; impactRings = []; confettiBits = []; clearParty = null; boss = null; sludges = [];
   activePowers = {};
@@ -1693,6 +1717,15 @@ function gameOver(won){
   $('endTime').textContent = formatRunTime(Date.now() - (runStats.startedAt || Date.now()));
   showOverlay(tEnd);
   won ? sfx.win() : sfx.death();
+  if(window.TurdSuiteArcadeBridge){
+    window.TurdSuiteArcadeBridge.finishRun({
+      bucket: anoidArcadeBucket(),
+      value: score,
+      rank: 'high',
+      scoreLine: score.toLocaleString() + ' pts',
+      host: document.getElementById('anoidArcadeHost')
+    });
+  }
 }
 function pickTitleQuip(){ $('titleQuip').textContent = TITLE_QUIPS[Math.floor(Math.random()*TITLE_QUIPS.length)]; }
 
@@ -1705,6 +1738,10 @@ $('btnResume').addEventListener('click', doResume);
 $('btnQuit').addEventListener('click', quitToMenu);
 $('btnRestart').addEventListener('click', restartGame);
 $('btnEndQuit').addEventListener('click', quitToMenu);
+if(window.TurdSuiteArcadeBridge){
+  window.TurdSuiteArcadeBridge.bindAutosave(syncAnoidArcadeProgress);
+  window.TurdSuiteArcadeBridge.wireResumeButton($('btnArcadeResume'), applyAnoidArcadeResume);
+}
 
 /* ---- Launch ---- */
 function launch(){

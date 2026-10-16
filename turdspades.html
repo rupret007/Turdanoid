@@ -10,7 +10,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
+  <script src="games/suite-arcade-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/suite-arcade-bridge.js"></script>
   <title>TurdSpades</title>
   <style>
     :root {
@@ -1667,6 +1669,28 @@
         matchEnd: state.phase === 'matchEnd',
         won: state.scores[0] > state.scores[1]
       });
+      if (window.TurdSuiteArcadeBridge && state.phase === 'matchEnd') {
+        let bucket = 'normal';
+        try {
+          bucket = localStorage.getItem('turdspades_ai_difficulty_v1') || 'normal';
+        } catch (e) {}
+        window.TurdSuiteArcadeBridge.finishRun({
+          bucket,
+          value: state.scores[0],
+          rank: 'high',
+          scoreLine: state.scores[0] + ' pts'
+        });
+      } else if (window.TurdSuiteArcadeBridge) {
+        let bucket = 'normal';
+        try {
+          bucket = localStorage.getItem('turdspades_ai_difficulty_v1') || 'normal';
+        } catch (e) {}
+        window.TurdSuiteArcadeBridge.touchRun({
+          bucket,
+          score: state.scores[0],
+          level: state.round || 1
+        });
+      }
     }
 
     function runAiTurns() {

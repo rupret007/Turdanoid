@@ -10,7 +10,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
+  <script src="games/suite-arcade-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/suite-arcade-bridge.js"></script>
   <script src="games/turdrummy-ai-core.js"></script>
   <script src="games/turdrummy-audio-core.js"></script>
   <script src="games/turdrummy-fx-core.js"></script>
@@ -2370,6 +2372,7 @@
         <h2 id="trophyHeadline">Match Over</h2>
         <p class="trophy-scores" id="trophyScores"></p>
         <dl id="trophyStats" aria-label="Match stats saved on this device"></dl>
+        <div class="suite-arcade-host" id="rummyArcadeHost"></div>
         <div class="overlay-actions">
           <button class="btn primary" id="trophyRematchBtn" type="button">Rematch</button>
           <button class="btn" id="trophyKeepBtn" type="button">Keep Table</button>
@@ -2878,6 +2881,15 @@
         .join("");
       el.trophyOverlay.classList.add("show");
       el.trophyRematchBtn.focus();
+      if (window.TurdSuiteArcadeBridge) {
+        window.TurdSuiteArcadeBridge.finishRun({
+          bucket: aiLevel,
+          value: state.playerScore,
+          rank: "high",
+          scoreLine: state.playerScore + " pts",
+          host: document.getElementById("rummyArcadeHost")
+        });
+      }
     }
 
     function hideTrophy() {
@@ -3025,6 +3037,13 @@
         matchOver: !!state.matchOver,
         initialized: true
       });
+      if (window.TurdSuiteArcadeBridge && !state.matchOver) {
+        window.TurdSuiteArcadeBridge.touchRun({
+          bucket: aiLevel,
+          score: state.playerScore,
+          level: state.round
+        });
+      }
     }
 
     function applyRummySnapshot(snap) {
@@ -4300,6 +4319,7 @@
       };
       saveStats();
       if (window.Suite && Suite.table) Suite.table.clear("turdrummy.html");
+      if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
       renderAll();
     }
 

@@ -178,6 +178,8 @@ describe('table continue store', () => {
     expect(jack).not.toContain('historyText.innerHTML');
     expect(anoid).toContain('assets/turdsuite.js');
     expect(anoid).toContain('games/table-continue-core.js');
+    expect(anoid).toContain('games/suite-arcade-core.js');
+    expect(anoid).toContain('TurdSuiteArcadeBridge');
     expect(anoid).not.toContain('turdsuite.js" defer');
     expect(anoid).toContain('data-suite-no-bg="1"');
     expect(hub).toContain('games/table-continue-core.js');

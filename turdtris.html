@@ -10,7 +10,9 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="assets/turdsuite.css">
 <script src="games/table-continue-core.js"></script>
+<script src="games/suite-arcade-core.js"></script>
 <script src="assets/turdsuite.js"></script>
+<script src="games/suite-arcade-bridge.js"></script>
 <title>Turdtris</title>
 <style>
 :root {
@@ -1503,6 +1505,7 @@ body.desktop-cabinet .status {
             <div class="overlay-stat"><div class="k">Time / PPS</div><div class="v" id="finalPace">0:00 / 0.00</div></div>
           </div>
           <p class="overlay-flavor">Space or Enter runs it back.</p>
+          <div class="suite-arcade-host" id="trisArcadeHost"></div>
           <button class="btn" onclick="restartGame()">Play Again</button>
         </div>
       </div>
@@ -3332,6 +3335,21 @@ function showGameOver(won) {
 
   playSfx(isWin ? 'victory' : 'gameover');
   updateScore();
+  if (window.TurdSuiteArcadeBridge) {
+    const bucket = runMode || 'classic';
+    const rank = bucket === 'sprint' ? 'low' : 'high';
+    const boardValue = bucket === 'classic' ? score : (modeBest || score);
+    const scoreLine = bucket === 'sprint' && modeBest
+      ? window.TurdtrisModes.formatRunTime(modeBest, true)
+      : String(score) + ' pts';
+    window.TurdSuiteArcadeBridge.finishRun({
+      bucket,
+      value: boardValue,
+      rank,
+      scoreLine,
+      host: document.getElementById('trisArcadeHost')
+    });
+  }
 }
 
 function togglePause() {
@@ -3354,9 +3372,22 @@ function togglePause() {
   else ensureLoopRunning();
 }
 
+function syncTrisArcadeProgress() {
+  if (gameOver || paused || onboardingOpen || !tetromino) return;
+  if (window.TurdSuiteArcadeBridge) {
+    window.TurdSuiteArcadeBridge.touchRun({
+      bucket: runMode || 'classic',
+      score,
+      level,
+      data: { linesCleared }
+    });
+  }
+}
+
 function restartGame() {
   const menu = document.querySelector('.mobile-menu details');
   if (menu) menu.open = false;
+  if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
   clearHeldInput();
   if (window.__turdtrisAudio) window.__turdtrisAudio.stop();
   runStats = { pieces: 0, elapsedMs: 0, maxCombo: 0, tetrises: 0, tSpins: 0, perfectClears: 0 };
@@ -4018,6 +4049,7 @@ window.__turdtrisStartAttract = startAttractLoop;
 window.__turdtrisStopAttract = stopAttractLoop;
 
 wireTurdtrisRuntime();
+if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.bindAutosave(syncTrisArcadeProgress);
 applyBoardFocus();
 window.addEventListener('resize', applyBoardFocus);
 const openGuide = document.getElementById('welcomeGuide');

@@ -9,7 +9,9 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="assets/turdsuite.css">
 <script src="games/table-continue-core.js"></script>
+<script src="games/suite-arcade-core.js"></script>
 <script src="assets/turdsuite.js"></script>
+<script src="games/suite-arcade-bridge.js"></script>
 <title>Turdomania</title>
 <style>
 :root {
@@ -109,6 +111,7 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
     <div>
       <h2 id="overTitle">Clogged!</h2>
       <p id="overText"></p>
+      <div class="suite-arcade-host" id="maniaArcadeHost"></div>
       <div class="row">
         <button type="button" id="againBtn">Flush &amp; Again</button>
         <button type="button" id="overUndoBtn">Undo last pop</button>
@@ -196,7 +199,18 @@ let cell = 32;
 const tileEls = new Map();
 const fixedSeed = qs.has('seed') ? Number(qs.get('seed')) >>> 0 : null;
 
+function syncManiaArcadeProgress() {
+  if (!state || state.over || !window.TurdSuiteArcadeBridge) return;
+  window.TurdSuiteArcadeBridge.touchRun({
+    bucket: state.level,
+    score: state.score,
+    level: 1,
+    data: { state: JSON.parse(JSON.stringify(state)) }
+  });
+}
+
 function start(levelKey, seed) {
+  if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
   // First board reuses the size reserved before paint; later boards re-measure.
   const init = window.TM_INIT && window.TM_INIT.level === levelKey ? window.TM_INIT : null;
   window.TM_INIT = null;
@@ -380,6 +394,15 @@ function showOver() {
   sfx(state.cleared ? 'win' : 'lose');
   announce(els.overTitle.textContent + ' ' + els.overText.textContent);
   setTimeout(() => els.again.focus({ preventScroll: true }), 30);
+  if (window.TurdSuiteArcadeBridge) {
+    window.TurdSuiteArcadeBridge.finishRun({
+      bucket: state.level,
+      value: state.score,
+      rank: 'high',
+      scoreLine: state.score + ' pts',
+      host: document.getElementById('maniaArcadeHost')
+    });
+  }
 }
 
 boardEl.addEventListener('pointerdown', (e) => {
@@ -418,6 +441,16 @@ let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
 
 const startLevel = Core.LEVELS[qs.get('level')] ? qs.get('level') : (readPrefs().level || 'normal');
+if (window.TurdSuiteArcadeBridge) {
+  window.TurdSuiteArcadeBridge.bindAutosave(syncManiaArcadeProgress);
+  window.TurdSuiteArcadeBridge.wireResumeButton(document.getElementById('newBtn'), (saved) => {
+    if (!saved?.data?.state) return false;
+    state = saved.data.state;
+    overlay.classList.remove('show');
+    render();
+    return true;
+  });
+}
 start(startLevel);
 // Test hook: deterministic actions without hunting pixels.
 window.__turdomaniaPop = (c, r) => popAt(c, r);

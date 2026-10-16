@@ -259,6 +259,7 @@
 
   // ---------- Last-played + honest table continue ----------
   const TableContinue = globalThis.TurdSuiteTableContinue || null;
+  const Arcade = globalThis.TurdSuiteArcade || null;
   const LIVE_HUB_GAMES = (TableContinue && TableContinue.LIVE_HUB_GAMES) || [
     'TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html'
   ];
@@ -333,6 +334,118 @@
     }
   };
 
+  function arcadeStorage() {
+    return suiteStorage();
+  }
+
+  Suite.arcade = {
+    recordLeaderboard(page, options) {
+      try {
+        const storage = arcadeStorage();
+        return !!(storage && Arcade && Arcade.recordLeaderboard(storage, page, options || {}));
+      } catch (e) {
+        return false;
+      }
+    },
+    getLeaderboard(page, bucket) {
+      try {
+        const storage = arcadeStorage();
+        return storage && Arcade ? Arcade.getLeaderboard(storage, page, bucket) : [];
+      } catch (e) {
+        return [];
+      }
+    },
+    saveRun(page, snapshot) {
+      try {
+        const storage = arcadeStorage();
+        return !!(storage && Arcade && Arcade.saveProgress(storage, page, snapshot));
+      } catch (e) {
+        return false;
+      }
+    },
+    loadRun(page) {
+      try {
+        const storage = arcadeStorage();
+        return storage && Arcade ? Arcade.loadProgress(storage, page) : null;
+      } catch (e) {
+        return null;
+      }
+    },
+    clearRun(page) {
+      try {
+        const storage = arcadeStorage();
+        return !!(storage && Arcade && Arcade.clearProgress(storage, page));
+      } catch (e) {
+        return false;
+      }
+    },
+    hasRun(page) {
+      try {
+        const storage = arcadeStorage();
+        return !!(storage && Arcade && Arcade.hasProgress(storage, page));
+      } catch (e) {
+        return false;
+      }
+    },
+    listRuns() {
+      try {
+        const storage = arcadeStorage();
+        return storage && Arcade ? Arcade.listProgressPages(storage) : [];
+      } catch (e) {
+        return [];
+      }
+    },
+    recordEnd(page, options) {
+      try {
+        const storage = arcadeStorage();
+        return !!(storage && Arcade && Arcade.recordEnd(storage, page, options || {}));
+      } catch (e) {
+        return false;
+      }
+    },
+    share(options) {
+      try {
+        if (!Arcade) return Promise.resolve({ method: 'fail' });
+        const toast = function (msg) {
+          Suite.toast(msg);
+        };
+        return Arcade.shareScore(options || {}, {
+          navigator: typeof navigator !== 'undefined' ? navigator : null,
+          clipboard: typeof navigator !== 'undefined' && navigator.clipboard ? navigator.clipboard : null,
+          toast
+        });
+      } catch (e) {
+        return Promise.resolve({ method: 'fail' });
+      }
+    },
+    mountActions(host, options) {
+      if (!host) return Promise.resolve(null);
+      const page = (options && options.page) || currentPageName();
+      const bucket = (options && options.bucket) || 'default';
+      const scoreLine = options && options.scoreLine;
+      const gameTitle = (options && options.gameTitle) || (Arcade ? Arcade.titleForPage(page) : '');
+      return suiteImport('./suite-arcade-ui.js')
+        .then(function (m) {
+          if (!m || typeof m.mountArcadeActions !== 'function') return null;
+          return m.mountArcadeActions(document, host, {
+            page,
+            bucket,
+            scoreLine,
+            gameTitle,
+            getLeaderboard: function (p, b) {
+              return Suite.arcade.getLeaderboard(p, b);
+            },
+            share: function (opts) {
+              return Suite.arcade.share(opts);
+            }
+          });
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+  };
+
   Suite.guide = {
     hasSeen(page) {
       try {
@@ -391,7 +504,15 @@
     let last = '';
     try { last = localStorage.getItem(LAST_GAME_KEY) || ''; } catch (e) {}
     if (!LIVE_HUB_GAMES.includes(last)) last = '';
-    const continuing = Suite.table.list();
+    let continuing = Suite.table.list();
+    try {
+      const arcadeRuns = Suite.arcade.listRuns();
+      for (let a = 0; a < arcadeRuns.length; a++) {
+        if (continuing.indexOf(arcadeRuns[a]) === -1) {
+          continuing.push(arcadeRuns[a]);
+        }
+      }
+    } catch (e) {}
     const cards = document.querySelectorAll('.game-card');
     for (let i = 0; i < cards.length; i++) {
       const href = cards[i].getAttribute('href') || '';

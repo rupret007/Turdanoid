@@ -10,7 +10,9 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
+  <script src="games/suite-arcade-core.js"></script>
   <script src="assets/turdsuite.js"></script>
+  <script src="games/suite-arcade-bridge.js"></script>
   <title>Crappy Eights</title>
   <style>
     :root{
@@ -632,6 +634,7 @@
         <h3><span class="h-ico">&#x1F4CA;</span>Scoreboard</h3>
         <div id="roundScoreboard">-</div>
       </div>
+      <div class="suite-arcade-host" id="eightsArcadeHost"></div>
       <div class="overlay-actions">
         <button class="btn hot" id="nextRoundBtn">Next Round</button>
         <button class="btn" id="newMatchOverlayBtn">New Match</button>
@@ -1579,6 +1582,24 @@
           : `${winner.name} swiped the round and acted like it was all skill.`);
       showRoundOverlay(title, summary, matchFinished, tone, flavor, kicker);
       if (winnerIndex === 0) CrapeightsPresentation.celebrate({ target: ui.roundOverlayCard });
+      if (window.TurdSuiteArcadeBridge && players[0]) {
+        const humanScore = players[0].score;
+        if (matchFinished) {
+          window.TurdSuiteArcadeBridge.finishRun({
+            bucket: aiDifficulty,
+            value: humanScore,
+            rank: 'high',
+            scoreLine: humanScore + ' pts',
+            host: document.getElementById('eightsArcadeHost')
+          });
+        } else {
+          window.TurdSuiteArcadeBridge.touchRun({
+            bucket: aiDifficulty,
+            score: humanScore,
+            level: roundNumber
+          });
+        }
+      }
     }
 
     function playCardById(playerIndex, cardId, forcedSuit) {
@@ -1746,6 +1767,7 @@
     }
 
     function startFreshMatch() {
+      if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
       clearAiTimer();
       clearHumanAutoPassTimer();
       focusSuspendedRound = false;
