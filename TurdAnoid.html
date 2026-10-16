@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -9,29 +10,6 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>TurdAnoid Turbo — Bricks. Busted.</title>
 <link rel="stylesheet" href="assets/turdsuite.css">
-<script src="games/table-continue-core.js"></script>
-<script src="games/turdanoid-theme-core.js"></script>
-<script src="games/turdanoid-fx-core.js"></script>
-<script src="games/turdanoid-brick-core.js"></script>
-<script src="games/turdanoid-audio-core.js"></script>
-<script src="games/turdanoid-levels-core.js"></script>
-<script src="games/turdanoid-worlds-core.js"></script>
-<script src="games/turdanoid-sprites-core.js"></script>
-<script src="games/turdanoid-brick-sprite-core.js"></script>
-<script src="games/turdanoid-shards-core.js"></script>
-<script src="games/turdanoid-boss-core.js"></script>
-<script src="games/turdanoid-coach-core.js"></script>
-<script src="games/turdanoid-storage-core.js"></script>
-<script src="games/turdanoid-perf-core.js"></script>
-<script src="games/turdanoid-tally-core.js"></script>
-<script src="games/turdanoid-layout-core.js"></script>
-<script src="games/turdanoid-qa-core.js"></script>
-<script src="assets/turdsuite.js"></script>
-<script>
-  if (typeof TurdanoidTheme !== 'undefined') {
-    TurdanoidTheme.applyCssVars(document.documentElement);
-  }
-</script>
 <style>
   :root{
     --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
@@ -378,6 +356,30 @@
   </div>
 </div>
 
+<!-- Keep classic dependencies ordered, after the title markup so it can paint during loading. -->
+<script src="games/table-continue-core.js"></script>
+<script src="games/turdanoid-theme-core.js"></script>
+<script src="games/turdanoid-fx-core.js"></script>
+<script src="games/turdanoid-brick-core.js"></script>
+<script src="games/turdanoid-audio-core.js"></script>
+<script src="games/turdanoid-levels-core.js"></script>
+<script src="games/turdanoid-worlds-core.js"></script>
+<script src="games/turdanoid-sprites-core.js"></script>
+<script src="games/turdanoid-brick-sprite-core.js"></script>
+<script src="games/turdanoid-shards-core.js"></script>
+<script src="games/turdanoid-boss-core.js"></script>
+<script src="games/turdanoid-coach-core.js"></script>
+<script src="games/turdanoid-storage-core.js"></script>
+<script src="games/turdanoid-perf-core.js"></script>
+<script src="games/turdanoid-tally-core.js"></script>
+<script src="games/turdanoid-layout-core.js"></script>
+<script src="games/turdanoid-qa-core.js"></script>
+<script src="assets/turdsuite.js"></script>
+<script>
+  if (typeof TurdanoidTheme !== 'undefined') {
+    TurdanoidTheme.applyCssVars(document.documentElement);
+  }
+</script>
 <script>
 'use strict';
 

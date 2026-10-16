@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="robots" content="noindex">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1750,6 +1751,9 @@
       color: #d4ecdf;
     }
 
+    #hintText { cursor: pointer; }
+    #hintText:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
     .sidebar .status::after {
       content: none;
     }
@@ -2952,7 +2956,7 @@
         </label>
         <div>
           <h3 data-icon="🧠">Strategy Hint</h3>
-          <div class="status" id="hintText">Hint: Place a bet to begin.</div>
+          <div class="status" id="hintText" role="button" tabindex="0" title="Explain the strategy hint">Hint: Place a bet to begin.</div>
         </div>
 
         <div>
@@ -2964,21 +2968,21 @@
           <h3 data-icon="⚙️">Table Setup</h3>
           <div class="rule-grid">
             <div class="rule-row">
-              <span>Dealer soft 17</span>
+              <label for="ruleDealer17">Dealer soft 17</label>
               <select id="ruleDealer17">
                 <option value="S17">Stand (S17)</option>
                 <option value="H17">Hit (H17)</option>
               </select>
             </div>
             <div class="rule-row">
-              <span>Blackjack payout</span>
+              <label for="ruleBlackjackPayout">Blackjack payout</label>
               <select id="ruleBlackjackPayout">
                 <option value="1.5">3:2</option>
                 <option value="1.2">6:5</option>
               </select>
             </div>
             <div class="rule-row">
-              <span>Decks</span>
+              <label for="ruleDecks">Decks</label>
               <select id="ruleDecks">
                 <option value="1">1 deck</option>
                 <option value="2">2 decks</option>
@@ -4891,6 +4895,12 @@
         ui.hintText.addEventListener('click', () => {
           const advice = strategyDecision();
           if (advice && turdjackKit && turdjackKit.coachHint) {turdjackKit.coachHint(advice);}
+        });
+        ui.hintText.addEventListener('keydown', (event) => {
+          if (event.code !== 'Enter' && event.code !== 'Space') return;
+          event.preventDefault();
+          event.stopPropagation();
+          ui.hintText.click();
         });
       }
       const helpBtn = document.getElementById('helpBtn');

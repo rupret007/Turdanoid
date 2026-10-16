@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Neon Arkanoid Turbo</title>
@@ -481,11 +482,15 @@
             }
         }
 
-        @media (hover: none) and (pointer: coarse) {
-            .btn,
-            .control-btn {
-                min-height: 44px;
-            }
+        button,
+        summary {
+            min-width: 44px !important;
+            min-height: 44px !important;
+        }
+        button:focus-visible,
+        summary:focus-visible {
+            outline: 3px solid #9effc8;
+            outline-offset: 3px;
         }
     </style>
 </head>

@@ -117,6 +117,41 @@ async function checkPhoneHub(page, name, firstScreen = true) {
   }
 }
 
+async function checkTouchHandTargets(page, name, selector, expectedCount) {
+  const result = await page.evaluate(({ selector }) => {
+    const cards = [...document.querySelectorAll(selector)];
+    const boxes = cards.map(card => card.getBoundingClientRect());
+    const problems = [];
+    cards.forEach((card, index) => {
+      const box = boxes[index];
+      const id = card.dataset.cardId || card.dataset.id;
+      if (box.width < 44 || box.height < 44) problems.push(`${id}: smaller than 44px`);
+      if (box.left < 0 || box.top < 0 || box.right > innerWidth || box.bottom > innerHeight) {
+        problems.push(`${id}: outside viewport`);
+      }
+      // A full 44px square around the center must not be covered by another card.
+      const cx = box.left + box.width / 2;
+      const cy = box.top + box.height / 2;
+      boxes.forEach((other, otherIndex) => {
+        if (index !== otherIndex && Math.min(cx + 22, other.right) > Math.max(cx - 22, other.left) &&
+            Math.min(cy + 22, other.bottom) > Math.max(cy - 22, other.top)) {
+          problems.push(`${id}: another card covers its 44px target`);
+        }
+      });
+      // Probe the edges and interior through actual browser hit testing; leave rounded corners out.
+      const points = [[-21, 0], [21, 0], [0, -21], [0, 21], [-16, -16], [16, -16],
+        [-16, 16], [16, 16], [0, 0]];
+      if (points.some(([dx, dy]) => !card.contains(document.elementFromPoint(cx + dx, cy + dy)))) {
+        problems.push(`${id}: target obstructed or clipped`);
+      }
+    });
+    return { count: cards.length, coarse: matchMedia('(pointer: coarse)').matches, problems };
+  }, { selector });
+  if (!result.coarse) fail(name, 'touch layout must be exercised with a coarse pointer');
+  if (result.count !== expectedCount) fail(name, `expected ${expectedCount} cards, saw ${result.count}`);
+  for (const problem of result.problems) fail(name, problem);
+}
+
 async function main() {
   const browser = await launchBrowser();
   try {
@@ -1394,6 +1429,32 @@ async function main() {
       });
     }
 
+    for (const viewport of [{ width: 320, height: 640 }, { width: 360, height: 740 }, { width: 390, height: 844 }]) {
+      const name = `turdrummy-touch-targets-${viewport.width}`;
+      await runCheck(browser, name, 'turdrummy.html', {
+        context: { viewport, hasTouch: true, reducedMotion: 'reduce' },
+        actions: async (page) => {
+          await page.evaluate(() => {
+            closeGuide();
+            startFirstRoundIfNeeded();
+            clearAiTurnTimeout();
+            state.turn = 'player';
+            renderAll();
+          });
+          await checkTouchHandTargets(page, `${name}-coach`, '#playerHand .card-button', 10);
+          await page.locator('#coachSkipBtn').tap();
+          await page.locator('#drawStockBtn').tap();
+          await checkTouchHandTargets(page, name, '#playerHand .card-button', 11);
+          for (const index of [0, 5, 10]) {
+            const card = page.locator('#playerHand .card-button').nth(index);
+            await card.tap();
+            if (await card.getAttribute('aria-pressed') !== 'true') fail(name, `card ${index} did not select by touch`);
+            await checkTouchHandTargets(page, `${name}-selected-${index}`, '#playerHand .card-button', 11);
+          }
+        }
+      });
+    }
+
     await runCheck(browser, 'turdrummy-desktop-hand-hero', 'turdrummy.html', {
       context: { viewport: { width: 1280, height: 800 } },
       actions: async (page) => {
@@ -1551,6 +1612,31 @@ async function main() {
         }
       }
     });
+
+    for (const viewport of [{ width: 320, height: 640 }, { width: 360, height: 740 }, { width: 390, height: 844 }]) {
+      const name = `turdspades-touch-targets-${viewport.width}`;
+      await runCheck(browser, name, 'turdspades.html', {
+        context: { viewport, hasTouch: true, reducedMotion: 'reduce' },
+        actions: async (page) => {
+          await page.evaluate(() => {
+            closeGuide();
+            clearAiTimer();
+            state.phase = 'play';
+            state.currentPlayer = 0;
+            state.bids = [4, 3, 3, 3];
+            state.spadesBroken = true;
+            render();
+          });
+          await checkTouchHandTargets(page, name, '#youCards .card', 13);
+          for (const index of [0, 6, 12]) {
+            const card = page.locator('#youCards .card').nth(index);
+            await card.tap();
+            if (await card.getAttribute('aria-pressed') !== 'true') fail(name, `card ${index} did not select by touch`);
+            await checkTouchHandTargets(page, `${name}-selected-${index}`, '#youCards .card', 13);
+          }
+        }
+      });
+    }
 
     await runCheck(browser, 'turdspades-guide-keyboard', 'turdspades.html', {
       actions: async (page) => {

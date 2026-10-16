@@ -1,0 +1,7 @@
+# Preview routes for root and GitHub Pages project-path hosting.
+# Serve this file at the origin root for crawlers to honor these rules.
+User-agent: *
+Disallow: /preview/
+Disallow: /previews/
+Disallow: /Turdanoid/preview/
+Disallow: /Turdanoid/previews/

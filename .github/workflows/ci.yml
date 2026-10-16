@@ -36,3 +36,33 @@ jobs:
         env:
           # Empty channel = Playwright's bundled Chromium
           PLAYWRIGHT_CHANNEL: ''
+
+  readiness:
+    # Compare this readiness PR with its original head on the same fresh runner.
+    if: github.event_name == 'pull_request' && github.head_ref == 'fix/primetime-readiness'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Measure mobile readiness before and after
+        run: |
+          git fetch --no-tags --depth=1 origin 2b856a8d1dc6a9c89b8b6424e8f2de6c9a17ac17
+          mkdir -p "$RUNNER_TEMP/turd65-before"
+          git archive 2b856a8d1dc6a9c89b8b6424e8f2de6c9a17ac17 | tar -x -C "$RUNNER_TEMP/turd65-before"
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory "$RUNNER_TEMP/turd65-before" > "$RUNNER_TEMP/turd65-before-server.log" 2>&1 &
+          before_pid=$!
+          python3 -m http.server 8766 --bind 127.0.0.1 > "$RUNNER_TEMP/turd65-after-server.log" 2>&1 &
+          after_pid=$!
+          trap 'kill "$before_pid" "$after_pid"' EXIT
+          node scripts/readiness-audit.mjs conductor/readiness
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: readiness-lighthouse
+          path: conductor/readiness/
