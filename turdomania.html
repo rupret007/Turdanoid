@@ -94,7 +94,7 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
 }
 </style>
 </head>
-<body class="suite-ambient">
+<body class="suite-ambient turdomania">
 <header class="hud">
   <h1>💩 Turdomania</h1>
   <div class="stat">Score<b id="score">0</b></div>
@@ -253,11 +253,14 @@ function render() {
       el.id = 'tile-' + t.id;
       el.setAttribute('role', 'gridcell');
       el.textContent = kind.emoji;
-      el.style.setProperty('--k', kind.color);
+      el.dataset.kind = String(t.kind);
+      el.style.setProperty('--k', (window.Suite && Suite.turdomaniaKindColor) ? Suite.turdomaniaKindColor(t.kind, kind.color) : kind.color);
       el.dataset.id = t.id;
       tileEls.set(t.id, el);
     }
     el.classList.remove('popping');
+    el.dataset.kind = String(t.kind);
+    el.style.setProperty('--k', (window.Suite && Suite.turdomaniaKindColor) ? Suite.turdomaniaKindColor(t.kind, kind.color) : kind.color);
     el.dataset.col = c; el.dataset.row = r;
     const rowEl = rowEls[state.rows - 1 - r];
     if (el.parentNode !== rowEl) {

@@ -1,0 +1,120 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { JSDOM } from 'jsdom';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import {
+  BRICK_MATERIAL_TOP_CB,
+  COLORBLIND_STORAGE_KEY,
+  MIN_PALETTE_CONTRAST,
+  TURDTRIS_PIECE_COLORS_CB,
+  attachSuiteArcadeA11y,
+  contrastRatio,
+  createArcadeA11yToggle,
+  minPairwiseContrastOnBg,
+  motionIntensity,
+  readColorblindEnabled,
+  remapBrickColors,
+  writeColorblindEnabled
+} from '../games/suite-arcade-a11y.js';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const suiteJs = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');
+const css = readFileSync(join(root, 'assets/turdsuite.css'), 'utf8');
+
+const HUB_GAMES = [
+  'TurdAnoid.html',
+  'turdtris.html',
+  'turdjack.html',
+  'crapeights.html',
+  'turdrummy.html',
+  'turdspades.html',
+  'turdomania.html'
+];
+
+function memoryStorage(initial = {}) {
+  const data = { ...initial };
+  return {
+    getItem: (k) => (k in data ? data[k] : null),
+    setItem: (k, v) => {
+      data[k] = String(v);
+    },
+    data
+  };
+}
+
+describe('suite-arcade-a11y core', () => {
+  it('persists colorblind toggle in localStorage', () => {
+    const storage = memoryStorage();
+    expect(readColorblindEnabled(storage)).toBe(false);
+    writeColorblindEnabled(storage, true);
+    expect(storage.data[COLORBLIND_STORAGE_KEY]).toBe('1');
+    expect(readColorblindEnabled(storage)).toBe(true);
+    writeColorblindEnabled(storage, false);
+    expect(readColorblindEnabled(storage)).toBe(false);
+  });
+
+  it('softens shake, flash, and particles when reduced motion is on', () => {
+    const full = motionIntensity(false);
+    const reduced = motionIntensity(true);
+    expect(reduced.shakeScale).toBeLessThan(full.shakeScale);
+    expect(reduced.flashScale).toBe(0);
+    expect(reduced.particleScale).toBeLessThan(full.particleScale);
+    expect(reduced.allowAutoScroll).toBe(false);
+  });
+
+  it('keeps colorblind palettes above minimum contrast on playfield ink', () => {
+    const bg = '#061018';
+    const pieces = Object.values(TURDTRIS_PIECE_COLORS_CB);
+    expect(minPairwiseContrastOnBg(pieces, bg)).toBeGreaterThanOrEqual(MIN_PALETTE_CONTRAST);
+    const bricks = Object.values(BRICK_MATERIAL_TOP_CB);
+    expect(minPairwiseContrastOnBg(bricks, bg)).toBeGreaterThanOrEqual(MIN_PALETTE_CONTRAST);
+    expect(contrastRatio(TURDTRIS_PIECE_COLORS_CB.Z, TURDTRIS_PIECE_COLORS_CB.S)).toBeGreaterThan(1.2);
+  });
+
+  it('remaps brick colors only when colorblind mode is enabled', () => {
+    const base = { c1: '#3ecf9a', c2: '#1a7a58', glow: 'x', material: 'sewer' };
+    expect(remapBrickColors(base, false)).toEqual(base);
+    const cb = remapBrickColors(base, true);
+    expect(cb.c1).toBe(BRICK_MATERIAL_TOP_CB.sewer);
+  });
+});
+
+describe('suite-arcade-a11y wiring', () => {
+  let dom;
+
+  afterEach(() => {
+    dom?.window?.close();
+  });
+
+  it('injects a 44px colorblind toggle on hub and game pages', () => {
+    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+      url: 'http://localhost/turdjack.html',
+      runScripts: 'outside-only'
+    });
+    const Suite = {};
+    attachSuiteArcadeA11y(Suite, memoryStorage(), dom.window.document);
+    const btn = createArcadeA11yToggle(dom.window.document, Suite);
+    expect(btn).not.toBeNull();
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    expect(css).toMatch(/\.suite-arcade-a11y-toggle \{[\s\S]*?min-height: 44px/);
+    btn.click();
+    expect(Suite.isColorblindMode()).toBe(true);
+    expect(dom.window.document.documentElement.classList.contains('suite-colorblind')).toBe(true);
+  });
+
+  it('turdsuite boot loads the arcade a11y module path', () => {
+    expect(suiteJs).toContain('suite-arcade-a11y.js');
+    expect(suiteJs).toContain('createArcadeA11yToggle');
+    expect(suiteJs).toContain('getReducedMotion');
+  });
+
+  for (const page of HUB_GAMES) {
+    it(`${page} loads turdsuite.js for shared arcade a11y`, () => {
+      const html = readFileSync(join(root, page), 'utf8');
+      expect(html).toContain('assets/turdsuite.js');
+    });
+  }
+});

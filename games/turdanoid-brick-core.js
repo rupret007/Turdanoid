@@ -79,13 +79,29 @@
     return (rowBand + rot + zig) % bands;
   }
 
+  function applyColorblindBrick(colors) {
+    try {
+      if (root.Suite && typeof root.Suite.remapBrickColors === 'function') {
+        return root.Suite.remapBrickColors(colors);
+      }
+      if (root.SuiteArcadeA11y && root.SuiteArcadeA11y.remapBrickColors) {
+        const on = root.Suite && root.Suite.isColorblindMode && root.Suite.isColorblindMode();
+        return root.SuiteArcadeA11y.remapBrickColors(colors, on);
+      }
+    } catch (e) { /* ignore */ }
+    return colors;
+  }
+
   function brickColors(row, rows, material, col = 0, worldIndex = 0) {
+    let out;
     if (material && DISTINCT_MATERIALS.has(material) && MATERIAL_PALETTES[material]) {
       const p = MATERIAL_PALETTES[material];
-      return { c1: p[0], c2: p[1], glow: p[2], material };
+      out = { c1: p[0], c2: p[1], glow: p[2], material };
+    } else {
+      const pal = ROW_PALETTES[rowPaletteIndex(row, rows, col, worldIndex)];
+      out = { c1: pal[0], c2: pal[1], glow: pal[2], material: material || 'sewer' };
     }
-    const pal = ROW_PALETTES[rowPaletteIndex(row, rows, col, worldIndex)];
-    return { c1: pal[0], c2: pal[1], glow: pal[2], material: material || 'sewer' };
+    return applyColorblindBrick(out);
   }
 
   function assignBrickStyle(row, rows, col, level, rng, worldIndex = 0) {

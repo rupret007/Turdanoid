@@ -2695,8 +2695,9 @@ function render(){
 
   // Parallax sewer layers — driven by wall-clock time so they drift on the
   // title screen too and stay frame-rate independent.
+  const calmBg = !!(reducedMotion && reducedMotion.matches);
   for(const layer of bgLayers){
-    const off = (bgT * layer.speed) % W;
+    const off = calmBg ? 0 : (bgT * layer.speed) % W;
     ctx.globalAlpha = layer.alpha;
     for(const s of layer.shapes){
       const bx = ((s.x - off) % W + W) % W;
@@ -2735,11 +2736,13 @@ function render(){
   }
   ctx.globalAlpha = 1;
   // bubbles (parallax bubble field, drifting up)
-  const tAmb = performance.now() * 0.0006;
+  const tAmb = calmBg ? 0 : performance.now() * 0.0006;
   for(const s of bgStars){
-    s.x += Math.sin(s.t + tAmb*4) * 0.18;
-    s.y -= 0.22 + s.r*0.18;
-    if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
+    if(!calmBg){
+      s.x += Math.sin(s.t + tAmb*4) * 0.18;
+      s.y -= 0.22 + s.r*0.18;
+      if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
+    }
     ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
     ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
