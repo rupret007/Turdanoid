@@ -355,6 +355,16 @@ export function ensureArcadeA11yMount(doc) {
   }
   const topbar = doc.querySelector('.topbar');
   if (topbar) {
+    const topLinks = topbar.querySelector('.top-links');
+    const titleGroup = topbar.querySelector('.title-group');
+    // TurdRummy: pin toggle in the title row (never append a third topbar flex row).
+    if (topLinks && titleGroup) {
+      const slot = doc.createElement('div');
+      slot.id = 'suite-arcade-a11y-mount';
+      slot.className = 'suite-a11y-topbar-slot suite-a11y-topbar-slot--title-row';
+      titleGroup.appendChild(slot);
+      return slot;
+    }
     const slot = doc.createElement('div');
     slot.id = 'suite-arcade-a11y-mount';
     slot.className = 'suite-a11y-topbar-slot';

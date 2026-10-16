@@ -1020,6 +1020,42 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
   align-items: center;
   flex-shrink: 0;
 }
+/* TurdRummy: colorblind toggle shares the title row (no extra topbar wrap row). */
+@media (max-width: 520px) {
+  .topbar:has(.top-links) .title-group {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: hidden;
+    padding-right: calc(44px + 6px);
+  }
+  .topbar:has(.top-links) .title-group h1 {
+    margin: 0;
+    line-height: 44px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar:has(.top-links) .suite-a11y-topbar-slot--title-row {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 44px;
+    margin: 0;
+    z-index: 2;
+  }
+  .topbar:has(.top-links) .suite-a11y-topbar-slot--title-row .suite-arcade-a11y-toggle {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 .suite-a11y-dock-slot {
   margin-right: 4px;
 }
