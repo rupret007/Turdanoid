@@ -96,7 +96,7 @@ describe('suite-arcade-a11y wiring', () => {
     dom?.window?.close();
   });
 
-  it('injects a 44px colorblind toggle on hub and game pages', () => {
+  it('injects a 44px colorblind toggle on game pages', () => {
     dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
       url: 'http://localhost/turdjack.html',
       runScripts: 'outside-only'
@@ -110,6 +110,16 @@ describe('suite-arcade-a11y wiring', () => {
     btn.click();
     expect(Suite.isColorblindMode()).toBe(true);
     expect(dom.window.document.documentElement.classList.contains('suite-colorblind')).toBe(true);
+  });
+
+  it('does not inject the toggle on the suite hub (no game HUD)', () => {
+    dom = new JSDOM(
+      '<!DOCTYPE html><html><body><main id="hub-games" class="games" aria-label="Choose a game"></main></body></html>',
+      { url: 'http://localhost/', runScripts: 'outside-only' }
+    );
+    const Suite = {};
+    attachSuiteArcadeA11y(Suite, memoryStorage(), dom.window.document);
+    expect(createArcadeA11yToggle(dom.window.document, Suite)).toBeNull();
   });
 
   it('turdsuite boot loads the arcade a11y module path', () => {

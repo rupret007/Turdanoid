@@ -159,7 +159,7 @@ describe('arcade a11y (Playwright)', () => {
     if (!hasBrowser) {return;}
     const page = await browser.newPage();
     try {
-      await page.goto(`${baseUrl}/index.html`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.Suite && typeof Suite.isColorblindMode === 'function');
       await page.waitForSelector('#suite-arcade-a11y-toggle');
       await page.click('#suite-arcade-a11y-toggle');

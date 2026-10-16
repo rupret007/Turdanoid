@@ -921,8 +921,6 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
 
 /* ---------- Arcade accessibility toggle (colorblind-safe palettes) ---------- */
 .suite-arcade-a11y-toggle {
-  position: relative;
-  z-index: 1;
   margin: 0;
   padding: 10px 14px;
   min-height: 44px;
@@ -938,7 +936,20 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
 }
+.suite-arcade-a11y-toggle--floating {
+  position: fixed;
+  z-index: 10001;
+  right: max(12px, var(--suite-safe-right));
+  bottom: max(64px, calc(var(--suite-safe-bottom) + 52px));
+}
+.suite-arcade-a11y-toggle--inline,
+.suite-arcade-a11y-toggle--title {
+  position: relative;
+  z-index: 1;
+}
 .suite-arcade-a11y-toggle--topbtns {
+  position: relative;
+  z-index: 1;
   width: 44px;
   height: 44px;
   padding: 0;

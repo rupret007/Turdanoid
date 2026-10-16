@@ -279,14 +279,17 @@ export function attachSuiteArcadeA11y(Suite, storage, doc, hooks = {}) {
   };
 }
 
+function isSuiteHubPage(doc) {
+  return Boolean(doc.querySelector('#hub-games, main.games[aria-label="Choose a game"]'));
+}
+
 function resolveA11yToggleMount(doc) {
+  if (isSuiteHubPage(doc)) {
+    return null;
+  }
   const explicit = doc.getElementById('suite-arcade-a11y-mount');
   if (explicit) {
     return { parent: explicit, mode: 'inline' };
-  }
-  const masthead = doc.querySelector('.masthead .meta-row');
-  if (masthead) {
-    return { parent: masthead, mode: 'hub' };
   }
   const topbtns = doc.querySelector('.topbtns');
   if (topbtns) {
@@ -296,19 +299,7 @@ function resolveA11yToggleMount(doc) {
   if (titleMenu) {
     return { parent: titleMenu, mode: 'title' };
   }
-  const topbar = doc.querySelector('.topbar');
-  if (topbar) {
-    return { parent: topbar, mode: 'topbar' };
-  }
-  const hud = doc.querySelector('header.hud');
-  if (hud) {
-    return { parent: hud, mode: 'hud' };
-  }
-  const hudRail = doc.querySelector('.hud');
-  if (hudRail) {
-    return { parent: hudRail, mode: 'hud' };
-  }
-  return { parent: doc.body, mode: 'fallback' };
+  return { parent: doc.body, mode: 'floating' };
 }
 
 export function createArcadeA11yToggle(doc, Suite) {
@@ -322,6 +313,9 @@ export function createArcadeA11yToggle(doc, Suite) {
   btn.type = 'button';
   btn.id = 'suite-arcade-a11y-toggle';
   const mount = resolveA11yToggleMount(doc);
+  if (!mount) {
+    return null;
+  }
   btn.className = `suite-arcade-a11y-toggle suite-arcade-a11y-toggle--${mount.mode}`;
   function sync() {
     const on = Suite.isColorblindMode();
