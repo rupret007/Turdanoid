@@ -86,13 +86,14 @@ describe('Turdanoid HUD and menu chrome', () => {
   });
 
   it('keeps the play field clean: no stage props between paddle and bricks', () => {
-    expect(html).toContain('paintCleanField(W, H)');
-    expect(html).not.toContain('paintWorldStage');
-    expect(html).not.toContain('paintAtmosphere(');
-    expect(html).not.toContain('TSPRITE.paintPipe(');
+    expect(html).toContain("const introDecor = state === 'title';");
+    expect(html).toContain('if(!introDecor) paintCleanField(W, H);');
     expect(html).not.toContain('playWallTint');
-    expect(html).not.toContain('worldBubbleColor');
-    expect(html).not.toMatch(/fillStyle = wallPattern/);
+    const decor = html.slice(html.indexOf('  if(introDecor){'), html.indexOf('// Sludge surface along the bottom edge'));
+    for (const prop of ['paintWorldStage', 'paintAtmosphere(', 'TSPRITE.paintPipe(', 'fillStyle = wallPattern', 'worldBubbleColor']) {
+      expect(decor).toContain(prop);
+      expect(html.split(prop).length - 1).toBe(decor.split(prop).length - 1);
+    }
     expect(html).toContain('worldBasinColors');
     expect(html).toContain('worldDripColors');
     expect(html).toContain('qaJumpLevel');
