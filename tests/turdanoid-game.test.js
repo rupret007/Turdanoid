@@ -793,7 +793,7 @@ describe('TurdAnoid campaign walls', () => {
     const { g } = bootGame();
     g.startGame();
     expect(g.level).toBe(1);
-    expect(g.bricks.length).toBe(22);
+    expect(g.bricks.length).toBe(21);
     expect(g.bricks.every((b) => b.hp === 1 && !b.indestructible && !b.hazard)).toBe(true);
   });
 

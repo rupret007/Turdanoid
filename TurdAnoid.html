@@ -1187,10 +1187,13 @@ function newLevel(){
   const campaign = TLEVELS && TLEVELS.definitionForLevel ? TLEVELS.definitionForLevel(level) : null;
   const cols = campaign ? campaign.cols : Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = campaign ? campaign.rows : Math.min(10, 4 + Math.floor(level/2));
-  const top = 70;
-  const padX = Math.max(10, W*0.04);
-  const bw = (W - padX*2)/cols - 6;
-  const bh = Math.max(16, Math.min(26, H*0.028));
+  const geo = TLEVELS && TLEVELS.brickGeometry ? TLEVELS.brickGeometry(W, H, cols, rows) : null;
+  const top = geo ? geo.top : 70;
+  const padX = geo ? geo.padX : Math.max(10, W*0.04);
+  const gapX = geo ? geo.gap : 6;
+  const gapY = geo ? geo.rowGap : 5;
+  const bw = geo ? geo.bw : (W - padX*2)/cols - 6;
+  const bh = geo ? geo.bh : Math.max(16, Math.min(26, H*0.028));
   const pat = campaign ? campaign.pattern : PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
   brickSpriteCache.clear();
   if(gameMode === 'boss'){
@@ -1205,11 +1208,13 @@ function newLevel(){
   }
 
   function add(c,r,hp,flags){
-    const x = padX + c*(bw+6) + 3;
-    const y = top + r*(bh+5);
+    const x = geo ? padX + c*(bw+gapX) : padX + c*(bw+6) + 3;
+    const y = top + r*(bh+gapY);
     const wi = TWORLDS ? TWORLDS.worldIndexForLevel(level) : 0;
     const forced = flags && flags.material;
-    const colors = BRICK_ART ? BRICK_ART.assignBrickStyle(r, rows, c, level, Math.random, wi) : brickColors(r, rows);
+    const swatch = flags && Number.isInteger(flags.color) && BRICK_ART && BRICK_ART.ROW_PALETTES[flags.color];
+    const colors = swatch ? { c1: swatch[0], c2: swatch[1], glow: swatch[2], material: 'sewer' }
+      : (BRICK_ART ? BRICK_ART.assignBrickStyle(r, rows, c, level, Math.random, wi) : brickColors(r, rows));
     const brick = {x,y,w:bw,h:bh,hp,maxHp:hp,c1:colors.c1,c2:colors.c2,glow:colors.glow,material:forced || colors.material||'sewer',wob:Math.random()*Math.PI*2,hitFlash:0,metal:!!(flags&&flags.metal),indestructible:!!(flags&&flags.indestructible),hazard:flags&&flags.hazard||null,hazardCd:0};
     if(forced) paintSpecialBrick(brick);
     bricks.push(brick);
