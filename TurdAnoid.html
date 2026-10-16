@@ -987,6 +987,27 @@ const FEEL_SHAKE_DECAY = 0.6;
 const FEEL_HIT_STOP_BREAK = 2;
 const FEEL_BALL_DANGER_START = 0.68;
 const LIFE_GRACE_FRAMES = 90;
+// Suite playlist difficulty (turdsuite_difficulty_v1) via Suite.difficulty.
+function suiteSpeedMul(){
+  try{
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    return t && Number.isFinite(t.speed) ? t.speed : 1;
+  }catch(e){ return 1; }
+}
+function suiteSpawnMul(){
+  try{
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    return t && Number.isFinite(t.spawn) ? t.spawn : 1;
+  }catch(e){ return 1; }
+}
+function suiteStartingLives(base){
+  try{
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    const bonus = t && Number.isFinite(t.lives) ? t.lives : 0;
+    if(!bonus) return base;
+    return Math.max(1, base + bonus);
+  }catch(e){ return base; }
+}
 function tryLightHaptic(ms){
   if(!hapticOn || (reducedMotion && reducedMotion.matches)) return;
   try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){}
@@ -1185,7 +1206,7 @@ function syncTimedBallSpeeds(){
 }
 function newBall(stuck=true){
   const r = Math.max(8, Math.min(11, W*0.018));
-  const baseSpeed = 5.4 + Math.min(level*0.16, 3.0);
+  const baseSpeed = (5.4 + Math.min(level*0.16, 3.0)) * suiteSpeedMul();
   // Death and round changes clear activePowers first; any chip still alive
   // (direct newLevel() rebuilds) keeps its ball-scoped effect on the new ball.
   const speed = computeTimedBallSpeed(baseSpeed);
@@ -1522,7 +1543,7 @@ function startBossGame(){
 function beginRun(){
   resize();
   paddle = newPaddle();
-  score=0; level=1; lives=3; comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
+  score=0; level=1; lives=suiteStartingLives(3); comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
   runStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
   shards = []; impactRings = []; confettiBits = []; clearParty = null; boss = null; sludges = [];
   activePowers = {};
@@ -1840,7 +1861,7 @@ function maybeDrop(x,y){
   else if(level <= 8) chance = 0.26 - (level-2)*0.02;
   else                chance = Math.max(0.12, 0.16 - (level-8)*0.005);
   if(remaining < 24) chance += 0.06; // last-stand boost
-  if(Math.random() < chance){
+  if(Math.random() < chance * suiteSpawnMul()){
     // Filter pool by what's unlocked at this level
     const pool = POWERS.filter(p => level >= (p.unlock||1));
     const goodPool = pool.filter(p=>!p.bad);
@@ -2199,7 +2220,7 @@ function step(dt){
   if(physicsFrozen) hitStop = Math.max(0, hitStop - ts);
   for(const s of bgStars){ s.t += 0.02*ts; }
 
-  const speed = 7.0 + Math.min(level*0.2, 4);
+  const speed = (7.0 + Math.min(level*0.2, 4)) * suiteSpeedMul();
   const left  = activePowers.reverse ? keys.right : keys.left;
   const right = activePowers.reverse ? keys.left  : keys.right;
   if(left)  paddle.x -= speed*ts;

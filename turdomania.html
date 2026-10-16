@@ -147,7 +147,13 @@ window.tmFit = function (levelKey) {
 };
 (function () {
   var q = new URLSearchParams(location.search), lvl = q.get('level');
-  if (!TM_DIMS[lvl]) { try { lvl = (JSON.parse(localStorage.getItem('turdomania_prefs_v1') || 'null') || {}).level; } catch (e) { lvl = null; } }
+  if (!TM_DIMS[lvl]) {
+    try {
+      if (window.Suite && Suite.difficulty) { lvl = Suite.difficulty.get(); }
+      else { lvl = localStorage.getItem('turdsuite_difficulty_v1'); }
+    } catch (e) { lvl = null; }
+    if (!TM_DIMS[lvl]) { try { lvl = (JSON.parse(localStorage.getItem('turdomania_prefs_v1') || 'null') || {}).level; } catch (e) { lvl = null; } }
+  }
   var f = tmFit(TM_DIMS[lvl] ? lvl : 'normal');
   window.TM_INIT = { level: TM_DIMS[lvl] ? lvl : 'normal', cols: f.cols, rows: f.rows };
   var cell = Math.max(22, Math.min(56, Math.floor(Math.min(f.availW / f.cols, f.availH / f.rows))));
@@ -413,11 +419,36 @@ els.undo.addEventListener('click', doUndo);
 els.overUndo.addEventListener('click', doUndo);
 els.newBtn.addEventListener('click', () => start(state.level));
 els.again.addEventListener('click', () => { start(state.level); boardEl.focus({ preventScroll: true }); });
-els.level.addEventListener('change', () => { writePrefs({ level: els.level.value }); start(els.level.value); });
+function suiteBoardLevel() {
+  try {
+    if (window.Suite && Suite.difficulty) { return Suite.difficulty.get(); }
+    const raw = localStorage.getItem('turdsuite_difficulty_v1');
+    return Core.LEVELS[raw] ? raw : null;
+  } catch { return null; }
+}
+els.level.addEventListener('change', () => {
+  const lvl = els.level.value;
+  writePrefs({ level: lvl });
+  try {
+    if (window.Suite && Suite.difficulty) { Suite.difficulty.set(lvl); }
+    else { localStorage.setItem('turdsuite_difficulty_v1', lvl); }
+  } catch { /* ignore */ }
+  start(lvl);
+});
+if (window.Suite && Suite.difficulty) {
+  Suite.difficulty.onChange((lvl) => {
+    if (!Core.LEVELS[lvl] || (state && state.level === lvl)) { return; }
+    if (els.level.value !== lvl) { els.level.value = lvl; }
+    writePrefs({ level: lvl });
+    start(lvl);
+  });
+}
 let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
 
-const startLevel = Core.LEVELS[qs.get('level')] ? qs.get('level') : (readPrefs().level || 'normal');
+const startLevel = Core.LEVELS[qs.get('level')]
+  ? qs.get('level')
+  : (window.TM_INIT && window.TM_INIT.level) || suiteBoardLevel() || readPrefs().level || 'normal';
 start(startLevel);
 // Test hook: deterministic actions without hunting pixels.
 window.__turdomaniaPop = (c, r) => popAt(c, r);

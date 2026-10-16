@@ -2162,9 +2162,21 @@ function generateSequence() {
   }
 }
 
+function suiteGravityMul() {
+  try {
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    return t && Number.isFinite(t.speed) ? t.speed : 1;
+  } catch (e) {
+    return 1;
+  }
+}
 function getGravityMs() {
-  if (level <= gravityTable.length) return gravityTable[level - 1];
-  return 1;
+  let ms = level <= gravityTable.length ? gravityTable[level - 1] : 1;
+  const mul = suiteGravityMul();
+  if (mul !== 1) {
+    ms = Math.max(1, Math.round(ms / mul));
+  }
+  return ms;
 }
 
 function getLinesGoalForLevel(currentLevel) {

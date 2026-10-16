@@ -173,6 +173,7 @@ describe('difficulty persistence', () => {
     expect(saveDifficulty(storage, 'sharp')).toBe('sharp');
     expect(loadDifficulty(storage)).toBe('sharp');
     storage.setItem(DIFFICULTY_KEY, 'chaos');
+    storage.setItem('turdsuite_difficulty_v1', 'chaos');
     expect(loadDifficulty(storage)).toBe('normal');
   });
 

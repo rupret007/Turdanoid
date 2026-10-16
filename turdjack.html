@@ -3034,6 +3034,15 @@
     };
 
     const INITIAL_BANKROLL = 1000;
+    function suiteDefaultBankroll() {
+      try {
+        const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+        const bonus = t && Number.isFinite(t.lives) ? t.lives * 200 : 0;
+        return INITIAL_BANKROLL + bonus;
+      } catch (e) {
+        return INITIAL_BANKROLL;
+      }
+    }
     const MIN_BET = 10;
     const ALLOW_ONE_SPLIT = true;
     const DEFAULT_RULES = {
@@ -3092,7 +3101,7 @@
       resetStatsBtn: document.getElementById('resetStatsBtn')
     };
 
-    let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
+    let bankroll = readNumber(STORAGE.bankroll, suiteDefaultBankroll());
     let stats = normalizeStats(readObject(STORAGE.stats, {
       hands: 0,
       wins: 0,
