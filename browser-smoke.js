@@ -124,7 +124,7 @@ async function checkTouchHandTargets(page, name, selector, expectedCount) {
     const problems = [];
     cards.forEach((card, index) => {
       const box = boxes[index];
-      const id = card.dataset.cardId || card.dataset.id;
+      const id = card.dataset.cardId || card.dataset.id || card.id || card.textContent.trim();
       if (box.width < 44 || box.height < 44) problems.push(`${id}: smaller than 44px`);
       if (box.left < 0 || box.top < 0 || box.right > innerWidth || box.bottom > innerHeight) {
         problems.push(`${id}: outside viewport`);
@@ -1442,6 +1442,7 @@ async function main() {
             renderAll();
           });
           await checkTouchHandTargets(page, `${name}-coach`, '#playerHand .card-button', 10);
+          await checkTouchHandTargets(page, `${name}-drawer`, '#tableDrawer > summary', 1);
           await page.locator('#coachSkipBtn').tap();
           await page.locator('#drawStockBtn').tap();
           await checkTouchHandTargets(page, name, '#playerHand .card-button', 11);

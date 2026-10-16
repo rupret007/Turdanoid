@@ -2816,7 +2816,7 @@
       <section class="table" data-motto="Pit Boss Memo: no clean wins after midnight" data-phase="betting">
         <canvas class="table-fx-canvas" id="tableFxCanvas" aria-hidden="true"></canvas>
         <div class="table-edge-streak" id="tableEdgeStreak" hidden></div>
-        <div class="moment-banner" id="momentBanner" aria-hidden="true"></div>
+        <div class="moment-banner" id="momentBanner" aria-hidden="true" inert></div>
         <div class="status" id="statusText">Place a bet, click Deal, and try not to get hustled by the toilet boss.</div>
 
         <div class="table-stage">
@@ -2824,7 +2824,7 @@
 
           <div class="hand zone-dealer">
             <div class="hand-title">
-              <strong data-icon="🚽" aria-label="Dealer, Toilet Boss">
+              <strong data-icon="🚽" role="heading" aria-level="2" aria-label="Dealer, Toilet Boss">
                 <span class="seat-label-full">Dealer (Toilet Boss)</span>
                 <span class="seat-label-short" aria-hidden="true">Dealer</span>
               </strong>
@@ -2845,7 +2845,7 @@
 
           <div class="hand" id="playerHandWrap">
             <div class="hand-title">
-              <strong data-icon="💩" aria-label="Player, You plus Poop Luck">
+              <strong data-icon="💩" role="heading" aria-level="2" aria-label="Player, You plus Poop Luck">
                 <span class="seat-label-full">Player (You + Poop Luck)</span>
                 <span class="seat-label-short" aria-hidden="true">You</span>
               </strong>
@@ -2860,7 +2860,7 @@
 
           <div class="hand" id="splitHandWrap" hidden>
             <div class="hand-title">
-              <strong data-icon="🧻" aria-label="Split Hand, Backup Turd Luck">
+              <strong data-icon="🧻" role="heading" aria-level="2" aria-label="Split Hand, Backup Turd Luck">
                 <span class="seat-label-full">Split Hand (Backup Turd Luck)</span>
                 <span class="seat-label-short" aria-hidden="true">Split</span>
               </strong>
@@ -2945,7 +2945,7 @@
     </div>
 
     <div class="intel-backdrop" id="intelBackdrop" aria-hidden="true"></div>
-    <div class="intel-slide" id="intelSlide" aria-hidden="true">
+    <div class="intel-slide" id="intelSlide" aria-hidden="true" inert>
       <aside class="sidebar">
         <details class="intel-drawer" id="intelDrawer" open>
           <summary>Strategy, history &amp; rules</summary>

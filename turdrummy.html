@@ -2165,7 +2165,7 @@
         align-content: end;
         align-items: stretch;
         min-height: 0;
-        padding: 6px 2px;
+        padding: 2px;
       }
       #playerHand .hand-group { display: contents; }
       #playerHand .hand-group::after,
@@ -2176,7 +2176,7 @@
         height: 44px;
         margin: 0;
         rotate: none;
-        translate: none;
+        translate: none !important;
         transform: none !important;
         display: flex;
         align-items: center;
@@ -2228,8 +2228,10 @@
       .stat-label .lbl-short { display: inline; }
       .stat-value { font-size: 12px; line-height: 1.1; }
       .table-stage { gap: 0; }
-      .table-stage > .tr-drawer { margin: 2px 4px 4px; }
+      .table-stage > .tr-drawer { margin: 0 4px 4px; }
       .zone--opponent { max-height: 24px; }
+      .zone--hand .zone-header { flex-wrap: nowrap; }
+      .tr-deadwood .bar { display: none; }
       .zone--center .card,
       .zone--center .back-card { width: 32px; height: 44px; }
       .zone--center .pile-body { min-height: 44px; }

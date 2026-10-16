@@ -52,6 +52,14 @@ For the baseline, serve a separate checkout of the baseline commit on port
 `before-3.json`. Keep browser version, throttling, server, and host conditions
 consistent across comparisons.
 
+The readiness job in `.github/workflows/ci.yml` repeats the baseline and updated
+page on the same fresh Linux runner using `scripts/readiness-audit.mjs`. It
+also checks Accessibility on all seven games, saves complete reports in the
+`readiness-lighthouse` artifact, and enforces the requested budgets on every
+updated TurdAnoid run. CI installs Chromium before unit tests so browser-backed
+tests run as well as the browser smoke suite. See PR #65's results comment for
+the final paired CI measurements; do not compare scores from different hosts.
+
 ## Changes
 
 TurdAnoid's classic dependency scripts move below the title-screen markup,
@@ -60,9 +68,20 @@ This lets the browser parse the title screen before executing the dependencies
 and gives it an opportunity to paint while they load. No game simulation code
 changes are needed.
 
+The title's decorative scenery is captured once at the canvas resolution,
+while its ball and capsules continue animating. The title's 32 static bricks
+also reuse a native-resolution sprite cache. Caches invalidate on resize and
+relevant visual changes. Returning to gameplay always uses the full original
+renderer; physics, scoring, controls, and active-play timing are unchanged.
+
 Shared CSS gives controls minimum 44 × 44 CSS-pixel hit areas, including
 compact menus and dialogs. Legacy Neon Arkanoid receives equivalent minimums
 and visible keyboard focus. Crapjack's settings receive associated labels.
+Touch layouts for Rummy and Spades expose complete card targets instead of
+overlapping them; mouse layouts keep their fans. Rummy retains meld labels
+on each card. Browser smoke tests verify real hit testing, selection, and
+viewport clearance at 320, 360, and 390 pixels. Hidden blackjack drawers and
+celebrations are inert, and keyboard dismissal does not trigger game actions.
 
 All seven game pages, including legacy Neon Arkanoid, contain
 `<meta name="robots" content="noindex">`. `robots.txt` disallows `/preview/`

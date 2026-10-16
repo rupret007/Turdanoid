@@ -396,6 +396,7 @@ const TQA = typeof TurdanoidQA !== 'undefined' ? TurdanoidQA : null;
 const reducedMotion = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 let DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
 let W = 0, H = 0;
+let titleBackdrop = null;
 let lastTime = 0;
 let running = false;
 let paused = false;
@@ -800,6 +801,7 @@ syncPauseButton();
 
 /* ---- Resize ---- */
 function resize(){
+  titleBackdrop = null;
   const r = elStage.getBoundingClientRect();
   const stageW = Math.max(1, Math.floor(r.width));
   const stageH = Math.max(1, Math.floor(r.height));
@@ -1022,18 +1024,22 @@ function drawTitleAttract(rts){
   const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
     ? TurdanoidTheme.rowPalettes()
     : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58'],['#d878a8','#7a2858']];
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const bx = W*0.07 + c*(bw+gap), by = top + 12 + r*(bh+gap);
-      const pal = demoPal[r % demoPal.length];
-      const dc1 = pal[0], dc2 = pal[1] || pal[0];
-      if(TSPRITE){
-        ctx.save(); ctx.translate(bx, by);
-        TSPRITE.paintBrickBevel(ctx, bw, bh, { c1: dc1, c2: dc2 });
-        ctx.restore();
-      } else {
-        ctx.fillStyle = dc1;
-        roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+  if(TSPRITE && TSPRITE.paintTitleWallCached){
+    TSPRITE.paintTitleWallCached(ctx, { W, H, palettes: demoPal });
+  } else {
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const bx = W*0.07 + c*(bw+gap), by = top + 12 + r*(bh+gap);
+        const pal = demoPal[r % demoPal.length];
+        const dc1 = pal[0], dc2 = pal[1] || pal[0];
+        if(TSPRITE){
+          ctx.save(); ctx.translate(bx, by);
+          TSPRITE.paintBrickBevel(ctx, bw, bh, { c1: dc1, c2: dc2 });
+          ctx.restore();
+        } else {
+          ctx.fillStyle = dc1;
+          roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+        }
       }
     }
   }
@@ -1610,6 +1616,7 @@ function advanceClearTally(ts){
 }
 function quitToMenu(){
   state='title'; paused=false; running=false;
+  titleBackdrop = null;
   titleDemoReady = false;
   stopAmbient();
   cancelLevelTransition();
@@ -2510,6 +2517,15 @@ function render(){
   lastRenderTime = nowMs;
   const rts = rdt / BASE_FRAME_MS;
 
+  // The title's scenery is a still poster behind its animated ball and capsules.
+  // Gameplay always takes the complete renderer below, at its original frame rate.
+  const titleBackdropKey = [W, H, DPR, level, lives, stink, !!reducedMotion?.matches].join('|');
+  if(state === 'title' && titleBackdrop?.key === titleBackdropKey){
+    ctx.drawImage(titleBackdrop.canvas, 0, 0, W, H);
+    drawTitleAttract(rts);
+    return;
+  }
+
   ctx.save();
   const shakeOff = FX ? FX.shakeOffset(shake, reducedMotion) : { sx: shake>0 && !reducedMotion?.matches ? (Math.random()-0.5)*shake : 0, sy: 0 };
   if(!FX && shake>0 && !reducedMotion?.matches) shakeOff.sy = (Math.random()-0.5)*shake;
@@ -2891,6 +2907,14 @@ function render(){
   }
 
   if(state === 'title'){
+    const poster = document.createElement('canvas');
+    poster.width = cv.width;
+    poster.height = cv.height;
+    const posterCtx = poster.getContext('2d', { alpha:false });
+    if(posterCtx){
+      posterCtx.drawImage(cv, 0, 0);
+      titleBackdrop = { key: titleBackdropKey, canvas: poster };
+    }
     drawTitleAttract(rts);
   }
 
