@@ -2395,8 +2395,10 @@ function step(dt){
     }
     if(p.y > H + 20){ powerups.splice(i,1); continue; }
     if(p.y + 12 >= paddle.y && p.y < paddle.y + paddle.h && Math.abs(p.x - paddle.x) < paddle.w/2 + 12){
-      applyPower(p);
       powerups.splice(i,1);
+      applyPower(p);
+      // Flush Warp clears every falling capsule, so no earlier entries remain.
+      if(powerups.length === 0) break;
     }
   }
 

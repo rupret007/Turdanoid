@@ -203,6 +203,29 @@ describe('power-up behaviour', () => {
     expect(g.bricks.filter((b) => b.indestructible).length).toBe(steel);
   });
 
+  it.each([0, 1, 2])('catches Flush Warp at capsule index %s and advances with other drops on screen', (warpIndex) => {
+    const lives = g.lives;
+    const level = g.level;
+    for (let i = 0; i < 3; i += 1) {
+      g.qaSpawnCapsule(i === warpIndex ? 'warp' : 'life', 0.5, 0.3);
+    }
+    const warp = g.powerups[warpIndex];
+    warp.x = g.paddle.x;
+    warp.y = g.paddle.y;
+    warp.vy = 0;
+
+    expect(() => g.step(FRAME)).not.toThrow();
+    expect(g.powerups).toHaveLength(0);
+    expect(g.remainingBreakable).toBe(0);
+    expect(g.lives).toBe(lives);
+    expect(g.levelTransition).toBe(true);
+    expect(g.clearTally).toBeTruthy();
+    g.skipClearTally();
+    expect(g.level).toBe(level + 1);
+    expect(g.levelTransition).toBe(false);
+    expect(g.bricks.length).toBeGreaterThan(0);
+  });
+
   it('Mega Wipe clears the bottom row', () => {
     const n = g.bricks.length;
     const maxY = Math.max(...g.bricks.map((b) => b.y));
