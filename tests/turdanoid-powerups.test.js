@@ -2,7 +2,7 @@
  * Behaviour of every TurdAnoid power-up (bathroom-punk set), driven through
  * the real TurdAnoid.html in jsdom via window.__turdanoid.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -274,6 +274,106 @@ describe('power-up behaviour', () => {
     expect(g.activePowers.fast).toBeGreaterThan(0);
     g.qaActivatePower('reverse');
     expect(g.activePowers.reverse).toBeGreaterThan(0);
+  });
+});
+
+describe('Golden Throne color restoration', () => {
+  let dom, g, originalColors;
+  const colors = () => g.bricks.map(({ c1, c2 }) => [c1, c2]);
+  const expectGold = () => {
+    expect(colors()).toEqual(g.bricks.map(() => ['#ffd76a', '#bf8a13']));
+  };
+  const expireGold = () => {
+    g.activePowers.gold = 1;
+    g.step(FRAME);
+    expect(g.activePowers.gold).toBeUndefined();
+  };
+
+  beforeEach(() => {
+    ({ dom, g } = boot());
+    g.startGame();
+    g.qaJumpToLevel(6); // Include steel as well as breakable bricks.
+    originalColors = colors();
+  });
+  afterEach(() => dom.window.close());
+
+  it('refreshes the timer without replacing the original colors', () => {
+    g.qaActivatePower('gold');
+    expectGold();
+    for (let frame = 0; frame < 180; frame += 1) {
+      g.step(FRAME);
+    }
+    expect(g.activePowers.gold).toBe(180);
+    g.qaActivatePower('gold');
+    g.qaActivatePower('gold');
+    expect(g.activePowers.gold).toBe(360);
+    for (let frame = 0; frame < 359; frame += 1) {
+      g.step(FRAME);
+    }
+    expectGold();
+    g.step(FRAME);
+    expect(g.activePowers.gold).toBeUndefined();
+    expect(colors()).toEqual(originalColors);
+  });
+
+  it.each(['ball', 'drip'])('restores surviving bricks after %s life loss and a later activation', (cause) => {
+    g.qaActivatePower('gold');
+    g.qaActivatePower('gold');
+    expectGold();
+    const lives = g.lives;
+    if (cause === 'ball') {
+      g.launch();
+      g.balls = [
+        { x: 50, y: g.H + 40, r: 9, vx: 0, vy: 5, speed: 5, stuck: false, fire: 0, trail: [] }
+      ];
+    } else {
+      g.sludges.push({ x: g.paddle.x, y: g.paddle.y + 4, vy: 0, r: 8 });
+    }
+    g.step(FRAME);
+    expect(g.lives).toBe(lives - 1);
+    expect(g.waitingLaunch).toBe(true);
+    expect(g.activePowers.gold).toBeUndefined();
+    expect(colors()).toEqual(originalColors);
+    g.qaActivatePower('gold');
+    expectGold();
+    expireGold();
+    expect(colors()).toEqual(originalColors);
+  });
+
+  it.each(['ball', 'drip'])('restores brick colors on the final %s life loss', (cause) => {
+    g.lives = 1;
+    g.qaActivatePower('gold');
+    if (cause === 'ball') {
+      g.balls = [];
+    } else {
+      g.sludges.push({ x: g.paddle.x, y: g.paddle.y + 4, vy: 0, r: 8 });
+    }
+    g.step(FRAME);
+    expect(g.lives).toBe(0);
+    expect(g.state).toBe('gameover');
+    expect(g.activePowers.gold).toBeUndefined();
+    expect(colors()).toEqual(originalColors);
+  });
+
+  it('takes a fresh snapshot for a later activation and restores only surviving bricks', () => {
+    g.qaActivatePower('gold');
+    expireGold();
+    expect(colors()).toEqual(originalColors);
+    g.bricks[0].c1 = '#123456';
+    g.bricks[0].c2 = '#654321';
+    const nextColors = colors().slice(0, -1);
+    g.qaActivatePower('gold');
+    g.qaActivatePower('gold');
+    g.bricks.pop();
+    expireGold();
+    expect(colors()).toEqual(nextColors);
+  });
+
+  it('restores colors when QA resets active powers', () => {
+    g.qaActivatePower('gold');
+    g.qaResetPowers();
+    expect(g.activePowers.gold).toBeUndefined();
+    expect(colors()).toEqual(originalColors);
   });
 });
 

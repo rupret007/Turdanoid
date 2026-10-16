@@ -1767,6 +1767,7 @@ function qaBossSetPhase(phase){
   return true;
 }
 function qaResetPowers(){
+  endGoldRush();
   activePowers = {};
   powerups = [];
   updatePowers();
@@ -1887,7 +1888,11 @@ function applyPower(p){
     case 'gold':
       // Gold Rush — all bricks turn gold for 6 seconds; each break worth 2× points.
       activePowers.gold = 60*6;
-      bricks.forEach(b => { b._origC1 = b.c1; b._origC2 = b.c2; b.c1 = '#ffd76a'; b.c2 = '#bf8a13'; });
+      bricks.forEach(b => {
+        // Refresh the timer without replacing the pre-Gold palette.
+        if(b._origC1 === undefined){ b._origC1 = b.c1; b._origC2 = b.c2; }
+        b.c1 = '#ffd76a'; b.c2 = '#bf8a13';
+      });
       break;
     case 'shrink':  activePowers.shrink  = f; paddle.w = Math.max(56, paddle.w*0.65); break;
     case 'speed':   activePowers.fast    = f; syncTimedBallSpeeds(); break;
@@ -1903,6 +1908,15 @@ function applyPower(p){
   p.bad ? sfx.bad() : sfx.power();
   flash = Math.min(flash+0.4, 1);
   updatePowers();
+}
+
+function endGoldRush(){
+  delete activePowers.gold;
+  for(const b of bricks){
+    if(b._origC1 === undefined) continue;
+    b.c1 = b._origC1; b.c2 = b._origC2;
+    delete b._origC1; delete b._origC2;
+  }
 }
 
 function megaFlush(){
@@ -2202,10 +2216,7 @@ function step(dt){
       if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
       if(k==='shrink') paddle.w = paddle.baseW;
       if(k==='ghost') balls.forEach(b=>b.ghost=0);
-      if(k==='gold'){
-        // Restore brick colors when gold rush ends
-        for(const b of bricks){ if(b._origC1){ b.c1 = b._origC1; b.c2 = b._origC2; b._origC1 = b._origC2 = null; } }
-      }
+      if(k==='gold') endGoldRush();
       updatePowers();
     }
   }
@@ -2379,6 +2390,7 @@ function step(dt){
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
     shake = Math.max(shake, 12);
+    endGoldRush();
     if(lives <= 0){ gameOver(false); return; }
     paddle.w = paddle.baseW;
     activePowers = {}; updatePowers();
@@ -2557,6 +2569,7 @@ function step(dt){
     shake = Math.max(shake, 10);
     tryLightHaptic(28);
     lifeGrace = LIFE_GRACE_FRAMES;
+    endGoldRush();
     if(lives <= 0){ gameOver(false); return; }
     // Same reset as a lost ball: a drip death also drops every power-up.
     paddle.w = paddle.baseW;
