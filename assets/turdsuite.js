@@ -40,9 +40,19 @@
     } catch (e) {}
   }
 
+  let musicGameBlocked = function () { return false; };
+
   const Suite = {
-    setMuted(b) { muted = !!b; try { localStorage.setItem('turdsuite_muted', b ? '1' : '0'); } catch (e) {} },
+    setMuted(b) {
+      muted = !!b;
+      try { localStorage.setItem('turdsuite_muted', b ? '1' : '0'); } catch (e) {}
+      if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
+    },
     isMuted() { return muted; },
+    setMusicGameBlocked(fn) {
+      musicGameBlocked = typeof fn === 'function' ? fn : function () { return false; };
+      if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
+    },
     beep: function (f, d, t, v, s) { tone(f || 660, d || 0.06, t || 'triangle', v || 0.05, s || 0); },
     ding: function () {
       tone(660, 0.08, 'triangle', 0.05); setTimeout(() => tone(990, 0.1, 'triangle', 0.05), 60);
@@ -167,6 +177,48 @@
       }).catch(function () { return null; });
     }
     return audioPromise;
+  };
+
+  let musicEngine = null;
+  let musicPromise = null;
+  function musicBaseUrl() {
+    try {
+      const path = (location.pathname || '').replace(/[^/]*$/, '');
+      return location.origin + path;
+    } catch (e) {
+      return '';
+    }
+  }
+  Suite.music = function () {
+    if (musicEngine) return Promise.resolve(musicEngine);
+    if (!musicPromise) {
+      musicPromise = suiteImport('./suite-music.js').then(function (m) {
+        if (!m) return null;
+        musicEngine = m.createSuiteMusic({
+          isSuiteMuted: function () { return muted; },
+          isGameBlocked: function () { return musicGameBlocked(); },
+          isDocumentHidden: function () {
+            try { return !!document.hidden; } catch (e) { return false; }
+          },
+          storage: suiteStorage(),
+          resolveSrc: function (relPath) {
+            return musicBaseUrl() + 'assets/' + relPath;
+          },
+          onStateChange: function (state) {
+            try {
+              var d = document.documentElement.dataset;
+              d.stalemateMusic = state.paused ? 'paused' : 'playing';
+              d.stalemateTrack = state.title || '';
+            } catch (e) {}
+          }
+        });
+        document.addEventListener('visibilitychange', function () {
+          if (musicEngine) musicEngine.sync();
+        });
+        return musicEngine;
+      }).catch(function () { return null; });
+    }
+    return musicPromise;
   };
 
   let fxEngine = null;
@@ -468,6 +520,9 @@
     // unlock audio context on first interaction
     const unlock = function () {
       ctx();
+      Suite.music().then(function (player) {
+        if (player) player.armFromGesture();
+      }).catch(function () {});
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
     };

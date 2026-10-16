@@ -296,6 +296,8 @@ describe('hub door extras (1000x shared)', () => {
     expect(suiteJs).toContain('Suite.audio');
     expect(suiteJs).toContain('Suite.fx');
     expect(suiteJs).toContain('Suite.announce');
+    expect(suiteJs).toContain('Suite.music');
+    expect(suiteJs).toContain('setMusicGameBlocked');
   });
 });
 

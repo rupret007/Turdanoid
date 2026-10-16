@@ -2063,6 +2063,7 @@ function toggleMusic() {
   try { localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0'); } catch (e) {}
   syncSettings();
   updateMusic();
+  syncSuiteMusic();
 }
 
 function syncSettings() {
@@ -2145,6 +2146,7 @@ function toggleSound() {
   } else {
     setHype('Sound muted. Silent stink mode.', 84);
   }
+  syncSuiteMusic();
   updateScore();
 }
 
@@ -3757,6 +3759,21 @@ if (canvas) {
 }
 
 try { musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0'; } catch (e) {}
+function suiteMusicBlocked() {
+  return suiteMuted() || !soundEnabled || !musicEnabled;
+}
+function syncSuiteMusic() {
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.sync(); });
+    }
+  } catch (e) {}
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(suiteMusicBlocked);
+  }
+} catch (e) {}
 syncSettings();
 soundEnabled = loadSoundPref();
 gesturesEnabled = loadGesturesPref();

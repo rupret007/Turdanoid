@@ -417,6 +417,16 @@ els.level.addEventListener('change', () => { writePrefs({ level: els.level.value
 let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
 
+function armSuiteMusic() {
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then((player) => { if (player) player.armFromGesture(); });
+    }
+  } catch { /* optional */ }
+}
+boardEl.addEventListener('pointerdown', armSuiteMusic, { once: true, passive: true });
+boardEl.addEventListener('keydown', armSuiteMusic, { once: true });
+
 const startLevel = Core.LEVELS[qs.get('level')] ? qs.get('level') : (readPrefs().level || 'normal');
 start(startLevel);
 // Test hook: deterministic actions without hunting pixels.

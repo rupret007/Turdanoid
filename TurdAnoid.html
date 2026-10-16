@@ -578,6 +578,18 @@ function suiteMuted(){
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
+function syncSuiteMusic(){
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.sync(); });
+    }
+  } catch (e) {}
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(function () { return soundBlocked(); });
+  }
+} catch (e) {}
 let ambientOn = !!prefs.ambientOn;
 let hapticOn = prefs.hapticOn !== false;
 let gameMode = 'classic';
@@ -1424,6 +1436,7 @@ btnSound.addEventListener('click', ()=>{
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
+  syncSuiteMusic();
 });
 btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
 if(tClearTally){
