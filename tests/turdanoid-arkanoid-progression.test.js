@@ -149,6 +149,69 @@ describe('Arkanoid progression shape', () => {
   });
 });
 
+describe('Alien round (Jeff, Oct 2026)', () => {
+  const alien = LEVELS.find((d) => d.pattern === 'Alien');
+
+  it('draws a classic big-eyed grey alien head, distinct from the invader', () => {
+    expect(alien).toBeTruthy();
+    expect(alien.bossBeat).toBe(false);
+    expect([6, 12, 15, 18, 24, 30]).not.toContain(alien.level);
+    expect(alien.level).toBeGreaterThanOrEqual(13);
+    expect(mirrored(alien)).toBe(true);
+    const g = alien.grid;
+    expect(g).toEqual([
+      '..MMMMM..',
+      '.MMMMMMM.',
+      'MMMMMMMMM',
+      'MTTMMMTTM',
+      'MTTTMTTTM',
+      'MMMTMTMMM',
+      '.MMMMMMM.',
+      '.DMMDMMD.',
+      '..DMMMD..'
+    ]);
+    // Grey metal head that is widest up top and tapers to a narrow chin.
+    const width = (row) => row.replace(/\./g, '').length;
+    expect(width(g[2])).toBe(9);
+    expect(width(g[8])).toBeLessThan(width(g[2]));
+    expect(width(g[0])).toBeLessThan(width(g[2]));
+    // Two black (tar) almond eyes, one per side, never touching across the middle.
+    const eyes = g.flatMap((row, r) => [...row].map((ch, c) => (ch === 'T' ? [r, c] : null))).filter(Boolean);
+    expect(eyes.length).toBe(12);
+    expect(eyes.every(([, c]) => c !== 4)).toBe(true);
+    expect(eyes.filter(([, c]) => c < 4).length).toBe(6);
+    // Almond: wide on top, slanting down to a point toward the nose.
+    expect(g[4].slice(1, 4)).toBe('TTT');
+    expect(g[5].slice(1, 4)).toBe('MMT');
+    expect(g[3].slice(1, 3)).toBe('TT');
+    // Green slime around the chin, no steel anywhere.
+    expect(g.slice(7).join('')).toMatch(/D/);
+    expect(g.join('')).not.toMatch(/X/);
+    // Not the invader round.
+    const invader = LEVELS.find((d) => d.pattern === 'Invader');
+    expect(invader.grid).not.toEqual(g);
+  });
+});
+
+describe('Toughness ramp', () => {
+  it('never drops total brick HP or drip count from one round to the next', () => {
+    const hpOf = (def) => buildCampaignCells(def.level)
+      .filter((c) => !c.indestructible)
+      .reduce((s, c) => s + c.hp, 0);
+    const dripsOf = (def) => buildCampaignCells(def.level).filter((c) => c.hazard === 'drip').length;
+    for (let i = 1; i < LEVELS.length; i += 1) {
+      expect(hpOf(LEVELS[i]), `HP L${i + 1}`).toBeGreaterThanOrEqual(hpOf(LEVELS[i - 1]));
+      expect(dripsOf(LEVELS[i]), `drips L${i + 1}`).toBeGreaterThanOrEqual(dripsOf(LEVELS[i - 1]));
+    }
+  });
+
+  it('keeps the boss beats and the punk rounds in place', () => {
+    expect(LEVELS.filter((d) => d.bossBeat).map((d) => d.level)).toEqual([6, 12, 18, 24, 30]);
+    expect(LEVELS[14].pattern).toBe('Checkerboard');
+    expect(LEVELS[29].pattern).toBe('Anarchy');
+  });
+});
+
 describe('Shapes render in the live game', () => {
   it('lays out every round brick-for-brick like its grid', () => {
     const { dom, g } = bootGame();

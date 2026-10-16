@@ -53,7 +53,7 @@ Arkanoid pass (see `docs/arkanoid-level-research.md`; Oct 2026 progression redes
 | 22 | Candy | Pinwheel | Four arms whirl round a gold hub. | 190 | 8.40 | 5 | 0 | Spiral Arms |
 | 23 | Candy | Starburst | A gold star blasts out in eight rays. | 208 | 8.40 | 5 | 0 | Star |
 | 24 | Candy | Royal Flush | Candy boss. A crown of gold and steel. | 245 | 8.40 | 5 | 6 | Crown |
-| 25 | Throne | Twin Pipes | Two steel pipes split the board. | 246 | 8.40 | 5 | 12 | Split |
+| 25 | Throne | Close Encounter | A big grey alien head. Black almond eyes. | 246 | 8.40 | 5 | 0 | Alien |
 | 26 | Throne | Skull Bowl | 4-hit skull, gold eyes, dripping grin. | 247 | 8.40 | 6 | 0 | Skull |
 | 27 | Throne | Sludge Spiral | Follow the spiral in to the gold core. | 262 | 8.40 | 6 | 0 | Spiral |
 | 28 | Throne | Septic Fort | Every wall fights back. | 262 | 8.40 | 6 | 7 | Fortress |
