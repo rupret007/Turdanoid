@@ -89,8 +89,17 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toContain("const introDecor = state === 'title';");
     expect(html).toContain('if(!introDecor) paintCleanField(W, H);');
     expect(html).not.toContain('playWallTint');
-    const decor = html.slice(html.indexOf('  if(introDecor){'), html.indexOf('// Sludge surface along the bottom edge'));
-    for (const prop of ['paintWorldStage', 'paintAtmosphere(', 'TSPRITE.paintPipe(', 'fillStyle = wallPattern', 'worldBubbleColor']) {
+    const decor = html.slice(
+      html.indexOf('  if(introDecor){'),
+      html.indexOf('// Sludge surface along the bottom edge')
+    );
+    for (const prop of [
+      'paintWorldStage',
+      'paintAtmosphere(',
+      'TSPRITE.paintPipe(',
+      'fillStyle = wallPattern',
+      'worldBubbleColor'
+    ]) {
       expect(decor).toContain(prop);
       expect(html.split(prop).length - 1).toBe(decor.split(prop).length - 1);
     }
