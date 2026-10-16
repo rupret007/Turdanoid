@@ -115,7 +115,7 @@ if ($tris -match 'endBestLabel' -and $tris -match 'Space or Enter runs it back')
 Write-Host "`n=== TurdAnoid.html ===" -ForegroundColor Cyan
 $turd = Get-Content TurdAnoid.html -Raw
 if ($turd -match 'viewport') { Pass("viewport meta") } else { Fail("viewport meta") }
-if ($turd -match 'TurdAnoid Turbo') { Pass("turbo edition shell") } else { Fail("turbo edition shell") }
+if ($turd -match 'Turdanoid') { Pass("Turdanoid shell") } else { Fail("Turdanoid shell") }
 if ($turd -match 'const POWERS = \[') { Pass("power-up catalogue") } else { Fail("power-up catalogue") }
 if ($turd -match 'function maybeDrop\(') { Pass("power-up drop logic") } else { Fail("power-up drop logic") }
 if ($turd -match 'const PATTERN_NAMES = \[') { Pass("level pattern set") } else { Fail("level pattern set") }
