@@ -210,7 +210,6 @@ function syncManiaArcadeProgress() {
 }
 
 function start(levelKey, seed) {
-  if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
   // First board reuses the size reserved before paint; later boards re-measure.
   const init = window.TM_INIT && window.TM_INIT.level === levelKey ? window.TM_INIT : null;
   window.TM_INIT = null;
@@ -434,8 +433,15 @@ document.addEventListener('keydown', (e) => {
 });
 els.undo.addEventListener('click', doUndo);
 els.overUndo.addEventListener('click', doUndo);
-els.newBtn.addEventListener('click', () => start(state.level));
-els.again.addEventListener('click', () => { start(state.level); boardEl.focus({ preventScroll: true }); });
+els.newBtn.addEventListener('click', () => {
+  if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
+  start(state.level);
+});
+els.again.addEventListener('click', () => {
+  if (window.TurdSuiteArcadeBridge) window.TurdSuiteArcadeBridge.clearRun();
+  start(state.level);
+  boardEl.focus({ preventScroll: true });
+});
 els.level.addEventListener('change', () => { writePrefs({ level: els.level.value }); start(els.level.value); });
 let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
@@ -443,15 +449,17 @@ window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = request
 const startLevel = Core.LEVELS[qs.get('level')] ? qs.get('level') : (readPrefs().level || 'normal');
 if (window.TurdSuiteArcadeBridge) {
   window.TurdSuiteArcadeBridge.bindAutosave(syncManiaArcadeProgress);
-  window.TurdSuiteArcadeBridge.wireResumeButton(document.getElementById('newBtn'), (saved) => {
-    if (!saved?.data?.state) return false;
-    state = saved.data.state;
-    overlay.classList.remove('show');
-    render();
-    return true;
-  });
 }
-start(startLevel);
+const savedMania = window.Suite && Suite.arcade ? Suite.arcade.loadRun('turdomania.html') : null;
+if (savedMania && savedMania.data && savedMania.data.state) {
+  state = savedMania.data.state;
+  els.level.value = state.level;
+  overlay.classList.remove('show');
+  layout();
+  render();
+} else {
+  start(startLevel);
+}
 // Test hook: deterministic actions without hunting pixels.
 window.__turdomaniaPop = (c, r) => popAt(c, r);
 window.__turdomaniaUndo = doUndo;
