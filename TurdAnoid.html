@@ -591,6 +591,8 @@ let stink = 0;
 let shake = 0;
 let flash = 0;
 let hitStop = 0;
+let sinceBrickHit = 0; // frames since any ball touched a breakable brick (endgame assist)
+let endgameCueShown = false;
 let pointerFromTouch = false;
 let waitingLaunch = true;
 let lifeGrace = 0;
@@ -1189,6 +1191,7 @@ function paintSpecialBrick(b){
 }
 function newLevel(){
   levelStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
+  sinceBrickHit = 0; endgameCueShown = false;
   bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
   sludges = [];
   lifeGrace = 0;
@@ -2220,12 +2223,20 @@ function step(dt){
   if(lifeGrace>0) lifeGrace = Math.max(0, lifeGrace - ts);
   stink = Math.min(1, stink + 0.0006*ts);
 
+  if(!physicsFrozen && balls.some(b => !b.stuck)) sinceBrickHit += ts;
   if(!physicsFrozen){
   for(let bi=balls.length-1; bi>=0; bi--){
     const b = balls[bi];
     if(b.stuck){ b.x = paddle.x; b.y = paddle.y - b.r - 1; b.trail = []; continue; }
     b.trail.push({x:b.x,y:b.y});
     if(b.trail.length>10) b.trail.shift();
+    if(TLEVELS && TLEVELS.endgameSteer && gameMode !== 'boss'){
+      const steer = TLEVELS.endgameSteer(b, bricks, sinceBrickHit, ts);
+      if(steer){
+        b.vx = steer.vx; b.vy = steer.vy;
+        if(!endgameCueShown){ endgameCueShown = true; floatText('SNIFFING OUT THE LAST ONES', W/2, H*0.55, '#8effb4'); }
+      }
+    }
     b.x += b.vx*ts; b.y += b.vy*ts;
     if(b.fire>0) b.fire -= ts;
     if(b.squash > 0) b.squash = Math.max(0, b.squash - 0.12*ts);
@@ -2351,6 +2362,7 @@ function step(dt){
         } else {
           shake = Math.max(shake, 3);
         }
+        if(!br.indestructible) sinceBrickHit = 0;
         hits++;
         if(hits>2) break;
       }
