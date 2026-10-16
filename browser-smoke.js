@@ -393,7 +393,7 @@ async function main() {
       }
     });
 
-    await runCheck(browser, 'turdanoid-paddle-size-across-walls', 'TurdAnoid.html', {
+    await runCheck(browser, 'turdanoid-powers-reset-on-round-clear', 'TurdAnoid.html', {
       actions: async (page) => {
         await page.locator('#btnStart').click();
         await page.waitForTimeout(180);
@@ -401,39 +401,37 @@ async function main() {
           const g = window.__turdanoid;
           const baseW = g.paddle.baseW;
           g.applyPower({ t: 'enlarge' });
+          g.qaActivatePower('fire');
           const wide = g.paddle.w;
-          g.newLevel();
+          const chipBefore = document.getElementById('powers')?.textContent || '';
+          // Real round clear: empty the wall, let the game loop notice, then skip the tally.
+          g.bricks = [];
+          g.step(1000 / 60);
+          const transitioned = g.levelTransition;
+          g.skipClearTally();
           return {
             baseW,
             wide,
+            chipBefore,
+            transitioned,
+            level: g.level,
             after: g.paddle.w,
-            big: g.activePowers.big || 0,
+            powers: Object.keys(g.activePowers).length,
             chip: document.getElementById('powers')?.textContent || '',
             xOk: g.paddle.x >= g.paddle.w / 2 && g.paddle.x <= g.W - g.paddle.w / 2,
             waitingLaunch: g.waitingLaunch
           };
         });
-        if (!(result.wide > result.baseW)) {
-          fail('turdanoid-paddle-size-across-walls', 'Enlarge should widen the paddle before the wall change');
-        }
-        if (result.after !== result.wide) {
-          fail(
-            'turdanoid-paddle-size-across-walls',
-            `wall clear stripped paddle width ${result.wide} -> ${result.after}`
-          );
-        }
-        if (!(result.big > 0)) {
-          fail('turdanoid-paddle-size-across-walls', 'Enlarge timer should survive the wall');
-        }
-        if (!result.chip.includes('Big')) {
-          fail('turdanoid-paddle-size-across-walls', `HUD should still say Big, saw ${JSON.stringify(result.chip)}`);
-        }
-        if (!result.xOk) {
-          fail('turdanoid-paddle-size-across-walls', 'sized paddle must stay on court after the wall change');
-        }
-        if (!result.waitingLaunch) {
-          fail('turdanoid-paddle-size-across-walls', 'next wall should still wait for launch');
-        }
+        const id = 'turdanoid-powers-reset-on-round-clear';
+        if (!(result.wide > result.baseW)) fail(id, 'Enlarge should widen the paddle before the round clear');
+        if (!result.chipBefore.includes('Wide')) fail(id, `HUD should say Wide before the clear, saw ${JSON.stringify(result.chipBefore)}`);
+        if (!result.transitioned) fail(id, 'emptying the wall should start the clear transition');
+        if (result.level !== 2) fail(id, `round clear should advance to level 2, saw ${result.level}`);
+        if (result.after !== result.baseW) fail(id, `round change should restore paddle width ${result.baseW}, saw ${result.after}`);
+        if (result.powers !== 0) fail(id, `round change should end every timed power-up, ${result.powers} left`);
+        if (result.chip.includes('Wide')) fail(id, `HUD should drop Wide after the round change, saw ${JSON.stringify(result.chip)}`);
+        if (!result.xOk) fail(id, 'paddle must stay on court after the round change');
+        if (!result.waitingLaunch) fail(id, 'next round should wait for launch');
       }
     });
 

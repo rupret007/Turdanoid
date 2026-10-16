@@ -29,7 +29,7 @@ describe('Turdanoid campaign definitions', () => {
     expect(names.size).toBe(30);
     expect(fingerprints.size).toBe(30);
     for (const m of metrics) {
-      expect(m.cols).toBe(11);
+      expect(m.cols).toBe(9);
       expect(m.rows).toBeGreaterThanOrEqual(2);
       expect(m.breakableCount).toBeGreaterThan(0);
       expect(definitionForLevel(m.level).name).toBe(m.name);

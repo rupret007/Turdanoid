@@ -45,7 +45,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 | Power-Up | Effect |
 |----------|--------|
-| 📏 Enlarge | Widens paddle ~18% per pickup (stacks to 1.8×). Size lasts until the timer dies, including across a wall clear |
+| 📏 Enlarge | Widens paddle ~18% per pickup (stacks to 1.8×). Size lasts until its timer runs out or the round changes |
 | 🐌 Slow | Slows all balls |
 | 🧲 Catch | Ball sticks to paddle for re-launch |
 | 🌀 Multiball | Splits into up to 3 balls |
@@ -61,7 +61,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 | 👻 Ghost | Ball phases through bricks, damaging them |
 | 🦨 Skunk | Drops a stink cloud that chews through bricks |
 | 💰 Gold Rush | 2× points for 6 seconds |
-| 😬 Shrink (bad) | Shrinks paddle. Size lasts until the timer dies, including across a wall clear |
+| 😬 Shrink (bad) | Shrinks paddle. Size lasts until its timer runs out or the round changes |
 | 💨 Speed (bad) | Speeds up all balls |
 | 🔄 Reverse (bad) | Mirrors controls |
 
@@ -73,7 +73,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 - Brick HP total, ball speed, and drip-hazard count climb monotonically; power-up drops stay generous early and settle to the 12% floor
 - Steel bricks bounce the ball and never count toward a clear. Drip bricks leak sludge until you break them
 - Ball and paddle speed scale with level (capped)
-- Enlarge and Shrink last until their timers die, including across a wall clear. Losing a life still resets the paddle
+- Like Arkanoid, every timed power-up (including Enlarge and Shrink) ends at each round change, and the paddle returns to normal size. Losing a life still resets them too
 - Win by clearing level 30
 
 ---
