@@ -108,4 +108,5 @@ Box lab runs (Lighthouse 13.5.0, default mobile, Chrome headless, 3 runs each):
 | Build | Performance | TBT (ms) | TTI (ms) |
 | --- | --- | --- | --- |
 | 2f523d3 | 63 / 64 / 66 | 1359 / 1206 / 960 | 5527 / 5419 / 5071 |
-| this commit | 81 / 83 / 85 | 300 / 233 / 179 | 3586 / 3515 / 3455 |
+| this commit (on 1b76593) | 87 / 88 / 88 | 0 / 0 / 0 | 3264 / 3155 / 3154 |
+| this commit, before rebase | 81 / 83 / 85 | 300 / 233 / 179 | 3586 / 3515 / 3455 |
