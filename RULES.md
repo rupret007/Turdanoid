@@ -6,7 +6,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ## Table of Contents
 
-1. [TurdAnoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
+1. [Turdanoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
 2. [Turdtris (Tetris Clone)](#turdtris-tetris-clone)
 3. [Turdjack (Blackjack)](#turdjack-blackjack)
 4. [Crapeights (Crazy Eights)](#crapeights-crazy-eights)
@@ -15,7 +15,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ---
 
-## TurdAnoid (Arkanoid Clone)
+## Turdanoid (Arkanoid Clone)
 
 ### Overview
 
@@ -446,7 +446,7 @@ Each game has a decoupled JavaScript engine in `games/` that can be imported and
 
 ```
 games/
-├── turdanoid_logic.js    # TurdAnoid physics/balance
+├── turdanoid_logic.js    # Turdanoid physics/balance
 ├── turdtris-engine.js    # Tetris logic
 ├── turdjack-engine.js    # Blackjack logic  
 ├── crapeights-engine.js  # Crazy Eights logic

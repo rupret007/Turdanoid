@@ -64,7 +64,7 @@ CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull r
 ## Play online (`main` / Pages)
 
 - Hub: https://rupret007.github.io/Turdanoid/
-- TurdAnoid: https://rupret007.github.io/Turdanoid/TurdAnoid.html
+- Turdanoid: https://rupret007.github.io/Turdanoid/TurdAnoid.html
 - Turdtris: https://rupret007.github.io/Turdanoid/turdtris.html
 - Crapjack 21: https://rupret007.github.io/Turdanoid/turdjack.html
 - Crappy Eights: https://rupret007.github.io/Turdanoid/crapeights.html
