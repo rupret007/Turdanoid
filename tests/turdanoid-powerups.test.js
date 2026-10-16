@@ -2,7 +2,7 @@
  * Behaviour of every TurdAnoid power-up (bathroom-punk set), driven through
  * the real TurdAnoid.html in jsdom via window.__turdanoid.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -274,6 +274,141 @@ describe('power-up behaviour', () => {
     expect(g.activePowers.fast).toBeGreaterThan(0);
     g.qaActivatePower('reverse');
     expect(g.activePowers.reverse).toBeGreaterThan(0);
+  });
+});
+
+describe('Chili Fire expiry', () => {
+  let dom;
+  let g;
+  beforeEach(() => {
+    ({ dom, g } = boot());
+    g.startGame();
+  });
+  afterEach(() => dom.window.close());
+
+  function stepFrames(count, dt = FRAME) {
+    for (let i = 0; i < count; i += 1) {
+      g.step(dt);
+    }
+  }
+
+  function aimAtBrick(ball, hp = 10) {
+    const brick = { ...g.bricks[0], x: 80, y: 150, w: 40, h: 16, hp, maxHp: hp };
+    g.bricks = [brick];
+    Object.assign(ball, { x: 100, y: 166 + ball.r, vx: 0, vy: -2 });
+    return brick;
+  }
+
+  it.each([60, 120])('expires while caught at %s Hz and relaunches with ordinary brick damage', (hz) => {
+    g.qaActivatePower('catch');
+    g.launch();
+    const ball = g.balls[0];
+    Object.assign(ball, { x: g.paddle.x, y: g.paddle.y - ball.r, vx: 0, vy: 2 });
+    g.step(FRAME);
+    expect(ball.stuck).toBe(true);
+    g.qaActivatePower('fire');
+    stepFrames(hz * 8 - 1, 1000 / hz);
+    expect(g.activePowers.fire).toBeGreaterThan(0);
+    expect(ball.fire).toBeGreaterThan(0);
+    g.step(1000 / hz);
+    expect(g.activePowers.fire).toBeUndefined();
+    expect(dom.window.document.getElementById('powers').textContent).not.toContain('Chili');
+    g.launch();
+    const brick = aimAtBrick(ball);
+    g.step(FRAME);
+    expect(brick.hp).toBe(9);
+    expect(ball.vy).toBeGreaterThan(0);
+    expect(ball.fire).toBe(0);
+  });
+
+  it('clears caught and airborne multiballs together before collisions on the expiry frame', () => {
+    g.qaActivatePower('fire');
+    stepFrames(479);
+    g.qaActivatePower('multi');
+    expect(g.balls).toHaveLength(3);
+    expect(g.balls.map((ball) => ball.stuck)).toEqual([true, false, false]);
+    const brick = aimAtBrick(g.balls[1]);
+    g.step(FRAME);
+    expect(g.activePowers.fire).toBeUndefined();
+    expect(brick.hp).toBe(9);
+    expect(g.balls.map((ball) => ball.fire)).toEqual([0, 0, 0]);
+    g.qaActivatePower('multi');
+    expect(g.balls).toHaveLength(5);
+    expect(g.balls.every((ball) => ball.fire === 0)).toBe(true);
+  });
+
+  it('clears Fire even when a brick break freezes ball physics', () => {
+    g.qaActivatePower('fire');
+    g.activePowers.fire = 2;
+    g.launch();
+    const ball = g.balls[0];
+    aimAtBrick(ball, 2);
+    g.bricks.push({ ...g.bricks[0], x: 250 }); // Keep the round alive.
+    g.step(FRAME);
+    expect(g.bricks).toHaveLength(1);
+    expect(g.activePowers.fire).toBe(1);
+    const y = ball.y;
+    g.step(FRAME);
+    expect(ball.y).toBe(y);
+    expect(g.activePowers.fire).toBeUndefined();
+    expect(ball.fire).toBe(0);
+  });
+
+  it.each([[1, 1], [2, 2]])('with %s Fire frames left, deals %s boss damage on the next hit', (frames, damage) => {
+    dom.window.document.getElementById('btnBoss').click();
+    g.qaActivatePower('fire');
+    g.activePowers.fire = frames;
+    g.launch();
+    const boss = g.boss;
+    const hp = boss.hp;
+    Object.assign(g.balls[0], { x: boss.x, y: boss.y + boss.h, vx: 0, vy: -2 });
+    g.step(FRAME);
+    expect(boss.hp).toBe(hp - damage);
+  });
+
+  it('refreshes Fire for all balls for one new bounded duration', () => {
+    g.qaActivatePower('fire');
+    stepFrames(479);
+    g.qaActivatePower('multi');
+    g.qaActivatePower('fire');
+    expect(g.activePowers.fire).toBe(480);
+    expect(g.balls.map((ball) => ball.fire)).toEqual([480, 480, 480]);
+    // Hold the split balls safely on the paddle for the rest of the timer.
+    g.balls.forEach((ball) => { ball.stuck = true; });
+    g.step(FRAME);
+    expect(g.activePowers.fire).toBe(479);
+    expect(g.balls.every((ball) => ball.fire > 0)).toBe(true);
+    stepFrames(479);
+    expect(g.activePowers.fire).toBeUndefined();
+    expect(g.balls.map((ball) => ball.fire)).toEqual([0, 0, 0]);
+  });
+
+  it.each(['ball loss', 'drip', 'round change'])('still ends Fire early on %s', (reset) => {
+    g.qaActivatePower('fire');
+    const lives = g.lives;
+    const level = g.level;
+    if (reset === 'ball loss') {
+      g.launch();
+      Object.assign(g.balls[0], { y: g.H + 40, vy: 2 });
+    } else if (reset === 'drip') {
+      g.sludges.push({ x: g.paddle.x, y: g.paddle.y + 4, vy: 0, r: 8 });
+    } else {
+      g.qaActivatePower('warp');
+    }
+    g.step(FRAME);
+    if (reset === 'round change') {
+      expect(g.clearTally).toBeTruthy();
+      g.skipClearTally();
+      expect(g.level).toBe(level + 1);
+      expect(g.lives).toBe(lives);
+    } else {
+      expect(g.lives).toBe(lives - 1);
+    }
+    expect(g.activePowers.fire).toBeUndefined();
+    expect(g.balls).toHaveLength(1);
+    expect(g.balls[0].fire).toBe(0);
+    g.launch();
+    expect(g.balls[0].fire).toBe(0);
   });
 });
 

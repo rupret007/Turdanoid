@@ -2201,6 +2201,8 @@ function step(dt){
       if(k==='slow' || k==='fast') speedPowersChanged = true;
       if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
       if(k==='shrink') paddle.w = paddle.baseW;
+      // Shared expiry also reaches caught balls and balls paused by hit-stop.
+      if(k==='fire') balls.forEach(b=>b.fire=0);
       if(k==='ghost') balls.forEach(b=>b.ghost=0);
       if(k==='gold'){
         // Restore brick colors when gold rush ends
