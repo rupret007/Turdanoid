@@ -361,9 +361,18 @@ describe('power-up safety bounds (Karen gate)', () => {
       life: 60,
       rot: 0
     });
+    // A soft brick tucked directly behind (above) the steel must be shielded.
+    const behind = { ...steel, y: steel.y - steel.h - 2, hp: 1, maxHp: 1, indestructible: false };
+    delete behind.steel;
+    g.bricks.push(behind);
     g.step(1000 / 60);
     expect(g.bricks.includes(steel)).toBe(true);
     expect(steel.hp).toBe(hp);
+    // Both shots are consumed by the steel, not passed through it.
+    expect(g.lasers).toHaveLength(0);
+    expect(g.paddleShots).toHaveLength(0);
+    expect(g.bricks.includes(behind)).toBe(true);
+    expect(behind.hp).toBe(1);
   });
 
   it('drops all powers, capsules and shots when a ball is lost', () => {

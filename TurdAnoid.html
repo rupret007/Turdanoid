@@ -195,6 +195,9 @@
     .hud .right,.hud .center{margin-right:0;text-align:center}
     .hud .col{padding:3px 7px 4px;min-width:0;flex:1 1 0;align-items:center;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
     .hud .col + .col{border-left:1px solid rgba(232,197,106,.18)}
+    /* The HUD box already starts right of the back pill (left:68px). turdsuite.css
+       also pads it by the pill reserve, which squeezed SCORE/LEVEL/LIVES together at 320px. */
+    #playShell .hud{padding-left:2px !important}
     .hud .lbl{display:block;position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:.66em;letter-spacing:.06em;text-shadow:0 1px 4px #000}
   }
   @media (max-width:420px){
@@ -2930,7 +2933,8 @@ function render(){
   }
   ctx.globalAlpha = 1;
 
-  if(waitingLaunch && state==='playing'){
+  // The HTML #mobileLaunch pill already says TAP TO LAUNCH; draw the canvas hint only when it is hidden.
+  if(waitingLaunch && state==='playing' && !(btnLaunch && btnLaunch.classList.contains('show'))){
     const t = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.TOKENS) || {};
     const txt = 'TAP / SPACE TO LAUNCH';
     ctx.font = `bold 12px ${t.font || '"Segoe UI", system-ui, sans-serif'}`;
