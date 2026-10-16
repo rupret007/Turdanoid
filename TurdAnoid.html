@@ -864,6 +864,26 @@ function buildStars(){
   for(let i=0;i<n;i++) bgStars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,a:Math.random()*0.4+0.2,t:Math.random()*Math.PI*2});
 }
 
+// Faint checker for the play field, cached per size so it costs one blit a frame.
+let cleanFieldCache = null;
+function paintCleanField(W, H){
+  const key = W + 'x' + H;
+  if(!cleanFieldCache || cleanFieldCache.key !== key){
+    const off = document.createElement('canvas');
+    off.width = 32; off.height = 32;
+    const o = off.getContext('2d');
+    o.fillStyle = 'rgba(255,255,255,.035)';
+    o.fillRect(0, 0, 16, 16); o.fillRect(16, 16, 16, 16);
+    cleanFieldCache = { key, pattern: ctx.createPattern(off, 'repeat') };
+  }
+  ctx.fillStyle = 'rgba(4,10,14,.55)';
+  ctx.fillRect(0, 0, W, H);
+  if(cleanFieldCache.pattern){
+    ctx.fillStyle = cleanFieldCache.pattern;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
 // Parallax sewer layers: far pipes drift slowly, near sludge blobs drift faster.
 // Shapes wrap horizontally so the background scrolls forever.
 function buildBgLayers(){
@@ -2633,79 +2653,10 @@ function render(){
   ctx.fillStyle = g;
   ctx.fillRect(0,0,W,H);
 
-  // Sewer brick wall behind everything, faded in the middle so the play
-  // area stays readable, with the light falling off toward the sides.
-  if(wallPattern){
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = wallPattern;
-    ctx.fillRect(0,0,W,H);
-    ctx.globalAlpha = 1;
-    const fade = ctx.createLinearGradient(0,0,0,H);
-    fade.addColorStop(0, 'rgba(6,20,26,.05)');
-    fade.addColorStop(0.16, 'rgba(6,20,26,.5)');
-    fade.addColorStop(0.55, 'rgba(6,20,26,.72)');
-    fade.addColorStop(0.9, 'rgba(6,20,26,.35)');
-    fade.addColorStop(1, 'rgba(6,20,26,.1)');
-    ctx.fillStyle = fade; ctx.fillRect(0,0,W,H);
-    const side = ctx.createLinearGradient(0,0,W,0);
-    side.addColorStop(0, 'rgba(0,0,0,.4)'); side.addColorStop(0.22, 'rgba(0,0,0,0)');
-    side.addColorStop(0.78, 'rgba(0,0,0,0)'); side.addColorStop(1, 'rgba(0,0,0,.4)');
-    ctx.fillStyle = side; ctx.fillRect(0,0,W,H);
-  }
-  if(TSPRITE && TSPRITE.paintAtmosphere){
-    TSPRITE.paintAtmosphere(ctx, {
-      W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches),
-      world
-    });
-  }
-  if(TSPRITE && TSPRITE.paintWorldStage){
-    (TSPRITE.paintWorldStageCached || TSPRITE.paintWorldStage)(ctx, world, {
-      W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches),
-      fixtures: state === 'playing' || state === 'paused'
-    });
-  }
-
-  // Parallax sewer layers — driven by wall-clock time so they drift on the
-  // title screen too and stay frame-rate independent.
+  // Clean play field: a dark field with a faint black-and-white checker.
+  // No props, rails, pipes or fixtures between the paddle and the bricks.
+  paintCleanField(W, H);
   const bgT = nowMs * 0.06 * parallaxMul;
-  for(const layer of bgLayers){
-    const off = (bgT * layer.speed) % W;
-    ctx.globalAlpha = layer.alpha;
-    for(const s of layer.shapes){
-      const bx = ((s.x - off) % W + W) % W;
-      // Draw at the wrapped position and once more a screen-width to the left
-      // so shapes slide off one edge while entering the other.
-      for(const x of [bx, bx - W]){
-        if(layer.kind === 'pipe'){
-          const pipeCols = (world && world.pipe) || ['#0f2b24', '#1a7a58', '#1d4a3c'];
-          if(TSPRITE){
-            TSPRITE.paintPipe(ctx, {
-              x, y: s.y, w: s.w, h: s.h, vertical: !!s.vertical, colors: pipeCols
-            });
-          } else if(s.vertical){
-            const pg = ctx.createLinearGradient(x, 0, x + s.h, 0);
-            pg.addColorStop(0, pipeCols[0]); pg.addColorStop(0.32, pipeCols[1]);
-            pg.addColorStop(0.62, pipeCols[2] || pipeCols[1]); pg.addColorStop(1, pipeCols[0]);
-            ctx.fillStyle = pg;
-            roundRect(ctx, x, s.y, s.h, s.w, s.h/2); ctx.fill();
-          } else {
-            const pg = ctx.createLinearGradient(0, s.y, 0, s.y + s.h);
-            pg.addColorStop(0, pipeCols[0]); pg.addColorStop(0.32, pipeCols[1]);
-            pg.addColorStop(1, pipeCols[0]);
-            ctx.fillStyle = pg;
-            roundRect(ctx, x, s.y, s.w, s.h, s.h/2); ctx.fill();
-          }
-        } else {
-          const wobY = Math.sin(bgT*0.02 + s.wob) * 6;
-          const grd = ctx.createRadialGradient(x, s.y+wobY, s.r*0.15, x, s.y+wobY, s.r);
-          grd.addColorStop(0, '#2f6b50');
-          grd.addColorStop(1, 'rgba(20,60,45,0)');
-          ctx.fillStyle = grd;
-          ctx.beginPath(); ctx.arc(x, s.y+wobY, s.r, 0, 6.283); ctx.fill();
-        }
-      }
-    }
-  }
   ctx.globalAlpha = 1;
 
   if(stink>0){
@@ -2736,20 +2687,6 @@ function render(){
     ctx.fillStyle = 'rgba(255,255,255,.35)';
     ctx.beginPath(); ctx.arc(-d.w*0.12, len*0.35, d.w*0.12, 0, 6.283); ctx.fill();
     ctx.restore();
-  }
-  ctx.globalAlpha = 1;
-
-  // bubbles (parallax bubble field, drifting up)
-  const tAmb = performance.now() * 0.0006;
-  for(const s of bgStars){
-    s.x += Math.sin(s.t + tAmb*4) * 0.18;
-    s.y -= 0.22 + s.r*0.18;
-    if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
-    ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
-    ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
-    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.7)';
-    ctx.beginPath(); ctx.arc(s.x - s.r*0.35, s.y - s.r*0.35, s.r*0.3, 0, 6.283); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
@@ -2795,20 +2732,6 @@ function render(){
   ctx.strokeStyle = 'rgba(0,0,0,0.35)';
   ctx.lineWidth = 1;
   ctx.strokeRect(4.5,4.5,W-9,H-9);
-
-  if(world && world.playWallTint && state === 'playing'){
-    const wallH = Math.min(H * 0.58, 420);
-    ctx.save();
-    ctx.fillStyle = world.playWallTint;
-    ctx.fillRect(0, 52, W, wallH - 52);
-    const wt = ctx.createLinearGradient(0, 52, 0, wallH);
-    wt.addColorStop(0, 'rgba(0,0,0,0)');
-    wt.addColorStop(0.65, 'rgba(0,0,0,0)');
-    wt.addColorStop(1, 'rgba(4,12,16,.5)');
-    ctx.fillStyle = wt;
-    ctx.fillRect(0, 52, W, wallH - 52);
-    ctx.restore();
-  }
 
   for(const b of bricks){ drawBrick(b); }
   if(boss) drawBoss(boss);
