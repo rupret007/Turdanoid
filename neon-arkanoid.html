@@ -5,6 +5,8 @@
     <meta name="robots" content="noindex">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="assets/turdsuite.css">
+  <script src="assets/turdsuite.js"></script>
     <title>Neon Arkanoid</title>
     <style>
         :root {
@@ -684,6 +686,16 @@
         window.addEventListener('load', function () {
             showHowToPlay();
         });
+
+        try {
+          if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+            Suite.setMusicGameBlocked(function () {
+              try {
+                return window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled();
+              } catch (e) { return false; }
+            });
+          }
+        } catch (e) { /* ignore */ }
     </script>
 </body>
 </html>

@@ -164,8 +164,11 @@ async function main() {
         if (JSON.stringify(hrefs) !== JSON.stringify(expected)) {
           fail('root-hub', `expected the seven-game lineup, saw ${JSON.stringify(hrefs)}`);
         }
-        if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 1) {
-          fail('root-hub', 'expected one secondary link to the original Neon Arkanoid game');
+        if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 0) {
+          fail('root-hub', 'hub should not promote Neon Arkanoid with an off-grid link');
+        }
+        if ((await page.locator('#suite-listen-manic').count()) !== 1) {
+          fail('root-hub', 'expected the on-site Listen to Manic control');
         }
         if ((await page.locator('.game-card.last-played').count()) !== 0) {
           fail('root-hub', 'a first visit should not mark a last-played game');
@@ -1928,7 +1931,7 @@ async function main() {
         if (!marked.label.includes('bid tricks or Nil') || !marked.label.includes('Continue — in progress')) {
           fail('hub-last-played', `marked card needs a full accessible name, saw "${marked.label}"`);
         }
-        if (marked.neon !== 1) fail('hub-last-played', 'last-played mark must not replace the Neon secondary link');
+        if (marked.neon !== 0) fail('hub-last-played', 'hub should not promote Neon Arkanoid with a footer link');
         if (marked.badges !== 1 || marked.resumeTag !== 'A' || marked.resumeHref !== 'turdspades.html' || !marked.resumeText.includes('TurdSpades')) {
           fail('hub-last-played', `an opened Spades table should surface a masthead resume link, saw ${JSON.stringify(marked)}`);
         }

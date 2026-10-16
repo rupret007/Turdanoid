@@ -110,6 +110,46 @@
     return colors;
   }
 
+  /**
+   * Colorblind-only hatch on heavy bricks (not generic multi-HP).
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {{ heavy?: boolean }} b
+   * @param {number} px
+   * @param {number} py
+   * @param {number} pw
+   * @param {number} ph
+   * @param {boolean} colorblind
+   * @param {(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => void} [roundRectFn]
+   */
+  function paintCbHeavyBrickMark(ctx, b, px, py, pw, ph, colorblind, roundRectFn) {
+    if (!b || !b.heavy) {
+      return;
+    }
+    if (!colorblind) {
+      return;
+    }
+    const strokeRound = roundRectFn || function strokeRectFallback(c, x, y, w, h) {
+      c.rect(x, y, w, h);
+    };
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(px, py, pw, ph);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(0,0,0,.72)';
+    ctx.lineWidth = 2;
+    strokeRound(ctx, px + 1.5, py + 1.5, pw - 3, ph - 3, 4);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.4)';
+    ctx.lineWidth = 1;
+    for (let d = -ph; d < pw + ph; d += 7) {
+      ctx.beginPath();
+      ctx.moveTo(px + d, py + ph - 1);
+      ctx.lineTo(px + d + ph * 0.65, py + 1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function distinctRowHueCount(rows, worldIndex = 0) {
     const seen = new Set();
     const cols = 10;
@@ -132,6 +172,7 @@
     rowPaletteIndex,
     brickColors,
     assignBrickStyle,
-    distinctRowHueCount
+    distinctRowHueCount,
+    paintCbHeavyBrickMark
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

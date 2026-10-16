@@ -283,6 +283,28 @@ function isSuiteHubPage(doc) {
   return Boolean(doc.querySelector('#hub-games, main.games[aria-label="Choose a game"]'));
 }
 
+export function rectsOverlap(a, b, epsilon = 1) {
+  if (!a || !b) {
+    return false;
+  }
+  return (
+    Math.min(a.right, b.right) - Math.max(a.left, b.left) > epsilon &&
+    Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > epsilon
+  );
+}
+
+export function rectInsideViewport(rect, viewportWidth, viewportHeight, epsilon = 0) {
+  if (!rect) {
+    return false;
+  }
+  return (
+    rect.left >= -epsilon &&
+    rect.top >= -epsilon &&
+    rect.right <= viewportWidth + epsilon &&
+    rect.bottom <= viewportHeight + epsilon
+  );
+}
+
 function resolveA11yToggleMount(doc) {
   if (isSuiteHubPage(doc)) {
     return null;
@@ -290,6 +312,16 @@ function resolveA11yToggleMount(doc) {
   const explicit = doc.getElementById('suite-arcade-a11y-mount');
   if (explicit) {
     return { parent: explicit, mode: 'inline' };
+  }
+  const topActions = doc.querySelector(
+    '.topbar .top-actions, .topbar .actions, .topbar .top-links, .table-menu .actions'
+  );
+  if (topActions) {
+    return { parent: topActions, mode: 'inline', insert: 'first' };
+  }
+  const dock = doc.querySelector('.dock[role="toolbar"]');
+  if (dock) {
+    return { parent: dock, mode: 'inline', insert: 'first' };
   }
   const topbtns = doc.querySelector('.topbtns');
   if (topbtns) {
@@ -302,6 +334,57 @@ function resolveA11yToggleMount(doc) {
   return { parent: doc.body, mode: 'floating' };
 }
 
+/**
+ * Ensures a visible mount exists on table/arcade pages (mobile hides `.actions`).
+ * @param {Document} doc
+ */
+export function ensureArcadeA11yMount(doc) {
+  if (!doc || !doc.body || isSuiteHubPage(doc)) {
+    return null;
+  }
+  if (doc.getElementById('suite-arcade-a11y-mount')) {
+    return doc.getElementById('suite-arcade-a11y-mount');
+  }
+  const playShell = doc.getElementById('playShell');
+  if (playShell) {
+    const slot = doc.createElement('div');
+    slot.id = 'suite-arcade-a11y-mount';
+    slot.className = 'suite-a11y-play-shell-slot';
+    playShell.appendChild(slot);
+    return slot;
+  }
+  const topbar = doc.querySelector('.topbar');
+  if (topbar) {
+    const slot = doc.createElement('div');
+    slot.id = 'suite-arcade-a11y-mount';
+    slot.className = 'suite-a11y-topbar-slot';
+    const mobileMenu = topbar.querySelector('.mobile-menu, .table-menu');
+    if (mobileMenu) {
+      topbar.insertBefore(slot, mobileMenu);
+    } else {
+      topbar.appendChild(slot);
+    }
+    return slot;
+  }
+  const dock = doc.querySelector('.dock[role="toolbar"]');
+  if (dock) {
+    const slot = doc.createElement('div');
+    slot.id = 'suite-arcade-a11y-mount';
+    slot.className = 'suite-a11y-dock-slot';
+    dock.insertBefore(slot, dock.firstChild);
+    return slot;
+  }
+  const headerHud = doc.querySelector('header.hud');
+  if (headerHud) {
+    const slot = doc.createElement('div');
+    slot.id = 'suite-arcade-a11y-mount';
+    slot.className = 'suite-a11y-header-slot';
+    headerHud.appendChild(slot);
+    return slot;
+  }
+  return null;
+}
+
 export function createArcadeA11yToggle(doc, Suite) {
   if (!doc || !doc.body || !Suite) {
     return null;
@@ -312,6 +395,7 @@ export function createArcadeA11yToggle(doc, Suite) {
   const btn = doc.createElement('button');
   btn.type = 'button';
   btn.id = 'suite-arcade-a11y-toggle';
+  ensureArcadeA11yMount(doc);
   const mount = resolveA11yToggleMount(doc);
   if (!mount) {
     return null;

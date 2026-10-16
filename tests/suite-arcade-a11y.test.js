@@ -13,7 +13,10 @@ import {
   attachSuiteArcadeA11y,
   contrastRatio,
   createArcadeA11yToggle,
+  ensureArcadeA11yMount,
   minPairwiseContrastOnBg,
+  rectInsideViewport,
+  rectsOverlap,
   motionIntensity,
   readColorblindEnabled,
   remapBrickColors,
@@ -46,6 +49,15 @@ function memoryStorage(initial = {}) {
 }
 
 describe('suite-arcade-a11y core', () => {
+  it('detects rectangle overlap for Playwright HUD guards', () => {
+    const a = { left: 0, top: 0, right: 50, bottom: 50 };
+    const b = { left: 40, top: 40, right: 80, bottom: 80 };
+    expect(rectsOverlap(a, b)).toBe(true);
+    expect(rectsOverlap(a, { left: 60, top: 60, right: 90, bottom: 90 })).toBe(false);
+    expect(rectInsideViewport(a, 320, 568)).toBe(true);
+    expect(rectInsideViewport({ left: -5, top: 0, right: 40, bottom: 40 }, 320, 568)).toBe(false);
+  });
+
   it('persists colorblind toggle in localStorage', () => {
     expect(COLORBLIND_STORAGE_KEY).toBe('turdsuite_colorblind_v1');
     const storage = memoryStorage();
@@ -97,12 +109,16 @@ describe('suite-arcade-a11y wiring', () => {
   });
 
   it('injects a 44px colorblind toggle on game pages', () => {
-    dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-      url: 'http://localhost/turdjack.html',
-      runScripts: 'outside-only'
-    });
+    dom = new JSDOM(
+      '<!DOCTYPE html><html><body><div class="topbar"><div class="mobile-menu"></div></div></body></html>',
+      {
+        url: 'http://localhost/turdjack.html',
+        runScripts: 'outside-only'
+      }
+    );
     const Suite = {};
     attachSuiteArcadeA11y(Suite, memoryStorage(), dom.window.document);
+    ensureArcadeA11yMount(dom.window.document);
     const btn = createArcadeA11yToggle(dom.window.document, Suite);
     expect(btn).not.toBeNull();
     expect(btn.getAttribute('aria-pressed')).toBe('false');

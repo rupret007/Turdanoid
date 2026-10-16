@@ -15,12 +15,97 @@ import { COLORBLIND_STORAGE_KEY } from '../games/suite-arcade-a11y.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const hasBrowser = Boolean(process.env.PLAYWRIGHT_CHANNEL) || existsSync(chromium.executablePath());
 
+const VIEWPORTS = [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 844, height: 390 }
+];
+
+/** Hub arcade/table titles (six games). */
+const SIX_SUITE_GAMES = [
+  {
+    path: '/TurdAnoid.html',
+    hud: ['#hudLives', '#hudScore', '#hudLevel'],
+    controls: ['#btnPause', '#btnSound'],
+    quick: [],
+    prepare: async (page) => {
+      await page.click('#btnStart');
+      await page.waitForFunction(() => window.__turdanoid && window.__turdanoid.state === 'playing');
+    }
+  },
+  {
+    path: '/turdtris.html',
+    hud: ['#hudRail #score', '#hudRail #level', '#hudRail #lines'],
+    controls: ['[data-sound-toggle]', '.top-actions button[onclick*="togglePause"]'],
+    quick: ['.welcome-actions button[onclick*="quickStartRun"]', '#quickStartBtn'],
+    prepare: async (page) => {
+      await page.evaluate(() => {
+        if (typeof window.hideWelcomeGuide === 'function') {
+          window.hideWelcomeGuide();
+        }
+      });
+    }
+  },
+  {
+    path: '/turdjack.html',
+    hud: ['#bankrollText', '#betText', '.hud .card-stat'],
+    controls: ['[data-sound-toggle]'],
+    quick: ['#quickGuideBtn'],
+    prepare: async (page) => {
+      await page.evaluate(() => {
+        const guide = document.getElementById('welcomeGuide');
+        if (guide) {
+          guide.classList.remove('show');
+          guide.setAttribute('aria-hidden', 'true');
+        }
+      });
+    }
+  },
+  {
+    path: '/crapeights.html',
+    hud: ['.hud-card', '#youCardsText', '#roundText'],
+    controls: ['[data-sound-toggle]'],
+    quick: ['#quickStartBtn'],
+    prepare: async (page) => {
+      await page.evaluate(() => {
+        if (typeof window.hideWelcomeGuide === 'function') {
+          window.hideWelcomeGuide();
+        }
+      });
+    }
+  },
+  {
+    path: '/turdrummy.html',
+    hud: ['.status .stat', '#playerScoreValue', '#deadwoodValue'],
+    controls: ['#soundToggleBtn', '#quickGuideBtn'],
+    quick: ['#quickGuideBtn'],
+    prepare: async () => {}
+  },
+  {
+    path: '/turdspades.html',
+    hud: ['.ts-score-strip', '.stats .stat', '#roundV'],
+    controls: ['#helpBtn', '#nextRoundTop'],
+    quick: ['#quickStart'],
+    prepare: async (page) => {
+      await page.evaluate(() => {
+        const guide = document.getElementById('welcomeGuide');
+        if (guide) {
+          guide.classList.remove('show');
+          guide.setAttribute('aria-hidden', 'true');
+        }
+      });
+    }
+  }
+];
+
 let server;
 let browser;
 let baseUrl;
 
 beforeAll(async () => {
-  if (!hasBrowser) {return;}
+  if (!hasBrowser) {
+    return;
+  }
   const types = {
     '.html': 'text/html',
     '.js': 'text/javascript',
@@ -59,9 +144,59 @@ afterAll(async () => {
   }
 });
 
+async function assertA11yToggleLayout(page, game) {
+  const selectors = [...game.hud, ...game.controls, ...game.quick];
+  const report = await page.evaluate((sels) => {
+    const overlap = (a, b) =>
+      Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+      Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    const box = (el) => {
+      if (!el) {
+        return null;
+      }
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return null;
+      }
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) {
+        return null;
+      }
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    };
+    const toggleEl = document.getElementById('suite-arcade-a11y-toggle');
+    const toggle = box(toggleEl);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const inViewport =
+      toggle &&
+      toggle.left >= -1 &&
+      toggle.top >= -1 &&
+      toggle.right <= vw + 1 &&
+      toggle.bottom <= vh + 1;
+    const hits = [];
+    for (const sel of sels) {
+      document.querySelectorAll(sel).forEach((el) => {
+        const rect = box(el);
+        if (rect && toggle && overlap(toggle, rect)) {
+          hits.push(sel);
+        }
+      });
+    }
+    const floating = toggleEl?.classList.contains('suite-arcade-a11y-toggle--floating');
+    return { inViewport, hits, floating };
+  }, selectors);
+
+  expect(report.inViewport).toBe(true);
+  expect(report.hits).toEqual([]);
+  expect(report.floating).toBe(false);
+}
+
 describe('arcade a11y (Playwright)', () => {
   it('honors prefers-reduced-motion for ambient auto-scroll', async () => {
-    if (!hasBrowser) {return;}
+    if (!hasBrowser) {
+      return;
+    }
     const page = await browser.newPage();
     try {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -73,7 +208,9 @@ describe('arcade a11y (Playwright)', () => {
       ).toBe(true);
       const wispAnim = await page.evaluate(() => {
         const el = document.querySelector('.suite-bg-wisp');
-        if (!el) {return 'missing';}
+        if (!el) {
+          return 'missing';
+        }
         return getComputedStyle(el).animationName;
       });
       expect(wispAnim === 'none' || wispAnim === '').toBe(true);
@@ -82,49 +219,60 @@ describe('arcade a11y (Playwright)', () => {
     }
   });
 
-  it('does not overlap Turdanoid HUD controls at phone widths', async () => {
+  it('fails overlap detection when the toggle is moved onto HUD chrome', async () => {
     if (!hasBrowser) {
       return;
     }
-    for (const width of [320, 390]) {
-      const page = await browser.newPage();
-      try {
-        await page.setViewportSize({ width, height: 700 });
-        await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('#suite-arcade-a11y-toggle');
-        await page.waitForSelector('#btnPause');
-        const hits = await page.evaluate(() => {
-          const overlap = (a, b) =>
-            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
-            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-          const box = (el) => {
-            const r = el.getBoundingClientRect();
-            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
-          };
-          const toggle = box(document.getElementById('suite-arcade-a11y-toggle'));
-          const controls = ['#btnPause', '#btnSound'].map((sel) => box(document.querySelector(sel)));
-          return controls.map((rect) => overlap(toggle, rect));
-        });
-        expect(hits.some(Boolean)).toBe(false);
-        expect(await page.evaluate(() => document.querySelector('.topbtns')?.contains(
-          document.getElementById('suite-arcade-a11y-toggle')
-        ))).toBe(true);
-        await page.click('#btnStart');
-        await page.waitForFunction(() => window.__turdanoid && window.__turdanoid.state === 'playing');
-        const playingHits = await page.evaluate(() => {
-          const overlap = (a, b) =>
-            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
-            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-          const box = (el) => {
-            const r = el.getBoundingClientRect();
-            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
-          };
-          const toggle = box(document.getElementById('suite-arcade-a11y-toggle'));
-          return ['#btnPause', '#btnSound'].some((sel) => overlap(toggle, box(document.querySelector(sel))));
-        });
-        expect(playingHits).toBe(false);
-      } finally {
-        await page.close();
+    const page = await browser.newPage();
+    try {
+      await page.setViewportSize({ width: 320, height: 568 });
+      await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('#suite-arcade-a11y-toggle');
+      await page.click('#btnStart');
+      await page.waitForFunction(() => window.__turdanoid && window.__turdanoid.state === 'playing');
+      const wouldOverlap = await page.evaluate(() => {
+        const overlap = (a, b) =>
+          Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+          Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+        const box = (el) => {
+          const r = el.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        };
+        const toggleEl = document.getElementById('suite-arcade-a11y-toggle');
+        const lives = document.getElementById('hudLives');
+        if (!toggleEl || !lives) {
+          return false;
+        }
+        const anchor = lives.getBoundingClientRect();
+        toggleEl.style.position = 'fixed';
+        toggleEl.style.left = `${anchor.left}px`;
+        toggleEl.style.top = `${anchor.top}px`;
+        toggleEl.style.right = 'auto';
+        toggleEl.style.bottom = 'auto';
+        return overlap(box(toggleEl), box(lives));
+      });
+      expect(wouldOverlap).toBe(true);
+    } finally {
+      await page.close();
+    }
+  });
+
+  it('keeps the colorblind toggle on-screen and clear of HUD controls (six games)', async () => {
+    if (!hasBrowser) {
+      return;
+    }
+    for (const game of SIX_SUITE_GAMES) {
+      for (const viewport of VIEWPORTS) {
+        const page = await browser.newPage();
+        try {
+          await page.setViewportSize(viewport);
+          await page.goto(`${baseUrl}${game.path}`, { waitUntil: 'domcontentloaded' });
+          await page.waitForSelector('#suite-arcade-a11y-toggle');
+          await game.prepare(page);
+          await assertA11yToggleLayout(page, game);
+        } finally {
+          await page.close();
+        }
       }
     }
   });
@@ -156,13 +304,24 @@ describe('arcade a11y (Playwright)', () => {
   });
 
   it('persists colorblind toggle across reload', async () => {
-    if (!hasBrowser) {return;}
+    if (!hasBrowser) {
+      return;
+    }
     const page = await browser.newPage();
     try {
       await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.Suite && typeof Suite.isColorblindMode === 'function');
       await page.waitForSelector('#suite-arcade-a11y-toggle');
-      await page.click('#suite-arcade-a11y-toggle');
+      await page.evaluate(() => {
+        const guide = document.getElementById('welcomeGuide');
+        if (guide) {
+          guide.style.display = 'none';
+        }
+        if (typeof window.hideWelcomeGuide === 'function') {
+          window.hideWelcomeGuide();
+        }
+      });
+      await page.evaluate(() => document.getElementById('suite-arcade-a11y-toggle').click());
       await page.waitForFunction(() => window.Suite && Suite.isColorblindMode());
       expect(await page.evaluate(() => Suite.isColorblindMode())).toBe(true);
       const stored = await page.evaluate((key) => localStorage.getItem(key), COLORBLIND_STORAGE_KEY);
