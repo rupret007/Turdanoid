@@ -2412,6 +2412,8 @@ function step(dt){
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
     shake = Math.max(shake, 12);
     if(lives <= 0){ gameOver(false); return; }
+    // Protect this respawn from drips later in this step and during recovery.
+    lifeGrace = LIFE_GRACE_FRAMES;
     paddle.w = paddle.baseW;
     activePowers = {}; updatePowers();
     powerups = []; lasers = []; paddleShots = [];

@@ -651,6 +651,132 @@ describe('TurdAnoid drip damage and life transitions', () => {
     g.startGame();
   }, 20000);
 
+  describe('ball-loss respawn grace', () => {
+    beforeEach(() => {
+      g.qaJumpToLevel(11);
+      g.sludges.length = 0;
+      // Inject collisions below; keep the wall from spawning unrelated drips.
+      for (const brick of g.bricks) {
+        brick.hazardCd = g.lifeGraceFrames + 10;
+      }
+    });
+
+    function dropBall(ball = g.balls[0]) {
+      ball.stuck = false;
+      ball.y = g.H + 30;
+      ball.vx = 0;
+      ball.vy = 5;
+    }
+
+    it.each([3, 2])(
+      'costs one of %i lives for a last-ball loss and simultaneous drips',
+      (lives) => {
+        g.lives = lives;
+        g.launch();
+        dropBall();
+        g.sludges.push(placeDrip(g), placeDrip(g, { xOffset: 12 }));
+
+        g.step(FRAME);
+
+        expect(g.lives).toBe(lives - 1);
+        expect(g.state).toBe('playing');
+        expect(g.balls).toHaveLength(1);
+        expect(g.balls[0].stuck).toBe(true);
+        expect(g.waitingLaunch).toBe(true);
+        expect(g.lifeGrace).toBe(g.lifeGraceFrames);
+        expect(g.sludges).toHaveLength(0);
+
+        g.sludges.push(placeDrip(g), placeDrip(g, { xOffset: -12 }));
+        g.step(FRAME);
+        expect(g.lives).toBe(lives - 1);
+        expect(g.lifeGrace).toBe(g.lifeGraceFrames - 1);
+        expect(g.sludges).toHaveLength(0);
+      }
+    );
+
+    it.each([1, 2])('expires after the existing grace period at %ix frame rate', (rate) => {
+      g.launch();
+      dropBall();
+      g.step(FRAME);
+      expect(g.lives).toBe(2);
+      expect(g.lifeGrace).toBe(g.lifeGraceFrames);
+
+      const replacement = g.balls[0];
+      // Repeated hits must neither cost a life nor refresh the grace timer.
+      for (let frame = 1; frame < g.lifeGraceFrames * rate; frame++) {
+        g.sludges.push(placeDrip(g));
+        g.step(FRAME / rate);
+        expect(g.lives).toBe(2);
+        expect(g.balls[0]).toBe(replacement);
+      }
+      expect(g.lifeGrace).toBe(1 / rate);
+
+      g.sludges.push(placeDrip(g));
+      g.step(FRAME / rate);
+      expect(g.lives).toBe(1);
+      expect(g.balls[0]).not.toBe(replacement);
+      expect(g.lifeGrace).toBe(g.lifeGraceFrames);
+    });
+
+    it('does not grant respawn grace when shield saves the ball and blocks the drip', () => {
+      g.activePowers.shield = 60 * 8;
+      g.launch();
+      const ball = g.balls[0];
+      dropBall();
+      g.sludges.push(placeDrip(g));
+      g.step(FRAME);
+
+      expect(g.lives).toBe(3);
+      expect(g.balls).toEqual([ball]);
+      expect(ball.vy).toBeLessThan(0);
+      expect(g.waitingLaunch).toBe(false);
+      expect(g.activePowers.shield).toBe(60 * 8 - 1 - 120 - 30);
+      expect(g.lifeGrace).toBe(0);
+    });
+
+    it('does not grant respawn grace when another ball survives', () => {
+      g.launch();
+      g.spawnMulti();
+      dropBall();
+      g.step(FRAME);
+      expect(g.balls).toHaveLength(2);
+      expect(g.lives).toBe(3);
+      expect(g.lifeGrace).toBe(0);
+
+      g.sludges.push(placeDrip(g));
+      g.step(FRAME);
+      expect(g.lives).toBe(2);
+      expect(g.balls).toHaveLength(1);
+    });
+
+    it('preserves completed-wall protection during simultaneous ball loss and drip hits', () => {
+      g.lives = 1;
+      g.launch();
+      dropBall();
+      g.bricks = [];
+      g.sludges.push(placeDrip(g));
+      g.step(FRAME);
+
+      expect(g.lives).toBe(1);
+      expect(g.state).toBe('playing');
+      expect(g.levelTransition).toBe(true);
+      expect(g.clearTally).toBeTruthy();
+      expect(g.lifeGrace).toBe(0);
+    });
+
+    it('ends the run on final-ball loss without a replacement or a second life deduction', () => {
+      g.lives = 1;
+      g.launch();
+      dropBall();
+      g.sludges.push(placeDrip(g), placeDrip(g, { xOffset: 12 }));
+      g.step(FRAME);
+
+      expect(g.lives).toBe(0);
+      expect(g.state).toBe('gameover');
+      expect(g.balls).toHaveLength(0);
+    });
+  });
+
   it('loses only one life when several drips hit the paddle in one volley', () => {
     const before = g.lives;
     g.sludges.length = 0;
