@@ -2458,6 +2458,43 @@ async function main() {
       });
     }
 
+    // Pinned board sizes (cols x rows) per phone width: deterministic, never read back from app state.
+    const TM_SIZES = [
+      { width: 320, height: 568, easy: '8x10', normal: '8x12', hard: '8x12' },
+      { width: 375, height: 667, easy: '8x10', normal: '10x12', hard: '10x13' },
+      { width: 390, height: 844, easy: '8x10', normal: '10x12', hard: '11x14' },
+      { width: 412, height: 915, easy: '8x10', normal: '10x12', hard: '11x14' },
+      { width: 430, height: 932, easy: '8x10', normal: '10x12', hard: '12x14' }
+    ];
+    for (const vp of TM_SIZES) {
+      for (const level of ['easy', 'normal', 'hard']) {
+        const name = `turdomania-size-${vp.width}-${level}`;
+        await runCheck(browser, name, `turdomania.html?seed=11&level=${level}`, {
+          mobile: true,
+          context: { viewport: { width: vp.width, height: vp.height }, hasTouch: true, isMobile: true },
+          actions: async (page) => {
+            await page.waitForSelector('.tile');
+            await page.waitForTimeout(400); // let the deal-in transition settle before measuring
+            const m = await page.evaluate(() => {
+              const tiles = [...document.querySelectorAll('.tile')];
+              const xs = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().left)));
+              const ys = new Set(tiles.map((t) => Math.round(t.getBoundingClientRect().top)));
+              const sizes = tiles.map((t) => t.getBoundingClientRect());
+              const board = document.getElementById('board').getBoundingClientRect();
+              return {
+                dims: `${xs.size}x${ys.size}`,
+                minW: Math.min(...sizes.map((r) => r.width)), minH: Math.min(...sizes.map((r) => r.height)),
+                right: board.right, scrollW: document.documentElement.scrollWidth
+              };
+            });
+            if (m.dims !== vp[level]) fail(name, `board should be ${vp[level]}, saw ${m.dims}`);
+            if (m.minW < 32 || m.minH < 32) fail(name, `tiles must be >=32px, saw ${m.minW}x${m.minH}`);
+            if (m.right > vp.width || m.scrollW > vp.width) fail(name, `board escapes ${vp.width}px: ${JSON.stringify(m)}`);
+          }
+        });
+      }
+    }
+
     await runCheck(browser, 'turdomania-reduced-motion', 'turdomania.html?seed=7&level=easy', {
       mobile: true,
       context: { reducedMotion: 'reduce' },

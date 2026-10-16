@@ -130,11 +130,18 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
 // Reserve the board's final size before first paint (no layout shift). Mirrors layout() below;
 // tests keep TM_DIMS in sync with games/turdomania-core.js LEVELS.
 window.TM_DIMS = { easy: [8, 10], normal: [10, 12], hard: [12, 14] };
+// One viewport measure for pre-paint, start() and layout(): the smaller of innerWidth/clientWidth,
+// so a transient wider innerWidth on first load can't pick more columns than the screen holds.
+window.tmView = function () {
+  var de = document.documentElement;
+  var w = Math.min(window.innerWidth || Infinity, de.clientWidth || Infinity);
+  var h = Math.min(window.innerHeight || Infinity, de.clientHeight || Infinity);
+  var compact = w <= 360 || h <= 600;
+  return { availW: Math.min(w, 760) - 36, availH: h - (compact ? 170 : 230) };
+};
 window.tmFit = function (levelKey) {
   var d = TM_DIMS[levelKey] || TM_DIMS.normal;
-  var vw = Math.min(window.innerWidth, 760), availW = vw - 36;
-  var compact = matchMedia('(max-width: 360px), (max-height: 600px)').matches;
-  var availH = window.innerHeight - (compact ? 170 : 230);
+  var v = tmView(), availW = v.availW, availH = v.availH;
   var fit = function (n, avail, floor) { return Math.max(Math.min(n, floor), Math.min(n, Math.floor(avail / 32))); };
   return { availW: availW, availH: availH, cols: fit(d[0], availW, 6), rows: fit(d[1], availH, 8) };
 };
@@ -142,6 +149,7 @@ window.tmFit = function (levelKey) {
   var q = new URLSearchParams(location.search), lvl = q.get('level');
   if (!TM_DIMS[lvl]) { try { lvl = (JSON.parse(localStorage.getItem('turdomania_prefs_v1') || 'null') || {}).level; } catch (e) { lvl = null; } }
   var f = tmFit(TM_DIMS[lvl] ? lvl : 'normal');
+  window.TM_INIT = { level: TM_DIMS[lvl] ? lvl : 'normal', cols: f.cols, rows: f.rows };
   var cell = Math.max(22, Math.min(56, Math.floor(Math.min(f.availW / f.cols, f.availH / f.rows))));
   var st = document.documentElement.style;
   st.setProperty('--cell', cell + 'px'); st.setProperty('--board-w', cell * f.cols + 'px'); st.setProperty('--board-h', cell * f.rows + 'px');
@@ -189,8 +197,11 @@ const tileEls = new Map();
 const fixedSeed = qs.has('seed') ? Number(qs.get('seed')) >>> 0 : null;
 
 function start(levelKey, seed) {
-  const fit = window.tmFit ? window.tmFit(levelKey) : null;
-  state = Core.newGame(levelKey, seed ?? (fixedSeed ?? ((Math.random() * 2 ** 32) >>> 0)), fit && !qs.has('fullsize') ? Core.fitDims(levelKey, fit.availW, fit.availH) : null);
+  // First board reuses the size reserved before paint; later boards re-measure.
+  const init = window.TM_INIT && window.TM_INIT.level === levelKey ? window.TM_INIT : null;
+  window.TM_INIT = null;
+  const fit = init || (window.tmFit ? window.tmFit(levelKey) : null);
+  state = Core.newGame(levelKey, seed ?? (fixedSeed ?? ((Math.random() * 2 ** 32) >>> 0)), fit && !qs.has('fullsize') ? { cols: fit.cols, rows: fit.rows } : null);
   boardEl.innerHTML = '';
   rowEls.length = 0;
   tileEls.clear();
@@ -202,10 +213,7 @@ function start(levelKey, seed) {
 }
 
 function layout() {
-  const vw = Math.min(window.innerWidth, 760);
-  const availW = vw - 36;
-  const compact = matchMedia('(max-width: 360px), (max-height: 600px)').matches;
-  const availH = window.innerHeight - (compact ? 170 : 230);
+  const { availW, availH } = window.tmView();
   cell = Math.max(22, Math.min(56, Math.floor(Math.min(availW / state.cols, availH / state.rows))));
   const st = document.documentElement.style;
   st.setProperty('--cell', cell + 'px');
