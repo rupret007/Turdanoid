@@ -1646,7 +1646,7 @@ let soundEnabled = true;
 let audioCtx = null;
 let audioArmed = false;
 const MUSIC_STORAGE_KEY = 'turdtrisMusic_v1';
-let musicEnabled = true;
+let fallbackMusicEnabled = true;
 let inputSettings = { das: 156, arr: 33, softDrop: 0 };
 let rotationBuffer = null;
 let runStats = { pieces: 0, elapsedMs: 0, maxCombo: 0, tetrises: 0, tSpins: 0, perfectClears: 0 };
@@ -2063,13 +2063,21 @@ function updateMusic() {
   if (window.__turdtrisAudio) window.__turdtrisAudio.update(musicUpdateOptions);
 }
 
+function isMusicEnabled() {
+  if (window.Suite && typeof Suite.isMusicEnabled === 'function') {
+    return Suite.isMusicEnabled();
+  }
+  return fallbackMusicEnabled;
+}
+
 function toggleMusic() {
-  musicEnabled = !musicEnabled;
+  const enabled = !isMusicEnabled();
   try {
     if (window.Suite && typeof Suite.setMusicEnabled === 'function') {
-      Suite.setMusicEnabled(musicEnabled);
+      Suite.setMusicEnabled(enabled);
     } else {
-      localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0');
+      fallbackMusicEnabled = enabled;
+      localStorage.setItem(MUSIC_STORAGE_KEY, enabled ? '1' : '0');
     }
   } catch (e) {}
   syncSettings();
@@ -2077,12 +2085,22 @@ function toggleMusic() {
   syncSuiteMusic();
 }
 
-function syncSettings() {
+function syncMusicSettings() {
   const music = document.getElementById('musicToggle');
   if (music) {
-    music.textContent = musicEnabled ? '♫ Music on' : '♫ Music off';
-    music.setAttribute('aria-pressed', String(musicEnabled));
+    const enabled = isMusicEnabled();
+    music.textContent = enabled ? '♫ Music on' : '♫ Music off';
+    music.setAttribute('aria-pressed', String(enabled));
   }
+}
+
+window.addEventListener('suite:musicchange', () => {
+  syncMusicSettings();
+  updateMusic();
+});
+
+function syncSettings() {
+  syncMusicSettings();
   for (const [id, key] of [['dasSetting', 'das'], ['arrSetting', 'arr'], ['softSetting', 'softDrop']]) {
     const field = document.getElementById(id);
     if (!field) continue;
@@ -3770,20 +3788,15 @@ if (canvas) {
 }
 
 try {
-  if (window.Suite && typeof Suite.isMusicEnabled === 'function') {
-    musicEnabled = Suite.isMusicEnabled();
-  } else {
+  if (!(window.Suite && typeof Suite.isMusicEnabled === 'function')) {
     const siteMusic = localStorage.getItem('stalemate.music');
-    if (siteMusic === 'off') musicEnabled = false;
-    else if (siteMusic === 'on') musicEnabled = true;
-    else musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0';
+    if (siteMusic === 'off') fallbackMusicEnabled = false;
+    else if (siteMusic === 'on') fallbackMusicEnabled = true;
+    else fallbackMusicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0';
   }
 } catch (e) {}
 function suiteMusicBlocked() {
-  try {
-    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
-  } catch (e) { /* ignore */ }
-  return suiteMuted() || !soundEnabled || !musicEnabled;
+  return suiteMuted() || !soundEnabled || !isMusicEnabled();
 }
 function syncSuiteMusic() {
   try {
@@ -3943,7 +3956,7 @@ if (!(window.Suite && Suite.guide && Suite.guide.hasSeen('turdtris.html'))) {
 window.turdtrisRuntime = {
   ensureAudio,
   soundEnabled: () => soundEnabled,
-  musicEnabled: () => musicEnabled,
+  musicEnabled: isMusicEnabled,
   audioArmed: () => audioArmed,
   initializePresentation(helpers, theme) {
     window.TurdtrisPresentation = helpers;

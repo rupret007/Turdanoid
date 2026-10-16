@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as TurdtrisPresentation from '../games/turdtris-presentation.js';
+import * as SuiteMusic from '../assets/suite-music.js';
+
+const suiteSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'assets/turdsuite.js'), 'utf8');
 
 const html = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'turdtris.html'),
@@ -36,7 +39,7 @@ function makeCtxStub() {
   });
 }
 
-function bootPage(storedBest, storedSettings, storedPrefs = {}) {
+function bootPage(storedBest, storedSettings, storedPrefs = {}, beforeScripts = () => {}) {
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     url: 'http://localhost/turdtris.html',
@@ -52,6 +55,7 @@ function bootPage(storedBest, storedSettings, storedPrefs = {}) {
         window.localStorage.setItem(TurdtrisPresentation.INPUT_SETTINGS_KEY, storedSettings);
       }
       Object.entries(storedPrefs).forEach(([key, value]) => window.localStorage.setItem(key, value));
+      beforeScripts(window);
     }
   });
   const w = dom.window;
@@ -450,5 +454,134 @@ describe('Turdtris page audio integration', () => {
     expect(isMuted).toHaveBeenCalled();
     expect(player.play).not.toHaveBeenCalled();
     expect(w.eval('audioCtx')).toBeNull();
+  });
+});
+
+// Load both shipped scripts and the real playlist engine. Only module loading,
+// canvas drawing and browser media are adapted for jsdom; gates/setters are real.
+describe('Turdtris shared music preference', () => {
+  let w;
+  let player;
+
+  async function boot(prefs = { 'stalemate.music': 'off' }) {
+    w = bootPage(undefined, undefined, prefs, window => {
+      Object.defineProperty(window.document, 'hidden', { value: false, configurable: true });
+      class MediaDouble extends window.EventTarget {
+        paused = true;
+        setAttribute() {}
+        play() {
+          this.paused = false;
+          this.dispatchEvent(new window.Event('play'));
+          return Promise.resolve();
+        }
+        pause() {
+          this.paused = true;
+          this.dispatchEvent(new window.Event('pause'));
+        }
+      }
+      window.__testSuiteImport = spec => Promise.resolve(spec === './suite-music.js' ? {
+        ...SuiteMusic,
+        createSuiteMusic: options => SuiteMusic.createSuiteMusic({ ...options, AudioCtor: MediaDouble })
+      } : null);
+      window.eval(suiteSource.replace('return import(spec);', 'return window.__testSuiteImport(spec);'));
+    });
+    await new Promise(resolve => w.document.readyState === 'loading'
+      ? w.document.addEventListener('DOMContentLoaded', resolve, { once: true }) : resolve());
+    player = await w.Suite.music();
+  }
+
+  function expectPreference(enabled) {
+    expect(w.Suite.isMusicEnabled()).toBe(enabled);
+    expect(w.turdtrisRuntime.musicEnabled()).toBe(enabled);
+    const local = w.document.getElementById('musicToggle');
+    const shared = w.document.getElementById('suite-music-toggle');
+    expect(local.textContent).toBe(enabled ? '♫ Music on' : '♫ Music off');
+    expect(local.getAttribute('aria-pressed')).toBe(String(enabled));
+    expect(shared.getAttribute('aria-pressed')).toBe(String(enabled));
+    expect(shared.getAttribute('aria-label')).toContain(enabled ? 'music on,' : 'music off,');
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    w?.close();
+  });
+
+  it('starts shared playback from a restored opt-out and updates the local control immediately', async () => {
+    await boot();
+    expectPreference(false);
+    expect(player.audioElement.paused).toBe(true);
+    w.document.getElementById('suite-music-toggle').click();
+    expectPreference(true);
+    await Promise.resolve();
+    expect(w.suiteMusicBlocked()).toBe(false);
+    expect(player.isPlaying()).toBe(true);
+    expect(player.audioElement.paused).toBe(false);
+    expect(w.document.documentElement.dataset.stalemateMusic).toBe('playing');
+    expect(w.localStorage.getItem('stalemate.music')).toBe('on');
+  });
+
+  it('alternates either control without stale toggle direction and restores the shared choice', async () => {
+    await boot({ 'stalemate.music': 'on' });
+    player.armFromGesture();
+    for (const id of ['suite-music-toggle', 'musicToggle', 'musicToggle', 'suite-music-toggle']) {
+      const next = !w.Suite.isMusicEnabled();
+      w.document.getElementById(id).click();
+      expectPreference(next);
+      expect(player.audioElement.paused).toBe(!next);
+      expect(w.suiteMusicBlocked()).toBe(!next);
+      expect(w.localStorage.getItem('stalemate.music')).toBe(next ? 'on' : 'off');
+      expect(w.localStorage.getItem('turdtrisMusic_v1')).toBeNull();
+      await Promise.resolve();
+    }
+    w.document.getElementById('musicToggle').click();
+    const saved = w.localStorage.getItem('stalemate.music');
+    w.close();
+    await boot({ 'stalemate.music': saved });
+    expectPreference(false);
+    expect(player.audioElement.paused).toBe(true);
+  });
+
+  it('keeps programmatic changes and both controls synchronized when preference writes fail', async () => {
+    await boot();
+    vi.spyOn(w.Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new w.DOMException('Storage blocked', 'SecurityError');
+    });
+    player.armFromGesture();
+    w.Suite.setMusicEnabled(true);
+    expectPreference(true);
+    expect(player.isPlaying()).toBe(true);
+    w.document.getElementById('musicToggle').click();
+    expectPreference(false);
+    expect(player.audioElement.paused).toBe(true);
+    w.document.getElementById('suite-music-toggle').click();
+    expectPreference(true);
+    expect(player.isPlaying()).toBe(true);
+  });
+
+  it.each(['turdtrisSoundOn_v1', 'turdsuite_muted'])('retains the %s gate when either control enables music', async gate => {
+    await boot({ 'stalemate.music': 'off', [gate]: gate === 'turdsuite_muted' ? '1' : '0' });
+    player.armFromGesture();
+    for (const id of ['suite-music-toggle', 'musicToggle', 'musicToggle']) {
+      w.document.getElementById(id).click();
+      await Promise.resolve();
+      expectPreference(w.Suite.isMusicEnabled());
+      expect(w.suiteMusicBlocked()).toBe(true);
+      expect(player.audioElement.paused).toBe(true);
+    }
+    expect(w.Suite.isMusicEnabled()).toBe(true);
+    expect(w.localStorage.getItem(gate)).toBe(gate === 'turdsuite_muted' ? '1' : '0');
+  });
+
+  it('migrates the legacy opt-out once and lets either control override it', async () => {
+    await boot({ turdtrisMusic_v1: '0' });
+    expectPreference(false);
+    expect(w.localStorage.getItem('stalemate.music')).toBe('off');
+    w.document.getElementById('suite-music-toggle').click();
+    expectPreference(true);
+    await Promise.resolve();
+    expect(player.isPlaying()).toBe(true);
+    w.close();
+    await boot({ turdtrisMusic_v1: '0', 'stalemate.music': 'on' });
+    expectPreference(true);
   });
 });

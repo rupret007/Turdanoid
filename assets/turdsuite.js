@@ -76,6 +76,7 @@
       musicEnabled = !!on;
       writeMusicEnabled(musicEnabled);
       syncMusicToggleUi();
+      window.dispatchEvent(new CustomEvent('suite:musicchange'));
       if (musicEngine && typeof musicEngine.sync === 'function') musicEngine.sync();
     },
     playManic() {
