@@ -1,7 +1,4 @@
-# Preview routes for root and GitHub Pages project-path hosting.
-# Serve this file at the origin root for crawlers to honor these rules.
+# Turdanoid is a preview build: keep every page out of search indexes.
+# Each HTML page also carries <meta name="robots" content="noindex">.
 User-agent: *
-Disallow: /preview/
-Disallow: /previews/
-Disallow: /Turdanoid/preview/
-Disallow: /Turdanoid/previews/
+Disallow: /

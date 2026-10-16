@@ -90,3 +90,22 @@ path convention was present in the repository. Crawlers consult robots.txt at
 the origin root: GitHub Pages serving this file only at
 `/Turdanoid/robots.txt` does not enforce these disallows. Game-page `noindex`
 metadata remains available independently when those pages are crawled.
+
+## Re-gate fixes (Karen re-gate of 2f523d3 / 2b856a8)
+
+- `noindex` meta on all 9 HTML pages (adds `index.html` and `hub.html`);
+  `robots.txt` now disallows everything (`Disallow: /`).
+- `html,body` use `touch-action: manipulation`; the canvas uses `pinch-zoom`
+  and ignores multi-touch, so one-finger paddle drags still never scroll while
+  two-finger pinch zooms.
+- Menu backdrop frame rate adapts to the real frame cost (script + raster),
+  backing off up to 1.2 s per frame on slow devices; gameplay stays full rate.
+- Hub "Latest Changelog" toggle is at least 44 px tall.
+- Neon Arkanoid: single `minmax(0,1fr)` column on ≤1024 px, no sideways scroll.
+
+Box lab runs (Lighthouse 13.5.0, default mobile, Chrome headless, 3 runs each):
+
+| Build | Performance | TBT (ms) | TTI (ms) |
+| --- | --- | --- | --- |
+| 2f523d3 | 63 / 64 / 66 | 1359 / 1206 / 960 | 5527 / 5419 / 5071 |
+| this commit | 81 / 83 / 85 | 300 / 233 / 179 | 3586 / 3515 / 3455 |

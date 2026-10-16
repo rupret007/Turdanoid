@@ -19,7 +19,7 @@
     --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;user-select:none;-webkit-user-select:none}
   body{
     font-family:var(--ta-font,'Segoe UI','Avenir Next','Trebuchet MS',system-ui,sans-serif);color:var(--ink);
     background:
@@ -33,7 +33,7 @@
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;gap:0}
   #playShell{position:relative;width:100%;height:100%;flex:0 0 auto;max-width:100%;max-height:100%}
   #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px var(--panel-border)}
-  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:none}
+  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:pinch-zoom}
   .side-gutter{flex:1 1 0;min-width:0;max-width:min(420px,22vw);display:none;pointer-events:none;padding:max(12px,var(--safe-top)) 10px max(12px,var(--safe-bot));align-self:stretch}
   #stage.layout-wide .side-gutter{display:flex;flex-direction:column;justify-content:center}
   .side-art{padding:16px 14px;border-radius:16px;border:1px solid var(--panel-border);background:linear-gradient(165deg,rgba(232,244,239,.08),rgba(6,16,24,.72));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(232,197,106,.14),0 16px 40px rgba(0,0,0,.35)}
@@ -1322,8 +1322,8 @@ cv.addEventListener('mousedown', e=>{ pointerFromTouch = false; const r = cv.get
 cv.addEventListener('mousemove', e=>{ const r = cv.getBoundingClientRect(); pointerMove(e.clientX-r.left, e.clientY-r.top); });
 window.addEventListener('mouseup', pointerUp);
 
-cv.addEventListener('touchstart', e=>{ e.preventDefault(); pointerFromTouch = true; const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerDown(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
-cv.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerMove(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchstart', e=>{ if(e.touches.length > 1) return; e.preventDefault(); pointerFromTouch = true; const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerDown(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchmove', e=>{ if(e.touches.length > 1) return; e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerMove(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
 cv.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); }, {passive:false});
 cv.addEventListener('touchcancel', pointerUp);
 
@@ -3381,16 +3381,29 @@ function roundRect(c,x,y,w,h,r){
 /* ---- Loop ---- */
 // Menus (title, pause, end) sit over the canvas, so the backdrop only needs ~12fps there.
 // Full rate resumes the moment play starts. This keeps the main thread free on load.
+// On slow phones a single menu frame can cost 100ms+, so the idle rate backs off to keep
+// each menu frame under ~1/6 of the idle budget (taps on Play stay responsive).
 const IDLE_FRAME_MS = 83;
+const IDLE_FRAME_MAX_MS = 1200;
+let idleFrameMs = 250; // start gentle while the page is still loading, then settle
 let lastRender = 0;
+let idleRenderedAt = 0;
 function loop(now){
   const dt = Math.min(33, now - lastTime);
   lastTime = now;
   const active = state === 'playing' && !paused;
   if(active){ step(dt); }
-  if(active || now - lastRender >= IDLE_FRAME_MS){
+  // Canvas work is rasterized after the script returns, so time the whole frame:
+  // the gap from an idle render to the next animation frame.
+  if(idleRenderedAt){
+    const cost = performance.now() - idleRenderedAt;
+    idleRenderedAt = 0;
+    idleFrameMs = Math.min(IDLE_FRAME_MAX_MS, Math.max(IDLE_FRAME_MS, cost * 6, idleFrameMs * 0.9));
+  }
+  if(active || now - lastRender >= idleFrameMs){
     lastRender = now;
     render();
+    if(!active) idleRenderedAt = performance.now();
   }
   requestAnimationFrame(loop);
 }
@@ -3411,7 +3424,8 @@ document.addEventListener('touchend', e=>{
   lastTouch = now;
 }, {passive:false});
 
-document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+// One-finger drags never scroll the page; two-finger pinch is left to the browser for zoom.
+document.body.addEventListener('touchmove', e=>{ if(e.touches.length < 2) e.preventDefault(); }, {passive:false});
 
 /* ---- Test hook ----
    Local/dev only. The public GitHub Pages host must not ship a
