@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MUSIC_PREF_KEY,
   STALEMATE_PLAYLIST,
+  STALEMATE_TRACK_ONLY_BEEN_18_TITLE,
   advanceTrackIndex,
   createSuiteMusic,
   readMusicEnabled,
@@ -59,7 +60,7 @@ describe('suite-music playlist', () => {
     expect(STALEMATE_PLAYLIST.map((t) => t.title)).toEqual([
       'Manic',
       'Andrea',
-      'It\u2019s Only Been 18',
+      STALEMATE_TRACK_ONLY_BEEN_18_TITLE,
       'Wham Bam',
       'Planet of the Flakes'
     ]);

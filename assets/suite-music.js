@@ -54,10 +54,13 @@ export function writeMusicEnabled(storage, on) {
   }
 }
 
+/** Jeff / Stalemate — exact on-site title for only-been-18.m4a (curly apostrophe). */
+export const STALEMATE_TRACK_ONLY_BEEN_18_TITLE = 'It\u2019s Only Been 18';
+
 export const STALEMATE_PLAYLIST = [
   { path: 'stalemate/manic.m4a', title: 'Manic' },
   { path: 'stalemate/andrea.m4a', title: 'Andrea' },
-  { path: 'stalemate/only-been-18.m4a', title: 'It\u2019s Only Been 18' },
+  { path: 'stalemate/only-been-18.m4a', title: STALEMATE_TRACK_ONLY_BEEN_18_TITLE },
   { path: 'stalemate/wham-bam.m4a', title: 'Wham Bam' },
   { path: 'stalemate/planet-of-the-flakes.m4a', title: 'Planet of the Flakes' }
 ];
