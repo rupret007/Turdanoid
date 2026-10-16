@@ -146,6 +146,20 @@ describe('live games read suite difficulty', () => {
   it('exposes a segmented control stylesheet hook', () => {
     const css = readFileSync(join(root, 'assets/turdsuite.css'), 'utf8');
     expect(css).toMatch(/\.suite-difficulty-btn[\s\S]*min-height: 44px/);
+    expect(css).toMatch(/\.suite-hud-settings/);
+    expect(css).not.toMatch(/\.suite-difficulty\s*\{[^}]*position:\s*fixed/);
+  });
+
+  it('mounts difficulty in the HUD settings slot, not on body', () => {
+    const ui = readFileSync(join(root, 'assets/suite-difficulty-ui.js'), 'utf8');
+    expect(ui).toContain('suite-difficulty-mount');
+    expect(ui).toContain('suite-hud-settings');
+    expect(ui).not.toContain('document.body.appendChild(wrap)');
+    for (const page of LIVE_GAMES.filter((p) => p !== 'turdspades.html')) {
+      const html = readFileSync(join(root, page), 'utf8');
+      expect(html, page).toContain('id="suite-difficulty-mount"');
+      expect(html, page).toContain('suite-hud-settings');
+    }
   });
 });
 

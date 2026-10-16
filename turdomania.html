@@ -87,6 +87,9 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   .dock { margin-top: 6px; gap: 6px; flex-wrap: wrap; }
   .dock button, .dock select { padding: 0 10px; font-size: .85rem; white-space: nowrap; }
   .dock select { min-width: 0; flex: 1 1 100%; max-width: none; }
+  .dock .suite-difficulty-seg { max-width: 100%; }
+  .dock .suite-difficulty-btn { min-width: 0; padding: 0 8px; font-size: 0.62rem; }
+  .dock:has(.suite-difficulty) #levelSel { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tile, .float { transition: none !important; animation: none !important; }
@@ -117,6 +120,7 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   </div>
 </div>
 <div class="dock" role="toolbar" aria-label="Game controls">
+  <div class="suite-hud-settings" id="suite-difficulty-mount"></div>
   <button type="button" id="undoBtn" aria-keyshortcuts="U">↶ Undo</button>
   <button type="button" id="newBtn" aria-keyshortcuts="N">🚽 New board</button>
   <label class="sr-only" for="levelSel">Difficulty</label>
@@ -137,7 +141,7 @@ window.tmView = function () {
   var w = Math.min(window.innerWidth || Infinity, de.clientWidth || Infinity);
   var h = Math.min(window.innerHeight || Infinity, de.clientHeight || Infinity);
   var compact = w <= 360 || h <= 600;
-  return { availW: Math.min(w, 760) - 36, availH: h - (compact ? 170 : 230) };
+  return { availW: Math.min(w, 760) - 36, availH: h - (compact ? 182 : 230) };
 };
 window.tmFit = function (levelKey) {
   var d = TM_DIMS[levelKey] || TM_DIMS.normal;
@@ -435,8 +439,11 @@ els.level.addEventListener('change', () => {
   } catch { /* ignore */ }
   start(lvl);
 });
+const pinnedLevel = Core.LEVELS[qs.get('level')] ? qs.get('level') : null;
+
 if (window.Suite && Suite.difficulty) {
   Suite.difficulty.onChange((lvl) => {
+    if (pinnedLevel) { return; }
     if (!Core.LEVELS[lvl] || (state && state.level === lvl)) { return; }
     if (els.level.value !== lvl) { els.level.value = lvl; }
     writePrefs({ level: lvl });
@@ -446,10 +453,17 @@ if (window.Suite && Suite.difficulty) {
 let rz = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (state) { layout(); render(); } }); });
 
-const startLevel = Core.LEVELS[qs.get('level')]
-  ? qs.get('level')
-  : (window.TM_INIT && window.TM_INIT.level) || suiteBoardLevel() || readPrefs().level || 'normal';
+const startLevel = pinnedLevel
+  || (window.TM_INIT && window.TM_INIT.level)
+  || suiteBoardLevel()
+  || readPrefs().level
+  || 'normal';
 start(startLevel);
+try {
+  if (pinnedLevel && window.Suite && Suite.difficulty && Suite.difficulty.get() !== pinnedLevel) {
+    Suite.difficulty.set(pinnedLevel);
+  }
+} catch { /* ignore */ }
 // Test hook: deterministic actions without hunting pixels.
 window.__turdomaniaPop = (c, r) => popAt(c, r);
 window.__turdomaniaUndo = doUndo;

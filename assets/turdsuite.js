@@ -397,7 +397,6 @@
       difficultyModule = m;
       Suite.difficulty.normalize = m.normalizeDifficulty;
       Suite.difficulty.load();
-      notifyDifficulty();
     }).catch(function () {});
   }
 

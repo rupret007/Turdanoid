@@ -203,6 +203,22 @@ describe('turdomania fit + page (re-gate soft findings)', () => {
     expect(narrow.rows * 32).toBeLessThanOrEqual(398);
     expect(Core.fitDims('hard', 10, 10)).toEqual({ cols: 6, rows: 8 });
   });
+
+  it('fitBoardForViewport matches browser-smoke turdomania-size expectations', () => {
+    const table = [
+      { width: 320, height: 568, easy: [8, 10], normal: [8, 12], hard: [8, 12] },
+      { width: 375, height: 667, easy: [8, 10], normal: [10, 12], hard: [10, 13] },
+      { width: 390, height: 844, easy: [8, 10], normal: [10, 12], hard: [11, 14] },
+      { width: 412, height: 915, easy: [8, 10], normal: [10, 12], hard: [11, 14] },
+      { width: 430, height: 932, easy: [8, 10], normal: [10, 12], hard: [12, 14] }
+    ];
+    for (const row of table) {
+      for (const level of ['easy', 'normal', 'hard']) {
+        const { cols, rows } = Core.fitBoardForViewport(level, row.width, row.height);
+        expect([cols, rows], `${row.width}-${level}`).toEqual(row[level]);
+      }
+    }
+  });
   it('newGame honours fitted dims without changing kinds or level', () => {
     const g = Core.newGame('hard', 7, { cols: 8, rows: 12 });
     expect(g.level).toBe('hard');

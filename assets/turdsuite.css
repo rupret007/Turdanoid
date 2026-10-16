@@ -588,13 +588,23 @@ body label:has(input:is([type="checkbox"], [type="radio"])) {
   box-shadow: 0 0 0 2px rgba(158, 255, 200, 0.25);
 }
 
+/* ---------- HUD settings row (difficulty + arcade a11y mount on merge) ---------- */
+.suite-hud-settings {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
 /* ---------- Shared difficulty segmented control ---------- */
 .suite-difficulty {
-  position: fixed;
-  top: max(8px, calc(var(--suite-safe-top) + 6px));
-  right: max(8px, calc(var(--suite-safe-right) + 6px));
-  z-index: 10001;
-  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 .suite-difficulty-seg {
   display: inline-flex;
@@ -631,16 +641,15 @@ body label:has(input:is([type="checkbox"], [type="radio"])) {
   outline-offset: 2px;
 }
 @media (max-width: 520px) {
-  .suite-difficulty {
-    left: max(8px, calc(var(--suite-safe-left) + 6px));
-    right: max(8px, calc(var(--suite-safe-right) + 6px));
-    top: max(6px, calc(var(--suite-safe-top) + 4px));
-  }
-  .suite-difficulty-seg {
+  .suite-difficulty--hub .suite-difficulty-seg,
+  .suite-difficulty--topbar .suite-difficulty-seg,
+  .suite-difficulty--hud .suite-difficulty-seg {
     width: 100%;
     justify-content: stretch;
   }
-  .suite-difficulty-btn {
+  .suite-difficulty--hub .suite-difficulty-btn,
+  .suite-difficulty--topbar .suite-difficulty-btn,
+  .suite-difficulty--hud .suite-difficulty-btn {
     flex: 1 1 0;
     padding: 0 6px;
     font-size: 0.68rem;
