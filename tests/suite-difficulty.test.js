@@ -148,3 +148,13 @@ describe('live games read suite difficulty', () => {
     expect(css).toMatch(/\.suite-difficulty-btn[\s\S]*min-height: 44px/);
   });
 });
+
+describe('TurdSpades difficulty placement', () => {
+  it('opts out of the floating shared picker so it cannot cover the Hub button on phones', () => {
+    const spadesHtml = readFileSync(join(root, 'turdspades.html'), 'utf8');
+    expect(spadesHtml).toMatch(/<body[^>]*data-suite-no-difficulty="1"/);
+    // Its own in-table select still syncs with Suite.difficulty.
+    const client = readFileSync(join(root, 'games/turdspades-client.js'), 'utf8');
+    expect(client).toContain('Suite.difficulty.set(next)');
+  });
+});
