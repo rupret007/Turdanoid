@@ -146,11 +146,11 @@ function measureHub(firstScreen) {
     actionOverlap: actionOverlap.map((card) => card.name),
     mute: mute
       ? {
-          tabIndex: mute.tabIndex,
-          label: mute.getAttribute('aria-label'),
-          height: muteBox.height,
-          width: muteBox.width
-        }
+        tabIndex: mute.tabIndex,
+        label: mute.getAttribute('aria-label'),
+        height: muteBox.height,
+        width: muteBox.width
+      }
       : null
   };
 }
@@ -226,7 +226,7 @@ function resumeEdges() {
   }
 
   it('shows every game blurb in full (no ellipsis) at 320px', async () => {
-    if (!hasBrowser) return;
+    if (!hasBrowser) {return;}
     const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
     try {
       await openHub(page);
