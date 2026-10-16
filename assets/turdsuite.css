@@ -112,9 +112,15 @@ body[data-suite-back="top"] .suite-back-pill {
   body:not([data-suite-back="bottom"]) .suite-back-pill .suite-back-pill-label {
     display: none;
   }
-  /* In-page Hub links duplicate the suite pill and overlap it on phones. */
+  /* Duplicate in-page Hub exits share one job with the suite pill on phones.
+     Header/topbar links, overlay Back to Hub, Game Hub, and chrome Hub
+     buttons hide when the pill is present. Desktop keeps a named Hub. */
   body:has(.suite-back-pill) header a[href="./"]:not(.suite-back-pill),
-  body:has(.suite-back-pill) .topbar a[href="./"]:not(.suite-back-pill) {
+  body:has(.suite-back-pill) .topbar a[href="./"]:not(.suite-back-pill),
+  body:has(.suite-back-pill) a.dialog-hub,
+  body:has(.suite-back-pill) .overlay a[href="./"]:not(.suite-back-pill),
+  body:has(.suite-back-pill) #btnHub,
+  body:has(.suite-back-pill) button[onclick="location.href='./'"] {
     display: none !important;
   }
 }

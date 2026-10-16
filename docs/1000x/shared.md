@@ -8,7 +8,7 @@ Base: round-0 audit `TURDANOID-1000X-AUDIT-1005.md`, tree `b3821b4` save contrac
 |------|---------|----------------------|
 | Gameplay | Hub launcher + continue honest | No change to continue rules |
 | Feel | Back pill top-left on phones | **`preventDoubleTapZoom` touchend guard dropped quick second taps** — fixed via CSS-only zoom policy (`suite-touch.js`) |
-| Graphics | Card/felt tokens | Hide duplicate in-page Hub links when suite pill is present (≤520px) |
+| Graphics | Card/felt tokens | Hide duplicate in-page Hub exits (Game Hub / Back to Hub / overlay + header links) when suite pill is present (≤520px) |
 | Animation | Idle covers + critters | Unchanged |
 | Audio | Preset bank | Unchanged |
 | HUD | Stat chips (desktop) | Unchanged |
@@ -49,8 +49,8 @@ Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 i
 
 - **Default:** bottom-left on wide viewports; **top-left 44×44 icon** at ≤520px, **~8px below safe-area** so header toolbars and Rules buttons stay tappable.
 - **Override:** `body data-suite-back="bottom"` keeps bottom dock; `data-suite-back="top"` forces top on all widths.
-- Duplicate header Hub links (`header` / `.topbar`) are hidden on narrow when `.suite-back-pill` is present.
-- Helpers: `assets/suite-back-pill.js` (`resolveBackPillPlacement`, overlap math) for unit tests and Playwright overlap checks.
+- Duplicate in-page Hub exits are hidden (`display: none`) at ≤520px when `.suite-back-pill` is present: header/topbar Hub links, overlay **Back to Hub** (`.dialog-hub`), title-screen **Game Hub** (`#btnHub`), and chrome Hub buttons (`onclick` home). Desktop 1280×800 keeps a named Hub control. The pill still goes home (`href="./"`, `aria-label="Back to game hub"`). Physical overlap **NOT RUN**.
+- Helpers: `assets/suite-back-pill.js` (`resolveBackPillPlacement`, overlap math, `DUPLICATE_INPAGE_HUB_INNER_SELECTORS`) for unit tests and Playwright overlap checks.
 
 ## Checklist (testable)
 
@@ -83,8 +83,8 @@ Honours `turdsuite_muted` and `Suite.setMuted()`. `masterVolume` is fixed at 1 i
 - [x] Remove touchend `preventDefault` double-tap guard; `assets/suite-touch.js` + `tests/suite-touch.test.js` (two quick button taps → two clicks)
 - [x] CSS `touch-action: manipulation` on root + interactive controls; `html.suite-touch-manipulation`
 - [x] Back-pill overlap pass: hub 320/390/1280 + six game pages 320/390 (Playwright bbox check)
-- [x] Narrow pill top inset + hide duplicate header Hub links when suite pill present
+- [x] Narrow pill top inset + hide duplicate in-page Hub exits (Game Hub / Back to Hub / overlay + header links) when suite pill present (≤520px)
 
 ## Needs shared change (other lanes)
 
-_None — card-game lanes may remove redundant header Hub markup later; shared CSS already hides duplicates on phones._
+_None — shared CSS hides in-page Hub exits on phones when the suite pill is present; desktop keeps named Hub controls._
