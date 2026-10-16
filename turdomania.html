@@ -73,10 +73,16 @@ h1 { font-size: clamp(1.15rem, 5vw, 1.7rem); letter-spacing: .04em; color: var(-
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 body.reduced .tile, body.reduced .float { transition: none !important; animation: none !important; }
 body.reduced .tile.popping { transform: var(--pos) !important; }
-@media (max-width: 360px) {
-  header.hud { padding: 2px 46px 6px; gap: 4px 6px; }
-  .stat { min-width: 58px; padding: 2px 6px; font-size: .75rem; }
-  .tagline { font-size: .72rem; }
+@media (max-width: 360px), (max-height: 600px) {
+  header.hud { padding: 2px 46px 4px; gap: 4px; flex-wrap: nowrap; justify-content: center; }
+  header.hud h1 { display: none; }
+  .stat { min-width: 0; flex: 1 1 0; padding: 2px 6px; font-size: .7rem; line-height: 1.1; }
+  .stat b { font-size: .95rem; }
+  .tagline { display: none; }
+  #boardWrap { margin: 4px auto; padding: 4px; }
+  .dock { margin-top: 6px; gap: 6px; flex-wrap: nowrap; }
+  .dock button, .dock select { padding: 0 10px; font-size: .85rem; white-space: nowrap; }
+  .dock select { min-width: 0; flex: 1 1 auto; max-width: 120px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tile, .float { transition: none !important; animation: none !important; }
@@ -169,7 +175,8 @@ function start(levelKey, seed) {
 function layout() {
   const vw = Math.min(window.innerWidth, 760);
   const availW = vw - 36;
-  const availH = window.innerHeight - 230;
+  const compact = matchMedia('(max-width: 360px), (max-height: 600px)').matches;
+  const availH = window.innerHeight - (compact ? 130 : 230);
   cell = Math.max(22, Math.min(56, Math.floor(Math.min(availW / state.cols, availH / state.rows))));
   document.documentElement.style.setProperty('--cell', cell + 'px');
   boardEl.style.width = cell * state.cols + 'px';

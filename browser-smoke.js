@@ -2395,6 +2395,15 @@ async function main() {
           if (!boot.undoDisabled) fail(name, 'Undo must be disabled before the first pop');
           if (!boot.back) fail(name, 'missing the Hub back pill');
           if (boot.bottom > viewport.height) fail(name, `board bottom is below the first screen: ${boot.bottom}`);
+          const dockFit = await page.evaluate(() => ['undoBtn', 'newBtn'].map((id) => {
+            const r = document.getElementById(id).getBoundingClientRect();
+            return { id, top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height };
+          }));
+          for (const b of dockFit) {
+            if (b.bottom > viewport.height || b.top < 0 || b.left < 0 || b.right > viewport.width || b.h < 44) {
+              fail(name, `${b.id} must be a full 44px control on the first screen: ${JSON.stringify(b)}`);
+            }
+          }
           if (process.env.TURDOMANIA_SHOT_DIR) {
             await page.screenshot({ path: path.join(process.env.TURDOMANIA_SHOT_DIR, `${name}-start.png`) });
           }
