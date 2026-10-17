@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pages = [
+  ['neon-arkanoid.html', '#howToPlay', '[onclick="dismissHowToPlay()"]', '[onclick="quickStartPlay()"]'],
   ['turdjack.html', '#welcomeGuide', '#closeGuideBtn', '#quickGuideBtn'],
   ['turdspades.html', '#guide', '#closeGuide', '#quickStart'],
   ['turdtris.html', '#welcomeGuide', '[onclick="hideWelcomeGuide()"]', '[onclick="quickStartRun()"]'],

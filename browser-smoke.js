@@ -355,6 +355,28 @@ async function main() {
       }
     });
 
+    for (const key of ['Enter', 'Space']) {
+      for (const label of ['Close Guide', 'Quick Start']) {
+        const name = `neon-guide-${label.toLowerCase().replaceAll(' ', '-')}-${key.toLowerCase()}`;
+        await runCheck(browser, name, 'neon-arkanoid.html', {
+          actions: async (page) => {
+            await page.getByRole('button', { name: label, exact: true }).focus();
+            await page.keyboard.press(key);
+            const state = await page.evaluate(() => ({
+              guideOpen: document.getElementById('howToPlay').style.display !== 'none',
+              awaitingLaunch: window.gameInstance.awaitingLaunch,
+              paused: window.gameInstance.paused
+            }));
+            if (state.guideOpen) fail(name, `${key} should activate ${label} and close the guide`);
+            if (state.awaitingLaunch !== (label === 'Close Guide')) {
+              fail(name, `${label} with ${key} should ${label === 'Close Guide' ? 'wait for launch' : 'launch the ball'}`);
+            }
+            if (state.paused) fail(name, `${label} with ${key} should leave the fresh game unpaused`);
+          }
+        });
+      }
+    }
+
     await runCheck(browser, 'turdanoid-mobile', 'TurdAnoid.html', {
       mobile: true,
       actions: async (page) => {

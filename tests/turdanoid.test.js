@@ -11,6 +11,9 @@ import {
   computeBrickBreakScore,
   computeFlushBreakScore,
   computeLevelClearBonus,
+  computeBallSpeedForDifficulty,
+  computeDropChanceForDifficulty,
+  startingLivesForDifficulty,
   POWERS
 } from '../games/turdanoid_logic';
 
@@ -18,6 +21,12 @@ describe('TurdAnoid Balance Logic', () => {
   describe('Ball speed', () => {
     it('matches the shipped curve at level 1', () => {
       expect(computeBallSpeed(1)).toBeCloseTo(5.56);
+    });
+
+    it('keeps normal difficulty identical to the classic curve', () => {
+      expect(computeBallSpeedForDifficulty(7, 'normal')).toBe(computeBallSpeed(7));
+      expect(computeDropChanceForDifficulty(1, 100, 'normal')).toBe(computeDropChance(1, 100));
+      expect(startingLivesForDifficulty(3, 'normal')).toBe(3);
     });
 
     it('increases with level', () => {

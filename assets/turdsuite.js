@@ -263,12 +263,39 @@
     if (!fxPromise) {
       fxPromise = suiteImport('./suite-fx.js').then(function (m) {
         if (!m) return null;
-        fxEngine = m.createSuiteFX(document.body);
+        fxEngine = m.createSuiteFX(document.body, {
+          getReducedMotion: function () {
+            try {
+              if (typeof Suite.prefersReducedMotion === 'function') {
+                return Suite.prefersReducedMotion();
+              }
+            } catch (e) { /* ignore */ }
+            return false;
+          }
+        });
         return fxEngine;
       }).catch(function () { return null; });
     }
     return fxPromise;
   };
+
+  let arcadeA11yReady = null;
+  function bootArcadeA11y() {
+    if (arcadeA11yReady) return arcadeA11yReady;
+    arcadeA11yReady = suiteImport('../games/suite-arcade-a11y.js').then(function (m) {
+      if (!m) return null;
+      try {
+        window.SuiteArcadeA11y = m;
+        m.attachSuiteArcadeA11y(Suite, suiteStorage(), document);
+        if (typeof m.ensureArcadeA11yMount === 'function') {
+          m.ensureArcadeA11yMount(document);
+        }
+        m.createArcadeA11yToggle(document, Suite);
+      } catch (e) { /* ignore */ }
+      return m;
+    }).catch(function () { return null; });
+    return arcadeA11yReady;
+  }
 
   /** Quick pop on a stat tile or score chip after a score change. */
   Suite.bump = function (el) {
@@ -376,6 +403,124 @@
     } catch (e) {
       return null;
     }
+  }
+
+  // ---------- Shared difficulty (Easy / Normal / Hard) ----------
+  const DIFFICULTY_KEY = 'turdsuite_difficulty_v1';
+  const difficultyListeners = [];
+  let difficultyModule = null;
+
+  function normalizeDifficultyInline(value) {
+    const d = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (d === 'easy' || d === 'hard') {
+      return d;
+    }
+    if (d === 'sharp') {
+      return 'hard';
+    }
+    return 'normal';
+  }
+
+  let currentDifficulty = 'normal';
+  try {
+    currentDifficulty = normalizeDifficultyInline(localStorage.getItem(DIFFICULTY_KEY));
+  } catch (e) {}
+
+  const DEFAULT_TUNING = { speed: 1, lives: 0, spawn: 1 };
+
+  function notifyDifficulty() {
+    for (let i = 0; i < difficultyListeners.length; i++) {
+      try {
+        difficultyListeners[i](currentDifficulty);
+      } catch (e) {}
+    }
+  }
+
+  Suite.difficulty = {
+    key: DIFFICULTY_KEY,
+    normalize: function (value) {
+      return difficultyModule
+        ? difficultyModule.normalizeDifficulty(value)
+        : normalizeDifficultyInline(value);
+    },
+    get: function () {
+      return currentDifficulty;
+    },
+    set: function (value) {
+      const next = Suite.difficulty.normalize(value);
+      if (next === currentDifficulty) {
+        return true;
+      }
+      currentDifficulty = next;
+      try {
+        const storage = suiteStorage();
+        if (storage) {
+          storage.setItem(DIFFICULTY_KEY, next);
+        }
+      } catch (e) {}
+      notifyDifficulty();
+      try {
+        if (typeof document !== 'undefined' && document.dispatchEvent) {
+          document.dispatchEvent(new CustomEvent('turdsuite:difficulty', { detail: { level: next } }));
+        }
+      } catch (e) {}
+      return true;
+    },
+    tuning: function () {
+      if (difficultyModule) {
+        return difficultyModule.getTuning(currentDifficulty);
+      }
+      if (currentDifficulty === 'easy') {
+        return { speed: 0.88, lives: 1, spawn: 1.15 };
+      }
+      if (currentDifficulty === 'hard') {
+        return { speed: 1.12, lives: -1, spawn: 0.88 };
+      }
+      return DEFAULT_TUNING;
+    },
+    onChange: function (fn) {
+      if (typeof fn === 'function') {
+        difficultyListeners.push(fn);
+      }
+    },
+    load: function () {
+      try {
+        const storage = suiteStorage();
+        if (difficultyModule) {
+          currentDifficulty = difficultyModule.loadDifficulty(storage);
+        } else if (storage) {
+          currentDifficulty = normalizeDifficultyInline(storage.getItem(DIFFICULTY_KEY));
+        }
+      } catch (e) {
+        currentDifficulty = 'normal';
+      }
+      return currentDifficulty;
+    }
+  };
+
+  function mountSuiteDifficultyPicker() {
+    try {
+      if (document.body && document.body.dataset && document.body.dataset.suiteNoDifficulty === '1') {
+        return;
+      }
+      suiteImport('./suite-difficulty-ui.js').then(function (ui) {
+        if (!ui || typeof ui.mountDifficultyPicker !== 'function') {
+          return;
+        }
+        ui.mountDifficultyPicker(document, Suite.difficulty);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  function initSuiteDifficultyModule() {
+    suiteImport('../games/suite-difficulty.js').then(function (m) {
+      if (!m) {
+        return;
+      }
+      difficultyModule = m;
+      Suite.difficulty.normalize = m.normalizeDifficulty;
+      Suite.difficulty.load();
+    }).catch(function () {});
   }
 
   Suite.table = {
@@ -516,7 +661,8 @@
       btn.type = 'button';
       btn.id = 'suite-music-toggle';
       btn.className = 'suite-music-toggle';
-      document.body.appendChild(btn);
+      const slot = document.querySelector('[data-suite-music-slot]');
+      (slot || document.body).appendChild(btn);
       syncMusicToggleUi();
       btn.addEventListener('click', function () {
         Suite.setMusicEnabled(!musicEnabled);
@@ -607,8 +753,11 @@
     } catch (e) {}
     injectAmbientBg();
     injectBackPill();
+    mountSuiteDifficultyPicker();
+    initSuiteDifficultyModule();
     injectMusicToggle();
     injectListenManic();
+    bootArcadeA11y();
     enhancePhoneHud();
     preventDoubleTapZoom();
     recordLastGame();

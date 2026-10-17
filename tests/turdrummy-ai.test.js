@@ -173,7 +173,16 @@ describe('difficulty persistence', () => {
     expect(saveDifficulty(storage, 'sharp')).toBe('sharp');
     expect(loadDifficulty(storage)).toBe('sharp');
     storage.setItem(DIFFICULTY_KEY, 'chaos');
+    storage.setItem('turdsuite_difficulty_v1', 'chaos');
     expect(loadDifficulty(storage)).toBe('normal');
+  });
+
+  it('prefers turdsuite_difficulty_v1 over the legacy per-game key', () => {
+    const storage = memoryStorage({
+      turdsuite_difficulty_v1: 'easy',
+      [DIFFICULTY_KEY]: 'sharp'
+    });
+    expect(loadDifficulty(storage)).toBe('easy');
   });
 
   it('saves an unknown level as Normal rather than writing garbage', () => {

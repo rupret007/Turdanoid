@@ -11,11 +11,15 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { mountDifficultyPicker } from '../assets/suite-difficulty-ui.js';
+
 // Each case boots the whole page in JSDOM; under the parallel full-suite run that can exceed vitest's 5s default.
 vi.setConfig({ testTimeout: 30000 });
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'turdrummy.html'), 'utf8');
+const suiteJs = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');
+const tableContinueCore = readFileSync(join(root, 'games/table-continue-core.js'), 'utf8');
 // Round-2 core modules are classic scripts; the page reads them off `window`, so JSDOM
 // evaluates them before the page parses. Without them the page must still boot (layoff tests).
 const coreSources = [
@@ -39,7 +43,11 @@ function boot({ reduced = false, canAnimate = true, stored = {} } = {}) {
     url: 'http://localhost/turdrummy.html',
     beforeParse(window) {
       for (const src of coreSources) {window.eval(src);}
+      window.__SUITE_SKIP_MODULES = true;
+      window.eval(tableContinueCore);
+      window.eval(suiteJs);
       for (const [key, value] of Object.entries(stored)) {window.localStorage.setItem(key, value);}
+      window.Suite?.difficulty?.load?.();
       window.setTimeout = (callback, delay) => {
         const id = nextTimer++;
         timers.set(id, { callback, delay });
@@ -195,6 +203,15 @@ describe('reduced-motion gating', () => {
 });
 
 describe('difficulty, coach, trophy and saves', () => {
+  it('syncs the shared suite picker when the Bot button cycles difficulty', () => {
+    const page = boot({ stored: { turdsuite_guides_seen_v1: '1' } });
+    mountDifficultyPicker(page.w.document, page.w.Suite.difficulty);
+    page.run('cycleDifficulty()');
+    const hardBtn = page.$('.suite-difficulty-btn[data-level="hard"]');
+    expect(hardBtn).toBeTruthy();
+    expect(hardBtn.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('cycles Easy, Normal, Sharp and saves the choice under its own key', () => {
     const page = boot();
     expect(page.$('#difficultyBtn').textContent).toContain('Normal');

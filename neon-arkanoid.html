@@ -305,6 +305,9 @@
 
         .how-card {
             width: min(520px, 100%);
+            max-height: calc(100dvh - 40px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
             background: rgba(9, 18, 36, 0.94);
             border: 1px solid rgba(127, 245, 220, 0.45);
             border-radius: 16px;
@@ -334,10 +337,43 @@
         }
 
         .guide-actions {
-            margin-top: 10px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(127, 245, 220, 0.2);
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .guide-actions .btn {
+            flex: 1 1 140px;
+            min-height: 46px;
+            font-size: 14px;
+            font-weight: 700;
+            touch-action: manipulation;
+        }
+
+        .guide-actions .btn:not(.subtle) {
+            color: #071c26;
+            background: linear-gradient(180deg, #9dffe9, var(--accent));
+            border-color: var(--accent);
+        }
+
+        .guide-actions .btn:not(.subtle):hover {
+            background: #b5ffef;
+        }
+
+        .guide-actions .btn.subtle {
+            border-color: rgba(127, 245, 220, 0.5);
+        }
+
+        .guide-actions .btn:focus-visible {
+            outline: 2px solid #effffb;
+            outline-offset: 3px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .guide-actions .btn { transition: none; transform: none; }
         }
 
         .achievement-toast {
@@ -521,7 +557,7 @@
             <p>Tip: keep the ball alive and stack power-ups to build huge score multipliers.</p>
             <div class="guide-actions">
                 <button class="btn" onclick="quickStartPlay()">Quick Start</button>
-                <button class="btn subtle" onclick="dismissHowToPlay()">Review Then Start</button>
+                <button class="btn subtle" onclick="dismissHowToPlay()">Close Guide</button>
             </div>
         </div>
     </div>
