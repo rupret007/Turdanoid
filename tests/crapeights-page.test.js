@@ -197,6 +197,61 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(game.w.eval('onboardingOpen')).toBe(true);
   });
 
+  it.each([true, false])('keeps dialog keyboard navigation on visible controls when the in-page Hub is hidden: %s', (hideDialogHub) => {
+    const game = boot();
+    const doc = game.w.document;
+    const hub = doc.createElement('a');
+    hub.className = 'suite-back-pill';
+    hub.href = './';
+    hub.textContent = 'Hub';
+    doc.body.appendChild(hub);
+    if (hideDialogHub) {
+      // Model the shared phone stylesheet without relying on JSDOM media queries.
+      const style = doc.createElement('style');
+      style.textContent = '.dialog-hub { display: none !important; }';
+      doc.head.appendChild(style);
+    }
+    const first = doc.getElementById('quickStartBtn');
+    const second = doc.getElementById('closeGuideBtn');
+    const dialogHub = doc.querySelector('#welcomeGuide .dialog-hub');
+    // JSDOM has no layout. Supply browser-like rectangles for rendered controls;
+    // CSS-hidden links have no rectangle even when their inline style is empty.
+    for (const control of [first, second, dialogHub, hub]) {
+      control.getClientRects = () => game.w.getComputedStyle(control).display === 'none'
+        ? [] : [new game.w.DOMRect(0, 0, 44, 44)];
+    }
+    game.w.showWelcomeGuide();
+    expect(doc.activeElement).toBe(first);
+    expect(dialogHub.style.display).toBe('');
+    const exit = hideDialogHub ? hub : dialogHub;
+    const tab = (shiftKey = false) => {
+      const event = new game.w.KeyboardEvent('keydown', {
+        key: 'Tab', code: 'Tab', shiftKey, bubbles: true, cancelable: true
+      });
+      doc.activeElement.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    };
+    tab(true);
+    expect(doc.activeElement).toBe(exit);
+    tab();
+    expect(doc.activeElement).toBe(first);
+    tab();
+    expect(doc.activeElement).toBe(second);
+    tab();
+    expect(doc.activeElement).toBe(exit);
+    tab(true);
+    expect(doc.activeElement).toBe(second);
+    tab(true);
+    expect(doc.activeElement).toBe(first);
+    exit.focus();
+    const enter = new game.w.KeyboardEvent('keydown', {
+      key: 'Enter', code: 'Enter', bubbles: true, cancelable: true
+    });
+    exit.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(false);
+    expect(game.w.eval('onboardingOpen')).toBe(true);
+  });
+
   it('holds human actions while focus is suspended', () => {
     const game = boot();
     game.w.dispatchEvent(new game.w.Event('blur'));

@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { JSDOM } from 'jsdom';
+import { paintCbHeavyBrickMark } from '../games/turdanoid-brick.js';
 import {
   campaignLevelCount,
   definitionForLevel,
@@ -34,6 +35,9 @@ function makeCtxStub() {
     get(t, prop) {
       if (prop === 'createLinearGradient' || prop === 'createRadialGradient') {
         return () => gradient;
+      }
+      if (prop === 'measureText') {
+        return (text) => ({ width: String(text).length * 8 });
       }
       if (prop in t) {
         return t[prop];
@@ -247,6 +251,54 @@ describe('Toughness ramp', () => {
 });
 
 describe('Shapes render in the live game', () => {
+  it.each([25, 28])('preserves heavy flags and hit points in live level %i', (level) => {
+    const { dom, g } = bootGame();
+    try {
+      g.startGame();
+      g.qaJumpToLevel(level);
+      const cells = buildCampaignCells(level);
+      expect(g.bricks).toHaveLength(cells.length);
+      g.bricks.forEach((brick, i) => {
+        expect(brick.heavy, `L${level} brick ${i}`).toBe(cells[i].heavy);
+        expect(brick.hp).toBe(cells[i].hp);
+        expect(brick.maxHp).toBe(cells[i].maxHp);
+      });
+    } finally {
+      dom.window.close();
+    }
+  });
+
+  it.each([25, 28])('hatches only heavy bricks in colorblind mode in live level %i', (level) => {
+    const { dom, g } = bootGame();
+    try {
+      g.startGame();
+      g.qaJumpToLevel(level);
+      // L25's silver/metal/tar tiles are multi-hit, but are not heavy.
+      const expected = level === 25 ? 0 : 27;
+      expect(buildCampaignCells(level).filter((cell) => cell.heavy)).toHaveLength(expected);
+      let marks = 0;
+      dom.window.TurdanoidBrick = {
+        paintCbHeavyBrickMark(ctx, ...args) {
+          const clip = ctx.clip;
+          ctx.clip = () => { marks += 1; };
+          try {
+            paintCbHeavyBrickMark(ctx, ...args);
+          } finally {
+            ctx.clip = clip;
+          }
+        }
+      };
+      for (const enabled of [false, true, false]) {
+        dom.window.Suite = { isColorblindMode: () => enabled };
+        marks = 0;
+        g.render();
+        expect(marks).toBe(enabled ? expected : 0);
+      }
+    } finally {
+      dom.window.close();
+    }
+  });
+
   it('lays out every round brick-for-brick like its grid', () => {
     const { dom, g } = bootGame();
     g.startGame();

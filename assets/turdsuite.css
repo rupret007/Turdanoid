@@ -99,6 +99,7 @@ body[data-suite-back="top"] .suite-back-pill {
     left: max(8px, calc(var(--suite-safe-left) + 6px));
     width: 44px;
     padding: 0;
+    flex-direction: column;
     justify-content: center;
     gap: 0;
     letter-spacing: 0;
@@ -110,15 +111,25 @@ body[data-suite-back="top"] .suite-back-pill {
     opacity: 1;
   }
   body:not([data-suite-back="bottom"]) .suite-back-pill .suite-back-pill-label {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
   }
-  /* In-page Hub links duplicate the suite pill and overlap it on phones. */
+  /* Duplicate in-page Hub exits share one job with the suite pill on phones.
+     Header/topbar links, overlay Back to Hub, Game Hub, and chrome Hub
+     buttons hide when the pill is present. Desktop keeps a named Hub. */
   body:has(.suite-back-pill) header a[href="./"]:not(.suite-back-pill),
-  body:has(.suite-back-pill) .topbar a[href="./"]:not(.suite-back-pill) {
+  body:has(.suite-back-pill) .topbar a[href="./"]:not(.suite-back-pill),
+  body:has(.suite-back-pill) a.dialog-hub,
+  body:has(.suite-back-pill) .overlay a[href="./"]:not(.suite-back-pill),
+  body:has(.suite-back-pill) #btnHub,
+  body:has(.suite-back-pill) button[onclick="location.href='./'"] {
     display: none !important;
   }
 }
 .suite-back-pill:hover { background: rgba(20, 50, 40, 0.85); transform: translateY(-1px); border-color: rgba(158, 255, 200, 0.6); }
+.suite-back-pill:focus-visible { outline: 2px solid var(--suite-accent); outline-offset: 3px; background: #143228; }
 .suite-back-pill:active { transform: scale(0.95); }
 .suite-back-pill .arrow { font-size: 13px; opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
@@ -189,13 +200,17 @@ body[data-suite-back="top"]:has(.suite-back-pill) {
     min-width: 44px;
     min-height: 44px;
     padding: 0;
+    flex-direction: column;
     justify-content: center;
     gap: 0;
     font-size: 0;
     letter-spacing: 0;
   }
   body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .suite-back-pill-label {
-    display: none;
+    display: block;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
   }
   body:has(.club-label):not([data-suite-back="bottom"]):has(.suite-back-pill) .suite-back-pill .arrow {
     font-size: 18px;
@@ -637,6 +652,17 @@ body:not(.suite-hub-door) [data-suite-music-slot] .suite-music-toggle {
   flex-shrink: 0;
   z-index: auto;
 }
+/* Crappy Eights: stat ribbon and Table details sit lower than the pause row. */
+body:not(.suite-hub-door):has(.hud > .hud-card) .suite-music-toggle {
+  top: max(188px, calc(var(--suite-safe-top) + 178px));
+}
+/* Turdjack phone Table Menu row: keep suite music clear of mobile sound controls. */
+@media (max-width: 680px) {
+  body:has(.mobile-menu-stats.hud):not(.suite-hub-door) .suite-music-toggle {
+    top: max(152px, calc(var(--suite-safe-top) + 142px));
+  }
+}
+
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {
   margin: 0;
@@ -1051,6 +1077,10 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
 }
 
 /* ---------- Arcade accessibility toggle (colorblind-safe palettes) ---------- */
+/* Crapjack owns focus while its insurance / pit decision dialog is open. */
+body:has(#jackConfirmOverlay[aria-hidden="false"]) #suite-arcade-a11y-mount {
+  display: none;
+}
 .suite-arcade-a11y-toggle {
   margin: 0;
   padding: 10px 14px;
