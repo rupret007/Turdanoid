@@ -5,7 +5,7 @@
  * Canvas 2D and requestAnimationFrame are stubbed: the tests call step()
  * manually with a fixed dt so the simulation is fully deterministic.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -170,6 +170,130 @@ describe('TurdAnoid game regressions', () => {
       expect(g.levelTransition).toBe(false);
       expect(g.clearTally).toBeFalsy();
       expect(g.bricks.length).toBe(0);
+    });
+  });
+
+  describe('Boss Flush last-ball loss', () => {
+    beforeEach(() => {
+      dom.window.document.getElementById('btnBoss').click();
+      g.launch();
+      expect(g.gameMode).toBe('boss');
+      expect(g.bricks).toHaveLength(0);
+      expect(g.balls).toHaveLength(1);
+      expect(g.waitingLaunch).toBe(false);
+    });
+
+    afterEach(() => dom.window.close());
+
+    function drain(ball) {
+      ball.y = g.H + ball.r + 10;
+      ball.vy = ball.speed;
+    }
+
+    it.each([3, 2])('uses one of %i lives and offers exactly one working relaunch', (lives) => {
+      g.lives = lives;
+      g.boss.hp = 55;
+      const boss = g.boss;
+      g.applyPower({ t: 'enlarge' });
+      drain(g.balls[0]);
+
+      g.step(FRAME);
+
+      expect(g.lives).toBe(lives - 1);
+      expect(g.state).toBe('playing');
+      expect(g.lifeGrace).toBeGreaterThan(0);
+      expect(g.balls).toHaveLength(1);
+      const replacement = g.balls[0];
+      expect(replacement.stuck).toBe(true);
+      expect(g.waitingLaunch).toBe(true);
+      const launch = dom.window.document.getElementById('mobileLaunch');
+      expect(launch.classList.contains('show')).toBe(true);
+      expect(g.boss).toBe(boss);
+      expect(g.boss.hp).toBe(55);
+      expect(g.levelTransition).toBe(false);
+      expect(g.clearTally).toBeFalsy();
+      expect(g.activePowers).toEqual({});
+      expect(g.paddle.w).toBe(g.paddle.baseW);
+
+      stepFrames(g, 10);
+      expect(g.lives).toBe(lives - 1);
+      expect(g.balls).toEqual([replacement]);
+      expect(g.waitingLaunch).toBe(true);
+
+      launch.click();
+      expect(g.waitingLaunch).toBe(false);
+      expect(launch.classList.contains('show')).toBe(false);
+      expect(replacement.stuck).toBe(false);
+      const y = replacement.y;
+      g.step(FRAME);
+      expect(replacement.y).toBeLessThan(y);
+      expect(g.lives).toBe(lives - 1);
+    });
+
+    it('ends the run on the final life without creating a replacement', () => {
+      g.lives = 1;
+      drain(g.balls[0]);
+
+      g.step(FRAME);
+
+      expect(g.lives).toBe(0);
+      expect(g.state).toBe('gameover');
+      expect(g.balls).toHaveLength(0);
+      expect(g.waitingLaunch).toBe(false);
+      expect(dom.window.document.getElementById('mobileLaunch').classList.contains('show')).toBe(false);
+      expect(dom.window.document.getElementById('endScreen').classList.contains('show')).toBe(true);
+      expect(g.levelTransition).toBe(false);
+      expect(g.clearTally).toBeFalsy();
+    });
+
+    it('keeps playing when one multiball survives, then charges once when all remaining balls drain', () => {
+      g.spawnMulti();
+      expect(g.balls).toHaveLength(3);
+      drain(g.balls[0]);
+      g.step(FRAME);
+      expect(g.balls).toHaveLength(2);
+      expect(g.lives).toBe(3);
+      expect(g.waitingLaunch).toBe(false);
+
+      g.balls.forEach(drain);
+      g.step(FRAME);
+      expect(g.lives).toBe(2);
+      expect(g.balls).toHaveLength(1);
+      expect(g.balls[0].stuck).toBe(true);
+      expect(g.waitingLaunch).toBe(true);
+    });
+
+    it('still wins on the final boss hit with one life left', () => {
+      g.lives = 1;
+      g.boss.hp = 1;
+      const ball = g.balls[0];
+      ball.x = g.boss.x;
+      ball.y = g.boss.y + g.boss.h + ball.r;
+      ball.vy = -ball.speed;
+
+      g.step(FRAME);
+
+      expect(g.state).toBe('win');
+      expect(g.lives).toBe(1);
+      expect(g.boss).toBeNull();
+      expect(g.waitingLaunch).toBe(false);
+    });
+
+    it('loses only one life when the last ball drains and a sludge hits the paddle the same frame', () => {
+      g.lives = 3;
+      g.boss.hp = 55;
+      g.boss.cd = 9999;
+      g.sludges.length = 0;
+      g.sludges.push(placeDrip(g));
+      drain(g.balls[0]);
+
+      g.step(FRAME);
+
+      expect(g.lives).toBe(2);
+      expect(g.lifeGrace).toBeGreaterThan(0);
+      expect(g.state).toBe('playing');
+      expect(g.waitingLaunch).toBe(true);
+      expect(g.sludges).toHaveLength(0);
     });
   });
 

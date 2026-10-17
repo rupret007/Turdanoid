@@ -2428,11 +2428,13 @@ function step(dt){
 
   // No life lost while a level transition is pending, or when the wall was
   // cleared this same frame (the clear block below will start the transition).
-  if(balls.length === 0 && !levelTransition && breakableLeft() > 0){
+  // Boss Flush has no brick wall, but still needs a last-ball life/relaunch.
+  if(balls.length === 0 && !levelTransition && (gameMode === 'boss' || breakableLeft() > 0)){
     lives--;
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
     shake = Math.max(shake, 12);
+    lifeGrace = LIFE_GRACE_FRAMES;
     if(lives <= 0){ gameOver(false); return; }
     paddle.w = paddle.baseW;
     activePowers = {}; updatePowers();
