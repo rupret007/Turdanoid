@@ -201,6 +201,7 @@ describe('TurdAnoid game regressions', () => {
 
       expect(g.lives).toBe(lives - 1);
       expect(g.state).toBe('playing');
+      expect(g.lifeGrace).toBeGreaterThan(0);
       expect(g.balls).toHaveLength(1);
       const replacement = g.balls[0];
       expect(replacement.stuck).toBe(true);
@@ -276,12 +277,23 @@ describe('TurdAnoid game regressions', () => {
       expect(g.lives).toBe(1);
       expect(g.boss).toBeNull();
       expect(g.waitingLaunch).toBe(false);
+    });
 
+    it('loses only one life when the last ball drains and a sludge hits the paddle the same frame', () => {
+      g.lives = 3;
+      g.boss.hp = 55;
+      g.boss.cd = 9999;
+      g.sludges.length = 0;
+      g.sludges.push(placeDrip(g));
       drain(g.balls[0]);
+
       g.step(FRAME);
 
-      expect(g.state).toBe('win');
-      expect(g.lives).toBe(1);
+      expect(g.lives).toBe(2);
+      expect(g.lifeGrace).toBeGreaterThan(0);
+      expect(g.state).toBe('playing');
+      expect(g.waitingLaunch).toBe(true);
+      expect(g.sludges).toHaveLength(0);
     });
   });
 
