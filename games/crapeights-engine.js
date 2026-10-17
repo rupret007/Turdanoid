@@ -99,6 +99,9 @@ export class CrapeightsEngine {
   }
 
   playCard(card, suitOverride = null) {
+    if (this.currentPlayer !== 'player' || this.gameOver) {
+      return { valid: false, message: 'Player cannot act now' };
+    }
     if (!this.canPlayCard(card)) {
       return { valid: false, message: 'Cannot play this card' };
     }
@@ -135,6 +138,9 @@ export class CrapeightsEngine {
   }
 
   drawFromDeck() {
+    if (this.currentPlayer !== 'player' || this.gameOver) {
+      return { card: null, canPlay: false };
+    }
     const drawn = this.drawCard();
     if (!drawn) {
       this.switchTurn();
