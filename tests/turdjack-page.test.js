@@ -130,6 +130,30 @@ const softCases = [false, true].flatMap((dealerHitsSoft17) =>
 );
 
 describe('Crapjack live-page soft-hand guidance', () => {
+  it.each(['Enter', 'Space'])('%s explains the focused hint without playing a card', (code) => {
+    const w = boot();
+    const hint = w.document.getElementById('hintText');
+    const before = readState(w);
+    w.hintCalls = [];
+    w.eval('turdjackKit = { coachHint(advice) { window.hintCalls.push(advice.action); } };');
+
+    expect(hint.getAttribute('role')).toBe('button');
+    expect(hint.tabIndex).toBe(0);
+    hint.focus();
+    const event = new w.KeyboardEvent('keydown', {
+      code, key: code === 'Space' ? ' ' : 'Enter', bubbles: true, cancelable: true
+    });
+    hint.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(w.hintCalls).toEqual(['hit']);
+    expect(readState(w)).toEqual(before);
+
+    hint.click();
+    expect(w.hintCalls).toEqual(['hit', 'hit']);
+    expect(readState(w)).toEqual(before);
+  });
+
   it.each(softCases)('recommends Hit for $name', { timeout: PAGE_BOOT_TIMEOUT }, (fixture) => {
     const w = boot(fixture);
 

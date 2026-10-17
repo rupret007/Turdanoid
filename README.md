@@ -1,6 +1,6 @@
 # Turdanoid
 
-Six browser games, one sewer. Open `index.html` and pick a stall.
+Seven browser games, one sewer. Open `index.html` and pick a stall.
 
 This repository is **public**. GitHub Pages already serves **`main`**:
 [https://rupret007.github.io/Turdanoid/](https://rupret007.github.io/Turdanoid/).
@@ -16,12 +16,13 @@ The hub lineup, in order:
 
 | Game | File | What you get |
 |------|------|----------------|
-| **TurdAnoid Turbo** | `TurdAnoid.html` | Brick-breaker, five worlds, 19 capsules, optional Boss Flush, coach |
+| **Turdanoid** | `TurdAnoid.html` | Brick-breaker, five worlds, 19 capsules, optional Boss Flush, coach |
 | **Turdtris** | `turdtris.html` | Guideline stacker, Sprint 40L / Ultra 2:00, desktop 5-piece cabinet |
 | **Crapjack 21** | `turdjack.html` | Blackjack, chips on felt, in-page pit modals, table-first phones |
 | **Crappy Eights** | `crapeights.html` | You vs 3 bots, action cards, three AI levels, race to 200 |
 | **TurdRummy** | `turdrummy.html` | Gin rummy, meld-grouped fan, layoff/undercut, 320px corner indices |
 | **TurdSpades** | `turdspades.html` | Partnership Spades, Nil, phone trick well, device-local continue |
+| **Turdomania** | `turdomania.html` | Clickomania/SameGame: pop 2+ matching poops, (n−2)² scoring, +1000 for a clean board, undo, 3 difficulties |
 
 Legacy (not in the six-card grid): `neon-arkanoid.html`. `hub.html` redirects to `index.html`.
 
@@ -63,7 +64,7 @@ CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull r
 ## Play online (`main` / Pages)
 
 - Hub: https://rupret007.github.io/Turdanoid/
-- TurdAnoid: https://rupret007.github.io/Turdanoid/TurdAnoid.html
+- Turdanoid: https://rupret007.github.io/Turdanoid/TurdAnoid.html
 - Turdtris: https://rupret007.github.io/Turdanoid/turdtris.html
 - Crapjack 21: https://rupret007.github.io/Turdanoid/turdjack.html
 - Crappy Eights: https://rupret007.github.io/Turdanoid/crapeights.html

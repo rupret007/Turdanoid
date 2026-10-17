@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#120d0a">
@@ -10,7 +11,7 @@
 <link rel="stylesheet" href="assets/turdsuite.css">
 <script src="games/table-continue-core.js"></script>
 <script src="assets/turdsuite.js"></script>
-<title>Turdtris Turbo</title>
+<title>Turdtris</title>
 <style>
 :root {
   --bg-a: #120d0a;
@@ -1408,9 +1409,9 @@ body.desktop-cabinet .status {
         </select>
       </label>
     </div>
-    <h2 class="sr-live" style="position:absolute;width:1px;height:1px;overflow:hidden">Turdtris Turbo</h2>
+    <h2 class="sr-live" style="position:absolute;width:1px;height:1px;overflow:hidden">Turdtris</h2>
     <p>Stack clean, survive level modifiers, and score big with combos and back-to-back clears.</p>
-    <ul>
+    <ul tabindex="0" aria-label="Keyboard and touch controls">
       <li><strong>Move:</strong> Left/Right arrows</li>
       <li><strong>Rotate:</strong> Up or <strong>X</strong> (clockwise), <strong>Z</strong> (counterclockwise)</li>
       <li><strong>Soft Drop:</strong> Down arrow</li>
@@ -1432,7 +1433,7 @@ body.desktop-cabinet .status {
 <div class="layout">
   <div class="topbar">
     <div>
-      <h1>Turdtris Turbo</h1>
+      <h1>Turdtris</h1>
       <p>Hold system, ghost piece, chaos modifiers, and the energy of a suspiciously spicy arcade booth.</p>
     </div>
     <div class="top-actions">
@@ -1606,7 +1607,7 @@ body.desktop-cabinet .status {
 </div>
 
 <script>
-// Turdtris Turbo - enhanced with Tetris Guideline-inspired systems.
+// Turdtris - enhanced with Tetris Guideline-inspired systems.
 const reducedMotion = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 let score = 0;
 function readStoredHighScore() {
@@ -2046,6 +2047,11 @@ function armAudio(event) {
   audioArmed = true;
   if (window.__turdtrisAudio) window.__turdtrisAudio.arm();
   unlockAudio();
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.armFromGesture(); });
+    }
+  } catch (e) { /* ignore */ }
 }
 document.addEventListener('pointerdown', armAudio, { capture: true });
 document.addEventListener('keydown', armAudio, { capture: true });
@@ -2059,9 +2065,16 @@ function updateMusic() {
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
-  try { localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0'); } catch (e) {}
+  try {
+    if (window.Suite && typeof Suite.setMusicEnabled === 'function') {
+      Suite.setMusicEnabled(musicEnabled);
+    } else {
+      localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0');
+    }
+  } catch (e) {}
   syncSettings();
   updateMusic();
+  syncSuiteMusic();
 }
 
 function syncSettings() {
@@ -2144,6 +2157,7 @@ function toggleSound() {
   } else {
     setHype('Sound muted. Silent stink mode.', 84);
   }
+  syncSuiteMusic();
   updateScore();
 }
 
@@ -3754,7 +3768,34 @@ if (canvas) {
   }, { passive: true });
 }
 
-try { musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0'; } catch (e) {}
+try {
+  if (window.Suite && typeof Suite.isMusicEnabled === 'function') {
+    musicEnabled = Suite.isMusicEnabled();
+  } else {
+    const siteMusic = localStorage.getItem('stalemate.music');
+    if (siteMusic === 'off') musicEnabled = false;
+    else if (siteMusic === 'on') musicEnabled = true;
+    else musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0';
+  }
+} catch (e) {}
+function suiteMusicBlocked() {
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch (e) { /* ignore */ }
+  return suiteMuted() || !soundEnabled || !musicEnabled;
+}
+function syncSuiteMusic() {
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.sync(); });
+    }
+  } catch (e) {}
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(suiteMusicBlocked);
+  }
+} catch (e) {}
 syncSettings();
 soundEnabled = loadSoundPref();
 gesturesEnabled = loadGesturesPref();

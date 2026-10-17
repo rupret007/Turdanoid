@@ -85,13 +85,27 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(html).toMatch(/prefers-reduced-motion:reduce[\s\S]*#hype[\s\S]*#toast/);
   });
 
-  it('paints a world-dressed stage instead of leftover mint sludge', () => {
-    expect(html).toContain('paintWorldStage');
+  it('keeps the play field clean: no stage props between paddle and bricks', () => {
+    expect(html).toContain("const introDecor = state === 'title';");
+    expect(html).toContain('if(!introDecor) paintCleanField(W, H);');
+    expect(html).not.toContain('playWallTint');
+    const decor = html.slice(
+      html.indexOf('  if(introDecor){'),
+      html.indexOf('// Sludge surface along the bottom edge')
+    );
+    for (const prop of [
+      'paintWorldStage',
+      'paintAtmosphere(',
+      'TSPRITE.paintPipe(',
+      'fillStyle = wallPattern',
+      'worldBubbleColor'
+    ]) {
+      expect(decor).toContain(prop);
+      expect(html.split(prop).length - 1).toBe(decor.split(prop).length - 1);
+    }
     expect(html).toContain('worldBasinColors');
-    expect(html).toContain('worldBubbleColor');
     expect(html).toContain('worldDripColors');
     expect(html).toContain('qaJumpLevel');
-    expect(html).toMatch(/paintAtmosphere\(ctx, \{[\s\S]*world/);
     expect(html).not.toContain('rgba(158,255,200,.55)');
     expect(html).not.toContain("ctx.strokeStyle = 'rgba(158,255,200,0.16)'");
   });

@@ -18,7 +18,8 @@ const LIVE_GAMES = [
   'turdjack.html',
   'crapeights.html',
   'turdrummy.html',
-  'turdspades.html'
+  'turdspades.html',
+  'turdomania.html'
 ];
 
 function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
@@ -78,12 +79,12 @@ describe('six-game hub last-played mark', () => {
     });
   }
 
-  it('keeps the root door as six live games plus one Neon link', () => {
-    expect(hubHtml.match(/class="game-card"/g)).toHaveLength(6);
+  it('keeps the root door as seven live games without a Neon promo link', () => {
+    expect(hubHtml.match(/class="game-card"/g)).toHaveLength(7);
     for (const href of LIVE_GAMES) {
       expect(hubHtml).toContain(`href="${href}"`);
     }
-    expect(hubHtml).toContain('href="neon-arkanoid.html"');
+    expect(hubHtml).not.toContain('href="neon-arkanoid.html"');
     expect(hubHtml).toContain('bid tricks or Nil');
     expect(hubHtml).toContain('games/table-continue-core.js');
     for (const href of LIVE_GAMES) {
@@ -111,7 +112,7 @@ describe('six-game hub last-played mark', () => {
     expect(hubHtml).not.toMatch(/id="suite-hub-mute"[^>]*tabindex="-1"/);
   });
 
-  it('uses a two-column phone landscape grid so six rows stay reachable', () => {
+  it('uses a two-column phone landscape grid so seven rows stay reachable', () => {
     expect(hubHtml).toMatch(/@media \(max-width: 900px\) and \(max-height: 430px\) and \(orientation: landscape\)/);
     const landscape = hubHtml.slice(hubHtml.indexOf('orientation: landscape)'));
     expect(landscape).toMatch(/grid-template-columns: 1fr 1fr/);
@@ -121,13 +122,13 @@ describe('six-game hub last-played mark', () => {
   });
 
   it(
-    'marks the last opened live game without adding a seventh card',
+    'marks the last opened live game without adding an eighth card',
     () => {
       const dom = bootHub('turdspades.html');
       const cards = [...dom.window.document.querySelectorAll('.game-card')];
       const marked = cards.filter((card) => card.classList.contains('last-played'));
 
-      expect(cards).toHaveLength(6);
+      expect(cards).toHaveLength(7);
       expect(marked).toHaveLength(1);
       expect(marked[0].getAttribute('href')).toBe('turdspades.html');
       expect(marked[0].querySelector('.play')?.textContent).toContain('Play again');
@@ -139,7 +140,7 @@ describe('six-game hub last-played mark', () => {
       expect(label).toContain('Play again');
       expect(label).toContain('last played');
 
-      expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+      expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
     },
     12000
   );
@@ -160,7 +161,7 @@ describe('six-game hub last-played mark', () => {
 
   it('ignores malformed last-played data and Neon', () => {
     const junk = bootHub('not-a-game.html');
-    expect(junk.window.document.querySelectorAll('.game-card')).toHaveLength(6);
+    expect(junk.window.document.querySelectorAll('.game-card')).toHaveLength(7);
     expect(junk.window.document.querySelectorAll('.game-card.last-played')).toHaveLength(0);
 
     const neon = bootHub('neon-arkanoid.html');
@@ -182,7 +183,7 @@ describe('six-game hub continue mark', () => {
     const continuing = cards.filter((card) => card.classList.contains('in-progress'));
     const last = cards.filter((card) => card.classList.contains('last-played'));
 
-    expect(cards).toHaveLength(6);
+    expect(cards).toHaveLength(7);
     expect(continuing).toHaveLength(1);
     expect(continuing[0].getAttribute('href')).toBe('turdspades.html');
     expect(continuing[0].querySelector('.play')?.textContent).toContain('Continue');
@@ -191,7 +192,7 @@ describe('six-game hub continue mark', () => {
     expect(last).toHaveLength(1);
     expect(last[0].getAttribute('href')).toBe('turdtris.html');
     expect(last[0].querySelector('.play')?.textContent).toContain('Play again');
-    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
   });
 
   it('marks a live Crapjack hand Continue and ignores a finished Spades match', () => {
@@ -256,7 +257,7 @@ describe('six-game hub continue mark', () => {
       }
     });
     expect(neon.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
-    expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(6);
+    expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(7);
   });
 
   it('refuses to remember Neon, a seventh game, or an unplayable snapshot from the suite API', () => {
@@ -295,6 +296,10 @@ describe('hub door extras (1000x shared)', () => {
     expect(suiteJs).toContain('Suite.audio');
     expect(suiteJs).toContain('Suite.fx');
     expect(suiteJs).toContain('Suite.announce');
+    expect(suiteJs).toContain('Suite.music');
+    expect(suiteJs).toContain('setMusicGameBlocked');
+    expect(suiteJs).toContain('stalemate.music');
+    expect(suiteJs).toContain('suite-music-toggle');
   });
 });
 
@@ -323,8 +328,8 @@ describe('six-game hub masthead resume shortcut', () => {
     expect(link.getAttribute('aria-label')).toContain('TurdSpades');
     // The masthead still holds exactly one badge and the grid stays six cards.
     expect(dom.window.document.querySelectorAll('.hero-badge')).toHaveLength(1);
-    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(6);
-    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(7);
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
   });
 
   it('falls back to a waiting table when the last game opened has no save', () => {

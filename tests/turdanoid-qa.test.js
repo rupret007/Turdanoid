@@ -8,7 +8,7 @@ import {
 
 describe('Turdanoid QA metadata', () => {
   it('lists every power type with a readable label', () => {
-    expect(POWER_TYPES.length).toBe(19);
+    expect(POWER_TYPES.length).toBe(21);
     for (const t of POWER_TYPES) {
       expect(displayName(t).length).toBeGreaterThan(2);
     }

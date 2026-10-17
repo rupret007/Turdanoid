@@ -1,0 +1,4 @@
+# Turdanoid is a preview build: keep every page out of search indexes.
+# Each HTML page also carries <meta name="robots" content="noindex">.
+User-agent: *
+Disallow: /

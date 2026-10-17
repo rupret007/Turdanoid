@@ -25,39 +25,39 @@ Difficulty rose mostly by **row count and RNG**, so mid and late walls could pla
 
 ## What each level does now
 
-All 30 walls are 11 columns, authored as a grid. Speed is the existing `5.4 + min(level×0.16, 3.0)` curve. Drop chance is unchanged (32% → 12% floor).
+Arkanoid pass (see `docs/arkanoid-level-research.md`; Oct 2026 progression redesign in `docs/turdanoid-levels/arkanoid-progression-research.md`): all 30 walls are **9 columns** (was 11) so bricks are ~28×20 px on a 320 px phone and ~36×25 px at 390 px. Letters `a`–`f` are 1-hit colour bricks so early rounds read as colour bands and clusters. Speed is the existing `5.4 + min(level×0.16, 3.0)` curve. Drop chance is unchanged (32% → 12% floor).
 
-| Lv | World | Name | Layout | HP | Speed | Drips | Steel | Special |
+| Lv | World | Name | Layout | HP | Speed | Drips | Steel | Pattern |
 |---:|-------|------|--------|---:|------:|------:|------:|---------|
-| 1 | Bathroom | Fresh Tiles | Two solid 1-hit rows | 22 | 5.56 | 0 | 0 | Lesson |
-| 2 | Bathroom | Aim Gaps | Three rows, two aim holes | 29 | 5.72 | 0 | 0 | Aiming |
-| 3 | Bathroom | Soap Pyramid | Pyramid | 35 | 5.88 | 0 | 0 | First shape |
-| 4 | Bathroom | Pipe Lane | Hollow pipe + strut | 37 | 6.04 | 0 | 0 | Tunnel |
-| 5 | Bathroom | Ripple | Wave with first 2-hits | 42 | 6.20 | 0 | 0 | Multi-hit intro |
-| 6 | Bathroom | Tile Keep | Fortress, steel corners | 48 | 6.36 | 0 | 6 | World boss |
-| 7 | Sewer | Downspout | Vertical 2-hit pipes | 54 | 6.52 | 0 | 0 | Columns |
-| 8 | Sewer | Manhole | Shoot-through ring | 56 | 6.68 | 0 | 0 | Ring |
-| 9 | Sewer | Iron Joints | Four metal fittings | 63 | 6.84 | 0 | 0 | Metal intro |
-| 10 | Sewer | Sewer Maze | Two shafts + corridors | 66 | 7.00 | 0 | 0 | Maze |
-| 11 | Sewer | Drip Line | First slime drip | 73 | 7.16 | 1 | 0 | Hazard intro |
-| 12 | Sewer | Pump Station | Dual drips, steel frame | 80 | 7.32 | 2 | 6 | World boss |
-| 13 | Toxic | Lagoon Gem | 2-hit diamond, twin drips | 84 | 7.48 | 2 | 0 | Diamond |
-| 14 | Toxic | Toxic Cross | 3-hit cross | 89 | 7.64 | 2 | 0 | Cross |
-| 15 | Toxic | Hourglass Vat | Waist drips | 96 | 7.80 | 3 | 0 | Hourglass |
-| 16 | Toxic | Iron Gate | Steel lanes | 105 | 7.96 | 3 | 14 | Steel lanes |
-| 17 | Toxic | Eddy | 3-hit box around an eddy | 111 | 8.12 | 3 | 0 | Spiral |
-| 18 | Toxic | Sludge Citadel | Steel citadel, four drips | 120 | 8.28 | 4 | 16 | World boss |
-| 19 | Candy | Jawbreaker | Gold checker | 122 | 8.40 | 4 | 0 | Gold intro |
-| 20 | Candy | Sugar Zig | Descending staircase | 132 | 8.40 | 4 | 0 | Zigzag |
-| 21 | Candy | Sticky Swirl | Nested rings | 137 | 8.40 | 5 | 0 | Swirl |
-| 22 | Candy | Candy Vault | Steel vault + gold | 145 | 8.40 | 5 | 16 | Vault |
-| 23 | Candy | Caramel Wall | Dense 3-hit slab | 152 | 8.40 | 5 | 0 | Density |
-| 24 | Candy | Cotton Keep | Gold turrets | 168 | 8.40 | 6 | 14 | World boss |
-| 25 | Throne | Gilded Stairs | Gold steps | 169 | 8.40 | 6 | 0 | Steps |
-| 26 | Throne | Royal Skull | 4-hit skull, gold eyes | 177 | 8.40 | 6 | 0 | Skull |
-| 27 | Throne | Throne Guard | Steel posts, seven drips | 196 | 8.40 | 7 | 10 | Gauntlet |
-| 28 | Throne | Crown Jewel | Framed gold gems | 196 | 8.40 | 7 | 16 | Crown |
-| 29 | Throne | Royal Gauntlet | Three shafts, eight drips | 203 | 8.40 | 8 | 8 | Lanes |
-| 30 | Throne | Golden Throne | Final fortress | 216 | 8.40 | 8 | 14 | Finale |
+| 1 | Bathroom | Fresh Tiles | A plain Arkanoid wall. Learn the bounce. | 21 | 5.56 | 0 | 0 | Classic Wall |
+| 2 | Bathroom | Rainbow Rows | Three full bands. Aim for the corners. | 27 | 5.72 | 0 | 0 | Colour Bands |
+| 3 | Bathroom | Soap Pyramid | First shaped wall. Work the sides in. | 34 | 5.88 | 0 | 0 | Pyramid |
+| 4 | Bathroom | Diamond Mine | A rainbow diamond with corner studs. | 45 | 6.04 | 0 | 0 | Diamond |
+| 5 | Bathroom | Ripple | First 2-hit tiles ride the wave. | 51 | 6.20 | 0 | 0 | Wave |
+| 6 | Bathroom | Tile Keep | Bathroom boss. Steel corners, 2-hit walls. | 59 | 6.36 | 0 | 6 | Fortress |
+| 7 | Sewer | Chevrons | Stacked arrows point the way up. | 63 | 6.52 | 0 | 0 | Arrows |
+| 8 | Sewer | Bullseye | Rings around a 2-hit bull. | 81 | 6.68 | 0 | 0 | Target |
+| 9 | Sewer | Space Turd | The classic invader. Metal eyes. | 89 | 6.84 | 0 | 0 | Invader |
+| 10 | Sewer | Up Arrow | A silver arrowhead on a 2-hit shaft. | 93 | 7.00 | 0 | 0 | Arrow |
+| 11 | Sewer | Drip Line | Two waves and the first slime drip. | 99 | 7.16 | 1 | 0 | Twin Waves |
+| 12 | Sewer | Pump Station | Sewer boss. Steel towers, silver gate. | 108 | 7.32 | 1 | 4 | Castle |
+| 13 | Lagoon | Crossfire | Two diagonals cross at a silver heart. | 110 | 7.48 | 2 | 0 | X Cross |
+| 14 | Lagoon | Soft Serve | The classic swirl in 3-hit tiles. | 114 | 7.64 | 2 | 0 | Swirl |
+| 15 | Lagoon | Checkmate | Punk checkerboard. Every other tile fights back. | 146 | 7.80 | 2 | 0 | Checkerboard |
+| 16 | Lagoon | Butterfly | Wings out, steel body. | 166 | 7.96 | 2 | 5 | Butterfly |
+| 17 | Lagoon | Love Log | A 4-hit heart that drips. | 167 | 8.12 | 3 | 0 | Heart |
+| 18 | Lagoon | Porcelain Gate | Lagoon boss. Steel battlements, silver gate. | 168 | 8.28 | 3 | 9 | Castle |
+| 19 | Candy | Tar Pit | Gold-cored hexagon in sticky tar. | 171 | 8.40 | 4 | 0 | Hexagon |
+| 20 | Candy | Hourglass | Steel pinch in the middle. | 180 | 8.40 | 5 | 4 | Hourglass |
+| 21 | Candy | Diamond Flush | A gold-cored diamond in steel brackets. | 180 | 8.40 | 5 | 8 | Diamond |
+| 22 | Candy | Pinwheel | Four arms whirl round a gold hub. | 190 | 8.40 | 5 | 0 | Spiral Arms |
+| 23 | Candy | Starburst | A gold star blasts out in eight rays. | 208 | 8.40 | 5 | 0 | Star |
+| 24 | Candy | Royal Flush | Candy boss. A heavy gold crown with jewels. | 208 | 8.40 | 5 | 0 | Crown |
+| 25 | Throne | Close Encounter | A big grey alien head. Black almond eyes. | 210 | 8.40 | 5 | 0 | Alien |
+| 26 | Throne | Skull Bowl | Heavy steel skull, hollow eyes, dripping grin. | 214 | 8.40 | 5 | 0 | Skull |
+| 27 | Throne | Sludge Drain | Steel rings swirl down to a slime plug. | 218 | 8.40 | 5 | 0 | Drain |
+| 28 | Throne | Septic Fort | Heavy steel walls round a gold vault. | 218 | 8.40 | 6 | 0 | Fortress |
+| 29 | Throne | Last Wipe | Gold bars and steel rails before the king. | 218 | 8.40 | 6 | 0 | Gauntlet |
+| 30 | Throne | Anarchy Throne | Final boss. Smash the anarchy sign. | 218 | 8.40 | 8 | 0 | Anarchy |
 
-Steel never counts toward a clear. Drip bricks leak sludge (the same hazard as Boss Flush) until they break. World-boss beats are 6 / 12 / 18 / 24 / 30.
+From round 24 the walls thin out so each picture reads; heavy gold (Y, 5 hits) and heavy steel (H, 6 hits) keep total HP climbing. Steel never counts toward a clear. Drip bricks leak sludge (the same hazard as Boss Flush) until they break. World-boss beats are 6 / 12 / 18 / 24 / 30.

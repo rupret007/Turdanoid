@@ -2,36 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#061018">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<title>TurdAnoid Turbo — Bricks. Busted.</title>
+<title>Turdanoid — Bricks. Busted.</title>
 <link rel="stylesheet" href="assets/turdsuite.css">
-<script src="games/table-continue-core.js"></script>
-<script src="games/turdanoid-theme-core.js"></script>
-<script src="games/turdanoid-fx-core.js"></script>
-<script src="games/turdanoid-brick-core.js"></script>
-<script src="games/turdanoid-audio-core.js"></script>
-<script src="games/turdanoid-levels-core.js"></script>
-<script src="games/turdanoid-worlds-core.js"></script>
-<script src="games/turdanoid-sprites-core.js"></script>
-<script src="games/turdanoid-brick-sprite-core.js"></script>
-<script src="games/turdanoid-shards-core.js"></script>
-<script src="games/turdanoid-boss-core.js"></script>
-<script src="games/turdanoid-coach-core.js"></script>
-<script src="games/turdanoid-storage-core.js"></script>
-<script src="games/turdanoid-perf-core.js"></script>
-<script src="games/turdanoid-tally-core.js"></script>
-<script src="games/turdanoid-layout-core.js"></script>
-<script src="games/turdanoid-qa-core.js"></script>
-<script src="assets/turdsuite.js"></script>
-<script>
-  if (typeof TurdanoidTheme !== 'undefined') {
-    TurdanoidTheme.applyCssVars(document.documentElement);
-  }
-</script>
 <style>
   :root{
     --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
@@ -41,7 +19,7 @@
     --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;user-select:none;-webkit-user-select:none}
   body{
     font-family:var(--ta-font,'Segoe UI','Avenir Next','Trebuchet MS',system-ui,sans-serif);color:var(--ink);
     background:
@@ -55,7 +33,7 @@
   #stage{position:relative;width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;gap:0}
   #playShell{position:relative;width:100%;height:100%;flex:0 0 auto;max-width:100%;max-height:100%}
   #stage.layout-wide #playShell{box-shadow:0 28px 70px rgba(0,0,0,.55),0 0 0 1px var(--panel-border)}
-  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:none}
+  canvas{display:block;width:100%;height:100%;border-radius:18px;box-shadow:0 22px 60px rgba(0,0,0,.55), 0 0 0 1px var(--panel-border), inset 0 0 0 1px rgba(255,255,255,.04);background:linear-gradient(180deg,var(--ta-ink-deep,#061018) 0%,var(--ta-ink,#0a1820) 50%,var(--ta-ink-mid,#123040) 100%);touch-action:pinch-zoom}
   .side-gutter{flex:1 1 0;min-width:0;max-width:min(420px,22vw);display:none;pointer-events:none;padding:max(12px,var(--safe-top)) 10px max(12px,var(--safe-bot));align-self:stretch}
   #stage.layout-wide .side-gutter{display:flex;flex-direction:column;justify-content:center}
   .side-art{padding:16px 14px;border-radius:16px;border:1px solid var(--panel-border);background:linear-gradient(165deg,rgba(232,244,239,.08),rgba(6,16,24,.72));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(232,197,106,.14),0 16px 40px rgba(0,0,0,.35)}
@@ -162,6 +140,7 @@
   .overlay p{max-width:34ch;font-size:clamp(14px,3.4vw,16px);line-height:1.55;letter-spacing:0;color:var(--ink);opacity:.92;margin:12px 0}
   .overlay .quip{color:var(--hot);font-style:italic;font-size:clamp(12px,3vw,14px);margin-top:6px;min-height:1.4em}
   .overlay button{margin-top:22px;padding:14px 34px;font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:linear-gradient(180deg,#f6e2a4 0%,var(--ta-brass,#e8c56a) 45%,#c89628 100%);color:#1a1408;border:0;border-radius:14px;cursor:pointer;box-shadow:0 12px 28px rgba(232,197,106,.32),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7);transition:transform .15s,box-shadow .15s;font-family:inherit}
+  .overlay button{min-height:44px}
   .overlay button:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(232,197,106,.42),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}
   .overlay button:active{transform:scale(.95)}
   .overlay .stats{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:12px}
@@ -213,14 +192,19 @@
   }
   @media (max-width:520px){
     .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:108px;padding:4px 2px 5px;border-radius:16px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.26),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0;align-items:stretch}
-    .hud .right,.hud .center{margin-right:0;text-align:center}
+    .hud .right{margin-right:0px;text-align:center}
+    .hud .center{margin-right:0px;text-align:center}
     .hud .col{padding:3px 7px 4px;min-width:0;flex:1 1 0;align-items:center;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
     .hud .col + .col{border-left:1px solid rgba(232,197,106,.18)}
+    /* The HUD box already starts right of the back pill (left:68px). turdsuite.css
+       also pads it by the pill reserve, which squeezed SCORE/LEVEL/LIVES together at 320px. */
+    #playShell .hud{padding-left:2px !important}
     .hud .lbl{display:block;position:static;width:auto;height:auto;overflow:visible;clip:auto;font-size:.66em;letter-spacing:.06em;text-shadow:0 1px 4px #000}
   }
   @media (max-width:420px){
     .hud{font-size:clamp(11px,2.9vw,13px)}
-    .hud .right,.hud .center{margin-right:0;text-align:center}
+    .hud .right{margin-right:0px;text-align:center}
+    .hud .center{margin-right:0px;text-align:center}
     .hud .val{font-size:1.28em;text-shadow:0 0 14px rgba(62,207,154,.45),0 2px 8px #000}
     .topbtns{gap:4px}
     .iconbtn{width:44px;height:44px;font-size:16px}
@@ -231,7 +215,8 @@
     .how-card p{font-size:12px}
   }
   @media (max-width:360px){
-    .hud .right,.hud .center{margin-right:0}
+    .hud .right{margin-right:0px}
+    .hud .center{margin-right:0px}
     .hud .center .val{font-size:1.2em}
     .life-pip{width:9px;height:11px}
   }
@@ -263,7 +248,7 @@
       </div>
     </aside>
     <div id="playShell">
-    <canvas id="game" role="img" tabindex="0" aria-label="TurdAnoid playfield. Arrow keys or A and D move the seat. Space to launch. P to pause."></canvas>
+    <canvas id="game" role="img" tabindex="0" aria-label="Turdanoid playfield. Arrow keys or A and D move the seat. Space to launch. P to pause."></canvas>
 
     <div class="hud" aria-hidden="true">
       <div class="col"><span class="lbl">Score</span><span class="val" id="hudScore">0</span></div>
@@ -293,7 +278,7 @@
     <!-- Title screen -->
     <div class="overlay show title-poster" id="titleScreen">
       <p class="title-kicker">Midnight Porcelain Arcade</p>
-      <h1>TurdAnoid</h1>
+      <h1>Turdanoid</h1>
       <p class="title-deck">Smash the wall. Catch the weird stuff. Don't get flushed.</p>
       <div class="helprow">
         <span>Drag to move</span>
@@ -377,11 +362,35 @@
   </div>
 </div>
 
+<!-- Keep classic dependencies ordered, after the title markup so it can paint during loading. -->
+<script src="games/table-continue-core.js"></script>
+<script src="games/turdanoid-theme-core.js"></script>
+<script src="games/turdanoid-fx-core.js"></script>
+<script src="games/turdanoid-brick-core.js"></script>
+<script src="games/turdanoid-audio-core.js"></script>
+<script src="games/turdanoid-levels-core.js"></script>
+<script src="games/turdanoid-worlds-core.js"></script>
+<script src="games/turdanoid-sprites-core.js"></script>
+<script src="games/turdanoid-brick-sprite-core.js"></script>
+<script src="games/turdanoid-shards-core.js"></script>
+<script src="games/turdanoid-boss-core.js"></script>
+<script src="games/turdanoid-coach-core.js"></script>
+<script src="games/turdanoid-storage-core.js"></script>
+<script src="games/turdanoid-perf-core.js"></script>
+<script src="games/turdanoid-tally-core.js"></script>
+<script src="games/turdanoid-layout-core.js"></script>
+<script src="games/turdanoid-qa-core.js"></script>
+<script src="assets/turdsuite.js"></script>
+<script>
+  if (typeof TurdanoidTheme !== 'undefined') {
+    TurdanoidTheme.applyCssVars(document.documentElement);
+  }
+</script>
 <script>
 'use strict';
 
 /* ============================================================
-   TurdAnoid Turbo — single-file Canvas brick-breaker
+   Turdanoid — single-file Canvas brick-breaker
    ============================================================ */
 
 const cv = document.getElementById('game');
@@ -391,8 +400,9 @@ const playShell = document.getElementById('playShell');
 const TLAYOUT = typeof TurdanoidLayout !== 'undefined' ? TurdanoidLayout : null;
 const TQA = typeof TurdanoidQA !== 'undefined' ? TurdanoidQA : null;
 const reducedMotion = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-let DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2.5));
+let DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
 let W = 0, H = 0;
+let titleBackdrop = null;
 let lastTime = 0;
 let running = false;
 let paused = false;
@@ -571,6 +581,24 @@ function suiteMuted(){
   } catch (e) { return false; }
 }
 function soundBlocked(){ return !soundOn || suiteMuted(); }
+function suiteMusicBlocked(){
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch (e) { /* ignore */ }
+  return soundBlocked();
+}
+function syncSuiteMusic(){
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.sync(); });
+    }
+  } catch (e) {}
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(function () { return suiteMusicBlocked(); });
+  }
+} catch (e) {}
 let ambientOn = !!prefs.ambientOn;
 let hapticOn = prefs.hapticOn !== false;
 let gameMode = 'classic';
@@ -584,6 +612,8 @@ let stink = 0;
 let shake = 0;
 let flash = 0;
 let hitStop = 0;
+let sinceBrickHit = 0; // frames since any ball touched a breakable brick (endgame assist)
+let endgameCueShown = false;
 let pointerFromTouch = false;
 let waitingLaunch = true;
 let lifeGrace = 0;
@@ -645,24 +675,26 @@ const HYPE_LINES = [
 ];
 const PICKUP_QUIPS = {
   enlarge: ["BIG SEAT ENERGY","WIDER, FRIEND","LARGEST POSSIBLE LOAD"],
-  slow:    ["SLO-MO POO","TIME-OUT TURD","DECELERATE THE FECES"],
-  laser:   ["LASER COLON","PEW PEW POO","BEAM ME UP, SCATTY"],
-  paper:   ["TP DEPLOY","2-PLY ARSENAL","CHARMIN UNLEASHED"],
-  catch:   ["STICKY SITUATION","GLUED TO THE THRONE","HOLD IT"],
-  multi:   ["MULTIBALL!","TURD STORM","LITTERED LANDING"],
+  slow:    ["SPRAY & SLAY","FEBREEZE THE BALL","LAVENDER LOCKDOWN"],
+  laser:   ["TP CANNON!","2-PLY ARTILLERY","UNROLL THE FURY"],
+  paper:   ["SPITWADS!","WET WILLY WAR","PTOO PTOO"],
+  catch:   ["PLUNGER GRIP","SUCTION SECURED","HOLD IT"],
+  multi:   ["MOSH PIT!","CIRCLE PIT","STAGE DIVE ×3"],
   shield:  ["SEAT SHIELD","BUM-PROOF GLASS","ANTI-DROP DEPLOYED"],
   life:    ["EXTRA TURD!","ONE MORE FLUSH","BONUS DOOKIE"],
   fire:    ["FIRE BUTT","SPICY DEPLOY","CHILI AFTERMATH"],
   bomb:    ["BOOM-BOOM","THUNDERPOOP","WALL DEMOLITION"],
   shrink:  ["TINY SEAT 😬","SQUISHED!","SMOL CHEEKS"],
-  speed:   ["TURBO TURD","FULL CHARGE","ROCKET FUELED CURRY"],
+  speed:   ["WARP SPEED TURD","FULL CHARGE","ROCKET FUELED CURRY"],
   plunger: ["PLUNGER PARTY","MAGNET MODE","COME TO PAPA"],
-  flush:   ["MEGA FLUSH!","ROW REMOVED","BOTTOM-OUT"],
+  flush:   ["MEGA WIPE!","WIPED CLEAN","ROW REMOVED"],
   hotdog:  ["HOT DOG ROCKETS","WIENER WARFARE","KETCHUP DEPLOY"],
   ghost:   ["GHOST POO","NO-CLIP MODE","BOO-DOOKIE"],
   skunk:   ["STINK CLOUD","ODOR BOMB","FRAGRANCE OF DOOM"],
   gold:    ["GOLD RUSH!","DOUBLE DOOKIE","2× POINTS"],
   reverse: ["BACKWARDS!","UH-OH","CONTROLS SCRAMBLED"],
+  warp:    ["FLUSHED!","DOWN THE PIPES","SEE YOU NEXT ROUND"],
+  chord:   ["KERRANG!","TURN IT TO 11","WALL OF SOUND"],
 };
 const GAME_OVER_QUIPS = [
   "Looks like you got plunged.",
@@ -767,6 +799,9 @@ const sfx = {
   bounce:()=>playProfile('wall'),
   metal: ()=>playProfile('metal'),
   gold:  ()=>playProfile('gold'),
+  // Flush Warp: a gurgling downward glide. Power Chord: a crunchy two-note power chord.
+  flushWarp: ()=>{ beep(620,0.35,'sine',0.07,-520); setTimeout(()=>beep(300,0.3,'triangle',0.06,-200),180); },
+  chord: ()=>{ beep(110,0.4,'sawtooth',0.07,0); beep(165,0.4,'sawtooth',0.06,0); beep(220,0.35,'square',0.04,0); },
 };
 
 /* ---- DOM helpers ---- */
@@ -797,6 +832,7 @@ syncPauseButton();
 
 /* ---- Resize ---- */
 function resize(){
+  titleBackdrop = null;
   const r = elStage.getBoundingClientRect();
   const stageW = Math.max(1, Math.floor(r.width));
   const stageH = Math.max(1, Math.floor(r.height));
@@ -822,7 +858,7 @@ function resize(){
   }
   W = Math.max(280, canvasW);
   H = Math.max(380, canvasH);
-  DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2.5));
+  DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2));
   cv.width = Math.floor(W*DPR);
   cv.height = Math.floor(H*DPR);
   cv.style.width = W+'px'; cv.style.height = H+'px';
@@ -847,6 +883,26 @@ function buildStars(){
   bgStars = [];
   const n = Math.floor((W*H)/14000);
   for(let i=0;i<n;i++) bgStars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,a:Math.random()*0.4+0.2,t:Math.random()*Math.PI*2});
+}
+
+// Faint checker for the play field, cached per size so it costs one blit a frame.
+let cleanFieldCache = null;
+function paintCleanField(W, H){
+  const key = W + 'x' + H;
+  if(!cleanFieldCache || cleanFieldCache.key !== key){
+    const off = document.createElement('canvas');
+    off.width = 32; off.height = 32;
+    const o = off.getContext('2d');
+    o.fillStyle = 'rgba(255,255,255,.035)';
+    o.fillRect(0, 0, 16, 16); o.fillRect(16, 16, 16, 16);
+    cleanFieldCache = { key, pattern: ctx.createPattern(off, 'repeat') };
+  }
+  ctx.fillStyle = 'rgba(4,10,14,.55)';
+  ctx.fillRect(0, 0, W, H);
+  if(cleanFieldCache.pattern){
+    ctx.fillStyle = cleanFieldCache.pattern;
+    ctx.fillRect(0, 0, W, H);
+  }
 }
 
 // Parallax sewer layers: far pipes drift slowly, near sludge blobs drift faster.
@@ -1019,18 +1075,22 @@ function drawTitleAttract(rts){
   const demoPal = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.rowPalettes)
     ? TurdanoidTheme.rowPalettes()
     : [['#5ec8e0','#1a6a88'],['#e8c56a','#a8781c'],['#3ecf9a','#1a7a58'],['#d878a8','#7a2858']];
-  for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++){
-      const bx = W*0.07 + c*(bw+gap), by = top + 12 + r*(bh+gap);
-      const pal = demoPal[r % demoPal.length];
-      const dc1 = pal[0], dc2 = pal[1] || pal[0];
-      if(TSPRITE){
-        ctx.save(); ctx.translate(bx, by);
-        TSPRITE.paintBrickBevel(ctx, bw, bh, { c1: dc1, c2: dc2 });
-        ctx.restore();
-      } else {
-        ctx.fillStyle = dc1;
-        roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+  if(TSPRITE && TSPRITE.paintTitleWallCached){
+    TSPRITE.paintTitleWallCached(ctx, { W, H, palettes: demoPal });
+  } else {
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const bx = W*0.07 + c*(bw+gap), by = top + 12 + r*(bh+gap);
+        const pal = demoPal[r % demoPal.length];
+        const dc1 = pal[0], dc2 = pal[1] || pal[0];
+        if(TSPRITE){
+          ctx.save(); ctx.translate(bx, by);
+          TSPRITE.paintBrickBevel(ctx, bw, bh, { c1: dc1, c2: dc2 });
+          ctx.restore();
+        } else {
+          ctx.fillStyle = dc1;
+          roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+        }
       }
     }
   }
@@ -1050,7 +1110,7 @@ function drawTitleAttract(rts){
       vx: titleDemoBall.vx, vy: titleDemoBall.vy, fire: 0, ghost: 0, trail: [], squash: 0
     }, { reducedMotion: true });
     TSPRITE.paintCapsule(ctx, {
-      x: W * 0.14, y: wallBottom + 22, col: '#5ec8e0', e: '🔫', lab: 'Laser', wob: now * 0.004
+      x: W * 0.14, y: wallBottom + 22, col: '#5ec8e0', e: '🧻', lab: 'TP', wob: now * 0.004
     }, now, { reducedMotion: calm });
     TSPRITE.paintCapsule(ctx, {
       x: W * 0.86, y: wallBottom + 18, col: '#ff6d5a', e: '🔥', lab: 'Fire', wob: now * 0.004 + 1.2
@@ -1121,8 +1181,8 @@ function scalePointerLerp(ts, perFrame){
   return 1 - Math.pow(1 - base, Math.max(0, ts));
 }
 function paddleKeepsTimedSize(){
-  // Enlarge/Shrink chips survive a wall clear the same way Slow/Fire/Ghost do.
-  // Death is the path that clears activePowers and returns to base width.
+  // Round advance (finishClearTally) and death both clear activePowers first,
+  // so this only keeps size across a direct newLevel() rebuild (QA/restart churn).
   return !!(activePowers.big || activePowers.shrink);
 }
 function computeTimedBallSpeed(baseSpeed){
@@ -1147,8 +1207,8 @@ function syncTimedBallSpeeds(){
 function newBall(stuck=true){
   const r = Math.max(8, Math.min(11, W*0.018));
   const baseSpeed = 5.4 + Math.min(level*0.16, 3.0);
-  // Timed power chips survive a wall clear, so the replacement ball must
-  // keep the ball-scoped effects they still advertise.
+  // Death and round changes clear activePowers first; any chip still alive
+  // (direct newLevel() rebuilds) keeps its ball-scoped effect on the new ball.
   const speed = computeTimedBallSpeed(baseSpeed);
   const ang = -Math.PI/2 + (Math.random()-0.5)*0.4;
   return {
@@ -1172,16 +1232,20 @@ function paintSpecialBrick(b){
 }
 function newLevel(){
   levelStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
+  sinceBrickHit = 0; endgameCueShown = false;
   bricks = []; powerups = []; lasers = []; paddleShots = []; particles = []; dyingBricks = [];
   sludges = [];
   lifeGrace = 0;
   const campaign = TLEVELS && TLEVELS.definitionForLevel ? TLEVELS.definitionForLevel(level) : null;
   const cols = campaign ? campaign.cols : Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = campaign ? campaign.rows : Math.min(10, 4 + Math.floor(level/2));
-  const top = 70;
-  const padX = Math.max(10, W*0.04);
-  const bw = (W - padX*2)/cols - 6;
-  const bh = Math.max(16, Math.min(26, H*0.028));
+  const geo = TLEVELS && TLEVELS.brickGeometry ? TLEVELS.brickGeometry(W, H, cols, rows) : null;
+  const top = geo ? geo.top : 70;
+  const padX = geo ? geo.padX : Math.max(10, W*0.04);
+  const gapX = geo ? geo.gap : 6;
+  const gapY = geo ? geo.rowGap : 5;
+  const bw = geo ? geo.bw : (W - padX*2)/cols - 6;
+  const bh = geo ? geo.bh : Math.max(16, Math.min(26, H*0.028));
   const pat = campaign ? campaign.pattern : PATTERN_NAMES[(level-1) % PATTERN_NAMES.length];
   brickSpriteCache.clear();
   if(gameMode === 'boss'){
@@ -1196,11 +1260,13 @@ function newLevel(){
   }
 
   function add(c,r,hp,flags){
-    const x = padX + c*(bw+6) + 3;
-    const y = top + r*(bh+5);
+    const x = geo ? padX + c*(bw+gapX) : padX + c*(bw+6) + 3;
+    const y = top + r*(bh+gapY);
     const wi = TWORLDS ? TWORLDS.worldIndexForLevel(level) : 0;
     const forced = flags && flags.material;
-    const colors = BRICK_ART ? BRICK_ART.assignBrickStyle(r, rows, c, level, Math.random, wi) : brickColors(r, rows);
+    const swatch = flags && Number.isInteger(flags.color) && BRICK_ART && BRICK_ART.ROW_PALETTES[flags.color];
+    const colors = swatch ? { c1: swatch[0], c2: swatch[1], glow: swatch[2], material: 'sewer' }
+      : (BRICK_ART ? BRICK_ART.assignBrickStyle(r, rows, c, level, Math.random, wi) : brickColors(r, rows));
     const brick = {x,y,w:bw,h:bh,hp,maxHp:hp,c1:colors.c1,c2:colors.c2,glow:colors.glow,material:forced || colors.material||'sewer',wob:Math.random()*Math.PI*2,hitFlash:0,metal:!!(flags&&flags.metal),indestructible:!!(flags&&flags.indestructible),hazard:flags&&flags.hazard||null,hazardCd:0};
     if(forced) paintSpecialBrick(brick);
     bricks.push(brick);
@@ -1313,8 +1379,8 @@ cv.addEventListener('mousedown', e=>{ pointerFromTouch = false; const r = cv.get
 cv.addEventListener('mousemove', e=>{ const r = cv.getBoundingClientRect(); pointerMove(e.clientX-r.left, e.clientY-r.top); });
 window.addEventListener('mouseup', pointerUp);
 
-cv.addEventListener('touchstart', e=>{ e.preventDefault(); pointerFromTouch = true; const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerDown(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
-cv.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerMove(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchstart', e=>{ if(e.touches.length > 1) return; e.preventDefault(); pointerFromTouch = true; const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerDown(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
+cv.addEventListener('touchmove', e=>{ if(e.touches.length > 1) return; e.preventDefault(); const t=e.touches[0]; const r=cv.getBoundingClientRect(); pointerMove(t.clientX-r.left, t.clientY-r.top); }, {passive:false});
 cv.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); }, {passive:false});
 cv.addEventListener('touchcancel', pointerUp);
 
@@ -1379,6 +1445,7 @@ btnSound.addEventListener('click', ()=>{
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
+  syncSuiteMusic();
 });
 btnPause.addEventListener('click', ()=>{ if(state==='playing') doPause(); else if(state==='paused') doResume(); });
 if(tClearTally){
@@ -1448,20 +1515,20 @@ function powerChipTitle(type, fallback){
 function updatePowers(){
   const f = 60*8;
   const items = [];
-  if(activePowers.big)     items.push(powerChip('📏 Big', activePowers.big, f*2.5, powerChipTitle('enlarge', 'Big paddle')));
-  if(activePowers.slow)    items.push(powerChip('🐌 Slow', activePowers.slow, f, powerChipTitle('slow', 'Slow ball')));
-  if(activePowers.laser)   items.push(powerChip('🔫 Laser', activePowers.laser, f, powerChipTitle('laser', 'Laser')));
-  if(activePowers.paper)   items.push(powerChip('🧻 TP', activePowers.paper, f, powerChipTitle('paper', 'Toilet paper')));
-  if(activePowers.sticky)  items.push(powerChip('🧲 Catch', activePowers.sticky, f, powerChipTitle('catch', 'Sticky catch')));
-  if(activePowers.fire)    items.push(powerChip('🔥 Fire', activePowers.fire, f, powerChipTitle('fire', 'Fire ball')));
-  if(activePowers.shield)  items.push(powerChip('🛡️ Shield', activePowers.shield, f*1.5, powerChipTitle('shield', 'Shield')));
-  if(activePowers.hotdog)  items.push(powerChip('🌭 Dogs', activePowers.hotdog, f, powerChipTitle('hotdog', 'Hot dog rockets')));
-  if(activePowers.plunger) items.push(powerChip('🪠 Magnet', activePowers.plunger, f*1.2, powerChipTitle('plunger', 'Plunger magnet')));
-  if(activePowers.ghost)   items.push(powerChip('👻 Ghost', activePowers.ghost, 60*5, powerChipTitle('ghost', 'Ghost ball')));
-  if(activePowers.gold)    items.push(powerChip('💰 2×', activePowers.gold, 60*6, powerChipTitle('gold', 'Gold rush')));
-  if(activePowers.shrink)  items.push(powerChip('😬 Shrunk', activePowers.shrink, f, powerChipTitle('shrink', 'Shrink paddle')));
-  if(activePowers.fast)    items.push(powerChip('💨 Speed', activePowers.fast, f, powerChipTitle('speed', 'Speed up')));
-  if(activePowers.reverse) items.push(powerChip('🔄 Reversed', activePowers.reverse, 60*5, powerChipTitle('reverse', 'Reversed controls')));
+  if(activePowers.big)     items.push(powerChip('🍑 Wide', activePowers.big, f*2.5, powerChipTitle('enlarge', 'Wide Load')));
+  if(activePowers.slow)    items.push(powerChip('🌸 Fresh', activePowers.slow, f, powerChipTitle('slow', 'Air Freshener')));
+  if(activePowers.laser)   items.push(powerChip('🧻 TP', activePowers.laser, f, powerChipTitle('laser', 'TP Cannon')));
+  if(activePowers.paper)   items.push(powerChip('💦 Wads', activePowers.paper, f, powerChipTitle('paper', 'Spitwad Spread')));
+  if(activePowers.sticky)  items.push(powerChip('🪠 Catch', activePowers.sticky, f, powerChipTitle('catch', 'Plunger Catch')));
+  if(activePowers.fire)    items.push(powerChip('🌶️ Chili', activePowers.fire, f, powerChipTitle('fire', 'Chili Fire')));
+  if(activePowers.shield)  items.push(powerChip('🛡️ Cover', activePowers.shield, f*1.5, powerChipTitle('shield', 'Seat Cover')));
+  if(activePowers.hotdog)  items.push(powerChip('🌭 Dogs', activePowers.hotdog, f, powerChipTitle('hotdog', 'Wiener Rockets')));
+  if(activePowers.plunger) items.push(powerChip('🧲 Magnet', activePowers.plunger, f*1.2, powerChipTitle('plunger', 'Dookie Magnet')));
+  if(activePowers.ghost)   items.push(powerChip('👻 Ghost', activePowers.ghost, 60*5, powerChipTitle('ghost', 'Ghost Poo')));
+  if(activePowers.gold)    items.push(powerChip('💰 2×', activePowers.gold, 60*6, powerChipTitle('gold', 'Golden Throne')));
+  if(activePowers.shrink)  items.push(powerChip('😬 Shrunk', activePowers.shrink, f, powerChipTitle('shrink', 'Shrinkage')));
+  if(activePowers.fast)    items.push(powerChip('💨 Curry', activePowers.fast, f, powerChipTitle('speed', 'Bad Curry')));
+  if(activePowers.reverse) items.push(powerChip('🔄 Backwash', activePowers.reverse, 60*5, powerChipTitle('reverse', 'Backwash')));
   elPowers.innerHTML = items.length ? items.join('') : '';
 }
 
@@ -1550,7 +1617,11 @@ function finishClearTally(){
   if(level > 30){ levelTransition = false; gameOver(true); return; }
   levelTransition = false;
   stink = Math.max(0, stink - 0.3);
+  // Jeff's rule (like Arkanoid): every timed power-up ends when the round changes.
+  activePowers = {};
+  paddle.w = paddle.baseW;
   newLevel();
+  updatePowers();
   updateHud();
 }
 function skipClearTally(){
@@ -1607,6 +1678,7 @@ function advanceClearTally(ts){
 }
 function quitToMenu(){
   state='title'; paused=false; running=false;
+  titleBackdrop = null;
   titleDemoReady = false;
   stopAmbient();
   cancelLevelTransition();
@@ -1668,29 +1740,32 @@ function launch(){
 // Each power-up has an `unlock` level. Standard Arkanoid kit appears from L1.
 // Goofier and more powerful options unlock later so players keep discovering things.
 const POWERS = [
-  // ---- Standard Arkanoid kit (level 1+) ----
-  {t:'enlarge', e:'📏', lab:'BG', col:'#9effc8', unlock:1, weight:3},
-  {t:'slow',    e:'🐌', lab:'SL', col:'#7ae6ff', unlock:1, weight:2},
-  {t:'catch',   e:'🧲', lab:'CT', col:'#ffd76a', unlock:1, weight:2},
-  {t:'multi',   e:'🌀', lab:'MB', col:'#b290ff', unlock:1, weight:2},
-  {t:'life',    e:'❤️', lab:'+1', col:'#ff7ab6', unlock:1, weight:0.6},
-  {t:'laser',   e:'🔫', lab:'LZ', col:'#ff7ab6', unlock:1, weight:2.5},
+  // ---- Classic Arkanoid kit, bathroom-punk edition (level 1+) ----
+  // E expand / S slow / C catch / D disruption / P extra life / L laser
+  {t:'enlarge', name:'Wide Load',       e:'🍑', lab:'WL', col:'#9effc8', unlock:1, weight:3,   blurb:'Fat paddle'},
+  {t:'slow',    name:'Air Freshener',   e:'🌸', lab:'AF', col:'#7ae6ff', unlock:1, weight:2,   blurb:'Ball slows in the mist'},
+  {t:'catch',   name:'Plunger Catch',   e:'🪠', lab:'PC', col:'#ffd76a', unlock:1, weight:2,   blurb:'Ball sticks; tap to shoot'},
+  {t:'multi',   name:'Mosh Pit',        e:'🤘', lab:'MP', col:'#b290ff', unlock:1, weight:2,   blurb:'Three balls slam around'},
+  {t:'life',    name:'Spare Roll',      e:'❤️', lab:'+1', col:'#ff7ab6', unlock:1, weight:0.6, blurb:'Extra life'},
+  {t:'laser',   name:'TP Cannon',       e:'🧻', lab:'TP', col:'#ffffff', unlock:1, weight:2.5, blurb:'Fire unspooling TP rolls'},
   // ---- Themed combat (level 2+) ----
-  {t:'paper',   e:'🧻',  lab:'TP', col:'#ffffff', unlock:2, weight:2},
-  {t:'shield',  e:'🛡️', lab:'SH', col:'#7ae6ff', unlock:2, weight:1.4},
-  {t:'fire',    e:'🔥',  lab:'FR', col:'#ff9d74', unlock:2, weight:1.6},
-  // ---- Creative funny set (level 3-5) ----
-  {t:'bomb',    e:'💣',  lab:'BM', col:'#ffd76a', unlock:3, weight:1.4},
-  {t:'plunger', e:'🪠',  lab:'MG', col:'#b290ff', unlock:3, weight:1.6},
-  {t:'flush',   e:'🚽',  lab:'FL', col:'#7ae6ff', unlock:4, weight:1.2},
-  {t:'hotdog',  e:'🌭',  lab:'HD', col:'#ff9d74', unlock:4, weight:1.5},
-  {t:'ghost',   e:'👻',  lab:'GH', col:'#cdd5ff', unlock:5, weight:1.3},
-  {t:'skunk',   e:'🦨',  lab:'SK', col:'#7af1c4', unlock:5, weight:1.4},
-  {t:'gold',    e:'💰',  lab:'2×', col:'#ffd76a', unlock:6, weight:1.0},
+  {t:'paper',   name:'Spitwad Spread',  e:'💦', lab:'SW', col:'#cfe8ff', unlock:2, weight:2,   blurb:'Wet wads fly out in a V'},
+  {t:'shield',  name:'Seat Cover',      e:'🛡️', lab:'SC', col:'#7ae6ff', unlock:2, weight:1.4, blurb:'Bounces one miss back'},
+  {t:'fire',    name:'Chili Fire',      e:'🌶️', lab:'CF', col:'#ff9d74', unlock:2, weight:1.6, blurb:'Balls burn through bricks'},
+  // ---- Creative funny set (level 3-6) ----
+  {t:'bomb',    name:'Cherry Bomb',     e:'💣', lab:'CB', col:'#ffd76a', unlock:3, weight:1.4, blurb:'Blast the middle'},
+  {t:'plunger', name:'Dookie Magnet',   e:'🧲', lab:'DM', col:'#b290ff', unlock:3, weight:1.6, blurb:'Pulls capsules to you'},
+  {t:'warp',    name:'Flush Warp',      e:'🚽', lab:'FW', col:'#5ec8ff', unlock:3, weight:0.5, blurb:'Flush the round, skip ahead'},
+  {t:'flush',   name:'Mega Wipe',       e:'🧽', lab:'MW', col:'#7ae6ff', unlock:4, weight:1.2, blurb:'Wipes the bottom row'},
+  {t:'hotdog',  name:'Wiener Rockets',  e:'🌭', lab:'WR', col:'#ff9d74', unlock:4, weight:1.5, blurb:'Arcing sausage missiles'},
+  {t:'chord',   name:'Power Chord',     e:'🎸', lab:'PW', col:'#ff5fa2', unlock:4, weight:1.0, blurb:'Every brick takes a hit'},
+  {t:'ghost',   name:'Ghost Poo',       e:'👻', lab:'GP', col:'#cdd5ff', unlock:5, weight:1.3, blurb:'Ball phases through'},
+  {t:'skunk',   name:'Skunk Cloud',     e:'🦨', lab:'SK', col:'#7af1c4', unlock:5, weight:1.4, blurb:'Stink eats bricks'},
+  {t:'gold',    name:'Golden Throne',   e:'💰', lab:'2×', col:'#ffd76a', unlock:6, weight:1.0, blurb:'Double points'},
   // ---- Bad ones (level 6+) ----
-  {t:'shrink',  e:'😬',  lab:'XS', col:'#ff7ab6', unlock:6, bad:true, weight:1},
-  {t:'speed',   e:'💨',  lab:'SP', col:'#ff9d74', unlock:6, bad:true, weight:1},
-  {t:'reverse', e:'🔄',  lab:'RV', col:'#b290ff', unlock:8, bad:true, weight:0.8},
+  {t:'shrink',  name:'Shrinkage',       e:'😬', lab:'XS', col:'#ff7ab6', unlock:6, bad:true, weight:1,   blurb:'Tiny paddle'},
+  {t:'speed',   name:'Bad Curry',       e:'💨', lab:'BC', col:'#ff9d74', unlock:6, bad:true, weight:1,   blurb:'Ball speeds up'},
+  {t:'reverse', name:'Backwash',        e:'🔄', lab:'BW', col:'#b290ff', unlock:8, bad:true, weight:0.8, blurb:'Controls flip'},
 ];
 function powerDef(type){
   return POWERS.find(p => p.t === type);
@@ -1862,7 +1937,11 @@ function applyPower(p){
     case 'shrink':  activePowers.shrink  = f; paddle.w = Math.max(56, paddle.w*0.65); break;
     case 'speed':   activePowers.fast    = f; syncTimedBallSpeeds(); break;
     case 'reverse': activePowers.reverse = 60*5; break;
+    case 'warp':    flushWarp(); break;
+    case 'chord':   powerChord(); break;
   }
+  const def = powerDef(p.t);
+  if(def && def.name) floatText(def.name.toUpperCase(), paddle.x, paddle.y - 48, def.col);
   const bank = PICKUP_QUIPS[p.t] || [p.t.toUpperCase()];
   const quip = bank[Math.floor(Math.random()*bank.length)];
   if(quip) showToast(quip);
@@ -1901,6 +1980,54 @@ function megaFlush(){
   updateHud();
 }
 
+/* Flush Warp (Arkanoid's B capsule): the whole wall swirls down the drain. */
+function flushWarp(){
+  if(gameMode === 'boss') { score += 1000; floatText('+1000', W/2, H/2, '#5ec8ff'); return; }
+  const cx = W/2, cy = H*0.35;
+  for(let i=bricks.length-1;i>=0;i--){
+    const b = bricks[i];
+    if(steel(b)) continue;
+    bricks.splice(i,1);
+    killBrick(b);
+    score += brickDestroyPoints();
+  }
+  for(let i=0;i<60;i++){
+    const a = i/60*Math.PI*6, rr = 20 + i*2.2;
+    particles.push({ x: cx + Math.cos(a)*rr, y: cy + Math.sin(a)*rr,
+      vx: -Math.sin(a)*2.4 - Math.cos(a)*1.2, vy: Math.cos(a)*2.4 - Math.sin(a)*1.2,
+      g: 0, life: 50+Math.random()*20, r: 2.5+Math.random()*2, col: i%3 ? '#5ec8ff' : '#ffffff' });
+  }
+  powerups = [];
+  shake = Math.max(shake, 8);
+  setHype('FLUSHED! WARPING…', 70);
+  if(sfx.flushWarp) sfx.flushWarp(); else sfx.break();
+  updateHud();
+}
+
+/* Power Chord: one big amp blast, every breakable brick takes a hit. */
+function powerChord(){
+  shake = Math.max(shake, 16);
+  flash = 1;
+  particles.push({x:paddle.x, y:paddle.y, r:0, vr:26, life:28, col:'#ff5fa2', shock:true});
+  for(let i=bricks.length-1;i>=0;i--){
+    const b = bricks[i];
+    if(steel(b)) continue;
+    b.hp -= 1;
+    b.hitFlash = 1;
+    if(b.hp <= 0){
+      bricks.splice(i,1);
+      killBrick(b);
+      const earned = brickDestroyPoints();
+      score += earned;
+    } else {
+      spawnBrickBits(b);
+    }
+  }
+  floatText('🎸 KERRANG!', W/2, H*0.45, '#ff5fa2');
+  if(sfx.chord) sfx.chord(); else sfx.break();
+  updateHud();
+}
+
 function spawnStinkCloud(){
   // A persistent cloud that sits in the play area and damages bricks it touches.
   particles.push({
@@ -1920,9 +2047,10 @@ function spawnStinkCloud(){
   fart();
 }
 const BALL_HUES = ['#8a5a30','#7ae6ff','#ff7ab6','#ffd76a'];
+const MAX_BALLS = 6;
 function spawnMulti(){
   const src = balls[0]; if(!src) return;
-  for(let i=0;i<2;i++){
+  for(let i=0;i<2 && balls.length < MAX_BALLS;i++){
     const ang = Math.atan2(src.vy, src.vx) + (i?-0.4:0.4);
     const sp = Math.hypot(src.vx,src.vy);
     balls.push({
@@ -2050,8 +2178,8 @@ function fireLaser(){
   if(!activePowers.laser) return;
   if(fireLaser._cd && performance.now()-fireLaser._cd<170) return;
   fireLaser._cd = performance.now();
-  lasers.push({x:paddle.x-22, y:paddle.y-4, vy:-12, life:60});
-  lasers.push({x:paddle.x+22, y:paddle.y-4, vy:-12, life:60});
+  lasers.push({x:paddle.x-22, y:paddle.y-4, y0:paddle.y-4, vy:-12, life:60, tp:true});
+  lasers.push({x:paddle.x+22, y:paddle.y-4, y0:paddle.y-4, vy:-12, life:60, tp:true});
   sfx.laser();
 }
 function firePaper(){
@@ -2137,12 +2265,20 @@ function step(dt){
   if(lifeGrace>0) lifeGrace = Math.max(0, lifeGrace - ts);
   stink = Math.min(1, stink + 0.0006*ts);
 
+  if(!physicsFrozen && balls.some(b => !b.stuck)) sinceBrickHit += ts;
   if(!physicsFrozen){
   for(let bi=balls.length-1; bi>=0; bi--){
     const b = balls[bi];
     if(b.stuck){ b.x = paddle.x; b.y = paddle.y - b.r - 1; b.trail = []; continue; }
     b.trail.push({x:b.x,y:b.y});
     if(b.trail.length>10) b.trail.shift();
+    if(TLEVELS && TLEVELS.endgameSteer && gameMode !== 'boss'){
+      const steer = TLEVELS.endgameSteer(b, bricks, sinceBrickHit, ts);
+      if(steer){
+        b.vx = steer.vx; b.vy = steer.vy;
+        if(!endgameCueShown){ endgameCueShown = true; floatText('SNIFFING OUT THE LAST ONES', W/2, H*0.55, '#8effb4'); }
+      }
+    }
     b.x += b.vx*ts; b.y += b.vy*ts;
     if(b.fire>0) b.fire -= ts;
     if(b.squash > 0) b.squash = Math.max(0, b.squash - 0.12*ts);
@@ -2268,6 +2404,7 @@ function step(dt){
         } else {
           shake = Math.max(shake, 3);
         }
+        if(!br.indestructible) sinceBrickHit = 0;
         hits++;
         if(hits>2) break;
       }
@@ -2299,6 +2436,7 @@ function step(dt){
     if(lives <= 0){ gameOver(false); return; }
     paddle.w = paddle.baseW;
     activePowers = {}; updatePowers();
+    powerups = []; lasers = []; paddleShots = [];
     balls = [ newBall(true) ];
     waitingLaunch = true;
     btnLaunch.classList.add('show');
@@ -2314,8 +2452,10 @@ function step(dt){
     }
     if(p.y > H + 20){ powerups.splice(i,1); continue; }
     if(p.y + 12 >= paddle.y && p.y < paddle.y + paddle.h && Math.abs(p.x - paddle.x) < paddle.w/2 + 12){
-      applyPower(p);
       powerups.splice(i,1);
+      applyPower(p);
+      // Flush Warp clears every falling capsule, so no earlier entries remain.
+      if(powerups.length === 0) break;
     }
   }
 
@@ -2472,6 +2612,10 @@ function step(dt){
     tryLightHaptic(28);
     lifeGrace = LIFE_GRACE_FRAMES;
     if(lives <= 0){ gameOver(false); return; }
+    // Same reset as a lost ball: a drip death also drops every power-up.
+    paddle.w = paddle.baseW;
+    activePowers = {}; updatePowers();
+    powerups = []; lasers = []; paddleShots = [];
     balls = [ newBall(true) ];
     waitingLaunch = true;
     btnLaunch.classList.add('show');
@@ -2507,6 +2651,15 @@ function render(){
   lastRenderTime = nowMs;
   const rts = rdt / BASE_FRAME_MS;
 
+  // The title's scenery is a still poster behind its animated ball and capsules.
+  // Gameplay always takes the complete renderer below, at its original frame rate.
+  const titleBackdropKey = [W, H, DPR, level, lives, stink, !!reducedMotion?.matches].join('|');
+  if(state === 'title' && titleBackdrop?.key === titleBackdropKey){
+    ctx.drawImage(titleBackdrop.canvas, 0, 0, W, H);
+    drawTitleAttract(rts);
+    return;
+  }
+
   ctx.save();
   const shakeOff = FX ? FX.shakeOffset(shake, reducedMotion) : { sx: shake>0 && !reducedMotion?.matches ? (Math.random()-0.5)*shake : 0, sy: 0 };
   if(!FX && shake>0 && !reducedMotion?.matches) shakeOff.sy = (Math.random()-0.5)*shake;
@@ -2522,6 +2675,14 @@ function render(){
   ctx.fillStyle = g;
   ctx.fillRect(0,0,W,H);
 
+  // Clean play field: a dark field with a faint black-and-white checker.
+  // No props, rails, pipes or fixtures between the paddle and the bricks.
+  // Bathroom dressing (wall, stall, soap dish, rail, pipes) only on the intro
+  // poster. During play in every round the field stays clean.
+  const introDecor = state === 'title';
+  const bgT = nowMs * 0.06 * parallaxMul;
+  if(!introDecor) paintCleanField(W, H);
+  if(introDecor){
   // Sewer brick wall behind everything, faded in the middle so the play
   // area stays readable, with the light falling off toward the sides.
   if(wallPattern){
@@ -2548,7 +2709,7 @@ function render(){
     });
   }
   if(TSPRITE && TSPRITE.paintWorldStage){
-    TSPRITE.paintWorldStage(ctx, world, {
+    (TSPRITE.paintWorldStageCached || TSPRITE.paintWorldStage)(ctx, world, {
       W, H, nowMs, reducedMotion: !!(reducedMotion && reducedMotion.matches),
       fixtures: state === 'playing' || state === 'paused'
     });
@@ -2556,7 +2717,6 @@ function render(){
 
   // Parallax sewer layers — driven by wall-clock time so they drift on the
   // title screen too and stay frame-rate independent.
-  const bgT = nowMs * 0.06 * parallaxMul;
   for(const layer of bgLayers){
     const off = (bgT * layer.speed) % W;
     ctx.globalAlpha = layer.alpha;
@@ -2596,6 +2756,22 @@ function render(){
     }
   }
   ctx.globalAlpha = 1;
+  // bubbles (parallax bubble field, drifting up)
+  const tAmb = performance.now() * 0.0006;
+  for(const s of bgStars){
+    s.x += Math.sin(s.t + tAmb*4) * 0.18;
+    s.y -= 0.22 + s.r*0.18;
+    if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
+    ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
+    ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.beginPath(); ctx.arc(s.x - s.r*0.35, s.y - s.r*0.35, s.r*0.3, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  }
+  ctx.globalAlpha = 1;
 
   if(stink>0){
     const sg = ctx.createRadialGradient(W/2, H*0.7, 0, W/2, H*0.7, Math.max(W,H)*0.8);
@@ -2625,20 +2801,6 @@ function render(){
     ctx.fillStyle = 'rgba(255,255,255,.35)';
     ctx.beginPath(); ctx.arc(-d.w*0.12, len*0.35, d.w*0.12, 0, 6.283); ctx.fill();
     ctx.restore();
-  }
-  ctx.globalAlpha = 1;
-
-  // bubbles (parallax bubble field, drifting up)
-  const tAmb = performance.now() * 0.0006;
-  for(const s of bgStars){
-    s.x += Math.sin(s.t + tAmb*4) * 0.18;
-    s.y -= 0.22 + s.r*0.18;
-    if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
-    ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
-    ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
-    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.7)';
-    ctx.beginPath(); ctx.arc(s.x - s.r*0.35, s.y - s.r*0.35, s.r*0.3, 0, 6.283); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
@@ -2685,20 +2847,6 @@ function render(){
   ctx.lineWidth = 1;
   ctx.strokeRect(4.5,4.5,W-9,H-9);
 
-  if(world && world.playWallTint && state === 'playing'){
-    const wallH = Math.min(H * 0.58, 420);
-    ctx.save();
-    ctx.fillStyle = world.playWallTint;
-    ctx.fillRect(0, 52, W, wallH - 52);
-    const wt = ctx.createLinearGradient(0, 52, 0, wallH);
-    wt.addColorStop(0, 'rgba(0,0,0,0)');
-    wt.addColorStop(0.65, 'rgba(0,0,0,0)');
-    wt.addColorStop(1, 'rgba(4,12,16,.5)');
-    ctx.fillStyle = wt;
-    ctx.fillRect(0, 52, W, wallH - 52);
-    ctx.restore();
-  }
-
   for(const b of bricks){ drawBrick(b); }
   if(boss) drawBoss(boss);
   for(const sl of sludges){
@@ -2711,12 +2859,21 @@ function render(){
   for(const d of dyingBricks){ drawDyingBrick(d); }
   for(const p of powerups){ drawPowerup(p); }
   for(const l of lasers){
-    ctx.fillStyle = '#ff7ab6';
-    ctx.shadowColor = '#ff7ab6'; ctx.shadowBlur = 12;
-    roundRect(ctx, l.x-2.5, l.y, 5, 18, 2.5); ctx.fill();
+    // TP Cannon: a spinning roll that unspools a wavy paper tail behind it.
+    const tail = Math.min(70, (l.y0 != null ? l.y0 - l.y : 40));
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    for(let k=0;k<=tail;k+=6){
+      const wx = l.x + Math.sin((l.y + k)*0.18) * 3.5;
+      if(k===0) ctx.moveTo(wx, l.y+8); else ctx.lineTo(wx, l.y + 8 + k);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
+    roundRect(ctx, l.x-6, l.y-2, 12, 12, 4); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fff';
-    roundRect(ctx, l.x-1, l.y+2, 2, 14, 1); ctx.fill();
+    ctx.fillStyle = '#b8a890';
+    ctx.beginPath(); ctx.arc(l.x, l.y+4, 2.5, 0, 6.283); ctx.fill();
   }
   for(const s of paddleShots){
     ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.rot);
@@ -2825,7 +2982,8 @@ function render(){
   }
   ctx.globalAlpha = 1;
 
-  if(waitingLaunch && state==='playing'){
+  // The HTML #mobileLaunch pill already says TAP TO LAUNCH; draw the canvas hint only when it is hidden.
+  if(waitingLaunch && state==='playing' && !(btnLaunch && btnLaunch.classList.contains('show'))){
     const t = (typeof TurdanoidTheme !== 'undefined' && TurdanoidTheme.TOKENS) || {};
     const txt = 'TAP / SPACE TO LAUNCH';
     ctx.font = `bold 12px ${t.font || '"Segoe UI", system-ui, sans-serif'}`;
@@ -2888,6 +3046,14 @@ function render(){
   }
 
   if(state === 'title'){
+    const poster = document.createElement('canvas');
+    poster.width = cv.width;
+    poster.height = cv.height;
+    const posterCtx = poster.getContext('2d', { alpha:false });
+    if(posterCtx){
+      posterCtx.drawImage(cv, 0, 0);
+      titleBackdrop = { key: titleBackdropKey, canvas: poster };
+    }
     drawTitleAttract(rts);
   }
 
@@ -3352,11 +3518,32 @@ function roundRect(c,x,y,w,h,r){
 }
 
 /* ---- Loop ---- */
+// Menus (title, pause, end) sit over the canvas, so the backdrop only needs ~12fps there.
+// Full rate resumes the moment play starts. This keeps the main thread free on load.
+// On slow phones a single menu frame can cost 100ms+, so the idle rate backs off to keep
+// each menu frame under ~1/6 of the idle budget (taps on Play stay responsive).
+const IDLE_FRAME_MS = 83;
+const IDLE_FRAME_MAX_MS = 1200;
+let idleFrameMs = 250; // start gentle while the page is still loading, then settle
+let lastRender = 0;
+let idleRenderedAt = 0;
 function loop(now){
   const dt = Math.min(33, now - lastTime);
   lastTime = now;
-  if(state === 'playing' && !paused){ step(dt); }
-  render();
+  const active = state === 'playing' && !paused;
+  if(active){ step(dt); }
+  // Canvas work is rasterized after the script returns, so time the whole frame:
+  // the gap from an idle render to the next animation frame.
+  if(idleRenderedAt){
+    const cost = performance.now() - idleRenderedAt;
+    idleRenderedAt = 0;
+    idleFrameMs = Math.min(IDLE_FRAME_MAX_MS, Math.max(IDLE_FRAME_MS, cost * 6, idleFrameMs * 0.9));
+  }
+  if(active || now - lastRender >= idleFrameMs){
+    lastRender = now;
+    render();
+    if(!active) idleRenderedAt = performance.now();
+  }
   requestAnimationFrame(loop);
 }
 
@@ -3376,7 +3563,8 @@ document.addEventListener('touchend', e=>{
   lastTouch = now;
 }, {passive:false});
 
-document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+// One-finger drags never scroll the page; two-finger pinch is left to the browser for zoom.
+document.body.addEventListener('touchmove', e=>{ if(e.touches.length < 2) e.preventDefault(); }, {passive:false});
 
 /* ---- Test hook ----
    Local/dev only. The public GitHub Pages host must not ship a
@@ -3414,6 +3602,13 @@ document.body.addEventListener('touchmove', e=>e.preventDefault(), {passive:fals
     get paddle(){ return paddle; },
     get powerups(){ return powerups; },
     get floats(){ return floats; },
+    get lasers(){ return lasers; },
+    set lasers(v){ lasers = v; },
+    get maxBalls(){ return MAX_BALLS; },
+    get paddleShots(){ return paddleShots; },
+    get particles(){ return particles; },
+    fireAll,
+    get powerDefs(){ return POWERS.map(p => ({...p})); },
     get W(){ return W; },
     get H(){ return H; },
     get gameMode(){ return gameMode; },
