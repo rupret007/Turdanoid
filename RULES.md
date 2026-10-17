@@ -6,7 +6,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ## Table of Contents
 
-1. [TurdAnoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
+1. [Turdanoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
 2. [Turdtris (Tetris Clone)](#turdtris-tetris-clone)
 3. [Turdjack (Blackjack)](#turdjack-blackjack)
 4. [Crapeights (Crazy Eights)](#crapeights-crazy-eights)
@@ -15,11 +15,11 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ---
 
-## TurdAnoid (Arkanoid Clone)
+## Turdanoid (Arkanoid Clone)
 
 ### Overview
 
-TurdAnoid Turbo (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels across five themed worlds (six levels each), 19 power-ups, optional **Boss Flush** (separate best score: `turdanoid_boss_best_v1`), and a unique "stink" mechanic. Classic campaign best remains `turdanoid_v2_best`. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
+Turdanoid (`TurdAnoid.html`) is an Arkanoid-style brick breaker with 30 levels across five themed worlds (six levels each), 19 power-ups, optional **Boss Flush** (separate best score: `turdanoid_boss_best_v1`), and a unique "stink" mechanic. Classic campaign best remains `turdanoid_v2_best`. (The original 69-level Neon Arkanoid remains available directly at `neon-arkanoid.html`.)
 
 ### Controls
 
@@ -45,7 +45,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 
 | Power-Up | Effect |
 |----------|--------|
-| 📏 Enlarge | Widens paddle ~18% per pickup (stacks to 1.8×). Size lasts until the timer dies, including across a wall clear |
+| 📏 Enlarge | Widens paddle ~18% per pickup (stacks to 1.8×). Size lasts until its timer runs out or the round changes |
 | 🐌 Slow | Slows all balls |
 | 🧲 Catch | Ball sticks to paddle for re-launch |
 | 🌀 Multiball | Splits into up to 3 balls |
@@ -61,7 +61,7 @@ Unlock progressively by level; bad pickups never appear before level 6.
 | 👻 Ghost | Ball phases through bricks, damaging them |
 | 🦨 Skunk | Drops a stink cloud that chews through bricks |
 | 💰 Gold Rush | 2× points for 6 seconds |
-| 😬 Shrink (bad) | Shrinks paddle. Size lasts until the timer dies, including across a wall clear |
+| 😬 Shrink (bad) | Shrinks paddle. Size lasts until its timer runs out or the round changes |
 | 💨 Speed (bad) | Speeds up all balls |
 | 🔄 Reverse (bad) | Mirrors controls |
 
@@ -70,10 +70,11 @@ Unlock progressively by level; bad pickups never appear before level 6.
 - **30 unique data-driven walls** across five worlds of six (Bathroom Tiles, Sewer Pipes, Toxic Lagoon, Candy Clog, Golden Throne). Every level has its own layout — not a rotating stamp
 - Early walls are 1-hit and approachable. 2-hit tiles start on level 5, metal on 9, slime drips on 11, steel (indestructible) on world-boss keeps from level 6
 - Each world's sixth stage is a fortress boss beat (levels 6, 12, 18, 24, 30)
-- Brick HP total, ball speed, and drip-hazard count climb monotonically; power-up drops stay generous early and settle to the 12% floor
+- Total brick HP and ball speed never drop from one round to the next. From level 24 the walls get sparser so the pictures read, and heavy bricks carry the toughness instead: heavy gold (5 hits) and heavy steel (6 hits). Power-up drops stay generous early and settle to the 12% floor
 - Steel bricks bounce the ball and never count toward a clear. Drip bricks leak sludge until you break them
+- **Last-bricks assist:** when only 1 to 3 breakable bricks are left and the ball hasn't touched one for about 6 seconds, the ball gently curves toward the nearest one while it travels upward (a small nudge, about 1 degree per frame, at the same speed). "SNIFFING OUT THE LAST ONES" shows while it is on. Steel is ignored, and hitting any brick resets the timer
 - Ball and paddle speed scale with level (capped)
-- Enlarge and Shrink last until their timers die, including across a wall clear. Losing a life still resets the paddle
+- Like Arkanoid, every timed power-up (including Enlarge and Shrink) ends at each round change, and the paddle returns to normal size. Losing a life still resets them too
 - Win by clearing level 30
 
 ---
@@ -446,7 +447,7 @@ Each game has a decoupled JavaScript engine in `games/` that can be imported and
 
 ```
 games/
-├── turdanoid_logic.js    # TurdAnoid physics/balance
+├── turdanoid_logic.js    # Turdanoid physics/balance
 ├── turdtris-engine.js    # Tetris logic
 ├── turdjack-engine.js    # Blackjack logic  
 ├── crapeights-engine.js  # Crazy Eights logic
@@ -463,3 +464,44 @@ npm run test:watch # Watch mode
 npm run lint       # Lint code
 npm run format     # Format code
 ```
+
+---
+
+## Turdomania (Clickomania)
+
+### Overview
+
+Turdomania (`turdomania.html`) is a Clickomania / SameGame puzzle. The board is filled with poop-themed tiles (💩 🌽 🟢 🧻 🫘). Rules live in `games/turdomania-core.js`.
+
+### Rules
+
+- Tap (or press Enter on) a tile that touches at least one same-kind tile up, down, left or right. The whole connected pile disappears. Lone tiles cannot be popped.
+- Tiles above the gap fall straight down. A column that becomes empty closes up: columns to its right slide left.
+- The game ends when no two same-kind tiles touch, or the board is empty.
+
+### Scoring
+
+| Action | Points |
+|--------|--------|
+| Pop a pile of n | (n − 2)² (pairs score 0) |
+| Clear the whole board | +1000 |
+
+### Difficulty
+
+| Level | Board | Kinds |
+|-------|-------|-------|
+| Squirt | 8 × 10 | 3 |
+| Log | 10 × 12 | 4 |
+| Blowout | 12 × 14 | 5 |
+
+### Controls
+
+- **Tap / click**: pop a pile (mouse hover previews the pile)
+- **Arrow keys**: move the cursor on the focused board; **Enter / Space** pops
+- **U** or **Ctrl/⌘+Z**: undo (unlimited, back to the first move); **N**: new board
+
+### Storage
+
+- `turdomania_best_v1`: `{ v: 1, best: { easy, normal, hard } }`
+- `turdomania_prefs_v1`: last difficulty
+- `?seed=<n>&level=<easy|normal|hard>` gives a deterministic board (tests); `?reducedMotion=1` forces reduced motion.

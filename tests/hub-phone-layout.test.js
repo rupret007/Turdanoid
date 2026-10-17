@@ -196,7 +196,10 @@ function resumeEdges() {
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('hub phone first-screen layout', () => {
-  for (const viewport of [{ width: 390, height: 844 }, { width: 414, height: 896 }]) {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 414, height: 896 }
+  ]) {
     for (const returning of [false, true]) {
       it(`centers the ${returning ? 'returning' : 'new'} player hub at ${viewport.width}×${viewport.height}`, async () => {
         const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
@@ -207,9 +210,12 @@ function resumeEdges() {
           const bottomSpace = viewport.height - shell.y - shell.height;
           expect(topSpace).toBeGreaterThan(10);
           expect(bottomSpace).toBeGreaterThan(10);
-          expect(Math.abs(topSpace - bottomSpace), 'balanced space above and below the hub').toBeLessThanOrEqual(2);
+          expect(
+            Math.abs(topSpace - bottomSpace),
+            'balanced space above and below the hub'
+          ).toBeLessThanOrEqual(2);
           const layout = await page.evaluate(measureHub, true);
-          expect(layout.cards).toHaveLength(6);
+          expect(layout.cards).toHaveLength(7);
           expect(layout.offFirst).toEqual([]);
           expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         } finally {
@@ -218,6 +224,20 @@ function resumeEdges() {
       });
     }
   }
+
+  it('shows every game blurb in full (no ellipsis) at 320px', async () => {
+    if (!hasBrowser) {return;}
+    const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
+    try {
+      await openHub(page);
+      const cut = await page.$$eval('.game-card .game-info p', (ps) =>
+        ps.filter((p) => p.scrollWidth > p.clientWidth + 0.5).map((p) => p.textContent.trim())
+      );
+      expect(cut).toEqual([]);
+    } finally {
+      await page.close();
+    }
+  });
 
   it('keeps expanded content reachable by keyboard in a short portrait viewport', async () => {
     const viewport = { width: 320, height: 480 };
@@ -242,18 +262,29 @@ function resumeEdges() {
       const footer = await footerLink.boundingBox();
       expect(footer.y).toBeGreaterThanOrEqual(0);
       expect(footer.y + footer.height).toBeLessThanOrEqual(viewport.height);
+
+      const suiteFocusOrder = [];
+      for (let step = 0; step < 12 && suiteFocusOrder.length < 3; step += 1) {
+        await page.keyboard.press('Tab');
+        const id = await page.evaluate(() => document.activeElement?.id || '');
+        if (id === 'suite-music-toggle' || id === 'suite-listen-manic' || id === 'suite-hub-mute') {
+          suiteFocusOrder.push(id);
+        }
+      }
+      // Injected suite controls append to body; tab order is music → manic → skip link → hub mute.
+      expect(suiteFocusOrder).toEqual(['suite-music-toggle', 'suite-listen-manic', 'suite-hub-mute']);
     } finally {
       await page.close();
     }
   });
 
   for (const viewport of PORTRAIT) {
-    it(`fits all six returning-player rows in the first screen at ${viewport.width}×${viewport.height}`, async () => {
+    it(`fits all seven returning-player rows in the first screen at ${viewport.width}×${viewport.height}`, async () => {
       const page = await browser.newPage({ viewport });
       try {
         await openHub(page, true);
         const layout = await page.evaluate(measureHub, true);
-        expect(layout.cards).toHaveLength(6);
+        expect(layout.cards).toHaveLength(7);
         expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         expect(layout.clipped).toEqual([]);
         expect(layout.offFirst).toEqual([]);
@@ -288,7 +319,7 @@ function resumeEdges() {
       try {
         await openHub(page, true);
         const layout = await page.evaluate(measureHub, false);
-        expect(layout.cards).toHaveLength(6);
+        expect(layout.cards).toHaveLength(7);
         expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         expect(layout.clipped).toEqual([]);
         expect(layout.overlaps).toEqual([]);

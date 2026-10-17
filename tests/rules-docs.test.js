@@ -30,21 +30,21 @@ function numericProperty(source, name) {
 const rules = readRepoFile('RULES.md');
 
 describe('RULES.md follows the shipped games', () => {
-  it('records TurdAnoid timed paddle size across walls', () => {
+  it('records TurdAnoid timed powers ending at each round change', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function paddleKeepsTimedSize()');
     expect(game).toContain('if(!paddleKeepsTimedSize()) paddle.w = paddle.baseW');
-    expect(documented).toContain(
-      'Enlarge and Shrink last until their timers die, including across a wall clear'
-    );
-    expect(documented).toContain('Losing a life still resets the paddle');
+    expect(game).toMatch(/activePowers = \{\};\s*paddle\.w = paddle\.baseW;\s*newLevel\(\);/);
+    expect(documented).toContain('every timed power-up (including Enlarge and Shrink) ends at each round change');
+    expect(documented).toContain('Losing a life still resets them too');
+    expect(documented).not.toContain('across a wall clear');
   });
 
   it('records TurdAnoid Bomb destroy scoring', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function brickDestroyPoints()');
     expect(game).toContain('function detonate()');
@@ -58,7 +58,7 @@ describe('RULES.md follows the shipped games', () => {
 
   it('records TurdAnoid Mega Flush scoring', () => {
     const game = readRepoFile('TurdAnoid.html');
-    const documented = section(rules, 'TurdAnoid (Arkanoid Clone)');
+    const documented = section(rules, 'Turdanoid (Arkanoid Clone)');
 
     expect(game).toContain('function flushDestroyPoints()');
     expect(game).toContain('function megaFlush()');

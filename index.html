@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="robots" content="noindex">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,7 +11,7 @@
   <link rel="stylesheet" href="assets/turdsuite.css">
   <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
-  <title>Turdanoid — Six Games, One Sewer</title>
+  <title>Stalemate Games — Seven Games, One Sewer</title>
   <style>
     :root {
       --bg-a: #10192d;
@@ -495,6 +496,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-height: 44px;
     }
 
     .changelog summary::-webkit-details-marker { display: none; }
@@ -525,6 +527,9 @@
     }
 
     .footer-note a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
       color: rgba(232, 247, 255, 0.78);
       text-underline-offset: 0.2em;
     }
@@ -662,7 +667,7 @@
       .changelog { font-size: 0.78rem; padding: 8px 10px; }
     }
 
-    /* Squat phone landscape: two compact columns so six ≥44px rows stay
+    /* Squat phone landscape: two compact columns so seven ≥44px rows stay
        reachable without horizontal overflow. Vertical scroll is allowed.
        Width can exceed 600px (844×390), so this block restates the phone-row
        chrome instead of depending on the portrait 600px query. */
@@ -735,16 +740,16 @@
 <body class="suite-ambient suite-no-zoom">
   <div class="shell">
     <header class="masthead">
-      <h1><span class="logo">💩</span> Turdanoid</h1>
-      <p class="subtitle">Six games. Pick your next round.</p>
+      <h1><span class="logo">💩</span> Stalemate Games</h1>
+      <p class="subtitle">Seven games. Pick your next round.</p>
       <div class="meta-row">
         <p class="hero-badge">No sign-in • works on phone and desktop</p>
-        <button type="button" class="suite-hub-mute" id="suite-hub-mute" aria-pressed="false" aria-label="Mute suite sounds">🔊 Sound on</button>
+        <button type="button" class="suite-hub-mute" id="suite-hub-mute" aria-pressed="false" aria-label="Sound on, tap to mute suite sounds">🔊 Sound on</button>
       </div>
     </header>
 
     <main class="games" id="hub-games" aria-label="Choose a game">
-      <a href="TurdAnoid.html" class="game-card" data-vibe="Turbo edition. More juice." style="--c:#9effc8;--c2:#7ae6ff">
+      <a href="TurdAnoid.html" class="game-card" data-vibe="Bricks. Busted. Flushed." style="--c:#9effc8;--c2:#7ae6ff">
         <div class="cover" aria-hidden="true">
           <svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid slice">
             <defs>
@@ -787,7 +792,7 @@
         </div>
         <div class="body">
           <div class="game-info">
-            <div class="title-row"><span class="emoji">🚽</span><h2>TurdAnoid Turbo</h2></div>
+            <div class="title-row"><span class="emoji">🚽</span><h2>Turdanoid</h2></div>
             <p>Break bricks. Grab boosts.</p>
           </div>
           <span class="play">Play <i>→</i></span>
@@ -993,6 +998,39 @@
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
+      <a href="turdomania.html" class="game-card" data-vibe="Plop till it drops" style="--c:#ffcb87;--c2:#8ee8c7">
+        <div class="cover" aria-hidden="true">
+          <svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="tm-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2717"/><stop offset="1" stop-color="#1a120c"/></linearGradient>
+            </defs>
+            <rect width="320" height="150" fill="url(#tm-bg)"/>
+            <g font-size="22" text-anchor="middle">
+              <g class="art-lift">
+                <rect x="70" y="96" width="30" height="30" rx="7" fill="#8a5a2b"/><text x="85" y="119">💩</text>
+                <rect x="100" y="96" width="30" height="30" rx="7" fill="#8a5a2b"/><text x="115" y="119">💩</text>
+                <rect x="100" y="66" width="30" height="30" rx="7" fill="#8a5a2b"/><text x="115" y="89">💩</text>
+              </g>
+              <rect x="130" y="96" width="30" height="30" rx="7" fill="#e8c64a"/><text x="145" y="119">🌽</text>
+              <rect x="160" y="96" width="30" height="30" rx="7" fill="#58c46b"/><text x="175" y="119">🟢</text>
+              <rect x="160" y="66" width="30" height="30" rx="7" fill="#e8c64a"/><text x="175" y="89">🌽</text>
+              <rect x="190" y="96" width="30" height="30" rx="7" fill="#e9e4d8"/><text x="205" y="119">🧻</text>
+              <rect x="190" y="66" width="30" height="30" rx="7" fill="#58c46b"/><text x="205" y="89">🟢</text>
+              <rect x="220" y="96" width="30" height="30" rx="7" fill="#e9e4d8"/><text x="235" y="119">🧻</text>
+              <rect x="130" y="66" width="30" height="30" rx="7" fill="#58c46b"/><text x="145" y="89">🟢</text>
+              <rect x="130" y="36" width="30" height="30" rx="7" fill="#e9e4d8"/><text x="145" y="59">🧻</text>
+            </g>
+            <g class="art-glow"><rect x="14" y="16" width="72" height="20" rx="10" fill="#ffcb87"/><text x="50" y="30" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="10" font-weight="900" fill="#2a1a0e" letter-spacing="2">+16 PLOP</text></g>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="game-info">
+            <div class="title-row"><span class="emoji">🪠</span><h2>Turdomania</h2></div>
+            <p>Pop piles, flush the board.</p>
+          </div>
+          <span class="play">Play <i>→</i></span>
+        </div>
+      </a>
     </main>
 
     <details class="changelog">
@@ -1004,28 +1042,28 @@
         <li><strong>1000x shared (round 1):</strong> hub skip link, suite mute toggle, read-only stat chips, opt-in <code>Suite.audio()</code> / <code>Suite.fx()</code>.</li>
         <li><strong>Hub leftover after the phone resume cue:</strong> when you have a table in progress, the masthead badge turns into a one-tap "Continue &lt;Game&gt;" link — the last game you opened if it is still live, otherwise the first table waiting. First visits keep the "No sign-in" badge. No rules, storage, continue-validation, or layout change.</li>
         <li><strong>Hub leftover after phone rows:</strong> a marked card's <code>aria-label</code> now spells out the game, its blurb, and the action with its state ("Continue — in progress" / "Play again — last played"). The badge is hidden on phones, so this was the only cue some players had and it used to drop the blurb and the verb. No layout, storage, or continue-rule change.</li>
-        <li><strong>TurdAnoid leftover after Bomb scoring:</strong> Mega Flush now pays its 15 × level bonus for the bottom-row bricks it removes, including Gold Rush 2×, a <code>+points</code> float, and the usual pickup roll. Upper bricks stay on the wall. Arcade mid-run saves stay parked with PR #8.</li>
-        <li><strong>TurdAnoid leftover after #21:</strong> Bomb now pays the destroy bonus for bricks it kills, including Gold Rush 2× and the usual pickup roll. Splash-damaged survivors still score nothing. Arcade mid-run saves stay parked with PR #8.</li>
-        <li><strong>TurdAnoid leftover after #9 / #20:</strong> Enlarge and Shrink keep their paddle size when the next wall builds, so the Big/Shrunk chip matches the bat you serve with. Death still strips both. Arcade mid-run saves stay parked with PR #8.</li>
+        <li><strong>Turdanoid leftover after Bomb scoring:</strong> Mega Flush now pays its 15 × level bonus for the bottom-row bricks it removes, including Gold Rush 2×, a <code>+points</code> float, and the usual pickup roll. Upper bricks stay on the wall. Arcade mid-run saves stay parked with PR #8.</li>
+        <li><strong>Turdanoid leftover after #21:</strong> Bomb now pays the destroy bonus for bricks it kills, including Gold Rush 2× and the usual pickup roll. Splash-damaged survivors still score nothing. Arcade mid-run saves stay parked with PR #8.</li>
+        <li><strong>Turdanoid leftover after #9 / #20:</strong> Enlarge and Shrink keep their paddle size when the next wall builds, so the Big/Shrunk chip matches the bat you serve with. Death still strips both. Arcade mid-run saves stay parked with PR #8.</li>
         <li><strong>Turdtris leftover after #19:</strong> Hold and Next stay on the thumb dock so a phone run can see the held piece and the incoming piece without scrolling. Hold dims after it is used this piece, and a second tap does not swap. Arcade mid-run saves stay parked with PR #8.</li>
         <li><strong>Turdtris leftover after #18:</strong> Hold, soft drop, and Pause stay on the thumb dock instead of behind More Controls. A stalled frame cannot dump extra gravity. Game over shows a new-best receipt, and Space or Enter starts the next run. Arcade mid-run saves stay parked with PR #8.</li>
         <li><strong>Continue leftover after #16:</strong> Crapjack 21 now continues the live hand, so leaving mid-round keeps the cards and the bet together. The hub only says Continue for an unfinished playable table. Restored tables accept a real action. Continue validation is the same on the live suite as in tests. Arcade mid-run saves stay parked with PR #8.</li>
-        <li><strong>Continue leftover after #15:</strong> TurdSpades, TurdRummy, and Crappy Eights save the live table on this device. The hub says Continue when a match is waiting. Returning players skip the welcome guide. Malformed continue data cannot invent a seventh game or run HTML. TurdAnoid now records last-played. Arcade mid-run saves stay parked with PR #8.</li>
-        <li><strong>Playability leftover after Nil:</strong> TurdSpades now plays bot cards one at a time, pauses those turns when the tab hides, and has partners overtake a winning Nil card when they can. The hub marks the last game you opened. The TurdAnoid test hook stays off the public Pages host.</li>
-        <li><strong>Graphics pass:</strong> new hub cover art for every game, a shared ambient sewer backdrop (tiles, bubbles, stink wisps), one card-paper and card-back design across the four card games, felt grain and wooden rails on every table, beveled Turdtris tiles with line-clear bursts, and a richer TurdAnoid sewer with a slime surface, brick wall, and smoke on every kill. Physics, scoring, rules, and controls untouched.</li>
+        <li><strong>Continue leftover after #15:</strong> TurdSpades, TurdRummy, and Crappy Eights save the live table on this device. The hub says Continue when a match is waiting. Returning players skip the welcome guide. Malformed continue data cannot invent a seventh game or run HTML. Turdanoid now records last-played. Arcade mid-run saves stay parked with PR #8.</li>
+        <li><strong>Playability leftover after Nil:</strong> TurdSpades now plays bot cards one at a time, pauses those turns when the tab hides, and has partners overtake a winning Nil card when they can. The hub marks the last game you opened. The Turdanoid test hook stays off the public Pages host.</li>
+        <li><strong>Graphics pass:</strong> new hub cover art for every game, a shared ambient sewer backdrop (tiles, bubbles, stink wisps), one card-paper and card-back design across the four card games, felt grain and wooden rails on every table, beveled Turdtris tiles with line-clear bursts, and a richer Turdanoid sewer with a slime surface, brick wall, and smoke on every kill. Physics, scoring, rules, and controls untouched.</li>
         <li><strong>Suite-wide v4.0:</strong> shared theme &amp; SFX across every game. Each one now has consistent fart noises, hype callouts, toasts, a back-to-hub pill, and proper iPhone safe-area handling.</li>
-        <li><strong>TurdAnoid Turbo:</strong> full Canvas remaster, 19 power-ups, gentle early difficulty so the player gets hooked.</li>
+        <li><strong>Turdanoid:</strong> full Canvas remaster, 19 power-ups, gentle early difficulty so the player gets hooked.</li>
         <li><strong>Turdtris / Crapjack / Crappy Eights / TurdRummy / TurdSpades:</strong> all hooked into the shared callout layer (Tetris, T-spin, Bust, Blackjack, Gin, Knock, Spades-broken, Bag-penalty all hype properly).</li>
         <li>New game added: Crappy Eights (Crazy Eights / Uno-style) with bots, action cards, and match scoring.</li>
         <li>Mobile controls streamlined across all games with compact menus and fixed quick-action areas.</li>
-        <li>TurdAnoid progression expanded with extra late-game pattern archetypes and mutators.</li>
+        <li>Turdanoid progression expanded with extra late-game pattern archetypes and mutators.</li>
         <li>Turdtris level modifiers now branch into distinct mutator styles for deeper late-game chaos.</li>
         <li>Crapjack added one-tap Quick Start and smarter mobile action flow.</li>
-        <li>Hub now starts with TurdAnoid, removes Neon card from front page, and adds TurdRummy.</li>
+        <li>Hub now starts with Turdanoid, removes Neon card from front page, and adds TurdRummy.</li>
         <li>TurdSpades added with full bidding, trick-taking flow, and team scoring.</li>
       </ul>
     </details>
-    <p class="footer-note">Six games • one sewer • <a href="neon-arkanoid.html">play the original Neon Arkanoid</a></p>
+    <p class="footer-note">Seven games • one sewer • Stalemate punk rock on every table — <a href="#hub-games">back to the grid</a></p>
   </div>
   <script type="module">
     import { injectSkipLink, createAnnouncer } from './assets/suite-a11y.js';
