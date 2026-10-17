@@ -614,12 +614,16 @@ body label:has(input:is([type="checkbox"], [type="radio"])) {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
-/* Hub: music bottom-left, Manic bottom-right. Game pages: music top-right beside the top-left Hub pill. */
+/* Hub: music bottom-left, Manic bottom-right. Game pages: tuck under the top pause/sound row. */
 body:not(.suite-hub-door) .suite-music-toggle {
   left: auto;
-  right: max(12px, var(--suite-safe-right));
   bottom: auto;
-  top: max(8px, calc(var(--suite-safe-top) + 4px));
+  right: max(12px, var(--suite-safe-right));
+  top: max(66px, calc(var(--suite-safe-top) + 56px));
+}
+/* Crappy Eights: stat ribbon and Table details sit lower than the pause row. */
+body:not(.suite-hub-door):has(.hud > .hud-card) .suite-music-toggle {
+  top: max(188px, calc(var(--suite-safe-top) + 178px));
 }
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {

@@ -2434,6 +2434,7 @@ function holdCurrentPiece() {
       lastActionRotate: false,
       lastKick: false
     };
+    lockResets = 0;
 
     if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
       if (!recoverSpawnPlacement(tetromino)) {
@@ -3558,14 +3559,12 @@ function loop(timestamp) {
       }
     }
 
+    // Airborne frames pause the timer; only a new piece renews the reset budget.
     if (isGrounded(tetromino)) {
       lockAccumulator += delta;
       if (lockAccumulator >= lockDelayMs) {
         lockPiece();
       }
-    } else {
-      lockAccumulator = 0;
-      lockResets = 0;
     }
 
     tickDasRepeat(delta);
