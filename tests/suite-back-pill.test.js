@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BACK_PILL_RESERVE_GAP,
   BACK_PILL_TAP_SIZE,
+  DUPLICATE_INPAGE_HUB_INNER_SELECTORS,
   NARROW_BACK_PILL_MAX_WIDTH,
   backPillReserveX,
   boxesIntersect,
@@ -13,6 +14,13 @@ import {
 } from '../assets/suite-back-pill.js';
 
 describe('suite-back-pill', () => {
+  it('names the in-page Hub exits hidden beside the pill on phones', () => {
+    expect(DUPLICATE_INPAGE_HUB_INNER_SELECTORS).toContain('#btnHub');
+    expect(DUPLICATE_INPAGE_HUB_INNER_SELECTORS).toContain('a.dialog-hub');
+    expect(DUPLICATE_INPAGE_HUB_INNER_SELECTORS).toContain('.overlay a[href="./"]:not(.suite-back-pill)');
+    expect(DUPLICATE_INPAGE_HUB_INNER_SELECTORS).toContain('button[onclick="location.href=\'./\'"]');
+  });
+
   it('places pill top on narrow viewports by default', () => {
     expect(resolveBackPillPlacement({}, 390)).toBe('top');
     expect(resolveBackPillPlacement({}, 320)).toBe('top');
