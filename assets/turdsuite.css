@@ -640,6 +640,12 @@ body:not(.suite-hub-door) .suite-music-toggle {
 body:not(.suite-hub-door):has(.hud > .hud-card) .suite-music-toggle {
   top: max(188px, calc(var(--suite-safe-top) + 178px));
 }
+/* Turdjack phone Table Menu row: keep suite music clear of mobile sound controls. */
+@media (max-width: 680px) {
+  body:has(.mobile-menu-stats.hud):not(.suite-hub-door) .suite-music-toggle {
+    top: max(152px, calc(var(--suite-safe-top) + 142px));
+  }
+}
 
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {

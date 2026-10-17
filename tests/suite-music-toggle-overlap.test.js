@@ -128,7 +128,14 @@ async function prepTurdjack(page) {
   if (await quick.isVisible().catch(() => false)) {
     await quick.click();
   }
-  await page.waitForTimeout(200);
+  const viewport = page.viewportSize();
+  if (viewport && viewport.width <= 680) {
+    await page.waitForFunction(
+      () => document.body.classList.contains('jack-table-first'),
+      { timeout: 10_000 }
+    );
+  }
+  await page.waitForTimeout(150);
 }
 
 async function prepCrapeights(page) {
