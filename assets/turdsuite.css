@@ -621,9 +621,11 @@ body:not(.suite-hub-door) .suite-music-toggle {
   right: max(12px, var(--suite-safe-right));
   top: max(66px, calc(var(--suite-safe-top) + 56px));
 }
-/* Crappy Eights: stat ribbon and Table details sit lower than the pause row. */
-body:not(.suite-hub-door):has(.hud > .hud-card) .suite-music-toggle {
-  top: max(188px, calc(var(--suite-safe-top) + 178px));
+/* Pages with a settings slot reserve space for music alongside their controls. */
+body:not(.suite-hub-door) [data-suite-music-slot] .suite-music-toggle {
+  position: static;
+  flex-shrink: 0;
+  z-index: auto;
 }
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {

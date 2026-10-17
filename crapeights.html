@@ -552,6 +552,7 @@
     #playerHand .card-btn.selected,#playerHand .card-btn:focus-visible{transform:translateY(-28px) rotate(0deg);z-index:80;box-shadow:0 0 0 3px #ffe199,0 0 22px #ffdc7966,0 16px 18px #001b1980}
     #playerHand .card-btn>div:first-child{font-size:20px;left:8px;top:7px}#playerHand .card-btn .center{font-size:38px}
     .hand-head .btn{min-height:44px}.hand-head{min-height:44px}.selection-note{margin:0;font-size:11px}
+    .table-settings{display:flex;align-items:center;gap:6px;flex-shrink:0}
     .drawer-launch{min-height:44px;padding:8px 12px;font:700 11px 'Trebuchet MS',sans-serif;letter-spacing:.03em;color:#ead5a3;border:1px solid #c1b47966;border-radius:8px;background:#102b23;cursor:pointer}
     .drawer-titlebar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:16px}.drawer-titlebar h2{font-size:22px}.drawer-card{width:min(640px,100%)}.sidebar{gap:12px}.panel summary{min-height:44px;line-height:44px}.panel{padding:12px}.panel ul{padding-left:18px}
     .difficulty-label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#e7dfc4}.difficulty-label select{font:700 13px 'Trebuchet MS',sans-serif;color:#f5efd3;background:#153c30;border:1px solid #a2b997;border-radius:8px;min-height:44px;padding:8px 12px;max-width:150px}#difficultyHint{font-size:11px;line-height:1.5;margin-top:9px;color:#bdcfc8}#roundTwoStats{font-size:11px;line-height:1.7;color:#e8d69f;margin-top:8px}
@@ -693,7 +694,7 @@
 
     <div class="layout">
       <section class="table" id="playTable" tabindex="-1" aria-label="Crappy Eights card table">
-        <div class="turn-banner"><div><strong id="turnPrompt">Your move</strong><span id="turnHint">Match suit or rank.</span></div><span id="flowBadge" class="flow-badge">↻</span><button class="drawer-launch" id="tableDrawerBtn" aria-haspopup="dialog">Table details</button></div>
+        <div class="turn-banner"><div><strong id="turnPrompt">Your move</strong><span id="turnHint">Match suit or rank.</span></div><span id="flowBadge" class="flow-badge">↻</span><div class="table-settings" data-suite-music-slot><button class="drawer-launch" id="tableDrawerBtn" aria-haspopup="dialog">Table details</button></div></div>
         <div class="status" id="statusText" role="status" aria-live="polite" aria-atomic="true">Deal in progress. Match suit, sling chaos, and pretend this smell is strategic.</div>
         <div class="arena">
         <div class="table-stamp" aria-hidden="true"><b>THE DIRTY DECK</b><span>EST. IN THE SEWER</span></div>
