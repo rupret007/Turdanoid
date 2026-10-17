@@ -2745,8 +2745,9 @@ function render(){
 
   // Parallax sewer layers — driven by wall-clock time so they drift on the
   // title screen too and stay frame-rate independent.
+  const calmBg = !!(reducedMotion && reducedMotion.matches);
   for(const layer of bgLayers){
-    const off = (bgT * layer.speed) % W;
+    const off = calmBg ? 0 : (bgT * layer.speed) % W;
     ctx.globalAlpha = layer.alpha;
     for(const s of layer.shapes){
       const bx = ((s.x - off) % W + W) % W;
@@ -2785,11 +2786,13 @@ function render(){
   }
   ctx.globalAlpha = 1;
   // bubbles (parallax bubble field, drifting up)
-  const tAmb = performance.now() * 0.0006;
+  const tAmb = calmBg ? 0 : performance.now() * 0.0006;
   for(const s of bgStars){
-    s.x += Math.sin(s.t + tAmb*4) * 0.18;
-    s.y -= 0.22 + s.r*0.18;
-    if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
+    if(!calmBg){
+      s.x += Math.sin(s.t + tAmb*4) * 0.18;
+      s.y -= 0.22 + s.r*0.18;
+      if(s.y < -10) { s.y = H + 10; s.x = Math.random()*W; }
+    }
     ctx.globalAlpha = s.a * (0.55 + Math.sin(s.t)*0.35);
     ctx.fillStyle = (TSPRITE && TSPRITE.worldBubbleColor) ? TSPRITE.worldBubbleColor(world) : 'rgba(94,200,224,.48)';
     ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
@@ -3137,6 +3140,16 @@ function drawBoss(b){
   roundRect(ctx, barX, barY, barW * pct, 6, 3); ctx.fill();
 }
 
+function paintCbHeavyBrickMark(ctx, b, px, py, pw, ph){
+  const cb = typeof Suite !== 'undefined' && Suite.isColorblindMode && Suite.isColorblindMode();
+  const paint = globalThis.TurdanoidBrick && TurdanoidBrick.paintCbHeavyBrickMark;
+  if(paint){
+    paint(ctx, b, px, py, pw, ph, cb, roundRect);
+    return;
+  }
+  if(!b.heavy || !cb) return;
+}
+
 function drawBrick(b){
   b.wob += 0.04;
   if(b.hitFlash > 0) b.hitFlash = Math.max(0, b.hitFlash - 0.35);
@@ -3144,6 +3157,7 @@ function drawBrick(b){
   const spr = getBrickSpriteCanvas(b);
   if(spr){
     ctx.drawImage(spr, px, py, pw, ph);
+    paintCbHeavyBrickMark(ctx, b, px, py, pw, ph);
     if(TSPRITE){ TSPRITE.paintHpPips(ctx, b); }
     if(b.hitFlash > 0){
       ctx.save();
@@ -3194,6 +3208,7 @@ function drawBrick(b){
       ctx.fillStyle = 'rgba(255,255,255,.8)';
       ctx.beginPath(); ctx.arc(cx, cy, 1.2, 0, 6.283); ctx.fill();
     }
+    paintCbHeavyBrickMark(ctx, b, px, py, pw, ph);
   }
   // Metal: corner rivets + brushed band
   if(b.metal){
@@ -3586,6 +3601,9 @@ requestAnimationFrame(loop);
 
 let lastTouch = 0;
 document.addEventListener('touchend', e=>{
+  // Native controls already disable double-tap zoom via touch-action. Keep
+  // successive taps available to settings and menu buttons.
+  if(e.target.closest('button, a, input, select, textarea')) return;
   const now = Date.now();
   if(now - lastTouch <= 350) e.preventDefault();
   lastTouch = now;
@@ -3604,6 +3622,8 @@ document.body.addEventListener('touchmove', e=>{ if(e.touches.length < 2) e.prev
     if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') return;
   } catch (e) { return; }
   window.__turdanoid = {
+    render,
+    sampleBgStar(){ const s = bgStars[0]; return s ? { x: s.x, y: s.y } : null; },
     startGame, step, newLevel, quitToMenu, doPause, doResume,
     applyPower, spawnMulti, handleWindowBlur, pointerMove, launch, skipClearTally,
     qaSpawnCapsule, qaActivatePower, qaBossSetPhase, qaBeginClearTally, qaShowGameOver, qaResetPowers, qaJumpToLevel, qaJumpLevel,

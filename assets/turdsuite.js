@@ -263,12 +263,39 @@
     if (!fxPromise) {
       fxPromise = suiteImport('./suite-fx.js').then(function (m) {
         if (!m) return null;
-        fxEngine = m.createSuiteFX(document.body);
+        fxEngine = m.createSuiteFX(document.body, {
+          getReducedMotion: function () {
+            try {
+              if (typeof Suite.prefersReducedMotion === 'function') {
+                return Suite.prefersReducedMotion();
+              }
+            } catch (e) { /* ignore */ }
+            return false;
+          }
+        });
         return fxEngine;
       }).catch(function () { return null; });
     }
     return fxPromise;
   };
+
+  let arcadeA11yReady = null;
+  function bootArcadeA11y() {
+    if (arcadeA11yReady) return arcadeA11yReady;
+    arcadeA11yReady = suiteImport('../games/suite-arcade-a11y.js').then(function (m) {
+      if (!m) return null;
+      try {
+        window.SuiteArcadeA11y = m;
+        m.attachSuiteArcadeA11y(Suite, suiteStorage(), document);
+        if (typeof m.ensureArcadeA11yMount === 'function') {
+          m.ensureArcadeA11yMount(document);
+        }
+        m.createArcadeA11yToggle(document, Suite);
+      } catch (e) { /* ignore */ }
+      return m;
+    }).catch(function () { return null; });
+    return arcadeA11yReady;
+  }
 
   /** Quick pop on a stat tile or score chip after a score change. */
   Suite.bump = function (el) {
@@ -729,6 +756,7 @@
     initSuiteDifficultyModule();
     injectMusicToggle();
     injectListenManic();
+    bootArcadeA11y();
     enhancePhoneHud();
     preventDoubleTapZoom();
     recordLastGame();
