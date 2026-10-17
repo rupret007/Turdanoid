@@ -224,6 +224,78 @@ async function assertA11yToggleLayout(page, game) {
 }
 
 describe('arcade a11y (Playwright)', () => {
+  for (const state of ['title', 'playing', 'paused']) {
+    for (const key of ['Enter', 'Space']) {
+      it(`${key} on the toggle changes colors without leaving Turdanoid ${state}`, async () => {
+        const page = await browser.newPage();
+        try {
+          await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
+          const toggle = page.locator('#suite-arcade-a11y-toggle');
+          await toggle.waitFor();
+          await page.evaluate((targetState) => {
+            const game = window.__turdanoid;
+            if (targetState !== 'title') {
+              game.startGame();
+            }
+            if (targetState === 'paused') {
+              game.doPause();
+            }
+          }, state);
+          await toggle.focus();
+          for (const pressed of ['true', 'false']) {
+            await page.keyboard.press(key);
+            expect(await toggle.getAttribute('aria-pressed')).toBe(pressed);
+            expect(await page.evaluate(() => ({
+              state: window.__turdanoid.state,
+              waitingLaunch: window.__turdanoid.waitingLaunch
+            }))).toEqual({ state, waitingLaunch: true });
+          }
+        } finally {
+          await page.close();
+        }
+      });
+    }
+  }
+
+  for (const viewport of VIEWPORTS) {
+    for (const decision of ['accept', 'decline', 'escape']) {
+      it(`hides Clr during insurance and restores it after ${decision} at ${viewport.width}x${viewport.height}`, async () => {
+        const page = await browser.newPage({ viewport });
+        try {
+          await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
+          const toggle = page.locator('#suite-arcade-a11y-toggle');
+          await toggle.waitFor();
+          await page.waitForFunction(() => window.__turdjackDev);
+          await page.evaluate(() => {
+            window.__turdjackDev.prepare('insurance');
+            window.__turdjackDev._autoInsurance = null;
+          });
+          await toggle.click();
+          expect(await toggle.getAttribute('aria-pressed')).toBe('true');
+          await page.locator('#dealBtn:visible, [data-mobile-action="deal"]:visible').first().click();
+          const overlay = page.locator('#jackConfirmOverlay');
+          await overlay.waitFor({ state: 'visible' });
+          expect(await page.locator('#jackConfirmTitle').textContent()).toBe('Insurance');
+          expect(await toggle.isVisible()).toBe(false);
+          await page.keyboard.press('Tab');
+          expect(await page.evaluate(() => document.activeElement.id)).toBe('jackConfirmYes');
+          if (decision === 'escape') {
+            await page.keyboard.press('Escape');
+          } else {
+            await page.click(decision === 'accept' ? '#jackConfirmYes' : '#jackConfirmNo');
+          }
+          await overlay.waitFor({ state: 'hidden' });
+          expect(await toggle.isVisible()).toBe(true);
+          expect(await toggle.getAttribute('aria-pressed')).toBe('true');
+          await toggle.click();
+          expect(await toggle.getAttribute('aria-pressed')).toBe('false');
+        } finally {
+          await page.close();
+        }
+      });
+    }
+  }
+
   for (const game of SIX_SUITE_GAMES) {
     for (const viewport of VIEWPORTS) {
       it(`${game.path} Clr receives taps at ${viewport.width}x${viewport.height}`, async () => {
