@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global window */
+/* global URL, rules, window */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';

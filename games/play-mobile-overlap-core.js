@@ -1,3 +1,4 @@
+/* global Element, getComputedStyle */
 /**
  * Shared helpers for Playwright overlap checks on tall table / arcade play pages.
  * Standalone (no imports) so Playwright can dynamic-import this file in the browser.
