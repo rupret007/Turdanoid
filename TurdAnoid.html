@@ -10,8 +10,9 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Turdanoid — Bricks. Busted.</title>
 <link rel="stylesheet" href="assets/turdsuite.css">
+<link rel="stylesheet" href="assets/arcade.css">
 <style>
-  :root{
+  body{
     --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
     --ink:var(--ta-ink-text, #eaf6f0); --accent:var(--ta-slime, #3ecf9a); --hot:var(--ta-coral, #ff6d5a); --gold:var(--ta-brass, #e8c56a);
     --pink:var(--ta-rose, #d878a8); --violet:var(--ta-indigo, #8a82d8); --aqua:var(--ta-aqua, #5ec8e0);
@@ -238,7 +239,7 @@
   #coachStep{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.65;margin-bottom:6px}
 </style>
 </head>
-<body data-suite-no-bg="1">
+<body class="arcade" data-arcade-game="turdanoid" data-suite-no-bg="1">
 <div id="app">
   <div id="announcer" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="stage">
@@ -271,6 +272,7 @@
     <div id="hype"></div>
     <div id="powers"></div>
     <div id="toast"></div>
+    <div class="arc-hint" id="arcHint" hidden aria-hidden="true">Drag to move · tap to launch</div>
     <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
     <div id="coachOverlay" role="dialog" aria-labelledby="coachTitle" aria-modal="true">
       <div id="coachCard">
@@ -1151,11 +1153,23 @@ function drawTitleAttract(rts){
   }
   ctx.restore();
 }
+// Ten-second rule: first run never blocks play with a modal. Show a
+// pulsing one-line hint chip that clears on the first move or launch.
 function maybeShowCoach(){
   if(!TCOACH || TCOACH.coachSeen(persist)) return;
-  coachStep = 0;
-  updateCoachCard();
-  $('coachOverlay').classList.add('show');
+  TCOACH.markCoachSeen(persist);
+  const hint = $('arcHint');
+  if(!hint) return;
+  hint.hidden = false;
+  const clear = () => {
+    hint.hidden = true;
+    clearTimeout(t);
+    $('playShell').removeEventListener('pointerdown', clear);
+    window.removeEventListener('keydown', clear);
+  };
+  const t = setTimeout(clear, 10000);
+  $('playShell').addEventListener('pointerdown', clear, { once: true });
+  window.addEventListener('keydown', clear, { once: true });
 }
 function updateCoachCard(){
   const steps = TCOACH ? TCOACH.STEPS : [];
