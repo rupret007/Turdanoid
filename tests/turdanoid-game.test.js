@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { buildCampaignCells } from '../games/turdanoid-levels.js';
+import { hudMetrics } from '../games/turdanoid-layout.js';
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
@@ -783,7 +784,8 @@ describe('TurdAnoid phone HUD widths', () => {
     const { dom } = bootGame();
     for (const width of [360, 390, 430]) {
       const chrome = effectiveHudChrome(dom, width);
-      expect(chrome.hudRight, `${width}px HUD inset`).toBe('108px');
+      expect(hudMetrics(width).right, `${width}px HUD inset`).toBe(108);
+      expect(hudMetrics(width).top, `${width}px HUD top`).toBe(10);
       expect(chrome.innerMargin, `${width}px lives margin`).toBe('0px');
     }
   });

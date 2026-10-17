@@ -28,13 +28,16 @@ function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', (error) => errors.push(error.message));
   let nextTimer = 1;
-  const dom = new JSDOM(readFileSync(join(root, 'crapeights.html'), 'utf8'), {
+  const pageHtml = readFileSync(join(root, 'crapeights.html'), 'utf8')
+    .replace('<body', '<body data-suite-no-difficulty="1"');
+  const dom = new JSDOM(pageHtml, {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
     url: 'http://localhost/crapeights.html',
     virtualConsole,
     // Local modules are preloaded explicitly; no external resources or timers run.
     beforeParse(window) {
+      window.__SUITE_SKIP_MODULES = true;
       window.setTimeout = (callback, delay) => {
         const id = nextTimer++;
         timers.set(id, { callback, delay });
@@ -52,7 +55,9 @@ function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
       window.localStorage.setItem('turdsuite_continue_v1', JSON.stringify({
         v: 1, games: { 'crapeights.html': { updatedAt: 1, snapshot } }
       }));
-      Object.entries(initialStorage).forEach(([key, value]) => window.localStorage.setItem(key, JSON.stringify(value)));
+      Object.entries(initialStorage).forEach(([key, value]) => {
+        window.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      });
       const setItem = window.Storage.prototype.setItem;
       window.Storage.prototype.setItem = function (key, value) {
         writes.push({ key, value });
@@ -60,6 +65,7 @@ function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
       };
       sources.forEach((source) => window.eval(source));
       const core = window.TurdSuiteTableContinue;
+      const difficultyApi = window.Suite?.difficulty;
       window.Suite = {
         table: {
           load: (page) => core.loadContinue(window.localStorage, page),
@@ -68,7 +74,8 @@ function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
         },
         guide: { hasSeen: () => true, mark() {} },
         toast() {},
-        isMuted: () => true
+        isMuted: () => true,
+        difficulty: difficultyApi
       };
     }
   });
@@ -354,6 +361,12 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(game.state().discard).toHaveLength(2);
   });
 
+  it('shows the saved suite difficulty in the drawer select before it is opened', () => {
+    const game = boot({}, { turdsuite_difficulty_v1: 'hard' });
+    expect(game.w.eval('aiDifficulty')).toBe('sharp');
+    expect(game.w.document.getElementById('aiDifficulty').value).toBe('sharp');
+  });
+
   it('pauses the drawer, persists difficulty separately and resumes without snapshot changes', () => {
     const game = boot();
     const before = game.state();
@@ -366,7 +379,7 @@ describe('Crappy Eights live-page save and input regressions', () => {
     const selector = game.w.document.getElementById('aiDifficulty');
     selector.value = 'sharp';
     selector.dispatchEvent(new game.w.Event('change', { bubbles: true }));
-    expect(game.w.localStorage.getItem('crapeights_difficulty_v1')).toBe('sharp');
+    expect(game.w.localStorage.getItem('turdsuite_difficulty_v1')).toBe('hard');
     expect(game.stored()).toEqual(validEightsSnapshot());
     selector.dispatchEvent(new game.w.KeyboardEvent('keydown', { code: 'Escape', key: 'Escape', bubbles: true }));
     expect(game.w.document.getElementById('tableDrawer').style.display).toBe('none');

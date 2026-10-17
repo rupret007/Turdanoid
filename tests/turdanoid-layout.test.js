@@ -54,6 +54,7 @@ describe('Turdanoid layout', () => {
       const phone = hudMetrics(width);
       expect(phone.narrow).toBe(true);
       expect(phone.right).toBe(108);
+      expect(phone.top).toBe(10);
       expect(phone.innerRightMargin).toBe(0);
       expect(phone.left + phone.right).toBeLessThan(width * 0.55);
     }

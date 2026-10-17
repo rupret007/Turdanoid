@@ -511,8 +511,31 @@
       pointer-events: none;
     }
 
+    .jack-difficulty-bar {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      padding: 2px 8px 4px;
+      box-sizing: border-box;
+    }
+
     /* Between hands at phone widths: match table-first HUD (2 live stats; session grid in Table Menu). */
     @media (max-width: 390px) {
+      .jack-difficulty-bar {
+        padding: 1px 6px 2px;
+      }
+
+      .jack-difficulty-bar .suite-difficulty-btn {
+        min-height: 28px;
+        min-width: 0;
+        padding: 0 6px;
+        font-size: 0.6rem;
+      }
+
+      .jack-difficulty-bar .suite-difficulty-seg {
+        padding: 2px;
+      }
+
       body.jack-phone-compact-hud:not(.jack-table-first) .shell > .hud {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 4px;
@@ -2802,6 +2825,8 @@
       </div>
     </div>
 
+    <div class="suite-hud-settings jack-difficulty-bar" id="suite-difficulty-mount"></div>
+
       <div class="hud">
         <div class="card-stat hot" data-jack-stat-tier="live"><div class="k">Bankroll</div><div class="v" id="bankrollText">$0</div></div>
         <div class="card-stat" data-jack-stat-tier="live"><div class="k">Current Bet</div><div class="v" id="betText">$0</div></div>
@@ -3037,6 +3062,15 @@
     };
 
     const INITIAL_BANKROLL = 1000;
+    function suiteDefaultBankroll() {
+      try {
+        const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+        const bonus = t && Number.isFinite(t.lives) ? t.lives * 200 : 0;
+        return INITIAL_BANKROLL + bonus;
+      } catch (e) {
+        return INITIAL_BANKROLL;
+      }
+    }
     const MIN_BET = 10;
     const ALLOW_ONE_SPLIT = true;
     const DEFAULT_RULES = {
@@ -3095,7 +3129,7 @@
       resetStatsBtn: document.getElementById('resetStatsBtn')
     };
 
-    let bankroll = readNumber(STORAGE.bankroll, INITIAL_BANKROLL);
+    let bankroll = readNumber(STORAGE.bankroll, suiteDefaultBankroll());
     let stats = normalizeStats(readObject(STORAGE.stats, {
       hands: 0,
       wins: 0,
