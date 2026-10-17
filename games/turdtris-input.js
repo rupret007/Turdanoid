@@ -54,9 +54,11 @@ export class DasTracker {
     const dt = Math.max(0, deltaMs);
 
     if (this.left) {
+      const delayRemaining = Math.max(0, DAS_DELAY_MS - this.leftDas);
       this.leftDas += dt;
       if (this.leftDas >= DAS_DELAY_MS) {
-        this.leftArr += dt;
+        // Only time after the initial delay contributes to repeats.
+        this.leftArr += Math.max(0, dt - delayRemaining);
         while (this.leftArr >= ARR_MS) {
           this.leftArr -= ARR_MS;
           moveLeft++;
@@ -65,9 +67,10 @@ export class DasTracker {
     }
 
     if (this.right) {
+      const delayRemaining = Math.max(0, DAS_DELAY_MS - this.rightDas);
       this.rightDas += dt;
       if (this.rightDas >= DAS_DELAY_MS) {
-        this.rightArr += dt;
+        this.rightArr += Math.max(0, dt - delayRemaining);
         while (this.rightArr >= ARR_MS) {
           this.rightArr -= ARR_MS;
           moveRight++;
