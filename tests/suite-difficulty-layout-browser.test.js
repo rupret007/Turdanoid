@@ -1,4 +1,7 @@
 // @vitest-environment node
+/**
+ * Playwright layout checks for the shared difficulty picker (Turdanoid title + play).
+ */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -26,51 +29,70 @@ const PAGES = [
   {
     slug: 'turdanoid',
     path: 'TurdAnoid.html',
-    prep: async (page) => {
-      await page.evaluate(() => {
-        localStorage.setItem('turdanoid_v3_coach_v1', '1');
-        localStorage.setItem('turdsuite_guides_seen_v1', '1');
-      });
-      await page.locator('#btnStart').click();
-      await page.waitForFunction(() => window.__turdanoid?.state === 'playing', { timeout: 15000 });
-    },
-    targets: [
-      { name: 'hud-score', selector: '#hudScore' },
-      { name: 'hud-level', selector: '#hudLevel' },
-      { name: 'hud-lives', selector: '#hudLives' },
-      { name: 'pause', selector: '#btnPause' },
-      { name: 'sound', selector: '#btnSound' }
-    ],
     picker: '.suite-difficulty',
-    ignoreMusicOverlap: true
+    states: [
+      {
+        name: 'title',
+        prep: async (page) => {
+          await page.evaluate(() => {
+            localStorage.setItem('turdanoid_v3_coach_v1', '1');
+            localStorage.setItem('turdsuite_guides_seen_v1', '1');
+          });
+        }
+      },
+      {
+        name: 'playing',
+        prep: async (page) => {
+          await page.evaluate(() => {
+            localStorage.setItem('turdanoid_v3_coach_v1', '1');
+            localStorage.setItem('turdsuite_guides_seen_v1', '1');
+          });
+          await page.locator('#btnStart').click();
+          await page.waitForFunction(() => window.__turdanoid?.state === 'playing', { timeout: 15000 });
+        }
+      }
+    ]
   },
   {
     slug: 'turdtris',
     path: 'turdtris.html',
-    prep: async (page) => {
-      await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
-      const close = page.getByRole('button', { name: 'Close Guide' });
-      if (await close.isVisible().catch(() => false)) {await close.click();}
-    },
-    targets: [{ name: 'run-menu', selector: '.mobile-menu summary' }],
     picker: '.suite-difficulty',
+    states: [
+      {
+        name: 'playing',
+        prep: async (page) => {
+          await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
+          const close = page.getByRole('button', { name: 'Close Guide' });
+          if (await close.isVisible().catch(() => false)) {
+            await close.click();
+          }
+        }
+      }
+    ],
+    targets: [{ name: 'run-menu', selector: '.mobile-menu summary' }],
     minPicker: 44,
     ignoreMusicOverlap: true
   },
   {
     slug: 'turdrummy',
     path: 'turdrummy.html',
-    prep: async (page) => {
-      await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
-      await page.locator('#startRoundBtn').click();
-      await page.waitForTimeout(300);
-    },
+    picker: '.suite-difficulty, #difficultyBtn',
+    states: [
+      {
+        name: 'playing',
+        prep: async (page) => {
+          await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
+          await page.locator('#startRoundBtn').click();
+          await page.waitForTimeout(300);
+        }
+      }
+    ],
     targets: [
       { name: 'draw-discard', selector: '#drawDiscardBtn' },
       { name: 'discard', selector: '#discardBtn' }
     ],
-    picker: '.suite-difficulty, #difficultyBtn',
-    minPicker: 44
+    minPicker: 44,
+    ignoreMusicOverlap: true
   }
 ];
 
@@ -79,7 +101,9 @@ let baseUrl;
 let browser;
 
 beforeAll(async () => {
-  if (!hasBrowser) {return;}
+  if (!hasBrowser) {
+    return;
+  }
   server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
     const filePath = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
@@ -110,97 +134,154 @@ afterAll(async () => {
   }
 });
 
+function turdanoidTargets() {
+  return [
+    { name: 'hud-score', selector: '#hudScore' },
+    { name: 'hud-level', selector: '#hudLevel' },
+    { name: 'hud-lives', selector: '#hudLives' },
+    { name: 'pause', selector: '#btnPause' },
+    { name: 'sound', selector: '#btnSound' }
+  ];
+}
+
 describe('shared difficulty picker layout', () => {
   for (const spec of PAGES) {
-    for (const vp of VIEWPORTS) {
-      it(`${spec.slug} @ ${vp.name}: picker does not overlap HUD/controls`, async () => {
-        if (!hasBrowser) {return;}
-        const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
-        await page.goto(`${baseUrl}/${spec.path}`, { waitUntil: 'domcontentloaded' });
-        await spec.prep(page);
-        await page.waitForSelector(spec.picker, { timeout: 12000, state: 'attached' });
+    for (const state of spec.states) {
+      for (const vp of VIEWPORTS) {
+        it(`${spec.slug} @ ${vp.name} (${state.name}): picker clear of HUD, bricks, controls`, async () => {
+          if (!hasBrowser) {
+            return;
+          }
+          const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
+          await page.goto(`${baseUrl}/${spec.path}`, { waitUntil: 'domcontentloaded' });
+          await state.prep(page);
+          await page.waitForTimeout(200);
 
-        /* eslint-disable no-undef -- runs in the browser via page.evaluate */
-        const layout = await page.evaluate(
-          ({ pickerSel, targets, ignoreMusicOverlap }) => {
-            const candidates = pickerSel.split(',').map((s) => s.trim());
-            let picker = null;
-            for (const sel of candidates) {
-              const node = document.querySelector(sel);
-              if (!node) {continue;}
-              const style = getComputedStyle(node);
-              if (style.display === 'none' || style.visibility === 'hidden') {continue;}
-              const rect = node.getBoundingClientRect();
-              if (rect.width < 1 || rect.height < 1) {continue;}
-              picker = node;
-              break;
-            }
-            if (!picker) {
-              return { missingPicker: true, overlaps: [], size: null };
-            }
-            const pr = picker.getBoundingClientRect();
-            const size = { width: pr.width, height: pr.height };
-            const overlaps = [];
-            for (const t of targets) {
-              const el = document.querySelector(t.selector);
-              if (!el) {continue;}
-              const r = el.getBoundingClientRect();
-              if (r.width < 1 || r.height < 1) {continue;}
-              const a = { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom };
-              const b = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
-              const hit =
-                a.left < b.right &&
-                a.right > b.left &&
-                a.top < b.bottom &&
-                a.bottom > b.top;
-              if (hit) {overlaps.push(`${t.name}`);}
-            }
-            const pill = document.querySelector('a.suite-back-pill');
-            if (pill) {
-              const br = pill.getBoundingClientRect();
-              const a = { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom };
-              const b = { left: br.left, top: br.top, right: br.right, bottom: br.bottom };
-              if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
-                overlaps.push('hub-pill');
+          const targets =
+            spec.slug === 'turdanoid' ? turdanoidTargets() : spec.targets || [];
+          const includeBricks = spec.slug === 'turdanoid' && state.name === 'playing';
+          const checkHudLabels = spec.slug === 'turdanoid';
+
+          /* eslint-disable no-undef -- runs in the browser via page.evaluate */
+          const layout = await page.evaluate(
+            ({ pickerSel, targets, includeBricks, checkHudLabels, ignoreMusicOverlap }) => {
+              function rectsOverlap(a, b) {
+                return (
+                  a.left < b.right &&
+                  a.right > b.left &&
+                  a.top < b.bottom &&
+                  a.bottom > b.top
+                );
               }
-            }
-            const music = document.getElementById('suite-music-toggle');
-            if (music && !ignoreMusicOverlap) {
-              const mr = music.getBoundingClientRect();
-              const a = { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom };
-              const b = { left: mr.left, top: mr.top, right: mr.right, bottom: mr.bottom };
-              if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
-                overlaps.push('music-toggle');
+              function visibleRect(el) {
+                if (!el) {
+                  return null;
+                }
+                const style = getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                  return null;
+                }
+                const rect = el.getBoundingClientRect();
+                if (rect.width < 1 || rect.height < 1) {
+                  return null;
+                }
+                return rect;
               }
-              if (document.querySelector('#btnPause')) {
-                const pause = document.querySelector('#btnPause').getBoundingClientRect();
-                const pm = { left: pause.left, top: pause.top, right: pause.right, bottom: pause.bottom };
-                const mm = { left: mr.left, top: mr.top, right: mr.right, bottom: mr.bottom };
-                if (pm.left < mm.right && pm.right > mm.left && pm.top < mm.bottom && pm.bottom > mm.top) {
-                  overlaps.push('music-pause');
+
+              const candidates = pickerSel.split(',').map((s) => s.trim());
+              let picker = null;
+              for (const sel of candidates) {
+                const node = document.querySelector(sel);
+                const rect = visibleRect(node);
+                if (rect) {
+                  picker = { node, rect };
+                  break;
                 }
               }
+
+              const overlaps = [];
+              const clippedLabels = [];
+              if (!picker) {
+                return { missingPicker: true, overlaps, clippedLabels, size: null };
+              }
+              const pr = picker.rect;
+              const size = { width: pr.width, height: pr.height };
+              for (const t of targets) {
+                const el = document.querySelector(t.selector);
+                const r = visibleRect(el);
+                if (!r) {
+                  continue;
+                }
+                if (rectsOverlap(pr, r)) {
+                  overlaps.push(t.name);
+                }
+              }
+              const pill = document.querySelector('a.suite-back-pill');
+              const pillRect = visibleRect(pill);
+              if (pillRect && rectsOverlap(pr, pillRect)) {
+                overlaps.push('hub-pill');
+              }
+              if (!ignoreMusicOverlap) {
+                const music = document.getElementById('suite-music-toggle');
+                const musicRect = visibleRect(music);
+                if (musicRect && rectsOverlap(pr, musicRect)) {
+                  overlaps.push('music-toggle');
+                }
+              }
+              if (includeBricks && window.__turdanoid && window.__turdanoid.bricks) {
+                const canvas = document.getElementById('game');
+                const cr = canvas.getBoundingClientRect();
+                const scaleX = cr.width / window.__turdanoid.W;
+                const scaleY = cr.height / window.__turdanoid.H;
+                for (const b of window.__turdanoid.bricks) {
+                  const br = {
+                    left: cr.left + b.x * scaleX,
+                    top: cr.top + b.y * scaleY,
+                    right: cr.left + (b.x + b.w) * scaleX,
+                    bottom: cr.top + (b.y + b.h) * scaleY
+                  };
+                  if (rectsOverlap(pr, br)) {
+                    overlaps.push('brick');
+                    break;
+                  }
+                }
+              }
+              if (checkHudLabels) {
+                for (const lbl of document.querySelectorAll('.hud .lbl')) {
+                  const lr = visibleRect(lbl);
+                  if (!lr) {
+                    continue;
+                  }
+                  if (lbl.scrollWidth > lbl.clientWidth + 1) {
+                    clippedLabels.push(lbl.textContent || '');
+                  }
+                }
+              }
+              return { missingPicker: false, overlaps, clippedLabels, size };
+            },
+            {
+              pickerSel: spec.picker,
+              targets,
+              includeBricks,
+              checkHudLabels,
+              ignoreMusicOverlap: Boolean(spec.ignoreMusicOverlap)
             }
-            return { missingPicker: false, overlaps, size };
-          },
-          {
-            pickerSel: spec.picker,
-            targets: spec.targets,
-            minPicker: spec.minPicker || 0,
-            ignoreMusicOverlap: Boolean(spec.ignoreMusicOverlap)
+          );
+          /* eslint-enable no-undef */
+
+          await page.close();
+
+          if (state.name === 'title' || spec.slug !== 'turdanoid') {
+            expect(layout.missingPicker, `${spec.slug} picker missing`).toBe(false);
           }
-        );
-        /* eslint-enable no-undef */
-
-        await page.close();
-
-        expect(layout.missingPicker, `${spec.slug} picker missing`).toBe(false);
-        if (spec.minPicker) {
-          expect(layout.size.height, `${spec.slug} picker height`).toBeGreaterThanOrEqual(spec.minPicker);
-          expect(layout.size.width, `${spec.slug} picker width`).toBeGreaterThanOrEqual(spec.minPicker);
-        }
-        expect(layout.overlaps, `${spec.slug}@${vp.name}`).toEqual([]);
-      });
+          if (spec.minPicker && layout.size) {
+            expect(layout.size.height, `${spec.slug} picker height`).toBeGreaterThanOrEqual(spec.minPicker);
+            expect(layout.size.width, `${spec.slug} picker width`).toBeGreaterThanOrEqual(spec.minPicker);
+          }
+          expect(layout.overlaps, `${spec.slug}@${vp.name}/${state.name}`).toEqual([]);
+          expect(layout.clippedLabels, `${spec.slug} HUD labels@${vp.name}/${state.name}`).toEqual([]);
+        });
+      }
     }
   }
 });

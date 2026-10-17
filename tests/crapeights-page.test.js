@@ -55,7 +55,9 @@ function boot(snapshot = validEightsSnapshot(), initialStorage = {}) {
       window.localStorage.setItem('turdsuite_continue_v1', JSON.stringify({
         v: 1, games: { 'crapeights.html': { updatedAt: 1, snapshot } }
       }));
-      Object.entries(initialStorage).forEach(([key, value]) => window.localStorage.setItem(key, JSON.stringify(value)));
+      Object.entries(initialStorage).forEach(([key, value]) => {
+        window.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      });
       const setItem = window.Storage.prototype.setItem;
       window.Storage.prototype.setItem = function (key, value) {
         writes.push({ key, value });
@@ -357,6 +359,12 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(status.getAttribute('aria-atomic')).toBe('true');
     expect(status.textContent).toMatch(/Casey played/);
     expect(game.state().discard).toHaveLength(2);
+  });
+
+  it('shows the saved suite difficulty in the drawer select before it is opened', () => {
+    const game = boot({}, { turdsuite_difficulty_v1: 'hard' });
+    expect(game.w.eval('aiDifficulty')).toBe('sharp');
+    expect(game.w.document.getElementById('aiDifficulty').value).toBe('sharp');
   });
 
   it('pauses the drawer, persists difficulty separately and resumes without snapshot changes', () => {

@@ -2026,6 +2026,7 @@
       players = createPlayers();
       soundEnabled = loadSoundPref();
       updateSoundButtons();
+      updateDifficulty();
       wireEvents();
       const restoredTable = tryRestoreTable();
       if (!restoredTable) {

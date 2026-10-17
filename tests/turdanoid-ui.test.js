@@ -46,7 +46,9 @@ describe('Turdanoid HUD and menu chrome', () => {
     const phone = block(520);
     const compact = block(420);
     const tiny = block(360);
-    expect(html).toMatch(/#playShell:has\(\.topbtns \.suite-difficulty\) \.hud\{[^}]*top:max\(112px/);
+    expect(html).toContain('title-difficulty-wrap');
+    expect(html).toContain('id="suite-difficulty-mount"');
+    expect(html).not.toMatch(/#playShell:has\(\.topbtns \.suite-difficulty\)/);
     expect(phone).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
     expect(compact).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
     expect(tiny).toMatch(/\.hud \.right[^{]*\{[^}]*margin-right:0/);
@@ -54,8 +56,8 @@ describe('Turdanoid HUD and menu chrome', () => {
     expect(tiny).not.toMatch(/\.hud \.right\{margin-right:(?:9|10)\d+px/);
     for (const width of [360, 390, 430]) {
       expect(hudMetrics(width).innerRightMargin).toBe(0);
-      expect(hudMetrics(width).right).toBe(10);
-      expect(hudMetrics(width).top).toBe(112);
+      expect(hudMetrics(width).right).toBe(108);
+      expect(hudMetrics(width).top).toBe(10);
     }
   });
 

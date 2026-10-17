@@ -42,16 +42,15 @@
     const narrow = vw > 0 && vw <= 520;
     const pillReserve = narrow ? 68 : 0;
     const left = Math.max(10, Math.floor(safeLeft) + pillReserve);
-    // Phone HUD sits below the stacked pause/sound + difficulty column; wide
-    // layouts reserve the right column once on the HUD box inset.
-    const right = narrow ? 10 : 10;
-    const top = narrow ? 112 : 10;
+    // Phone chrome reserves the mute/pause cluster once, via the HUD box
+    // inset (`right`). The lives column must not add a second inner margin.
+    const right = narrow ? 108 : 10;
     return {
       narrow,
       left,
       right,
-      innerRightMargin: 0,
-      top,
+      innerRightMargin: narrow ? 0 : 104,
+      top: 10,
       minTap: 44,
       trackingHud: 0.02,
       trackingLabel: 0.08,

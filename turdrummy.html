@@ -2810,6 +2810,14 @@
       aiLevel = next;
       if (AIApi) { AIApi.saveDifficulty(window.localStorage, aiLevel); }
       updateDifficultyLabel();
+      try {
+        if (window.Suite && Suite.difficulty) {
+          const suiteId = aiLevel === "sharp" ? "hard" : aiLevel === "easy" ? "easy" : "normal";
+          if (Suite.difficulty.get() !== suiteId) {
+            Suite.difficulty.set(suiteId);
+          }
+        }
+      } catch (err) { /* optional */ }
     }
 
     function cycleDifficulty() {

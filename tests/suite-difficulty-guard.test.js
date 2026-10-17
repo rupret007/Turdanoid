@@ -1,8 +1,7 @@
 /**
- * Regression guards for shared suite difficulty wiring.
- * Each case below was verified by temporarily breaking the implementation
- * (returning normal lives/speed, skipping suite fallback, etc.) and
- * confirming this test fails, then reverting the mutation.
+ * Unit-level guards for suite-difficulty helpers and source wiring checks.
+ * Page-level behavior (real HTML boot, UI changes, game state) is covered in
+ * tests/suite-difficulty-page-behavior.test.js, including mutation traps M1–M5.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

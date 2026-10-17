@@ -784,8 +784,8 @@ describe('TurdAnoid phone HUD widths', () => {
     const { dom } = bootGame();
     for (const width of [360, 390, 430]) {
       const chrome = effectiveHudChrome(dom, width);
-      expect(hudMetrics(width).right, `${width}px HUD inset`).toBe(10);
-      expect(hudMetrics(width).top, `${width}px HUD top`).toBe(112);
+      expect(hudMetrics(width).right, `${width}px HUD inset`).toBe(108);
+      expect(hudMetrics(width).top, `${width}px HUD top`).toBe(10);
       expect(chrome.innerMargin, `${width}px lives margin`).toBe('0px');
     }
   });
