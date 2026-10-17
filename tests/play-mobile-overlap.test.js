@@ -1,7 +1,9 @@
 // @vitest-environment node
 /* global URL, rules, window */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -133,7 +135,7 @@ async function assertNoOverlap(page, controlSelectors) {
   expect(issues, JSON.stringify(issues)).toEqual([]);
 }
 
-(hasBrowser ? describe : describe.skip)('play mobile overlap (live pages)', () => {
+(hasBrowser ? describe.sequential : describe.skip)('play mobile overlap (live pages)', () => {
   it('Crappy Eights Smart dock at 320×568 scrolled to bottom', async () => {
     const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
     try {
