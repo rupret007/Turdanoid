@@ -1018,10 +1018,26 @@ body:not(.suite-hub-door) .topbar:has(.suite-a11y-topbar-slot:not(.suite-a11y-to
   z-index: 6;
   pointer-events: auto;
 }
+/* Table pages: fixed bottom-right slot (clears top HUD rows + left welcome CTAs). */
 body > .suite-a11y-play-shell-slot.suite-a11y-body-slot {
   position: fixed;
   z-index: 10000;
-  bottom: max(168px, calc(env(safe-area-inset-bottom, 0px) + 156px));
+  left: auto;
+  right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px));
+  top: auto;
+  bottom: max(64px, calc(env(safe-area-inset-bottom, 0px) + 52px));
+  height: 44px;
+  margin: 0;
+}
+body > .suite-a11y-play-shell-slot.suite-a11y-body-slot .suite-arcade-a11y-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .suite-a11y-topbar-slot,
 .suite-a11y-dock-slot,
@@ -1049,8 +1065,8 @@ body > .suite-a11y-play-shell-slot.suite-a11y-body-slot {
   }
   .topbar:has(.top-links) .suite-a11y-topbar-slot--title-row {
     position: fixed;
-    left: max(10px, calc(env(safe-area-inset-left, 0px) + 6px));
-    right: auto;
+    left: auto;
+    right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px));
     top: auto;
     bottom: max(168px, calc(env(safe-area-inset-bottom, 0px) + 156px));
     height: 44px;
