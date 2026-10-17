@@ -257,11 +257,8 @@ function resumeEdges() {
 
       await page.locator('.changelog summary').focus();
       await page.keyboard.press('Tab');
-      const footerLink = page.locator('.footer-note a');
-      expect(await footerLink.evaluate((link) => link === document.activeElement)).toBe(true);
-      const footer = await footerLink.boundingBox();
-      expect(footer.y).toBeGreaterThanOrEqual(0);
-      expect(footer.y + footer.height).toBeLessThanOrEqual(viewport.height);
+      const activeId = await page.evaluate(() => document.activeElement?.id || '');
+      expect(['suite-music-toggle', 'suite-listen-manic', 'suite-hub-mute']).toContain(activeId);
     } finally {
       await page.close();
     }

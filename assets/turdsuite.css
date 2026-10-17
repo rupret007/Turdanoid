@@ -621,9 +621,9 @@ body:not(.suite-hub-door) .suite-music-toggle {
   right: max(12px, var(--suite-safe-right));
   top: max(66px, calc(var(--suite-safe-top) + 56px));
 }
-/* Crappy Eights stat ribbon sits lower than the pause row; drop the toggle below it. */
+/* Crappy Eights: stat ribbon and Table details sit lower than the pause row. */
 body:not(.suite-hub-door):has(.hud > .hud-card) .suite-music-toggle {
-  top: max(118px, calc(var(--suite-safe-top) + 108px));
+  top: max(188px, calc(var(--suite-safe-top) + 178px));
 }
 
 /* ---------- Hub door controls ---------- */

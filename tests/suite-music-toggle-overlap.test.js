@@ -50,7 +50,9 @@ const GUARD_SELECTOR = [
   'header.hud .stat',
   '#score',
   '#left',
-  '#best'
+  '#best',
+  '#tableDrawerBtn',
+  '.drawer-launch'
 ].join(',');
 
 let server;
