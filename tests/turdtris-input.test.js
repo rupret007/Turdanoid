@@ -37,6 +37,27 @@ describe('Turdtris DAS', () => {
     expect(moveRight).toBe(0);
   });
 
+  it.each(['Left', 'Right'])('keeps %s repeats independent of frame duration', (direction) => {
+    const elapsed = DAS_DELAY_MS + ARR_MS * 3;
+    const slowFrame = new DasTracker();
+    const fastFrames = new DasTracker();
+    slowFrame[`press${direction}`]();
+    fastFrames[`press${direction}`]();
+
+    let fastMoves = 0;
+    for (let ms = 0; ms < elapsed; ms++) {
+      fastMoves += fastFrames.tick(1)[`move${direction}`];
+    }
+
+    expect(fastMoves).toBe(3);
+    expect(slowFrame.tick(elapsed)[`move${direction}`]).toBe(fastMoves);
+    // Both paths must retain the same remainder for the next repeat.
+    expect(slowFrame.tick(ARR_MS - 1)[`move${direction}`]).toBe(0);
+    expect(fastFrames.tick(ARR_MS - 1)[`move${direction}`]).toBe(0);
+    expect(slowFrame.tick(1)[`move${direction}`]).toBe(1);
+    expect(fastFrames.tick(1)[`move${direction}`]).toBe(1);
+  });
+
   it('mobile repeat interval is snappier than legacy 90ms', () => {
     expect(MOBILE_REPEAT_MS).toBeLessThan(90);
     expect(MOBILE_REPEAT_INITIAL_DELAY_MS).toBeGreaterThan(MOBILE_REPEAT_MS);
