@@ -1,4 +1,5 @@
 // @vitest-environment node
+/* global URL, Suite, getComputedStyle, Element */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
