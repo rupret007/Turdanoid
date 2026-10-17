@@ -47,6 +47,7 @@ describe('table guides teach tap controls before optional keyboard shortcuts', (
       const document = dom.window.document;
       const tip = [...document.querySelectorAll('#welcomeGuide p')]
         .find((paragraph) => paragraph.textContent.startsWith('Tip:'));
+      expect(tip).toBeDefined();
       const copy = tip.textContent.replace(/\s+/g, ' ');
       const path = selectors.map((selector) => {
         const control = document.querySelector(selector);
@@ -54,6 +55,7 @@ describe('table guides teach tap controls before optional keyboard shortcuts', (
         return control.textContent.replace('📋', '').trim();
       }).join(' → ');
       expect(copy).toContain(path);
+      expect(path).toMatch(viewport === 'phone' ? /Table Menu/ : /Table Intel/);
       expect(copy).toMatch(viewport === 'phone' ? /on phones/ : /Table Intel/);
       const setup = [...document.querySelectorAll('#intelSlide h3')]
         .find((heading) => heading.textContent === 'Table Setup');
