@@ -72,10 +72,17 @@ describe('Turdtris DAS', () => {
   it('treats non-finite tick deltas as zero', () => {
     const das = new DasTracker();
     das.pressRight();
-    das.tick(DAS_DELAY_MS + ARR_MS);
+    while (das.rightDas < DAS_DELAY_MS) {
+      das.tick(MAX_TICK_MS);
+    }
     expect(das.tick(Number.NaN)).toEqual({ moveLeft: 0, moveRight: 0 });
     expect(das.tick(Number.POSITIVE_INFINITY)).toEqual({ moveLeft: 0, moveRight: 0 });
     expect(das.tick(Number.NEGATIVE_INFINITY)).toEqual({ moveLeft: 0, moveRight: 0 });
+    let moves = 0;
+    for (let i = 0; i < 10; i++) {
+      moves += das.tick(ARR_MS).moveRight;
+    }
+    expect(moves).toBe(10);
   });
 
   it(`caps tick deltas at ${MAX_TICK_MS}ms`, () => {
