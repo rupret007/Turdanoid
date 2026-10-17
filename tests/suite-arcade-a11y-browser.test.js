@@ -489,4 +489,49 @@ describe('arcade a11y (Playwright)', () => {
       await page.close();
     }
   });
+
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+    it(`Clr toggle clears title menu buttons on Turdanoid at ${viewport.width}x${viewport.height}`, async () => {
+      if (!hasBrowser) {
+        return;
+      }
+      const page = await browser.newPage({ viewport });
+      try {
+        await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#suite-arcade-a11y-toggle');
+        await page.waitForSelector('#titleScreen.show');
+        const result = await page.evaluate(() => {
+          const overlap = (a, b) =>
+            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+          const box = (el) => {
+            if (!el) {
+              return null;
+            }
+            const style = getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden') {
+              return null;
+            }
+            const r = el.getBoundingClientRect();
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+          };
+          const toggle = document.getElementById('suite-arcade-a11y-toggle');
+          const toggleBox = box(toggle);
+          const menuBtns = document.querySelectorAll('.menu-secondary button');
+          const hits = [];
+          for (const btn of menuBtns) {
+            const btnBox = box(btn);
+            if (toggleBox && btnBox && overlap(toggleBox, btnBox)) {
+              hits.push(btn.id || btn.textContent.trim());
+            }
+          }
+          return { toggleVisible: !!toggleBox, hits };
+        });
+        expect(result.toggleVisible).toBe(true);
+        expect(result.hits).toEqual([]);
+      } finally {
+        await page.close();
+      }
+    });
+  }
 });
