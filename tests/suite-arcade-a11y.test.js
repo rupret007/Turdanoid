@@ -138,6 +138,29 @@ describe('suite-arcade-a11y wiring', () => {
     expect(createArcadeA11yToggle(dom.window.document, Suite)).toBeNull();
   });
 
+  it.each(['Enter', ' '])('keeps %j activation events out of game shortcuts', (key) => {
+    dom = new JSDOM('<!DOCTYPE html><body></body>', { url: 'http://localhost/TurdAnoid.html' });
+    const Suite = {};
+    attachSuiteArcadeA11y(Suite, memoryStorage(), dom.window.document);
+    const leaked = [];
+    for (const target of [dom.window.document, dom.window]) {
+      for (const type of ['keydown', 'keyup']) {
+        target.addEventListener(type, (event) => leaked.push([type, event.key]));
+      }
+    }
+    const btn = createArcadeA11yToggle(dom.window.document, Suite);
+    btn.focus();
+    for (const type of ['keydown', 'keyup']) {
+      const event = new dom.window.KeyboardEvent(type, { key, bubbles: true, cancelable: true });
+      btn.dispatchEvent(event);
+      // Native button activation must remain available to the browser.
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(leaked).toEqual([]);
+    btn.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    expect(leaked).toEqual([['keydown', 'Tab'], ['keydown', 'Tab']]);
+  });
+
   it('turdsuite boot loads the arcade a11y module path', () => {
     expect(suiteJs).toContain('suite-arcade-a11y.js');
     expect(suiteJs).toContain('createArcadeA11yToggle');
