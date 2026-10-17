@@ -6,7 +6,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ## Table of Contents
 
-1. [TurdAnoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
+1. [Turdanoid (Arkanoid Clone)](#turdanoid-arkanoid-clone)
 2. [Turdtris (Tetris Clone)](#turdtris-tetris-clone)
 3. [Turdjack (Blackjack)](#turdjack-blackjack)
 4. [Crapeights (Crazy Eights)](#crapeights-crazy-eights)
@@ -15,7 +15,7 @@ This document describes the game rules, scoring systems, and AI logic for each g
 
 ---
 
-## TurdAnoid (Arkanoid Clone)
+## Turdanoid (Arkanoid Clone)
 
 ### Overview
 
@@ -70,8 +70,9 @@ Unlock progressively by level; bad pickups never appear before level 6.
 - **30 unique data-driven walls** across five worlds of six (Bathroom Tiles, Sewer Pipes, Toxic Lagoon, Candy Clog, Golden Throne). Every level has its own layout — not a rotating stamp
 - Early walls are 1-hit and approachable. 2-hit tiles start on level 5, metal on 9, slime drips on 11, steel (indestructible) on world-boss keeps from level 6
 - Each world's sixth stage is a fortress boss beat (levels 6, 12, 18, 24, 30)
-- Brick HP total, ball speed, and drip-hazard count climb monotonically; power-up drops stay generous early and settle to the 12% floor
+- Total brick HP and ball speed never drop from one round to the next. From level 24 the walls get sparser so the pictures read, and heavy bricks carry the toughness instead: heavy gold (5 hits) and heavy steel (6 hits). Power-up drops stay generous early and settle to the 12% floor
 - Steel bricks bounce the ball and never count toward a clear. Drip bricks leak sludge until you break them
+- **Last-bricks assist:** when only 1 to 3 breakable bricks are left and the ball hasn't touched one for about 6 seconds, the ball gently curves toward the nearest one while it travels upward (a small nudge, about 1 degree per frame, at the same speed). "SNIFFING OUT THE LAST ONES" shows while it is on. Steel is ignored, and hitting any brick resets the timer
 - Ball and paddle speed scale with level (capped)
 - Like Arkanoid, every timed power-up (including Enlarge and Shrink) ends at each round change, and the paddle returns to normal size. Losing a life still resets them too
 - Win by clearing level 30
@@ -414,7 +415,7 @@ Partnership Spades trick-taking game against two CPU opponents.
 
 ### Suite modules (hub + opt-in games)
 
-- **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill (bottom on wide; **top-left icon ≤520px** unless `body data-suite-back="bottom"`), continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
+- **`assets/turdsuite.js`** — toast, hype, mute (`turdsuite_muted`), back pill (bottom on wide; **top-left icon ≤520px** unless `body data-suite-back="bottom"`; duplicate in-page Hub exits hide on that narrow width when the pill is present), continue API, lazy **`Suite.audio()`** / **`Suite.fx()`** / **`Suite.announce()`**.
 - **`assets/suite-touch.js`** — mobile touch policy: CSS `touch-action` only (no touchend `preventDefault` double-tap guard).
 - **`assets/suite-back-pill.js`** — placement + overlap helpers for tests/tools.
 - **`assets/suite-audio.js`** — WebAudio presets (`snap`, `chip`, `shuffle`, `tick`, `win`, `lose`, …); honours mute; see `docs/1000x/shared.md`.
@@ -446,7 +447,7 @@ Each game has a decoupled JavaScript engine in `games/` that can be imported and
 
 ```
 games/
-├── turdanoid_logic.js    # TurdAnoid physics/balance
+├── turdanoid_logic.js    # Turdanoid physics/balance
 ├── turdtris-engine.js    # Tetris logic
 ├── turdjack-engine.js    # Blackjack logic  
 ├── crapeights-engine.js  # Crazy Eights logic

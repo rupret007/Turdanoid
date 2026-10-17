@@ -142,6 +142,17 @@ body::after {
   flex-wrap: wrap;
 }
 
+.topbar-difficulty {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.topbar-difficulty .suite-difficulty-btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .mobile-menu {
   display: none;
   width: 100%;
@@ -1177,8 +1188,19 @@ body.desktop-cabinet .status {
   .top-actions {
     display: none;
   }
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .topbar-difficulty {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
   .mobile-menu {
     display: block;
+    order: 3;
   }
   .hud {
     grid-template-columns: repeat(2, minmax(70px, 1fr));
@@ -1436,6 +1458,7 @@ body.desktop-cabinet .status {
       <h1>Turdtris</h1>
       <p>Hold system, ghost piece, chaos modifiers, and the energy of a suspiciously spicy arcade booth.</p>
     </div>
+    <div class="suite-hud-settings topbar-difficulty" id="suite-difficulty-mount"></div>
     <div class="top-actions">
       <button class="btn subtle" onclick="location.href='./'">🏠 Hub</button>
       <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
@@ -2047,6 +2070,11 @@ function armAudio(event) {
   audioArmed = true;
   if (window.__turdtrisAudio) window.__turdtrisAudio.arm();
   unlockAudio();
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.armFromGesture(); });
+    }
+  } catch (e) { /* ignore */ }
 }
 document.addEventListener('pointerdown', armAudio, { capture: true });
 document.addEventListener('keydown', armAudio, { capture: true });
@@ -2060,9 +2088,16 @@ function updateMusic() {
 
 function toggleMusic() {
   musicEnabled = !musicEnabled;
-  try { localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0'); } catch (e) {}
+  try {
+    if (window.Suite && typeof Suite.setMusicEnabled === 'function') {
+      Suite.setMusicEnabled(musicEnabled);
+    } else {
+      localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? '1' : '0');
+    }
+  } catch (e) {}
   syncSettings();
   updateMusic();
+  syncSuiteMusic();
 }
 
 function syncSettings() {
@@ -2145,6 +2180,7 @@ function toggleSound() {
   } else {
     setHype('Sound muted. Silent stink mode.', 84);
   }
+  syncSuiteMusic();
   updateScore();
 }
 
@@ -2162,9 +2198,21 @@ function generateSequence() {
   }
 }
 
+function suiteGravityMul() {
+  try {
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    return t && Number.isFinite(t.speed) ? t.speed : 1;
+  } catch (e) {
+    return 1;
+  }
+}
 function getGravityMs() {
-  if (level <= gravityTable.length) return gravityTable[level - 1];
-  return 1;
+  let ms = level <= gravityTable.length ? gravityTable[level - 1] : 1;
+  const mul = suiteGravityMul();
+  if (mul !== 1) {
+    ms = Math.max(1, Math.round(ms / mul));
+  }
+  return ms;
 }
 
 function getLinesGoalForLevel(currentLevel) {
@@ -2386,6 +2434,7 @@ function holdCurrentPiece() {
       lastActionRotate: false,
       lastKick: false
     };
+    lockResets = 0;
 
     if (!isValidMove(tetromino.matrix, tetromino.row, tetromino.col)) {
       if (!recoverSpawnPlacement(tetromino)) {
@@ -3510,14 +3559,12 @@ function loop(timestamp) {
       }
     }
 
+    // Airborne frames pause the timer; only a new piece renews the reset budget.
     if (isGrounded(tetromino)) {
       lockAccumulator += delta;
       if (lockAccumulator >= lockDelayMs) {
         lockPiece();
       }
-    } else {
-      lockAccumulator = 0;
-      lockResets = 0;
     }
 
     tickDasRepeat(delta);
@@ -3756,7 +3803,34 @@ if (canvas) {
   }, { passive: true });
 }
 
-try { musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0'; } catch (e) {}
+try {
+  if (window.Suite && typeof Suite.isMusicEnabled === 'function') {
+    musicEnabled = Suite.isMusicEnabled();
+  } else {
+    const siteMusic = localStorage.getItem('stalemate.music');
+    if (siteMusic === 'off') musicEnabled = false;
+    else if (siteMusic === 'on') musicEnabled = true;
+    else musicEnabled = localStorage.getItem(MUSIC_STORAGE_KEY) !== '0';
+  }
+} catch (e) {}
+function suiteMusicBlocked() {
+  try {
+    if (window.Suite && typeof Suite.isMusicEnabled === 'function' && !Suite.isMusicEnabled()) return true;
+  } catch (e) { /* ignore */ }
+  return suiteMuted() || !soundEnabled || !musicEnabled;
+}
+function syncSuiteMusic() {
+  try {
+    if (window.Suite && typeof Suite.music === 'function') {
+      Suite.music().then(function (player) { if (player) player.sync(); });
+    }
+  } catch (e) {}
+}
+try {
+  if (window.Suite && typeof Suite.setMusicGameBlocked === 'function') {
+    Suite.setMusicGameBlocked(suiteMusicBlocked);
+  }
+} catch (e) {}
 syncSettings();
 soundEnabled = loadSoundPref();
 gesturesEnabled = loadGesturesPref();
@@ -3975,7 +4049,9 @@ function paintAttractFrame(now) {
   attractLast = now;
   attractField.step(delta);
   ctx.clearRect(0, 0, w, h);
-  const colors = { I: '#7ad7ff', O: '#ffd56a', T: '#c98bff', S: '#7dffb2', Z: '#ff8f8f', J: '#7f9dff', L: '#ffb07a' };
+  const colors = (window.Suite && typeof Suite.turdtrisPieceColors === 'function')
+    ? Suite.turdtrisPieceColors()
+    : { I: '#7ad7ff', O: '#ffd56a', T: '#c98bff', S: '#7dffb2', Z: '#ff8f8f', J: '#7f9dff', L: '#ffb07a' };
   for (const piece of attractField.pieces()) {
     ctx.save();
     ctx.globalAlpha = piece.alpha;

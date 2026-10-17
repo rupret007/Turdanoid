@@ -79,12 +79,12 @@ describe('six-game hub last-played mark', () => {
     });
   }
 
-  it('keeps the root door as seven live games plus one Neon link', () => {
+  it('keeps the root door as seven live games without a Neon promo link', () => {
     expect(hubHtml.match(/class="game-card"/g)).toHaveLength(7);
     for (const href of LIVE_GAMES) {
       expect(hubHtml).toContain(`href="${href}"`);
     }
-    expect(hubHtml).toContain('href="neon-arkanoid.html"');
+    expect(hubHtml).not.toContain('href="neon-arkanoid.html"');
     expect(hubHtml).toContain('bid tricks or Nil');
     expect(hubHtml).toContain('games/table-continue-core.js');
     for (const href of LIVE_GAMES) {
@@ -140,7 +140,7 @@ describe('six-game hub last-played mark', () => {
       expect(label).toContain('Play again');
       expect(label).toContain('last played');
 
-      expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+      expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
     },
     12000
   );
@@ -192,7 +192,7 @@ describe('six-game hub continue mark', () => {
     expect(last).toHaveLength(1);
     expect(last[0].getAttribute('href')).toBe('turdtris.html');
     expect(last[0].querySelector('.play')?.textContent).toContain('Play again');
-    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
   });
 
   it('marks a live Crapjack hand Continue and ignores a finished Spades match', () => {
@@ -296,6 +296,12 @@ describe('hub door extras (1000x shared)', () => {
     expect(suiteJs).toContain('Suite.audio');
     expect(suiteJs).toContain('Suite.fx');
     expect(suiteJs).toContain('Suite.announce');
+    expect(suiteJs).toContain('suite-arcade-a11y.js');
+    expect(suiteJs).toContain('createArcadeA11yToggle');
+    expect(suiteJs).toContain('Suite.music');
+    expect(suiteJs).toContain('setMusicGameBlocked');
+    expect(suiteJs).toContain('stalemate.music');
+    expect(suiteJs).toContain('suite-music-toggle');
   });
 });
 
@@ -325,7 +331,7 @@ describe('six-game hub masthead resume shortcut', () => {
     // The masthead still holds exactly one badge and the grid stays six cards.
     expect(dom.window.document.querySelectorAll('.hero-badge')).toHaveLength(1);
     expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(7);
-    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
   });
 
   it('falls back to a waiting table when the last game opened has no save', () => {

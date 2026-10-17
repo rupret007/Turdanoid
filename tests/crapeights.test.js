@@ -39,23 +39,23 @@ describe('CrapeightsEngine', () => {
 
   describe('Card Playing', () => {
     it('should allow playing card matching suit', () => {
-      const topCard = game.getTopCard();
-      const matchingCard = game.playerHand.find(c => c.suit === topCard.suit);
-
-      if (matchingCard) {
-        const result = game.playCard(matchingCard);
-        expect(result.valid).toBe(true);
-      }
+      const matchingCard = { rank: '3', suit: 'H' };
+      game.playerHand = [matchingCard, { rank: '4', suit: 'C' }];
+      game.discardPile = [{ rank: '5', suit: 'H' }];
+      game.currentSuit = 'H';
+      const result = game.playCard(matchingCard);
+      expect(result.valid).toBe(true);
+      expect(game.getTopCard()).toBe(matchingCard);
     });
 
     it('should allow playing card matching rank', () => {
-      const topCard = game.getTopCard();
-      const matchingRankCard = game.playerHand.find(c => c.rank === topCard.rank && c.suit !== topCard.suit);
-
-      if (matchingRankCard) {
-        const result = game.playCard(matchingRankCard);
-        expect(result.valid).toBe(true);
-      }
+      const matchingRankCard = { rank: '5', suit: 'C' };
+      game.playerHand = [matchingRankCard, { rank: '4', suit: 'D' }];
+      game.discardPile = [{ rank: '5', suit: 'H' }];
+      game.currentSuit = 'H';
+      const result = game.playCard(matchingRankCard);
+      expect(result.valid).toBe(true);
+      expect(game.getTopCard()).toBe(matchingRankCard);
     });
 
     it('should allow playing 8 anytime', () => {
