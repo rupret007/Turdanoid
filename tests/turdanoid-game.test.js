@@ -276,6 +276,12 @@ describe('TurdAnoid game regressions', () => {
       expect(g.lives).toBe(1);
       expect(g.boss).toBeNull();
       expect(g.waitingLaunch).toBe(false);
+
+      drain(g.balls[0]);
+      g.step(FRAME);
+
+      expect(g.state).toBe('win');
+      expect(g.lives).toBe(1);
     });
   });
 
