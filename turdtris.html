@@ -1734,13 +1734,16 @@ let dasLeftMs = 0;
 let dasRightMs = 0;
 let arrLeftMs = 0;
 let arrRightMs = 0;
+const MAX_FRAME_MS = 33;
 
 function tickDasRepeat(delta) {
   if (!tetromino || gameOver || paused) return;
+  const dt = !Number.isFinite(delta) || delta <= 0 ? 0 : Math.min(MAX_FRAME_MS, delta);
   if (dasLeftHeld) {
-    dasLeftMs += delta;
+    const delayRemaining = Math.max(0, inputSettings.das - dasLeftMs);
+    dasLeftMs += dt;
     if (dasLeftMs >= inputSettings.das) {
-      arrLeftMs += delta;
+      arrLeftMs += Math.max(0, dt - delayRemaining);
       while (arrLeftMs >= inputSettings.arr) {
         arrLeftMs -= inputSettings.arr;
         movePiece(-1);
@@ -1748,9 +1751,10 @@ function tickDasRepeat(delta) {
     }
   }
   if (dasRightHeld) {
-    dasRightMs += delta;
+    const delayRemaining = Math.max(0, inputSettings.das - dasRightMs);
+    dasRightMs += dt;
     if (dasRightMs >= inputSettings.das) {
-      arrRightMs += delta;
+      arrRightMs += Math.max(0, dt - delayRemaining);
       while (arrRightMs >= inputSettings.arr) {
         arrRightMs -= inputSettings.arr;
         movePiece(1);
@@ -1876,7 +1880,6 @@ let lastKickUsed = false;
 let dropAccumulator = 0;
 let lockAccumulator = 0;
 let lockResets = 0;
-const MAX_FRAME_MS = 33;
 let lastFrameTime = 0;
 let rAF = null;
 let onboardingOpen = false;

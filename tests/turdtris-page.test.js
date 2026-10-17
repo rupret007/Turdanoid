@@ -173,10 +173,73 @@ describe('Turdtris page leftover after the mobile dock', () => {
   it('clamps a multi-second hitch so gravity cannot slam the piece', () => {
     expect(w.clampFrameDelta(5000)).toBe(33);
     expect(w.clampFrameDelta(-12)).toBe(0);
+    expect(w.clampFrameDelta(Number.NaN)).toBe(0);
+    expect(w.clampFrameDelta(Number.POSITIVE_INFINITY)).toBe(0);
     const startRow = w.eval('tetromino.row');
     w.eval('lastFrameTime = 1000; loop(6000)');
     expect(w.eval('tetromino.row')).toBe(startRow);
     expect(w.eval('dropAccumulator')).toBeLessThanOrEqual(33);
+  });
+
+  function countTickDasRepeats(direction, { das, arr, elapsedMs, stepMs }) {
+    const held = direction === 'Left' ? 'dasLeftHeld' : 'dasRightHeld';
+    const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
+    const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
+    w.eval(`inputSettings = { das: ${das}, arr: ${arr}, softDrop: 0 };`);
+    w.eval('__dasMoves = 0; movePiece = function(){ __dasMoves++; };');
+    w.eval(`${held} = true; ${dasMs} = 0; ${arrMs} = 0;`);
+    for (let ms = 0; ms < elapsedMs; ms += stepMs) {
+      w.tickDasRepeat(Math.min(stepMs, elapsedMs - ms));
+    }
+    return w.eval('__dasMoves');
+  }
+
+  it.each([
+    ['Left', 16, 165, 0],
+    ['Left', 16, 204, 3],
+    ['Left', 33, 165, 0],
+    ['Left', 33, 204, 1],
+    ['Right', 16, 165, 0],
+    ['Right', 16, 204, 3],
+    ['Right', 33, 165, 0],
+    ['Right', 33, 204, 1]
+  ])(
+    'tickDasRepeat post-delay accounting: held %s ARR %i for %ims',
+    (direction, arr, elapsedMs, expectedMoves) => {
+      const oneMs = countTickDasRepeats(direction, { das: 156, arr, elapsedMs, stepMs: 1 });
+      const thirtyThreeMs = countTickDasRepeats(direction, { das: 156, arr, elapsedMs, stepMs: 33 });
+      expect(oneMs).toBe(expectedMoves);
+      expect(thirtyThreeMs).toBe(expectedMoves);
+    }
+  );
+
+  it.each(['Left', 'Right'])(
+    'tickDasRepeat still repeats after non-finite delta on held %s',
+    (direction) => {
+      const held = direction === 'Left' ? 'dasLeftHeld' : 'dasRightHeld';
+      const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
+      const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
+      w.eval('inputSettings = { das: 156, arr: 16, softDrop: 0 };');
+      w.eval('__dasMoves = 0; movePiece = function(){ __dasMoves++; };');
+      w.eval(`${held} = true; ${dasMs} = 0; ${arrMs} = 0;`);
+      w.tickDasRepeat(Number.NaN);
+      w.tickDasRepeat(Number.POSITIVE_INFINITY);
+      expect(w.eval('__dasMoves')).toBe(0);
+      for (let i = 0; i < 10; i++) {
+        w.tickDasRepeat(33);
+      }
+      expect(w.eval('__dasMoves')).toBe(10);
+    }
+  );
+
+  it.each(['Left', 'Right'])('caps tickDasRepeat delta at MAX_FRAME_MS for held %s', (direction) => {
+    const held = direction === 'Left' ? 'dasLeftHeld' : 'dasRightHeld';
+    const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
+    const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
+    w.eval('__dasMoves = 0; movePiece = function(){ __dasMoves++; };');
+    w.eval(`${held} = true; ${dasMs} = 156; ${arrMs} = 0;`);
+    w.tickDasRepeat(60_000);
+    expect(w.eval('__dasMoves')).toBe(1);
   });
 
   it('shows a new-best receipt and Space starts the next run', () => {

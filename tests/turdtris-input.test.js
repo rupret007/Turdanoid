@@ -3,6 +3,7 @@ import {
   DasTracker,
   DAS_DELAY_MS,
   ARR_MS,
+  MAX_TICK_MS,
   MOBILE_REPEAT_MS,
   MOBILE_REPEAT_INITIAL_DELAY_MS
 } from '../games/turdtris-input.js';
@@ -37,9 +38,60 @@ describe('Turdtris DAS', () => {
     expect(moveRight).toBe(0);
   });
 
+  it.each(['Left', 'Right'])('keeps %s repeats independent of frame duration', (direction) => {
+    const elapsed = DAS_DELAY_MS + ARR_MS * 3;
+    const slowFrame = new DasTracker();
+    const fastFrames = new DasTracker();
+    slowFrame[`press${direction}`]();
+    fastFrames[`press${direction}`]();
+
+    let fastMoves = 0;
+    for (let ms = 0; ms < elapsed; ms++) {
+      fastMoves += fastFrames.tick(1)[`move${direction}`];
+    }
+
+    expect(fastMoves).toBe(3);
+    let slowMoves = 0;
+    for (let ms = 0; ms < elapsed; ms += MAX_TICK_MS) {
+      slowMoves += slowFrame.tick(Math.min(MAX_TICK_MS, elapsed - ms))[`move${direction}`];
+    }
+    expect(slowMoves).toBe(fastMoves);
+    // Both paths must retain the same remainder for the next repeat.
+    expect(slowFrame.tick(ARR_MS - 1)[`move${direction}`]).toBe(0);
+    expect(fastFrames.tick(ARR_MS - 1)[`move${direction}`]).toBe(0);
+    expect(slowFrame.tick(1)[`move${direction}`]).toBe(1);
+    expect(fastFrames.tick(1)[`move${direction}`]).toBe(1);
+  });
+
   it('mobile repeat interval is snappier than legacy 90ms', () => {
     expect(MOBILE_REPEAT_MS).toBeLessThan(90);
     expect(MOBILE_REPEAT_INITIAL_DELAY_MS).toBeGreaterThan(MOBILE_REPEAT_MS);
     expect(MOBILE_REPEAT_INITIAL_DELAY_MS).toBeLessThan(DAS_DELAY_MS + 20);
+  });
+
+  it('treats non-finite tick deltas as zero', () => {
+    const das = new DasTracker();
+    das.pressRight();
+    while (das.rightDas < DAS_DELAY_MS) {
+      das.tick(MAX_TICK_MS);
+    }
+    expect(das.tick(Number.NaN)).toEqual({ moveLeft: 0, moveRight: 0 });
+    expect(das.tick(Number.POSITIVE_INFINITY)).toEqual({ moveLeft: 0, moveRight: 0 });
+    expect(das.tick(Number.NEGATIVE_INFINITY)).toEqual({ moveLeft: 0, moveRight: 0 });
+    let moves = 0;
+    for (let i = 0; i < 10; i++) {
+      moves += das.tick(ARR_MS).moveRight;
+    }
+    expect(moves).toBe(10);
+  });
+
+  it(`caps tick deltas at ${MAX_TICK_MS}ms`, () => {
+    const das = new DasTracker();
+    das.pressLeft();
+    while (das.leftDas < DAS_DELAY_MS) {
+      das.tick(MAX_TICK_MS);
+    }
+    expect(das.tick(10_000).moveLeft).toBe(1);
+    expect(MAX_TICK_MS).toBe(33);
   });
 });
