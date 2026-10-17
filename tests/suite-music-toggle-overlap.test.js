@@ -135,7 +135,7 @@ async function prepTurdjack(page) {
       { timeout: 10_000 }
     );
   }
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(300);
 }
 
 async function prepCrapeights(page) {
