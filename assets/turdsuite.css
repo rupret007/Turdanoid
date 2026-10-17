@@ -637,7 +637,6 @@ body:not(.suite-hub-door) [data-suite-music-slot] .suite-music-toggle {
   flex-shrink: 0;
   z-index: auto;
 }
-
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {
   margin: 0;
@@ -660,6 +659,74 @@ body:not(.suite-hub-door) [data-suite-music-slot] .suite-music-toggle {
   outline: 2px solid var(--suite-accent);
   outline-offset: 2px;
   box-shadow: 0 0 0 2px rgba(158, 255, 200, 0.25);
+}
+
+/* ---------- HUD settings row (difficulty + arcade a11y mount on merge) ---------- */
+.suite-hud-settings {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+/* ---------- Shared difficulty segmented control ---------- */
+.suite-difficulty {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.suite-difficulty-seg {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(8, 22, 18, 0.82);
+  border: 1px solid var(--suite-edge);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+.suite-difficulty-btn {
+  margin: 0;
+  padding: 0 12px;
+  min-height: 44px;
+  min-width: 44px;
+  border: 0;
+  border-radius: 999px;
+  font: 700 0.72rem/1 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(234, 255, 242, 0.82);
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.suite-difficulty-btn[aria-pressed='true'] {
+  color: #062218;
+  background: linear-gradient(180deg, var(--suite-accent), #5fd49a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.suite-difficulty-btn:focus-visible {
+  outline: 2px solid var(--suite-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 520px) {
+  .suite-difficulty--hub .suite-difficulty-seg,
+  .suite-difficulty--topbar .suite-difficulty-seg,
+  .suite-difficulty--hud .suite-difficulty-seg {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .suite-difficulty--hub .suite-difficulty-btn,
+  .suite-difficulty--topbar .suite-difficulty-btn,
+  .suite-difficulty--hud .suite-difficulty-btn {
+    flex: 1 1 0;
+    padding: 0 6px;
+    font-size: 0.68rem;
+  }
 }
 .suite-hub-stat {
   display: inline-block;

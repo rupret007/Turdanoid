@@ -404,6 +404,124 @@
     }
   }
 
+  // ---------- Shared difficulty (Easy / Normal / Hard) ----------
+  const DIFFICULTY_KEY = 'turdsuite_difficulty_v1';
+  const difficultyListeners = [];
+  let difficultyModule = null;
+
+  function normalizeDifficultyInline(value) {
+    const d = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (d === 'easy' || d === 'hard') {
+      return d;
+    }
+    if (d === 'sharp') {
+      return 'hard';
+    }
+    return 'normal';
+  }
+
+  let currentDifficulty = 'normal';
+  try {
+    currentDifficulty = normalizeDifficultyInline(localStorage.getItem(DIFFICULTY_KEY));
+  } catch (e) {}
+
+  const DEFAULT_TUNING = { speed: 1, lives: 0, spawn: 1 };
+
+  function notifyDifficulty() {
+    for (let i = 0; i < difficultyListeners.length; i++) {
+      try {
+        difficultyListeners[i](currentDifficulty);
+      } catch (e) {}
+    }
+  }
+
+  Suite.difficulty = {
+    key: DIFFICULTY_KEY,
+    normalize: function (value) {
+      return difficultyModule
+        ? difficultyModule.normalizeDifficulty(value)
+        : normalizeDifficultyInline(value);
+    },
+    get: function () {
+      return currentDifficulty;
+    },
+    set: function (value) {
+      const next = Suite.difficulty.normalize(value);
+      if (next === currentDifficulty) {
+        return true;
+      }
+      currentDifficulty = next;
+      try {
+        const storage = suiteStorage();
+        if (storage) {
+          storage.setItem(DIFFICULTY_KEY, next);
+        }
+      } catch (e) {}
+      notifyDifficulty();
+      try {
+        if (typeof document !== 'undefined' && document.dispatchEvent) {
+          document.dispatchEvent(new CustomEvent('turdsuite:difficulty', { detail: { level: next } }));
+        }
+      } catch (e) {}
+      return true;
+    },
+    tuning: function () {
+      if (difficultyModule) {
+        return difficultyModule.getTuning(currentDifficulty);
+      }
+      if (currentDifficulty === 'easy') {
+        return { speed: 0.88, lives: 1, spawn: 1.15 };
+      }
+      if (currentDifficulty === 'hard') {
+        return { speed: 1.12, lives: -1, spawn: 0.88 };
+      }
+      return DEFAULT_TUNING;
+    },
+    onChange: function (fn) {
+      if (typeof fn === 'function') {
+        difficultyListeners.push(fn);
+      }
+    },
+    load: function () {
+      try {
+        const storage = suiteStorage();
+        if (difficultyModule) {
+          currentDifficulty = difficultyModule.loadDifficulty(storage);
+        } else if (storage) {
+          currentDifficulty = normalizeDifficultyInline(storage.getItem(DIFFICULTY_KEY));
+        }
+      } catch (e) {
+        currentDifficulty = 'normal';
+      }
+      return currentDifficulty;
+    }
+  };
+
+  function mountSuiteDifficultyPicker() {
+    try {
+      if (document.body && document.body.dataset && document.body.dataset.suiteNoDifficulty === '1') {
+        return;
+      }
+      suiteImport('./suite-difficulty-ui.js').then(function (ui) {
+        if (!ui || typeof ui.mountDifficultyPicker !== 'function') {
+          return;
+        }
+        ui.mountDifficultyPicker(document, Suite.difficulty);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  function initSuiteDifficultyModule() {
+    suiteImport('../games/suite-difficulty.js').then(function (m) {
+      if (!m) {
+        return;
+      }
+      difficultyModule = m;
+      Suite.difficulty.normalize = m.normalizeDifficulty;
+      Suite.difficulty.load();
+    }).catch(function () {});
+  }
+
   Suite.table = {
     remember(page, snapshot) {
       try {
@@ -634,6 +752,8 @@
     } catch (e) {}
     injectAmbientBg();
     injectBackPill();
+    mountSuiteDifficultyPicker();
+    initSuiteDifficultyModule();
     injectMusicToggle();
     injectListenManic();
     bootArcadeA11y();

@@ -142,6 +142,17 @@ body::after {
   flex-wrap: wrap;
 }
 
+.topbar-difficulty {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.topbar-difficulty .suite-difficulty-btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 .mobile-menu {
   display: none;
   width: 100%;
@@ -1177,8 +1188,19 @@ body.desktop-cabinet .status {
   .top-actions {
     display: none;
   }
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .topbar-difficulty {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
   .mobile-menu {
     display: block;
+    order: 3;
   }
   .hud {
     grid-template-columns: repeat(2, minmax(70px, 1fr));
@@ -1436,6 +1458,7 @@ body.desktop-cabinet .status {
       <h1>Turdtris</h1>
       <p>Hold system, ghost piece, chaos modifiers, and the energy of a suspiciously spicy arcade booth.</p>
     </div>
+    <div class="suite-hud-settings topbar-difficulty" id="suite-difficulty-mount"></div>
     <div class="top-actions">
       <button class="btn subtle" onclick="location.href='./'">🏠 Hub</button>
       <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
@@ -2175,9 +2198,21 @@ function generateSequence() {
   }
 }
 
+function suiteGravityMul() {
+  try {
+    const t = window.Suite && Suite.difficulty && Suite.difficulty.tuning();
+    return t && Number.isFinite(t.speed) ? t.speed : 1;
+  } catch (e) {
+    return 1;
+  }
+}
 function getGravityMs() {
-  if (level <= gravityTable.length) return gravityTable[level - 1];
-  return 1;
+  let ms = level <= gravityTable.length ? gravityTable[level - 1] : 1;
+  const mul = suiteGravityMul();
+  if (mul !== 1) {
+    ms = Math.max(1, Math.round(ms / mul));
+  }
+  return ms;
 }
 
 function getLinesGoalForLevel(currentLevel) {

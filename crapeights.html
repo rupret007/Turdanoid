@@ -689,6 +689,7 @@
       <div class="hud-card"><div class="k">Active Suit</div><div class="v" id="suitText">-</div></div>
       <div class="hud-card hot"><div class="k">Your Cards</div><div class="v" id="youCardsText">0</div></div>
       <div class="hud-card"><div class="k">Leader</div><div class="v" id="leaderText">-</div></div>
+      <div class="suite-hud-settings" id="suite-difficulty-mount"></div>
     </div>
 
     <div class="layout">
@@ -856,8 +857,58 @@
     let aiMemory = CrapeightsAI.createMemory();
     let sortMode = 'suit';
     let drawerOpen = false;
-    let aiDifficulty = 'normal';
-    try { aiDifficulty = CrapeightsAI.normalizeDifficulty?.(localStorage.getItem('crapeights_difficulty_v1')) || 'normal'; } catch (e) {}
+    function suiteToEightsAi(level) {
+      const id = typeof level === 'string' ? level.trim().toLowerCase() : 'normal';
+      if (id === 'hard') { return 'sharp'; }
+      if (id === 'easy') { return 'easy'; }
+      return 'normal';
+    }
+    function migrateLegacyEightsDifficulty() {
+      try {
+        const suiteKey = 'turdsuite_difficulty_v1';
+        const legacyKey = 'crapeights_difficulty_v1';
+        let suiteRaw = localStorage.getItem(suiteKey);
+        const legacyRaw = localStorage.getItem(legacyKey);
+        if (suiteRaw === 'sharp') {
+          suiteRaw = 'hard';
+          if (window.Suite && Suite.difficulty) {
+            Suite.difficulty.set('hard');
+          } else {
+            localStorage.setItem(suiteKey, 'hard');
+          }
+        }
+        if ((suiteRaw == null || suiteRaw === '') && legacyRaw) {
+          const leg = CrapeightsAI.normalizeDifficulty?.(legacyRaw) || 'normal';
+          const suiteLevel = leg === 'sharp' ? 'hard' : leg;
+          if (window.Suite && Suite.difficulty) {
+            Suite.difficulty.set(suiteLevel);
+          } else {
+            localStorage.setItem(suiteKey, suiteLevel);
+          }
+          return leg;
+        }
+      } catch (e) { /* ignore */ }
+      return null;
+    }
+    function loadAiDifficultyPref() {
+      try {
+        const migrated = migrateLegacyEightsDifficulty();
+        if (migrated) {
+          return migrated;
+        }
+        if (window.Suite && Suite.difficulty) {
+          return suiteToEightsAi(Suite.difficulty.get());
+        }
+        const suiteRaw = localStorage.getItem('turdsuite_difficulty_v1');
+        if (suiteRaw != null && suiteRaw !== '') {
+          return suiteToEightsAi(suiteRaw);
+        }
+        return CrapeightsAI.normalizeDifficulty?.(localStorage.getItem('crapeights_difficulty_v1')) || 'normal';
+      } catch (e) {
+        return 'normal';
+      }
+    }
+    let aiDifficulty = loadAiDifficultyPref();
     let eventTimer = null;
     let dialogReturnFocus = null;
     let nextCardId = 1;
@@ -1869,9 +1920,27 @@
       document.getElementById('aiDifficulty').addEventListener('change', event => {
         playSfx('ui');
         aiDifficulty = CrapeightsAI.normalizeDifficulty?.(event.target.value) || 'normal';
-        try { localStorage.setItem('crapeights_difficulty_v1', aiDifficulty); } catch (e) {}
+        const suiteLevel = aiDifficulty === 'sharp' ? 'hard' : aiDifficulty;
+        try {
+          if (window.Suite && Suite.difficulty) {
+            Suite.difficulty.set(suiteLevel);
+          } else {
+            localStorage.setItem('turdsuite_difficulty_v1', suiteLevel);
+          }
+          localStorage.setItem('crapeights_difficulty_v1', aiDifficulty);
+        } catch (e) {}
         updateDifficulty();
       });
+      if (window.Suite && Suite.difficulty) {
+        Suite.difficulty.onChange((level) => {
+          aiDifficulty = suiteToEightsAi(level);
+          const sel = document.getElementById('aiDifficulty');
+          if (sel && sel.value !== aiDifficulty) {
+            sel.value = aiDifficulty;
+          }
+          updateDifficulty();
+        });
+      }
       if (window.ResizeObserver) new ResizeObserver(() => renderPlayerHand()).observe(ui.playerHand);
       else window.addEventListener('resize', renderPlayerHand);
 
@@ -1958,6 +2027,7 @@
       players = createPlayers();
       soundEnabled = loadSoundPref();
       updateSoundButtons();
+      updateDifficulty();
       wireEvents();
       const restoredTable = tryRestoreTable();
       if (!restoredTable) {
