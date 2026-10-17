@@ -542,7 +542,8 @@
       btn.type = 'button';
       btn.id = 'suite-music-toggle';
       btn.className = 'suite-music-toggle';
-      document.body.appendChild(btn);
+      const slot = document.querySelector('[data-suite-music-slot]');
+      (slot || document.body).appendChild(btn);
       syncMusicToggleUi();
       btn.addEventListener('click', function () {
         Suite.setMusicEnabled(!musicEnabled);
