@@ -153,14 +153,16 @@
   function loadDifficulty(storage) {
     try {
       const store = storage || root.localStorage;
-      const raw = store.getItem(DIFFICULTY_KEY);
-      if (raw !== null && raw !== undefined && Object.prototype.hasOwnProperty.call(AI_PROFILES, raw)) {
-        return raw;
-      }
       const suiteRaw = store.getItem(SUITE_DIFFICULTY_KEY);
       if (suiteRaw !== null && suiteRaw !== undefined && suiteRaw !== '') {
         const mapped = suiteToAiLevel(suiteRaw);
-        return Object.prototype.hasOwnProperty.call(AI_PROFILES, mapped) ? mapped : DEFAULT_LEVEL;
+        if (Object.prototype.hasOwnProperty.call(AI_PROFILES, mapped)) {
+          return mapped;
+        }
+      }
+      const raw = store.getItem(DIFFICULTY_KEY);
+      if (raw !== null && raw !== undefined && Object.prototype.hasOwnProperty.call(AI_PROFILES, raw)) {
+        return raw;
       }
       return DEFAULT_LEVEL;
     } catch {

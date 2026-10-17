@@ -142,6 +142,21 @@ body::after {
   flex-wrap: wrap;
 }
 
+.topbar-difficulty {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.topbar-difficulty .suite-difficulty-btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+body:has(.topbar-difficulty .suite-difficulty) .suite-music-toggle {
+  top: max(64px, calc(var(--suite-safe-top) + 58px));
+}
+
 .mobile-menu {
   display: none;
   width: 100%;
@@ -1177,8 +1192,19 @@ body.desktop-cabinet .status {
   .top-actions {
     display: none;
   }
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .topbar-difficulty {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    margin-top: 4px;
+  }
   .mobile-menu {
     display: block;
+    order: 3;
   }
   .hud {
     grid-template-columns: repeat(2, minmax(70px, 1fr));
@@ -1436,8 +1462,8 @@ body.desktop-cabinet .status {
       <h1>Turdtris</h1>
       <p>Hold system, ghost piece, chaos modifiers, and the energy of a suspiciously spicy arcade booth.</p>
     </div>
+    <div class="suite-hud-settings topbar-difficulty" id="suite-difficulty-mount"></div>
     <div class="top-actions">
-      <div class="suite-hud-settings" id="suite-difficulty-mount"></div>
       <button class="btn subtle" onclick="location.href='./'">🏠 Hub</button>
       <button class="btn" onclick="showWelcomeGuide()">❓ How To Play</button>
       <button class="btn" onclick="togglePause()">⏯ Pause / Resume</button>

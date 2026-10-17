@@ -862,8 +862,39 @@
       if (id === 'easy') { return 'easy'; }
       return 'normal';
     }
+    function migrateLegacyEightsDifficulty() {
+      try {
+        const suiteKey = 'turdsuite_difficulty_v1';
+        const legacyKey = 'crapeights_difficulty_v1';
+        let suiteRaw = localStorage.getItem(suiteKey);
+        const legacyRaw = localStorage.getItem(legacyKey);
+        if (suiteRaw === 'sharp') {
+          suiteRaw = 'hard';
+          if (window.Suite && Suite.difficulty) {
+            Suite.difficulty.set('hard');
+          } else {
+            localStorage.setItem(suiteKey, 'hard');
+          }
+        }
+        if ((suiteRaw == null || suiteRaw === '') && legacyRaw) {
+          const leg = CrapeightsAI.normalizeDifficulty?.(legacyRaw) || 'normal';
+          const suiteLevel = leg === 'sharp' ? 'hard' : leg;
+          if (window.Suite && Suite.difficulty) {
+            Suite.difficulty.set(suiteLevel);
+          } else {
+            localStorage.setItem(suiteKey, suiteLevel);
+          }
+          return leg;
+        }
+      } catch (e) { /* ignore */ }
+      return null;
+    }
     function loadAiDifficultyPref() {
       try {
+        const migrated = migrateLegacyEightsDifficulty();
+        if (migrated) {
+          return migrated;
+        }
         if (window.Suite && Suite.difficulty) {
           return suiteToEightsAi(Suite.difficulty.get());
         }
@@ -1895,6 +1926,7 @@
           } else {
             localStorage.setItem('turdsuite_difficulty_v1', suiteLevel);
           }
+          localStorage.setItem('crapeights_difficulty_v1', aiDifficulty);
         } catch (e) {}
         updateDifficulty();
       });

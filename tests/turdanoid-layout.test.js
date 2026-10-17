@@ -53,12 +53,13 @@ describe('Turdanoid layout', () => {
     for (const width of [360, 390, 430]) {
       const phone = hudMetrics(width);
       expect(phone.narrow).toBe(true);
-      expect(phone.right).toBe(108);
+      expect(phone.right).toBe(10);
+      expect(phone.top).toBe(112);
       expect(phone.innerRightMargin).toBe(0);
       expect(phone.left + phone.right).toBeLessThan(width * 0.55);
     }
     expect(hudMetrics(1280).right).toBe(10);
-    expect(hudMetrics(1280).innerRightMargin).toBe(104);
+    expect(hudMetrics(1280).innerRightMargin).toBe(0);
   });
 
   it('renders countable porcelain life pips instead of mashed glyphs', () => {

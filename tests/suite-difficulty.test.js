@@ -72,6 +72,7 @@ describe('suite-difficulty core', () => {
   it('defaults to normal and normalizes junk', () => {
     expect(normalizeDifficulty(undefined)).toBe('normal');
     expect(normalizeDifficulty('HARD')).toBe('hard');
+    expect(normalizeDifficulty('sharp')).toBe('hard');
     expect(normalizeDifficulty('chaos')).toBe('normal');
     expect(loadDifficulty(null)).toBe('normal');
   });

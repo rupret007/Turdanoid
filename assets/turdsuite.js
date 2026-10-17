@@ -387,6 +387,9 @@
     if (d === 'easy' || d === 'hard') {
       return d;
     }
+    if (d === 'sharp') {
+      return 'hard';
+    }
     return 'normal';
   }
 
@@ -428,6 +431,11 @@
         }
       } catch (e) {}
       notifyDifficulty();
+      try {
+        if (typeof document !== 'undefined' && document.dispatchEvent) {
+          document.dispatchEvent(new CustomEvent('turdsuite:difficulty', { detail: { level: next } }));
+        }
+      } catch (e) {}
       return true;
     },
     tuning: function () {

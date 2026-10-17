@@ -25,6 +25,9 @@ export function normalizeDifficulty(value) {
   if (d === 'easy' || d === 'hard') {
     return d;
   }
+  if (d === 'sharp') {
+    return 'hard';
+  }
   return 'normal';
 }
 

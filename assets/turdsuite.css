@@ -621,6 +621,15 @@ body:not(.suite-hub-door) .suite-music-toggle {
   bottom: auto;
   top: max(8px, calc(var(--suite-safe-top) + 4px));
 }
+/* Turdanoid stacks pause/sound above the shared picker — keep music off that column. */
+body[data-suite-no-bg='1']:has(#playShell .topbtns .suite-difficulty) .suite-music-toggle {
+  top: max(112px, calc(var(--suite-safe-top) + 106px));
+  right: max(10px, var(--suite-safe-right));
+}
+body[data-suite-no-bg='1']:has(#playShell .topbtns:not(:has(.suite-difficulty))) .suite-music-toggle {
+  top: max(58px, calc(var(--suite-safe-top) + 52px));
+  right: max(10px, var(--suite-safe-right));
+}
 
 /* ---------- Hub door controls ---------- */
 .suite-hub-mute {
