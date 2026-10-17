@@ -22,21 +22,31 @@ const VIEWPORTS = [
 ];
 
 /** Hub arcade/table titles (six games). */
+const SUITE_MUSIC_CONTROL = '#suite-music-toggle';
+
 const SIX_SUITE_GAMES = [
   {
     path: '/TurdAnoid.html',
     hud: ['#hudLives', '#hudScore', '#hudLevel'],
-    controls: ['#btnPause', '#btnSound'],
+    controls: ['#btnPause', '#btnSound', SUITE_MUSIC_CONTROL],
     quick: [],
-    prepare: async (page) => {
-      await page.click('#btnStart');
-      await page.waitForFunction(() => window.__turdanoid && window.__turdanoid.state === 'playing');
-    }
+    matrixStates: [
+      { id: 'title', prepare: async () => {} },
+      {
+        id: 'play',
+        prepare: async (page) => {
+          await page.click('#btnStart');
+          await page.waitForFunction(
+            () => window.__turdanoid && window.__turdanoid.state === 'playing'
+          );
+        }
+      }
+    ]
   },
   {
     path: '/turdtris.html',
     hud: ['#hudRail #score', '#hudRail #level', '#hudRail #lines'],
-    controls: ['[data-sound-toggle]', '.top-actions button[onclick*="togglePause"]'],
+    controls: ['[data-sound-toggle]', '.top-actions button[onclick*="togglePause"]', SUITE_MUSIC_CONTROL],
     quick: ['.welcome-actions button[onclick*="quickStartRun"]', '#quickStartBtn'],
     prepare: async (page) => {
       await page.evaluate(() => {
@@ -49,7 +59,7 @@ const SIX_SUITE_GAMES = [
   {
     path: '/turdjack.html',
     hud: ['#bankrollText', '#betText', '.hud .card-stat'],
-    controls: ['[data-sound-toggle]'],
+    controls: ['[data-sound-toggle]', SUITE_MUSIC_CONTROL],
     quick: ['#quickGuideBtn'],
     prepare: async (page) => {
       await page.evaluate(() => {
@@ -64,7 +74,7 @@ const SIX_SUITE_GAMES = [
   {
     path: '/crapeights.html',
     hud: ['.hud-card', '#youCardsText', '#roundText'],
-    controls: ['[data-sound-toggle]'],
+    controls: ['[data-sound-toggle]', SUITE_MUSIC_CONTROL],
     quick: ['#quickStartBtn'],
     prepare: async (page) => {
       await page.evaluate(() => {
@@ -77,18 +87,32 @@ const SIX_SUITE_GAMES = [
   {
     path: '/turdrummy.html',
     hud: ['.status .stat', '#playerScoreValue', '#deadwoodValue'],
-    controls: ['#soundToggleBtn', '#quickGuideBtn'],
+    controls: ['#soundToggleBtn', '#quickGuideBtn', SUITE_MUSIC_CONTROL],
     quick: ['#quickGuideBtn'],
-    prepare: async () => {}
+    prepare: async (page) => {
+      await page.evaluate(() => {
+        const guide = document.getElementById('welcomeGuide');
+        if (guide) {
+          guide.classList.remove('show');
+          guide.setAttribute('aria-hidden', 'true');
+        }
+      });
+      const start = page.locator('#startRoundBtn');
+      if (await start.isVisible()) {
+        await start.click();
+        await page.waitForSelector('#playerHand .card-button', { timeout: 15000 });
+      }
+    }
   },
   {
     path: '/turdspades.html',
     hud: ['.ts-score-strip', '.stats .stat', '#roundV'],
-    controls: ['#helpBtn', '#nextRoundTop'],
+    controls: ['#helpBtn', '#nextRoundTop', SUITE_MUSIC_CONTROL],
     quick: ['#quickStart'],
     prepare: async (page) => {
       await page.evaluate(() => {
-        const guide = document.getElementById('welcomeGuide');
+        const guide =
+          document.getElementById('welcomeGuide') || document.getElementById('guide');
         if (guide) {
           guide.classList.remove('show');
           guide.setAttribute('aria-hidden', 'true');
@@ -144,8 +168,15 @@ afterAll(async () => {
   }
 });
 
+function layoutPhases(game) {
+  if (game.matrixStates) {
+    return game.matrixStates;
+  }
+  return [{ id: 'play', prepare: game.prepare }];
+}
+
 async function assertA11yToggleLayout(page, game) {
-  const selectors = [...game.hud, ...game.controls, ...game.quick];
+  const selectors = [...new Set([...game.hud, ...game.controls, ...game.quick, SUITE_MUSIC_CONTROL])];
   const report = await page.evaluate((sels) => {
     const overlap = (a, b) =>
       Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
@@ -268,8 +299,10 @@ describe('arcade a11y (Playwright)', () => {
           await page.setViewportSize(viewport);
           await page.goto(`${baseUrl}${game.path}`, { waitUntil: 'domcontentloaded' });
           await page.waitForSelector('#suite-arcade-a11y-toggle');
-          await game.prepare(page);
-          await assertA11yToggleLayout(page, game);
+          for (const phase of layoutPhases(game)) {
+            await phase.prepare(page);
+            await assertA11yToggleLayout(page, game);
+          }
         } finally {
           await page.close();
         }
@@ -321,7 +354,7 @@ describe('arcade a11y (Playwright)', () => {
           window.hideWelcomeGuide();
         }
       });
-      await page.evaluate(() => document.getElementById('suite-arcade-a11y-toggle').click());
+      await page.click('#suite-arcade-a11y-toggle');
       await page.waitForFunction(() => window.Suite && Suite.isColorblindMode());
       expect(await page.evaluate(() => Suite.isColorblindMode())).toBe(true);
       const stored = await page.evaluate((key) => localStorage.getItem(key), COLORBLIND_STORAGE_KEY);

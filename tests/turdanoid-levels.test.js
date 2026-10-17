@@ -90,6 +90,14 @@ describe('Turdanoid campaign definitions', () => {
     expect(cells.filter((c) => c.indestructible).every((c) => c.hp >= 99)).toBe(true);
   });
 
+  it('buildCampaignCells copies heavy from H and Y brick types (L28 Septic Fort)', () => {
+    const cells = buildCampaignCells(28);
+    const heavy = cells.filter((c) => c.heavy);
+    expect(heavy.length).toBeGreaterThan(0);
+    expect(heavy.some((c) => c.material === 'metal' && c.hp === 6)).toBe(true);
+    expect(heavy.some((c) => c.material === 'gold' && c.hp === 5)).toBe(true);
+  });
+
   it('treats steel as blocking and not required', () => {
     const steel = { hp: 99, indestructible: true };
     const soft = { hp: 2, indestructible: false };

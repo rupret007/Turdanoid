@@ -365,15 +365,44 @@ export function ensureArcadeA11yMount(doc) {
       titleGroup.appendChild(slot);
       return slot;
     }
+    const topActions = topbar.querySelector('.top-actions');
+    if (topActions) {
+      const slot = doc.createElement('div');
+      slot.id = 'suite-arcade-a11y-mount';
+      slot.className = 'suite-a11y-topbar-slot';
+      const mobileMenu = topbar.querySelector('.mobile-menu, .table-menu');
+      if (mobileMenu) {
+        topbar.insertBefore(slot, mobileMenu);
+      } else {
+        topbar.appendChild(slot);
+      }
+      return slot;
+    }
+    const tableMenu = topbar.querySelector('.table-menu');
+    if (tableMenu) {
+      const slot = doc.createElement('div');
+      slot.id = 'suite-arcade-a11y-mount';
+      slot.className = 'suite-a11y-topbar-slot';
+      topbar.insertBefore(slot, tableMenu);
+      return slot;
+    }
+    if (!topbar.querySelector(':scope > .actions')) {
+      const slot = doc.createElement('div');
+      slot.id = 'suite-arcade-a11y-mount';
+      slot.className = 'suite-a11y-topbar-slot';
+      const mobileMenu = topbar.querySelector('.mobile-menu, .table-menu');
+      if (mobileMenu) {
+        topbar.insertBefore(slot, mobileMenu);
+      } else {
+        topbar.appendChild(slot);
+      }
+      return slot;
+    }
+    // Bottom-left body mount: stays in the viewport (topbar scrolls on tall table pages).
     const slot = doc.createElement('div');
     slot.id = 'suite-arcade-a11y-mount';
-    slot.className = 'suite-a11y-topbar-slot';
-    const mobileMenu = topbar.querySelector('.mobile-menu, .table-menu');
-    if (mobileMenu) {
-      topbar.insertBefore(slot, mobileMenu);
-    } else {
-      topbar.appendChild(slot);
-    }
+    slot.className = 'suite-a11y-play-shell-slot suite-a11y-body-slot';
+    doc.body.appendChild(slot);
     return slot;
   }
   const dock = doc.querySelector('.dock[role="toolbar"]');
