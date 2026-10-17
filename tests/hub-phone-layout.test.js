@@ -257,8 +257,22 @@ function resumeEdges() {
 
       await page.locator('.changelog summary').focus();
       await page.keyboard.press('Tab');
-      const activeId = await page.evaluate(() => document.activeElement?.id || '');
-      expect(['suite-music-toggle', 'suite-listen-manic', 'suite-hub-mute']).toContain(activeId);
+      const footerLink = page.locator('.footer-note a');
+      expect(await footerLink.evaluate((link) => link === document.activeElement)).toBe(true);
+      const footer = await footerLink.boundingBox();
+      expect(footer.y).toBeGreaterThanOrEqual(0);
+      expect(footer.y + footer.height).toBeLessThanOrEqual(viewport.height);
+
+      const suiteFocusOrder = [];
+      for (let step = 0; step < 12 && suiteFocusOrder.length < 3; step += 1) {
+        await page.keyboard.press('Tab');
+        const id = await page.evaluate(() => document.activeElement?.id || '');
+        if (id === 'suite-music-toggle' || id === 'suite-listen-manic' || id === 'suite-hub-mute') {
+          suiteFocusOrder.push(id);
+        }
+      }
+      // Injected suite controls append to body; tab order is music → manic → skip link → hub mute.
+      expect(suiteFocusOrder).toEqual(['suite-music-toggle', 'suite-listen-manic', 'suite-hub-mute']);
     } finally {
       await page.close();
     }
