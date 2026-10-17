@@ -1051,6 +1051,10 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
 }
 
 /* ---------- Arcade accessibility toggle (colorblind-safe palettes) ---------- */
+/* Crapjack owns focus while its insurance / pit decision dialog is open. */
+body:has(#jackConfirmOverlay[aria-hidden="false"]) #suite-arcade-a11y-mount {
+  display: none;
+}
 .suite-arcade-a11y-toggle {
   margin: 0;
   padding: 10px 14px;

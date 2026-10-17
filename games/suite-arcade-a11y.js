@@ -457,6 +457,14 @@ export function createArcadeA11yToggle(doc, Suite) {
     Suite.setColorblindMode(!Suite.isColorblindMode());
     sync();
   });
+  // Keep native button activation, but do not pass it to game shortcuts.
+  function containActivationKey(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.stopPropagation();
+    }
+  }
+  btn.addEventListener('keydown', containActivationKey);
+  btn.addEventListener('keyup', containActivationKey);
   if (mount.insert === 'first') {
     mount.parent.insertBefore(btn, mount.parent.firstChild);
   } else {
