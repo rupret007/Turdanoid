@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="assets/turdsuite.css">
 <link rel="stylesheet" href="assets/arcade.css">
 <style>
-  :root{
+  body{
     --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
     --ink:var(--ta-ink-text, #eaf6f0); --accent:var(--ta-slime, #3ecf9a); --hot:var(--ta-coral, #ff6d5a); --gold:var(--ta-brass, #e8c56a);
     --pink:var(--ta-rose, #d878a8); --violet:var(--ta-indigo, #8a82d8); --aqua:var(--ta-aqua, #5ec8e0);
@@ -1090,8 +1090,13 @@ function maybeShowCoach(){
   const hint = $('arcHint');
   if(!hint) return;
   hint.hidden = false;
-  const clear = () => { hint.hidden = true; clearTimeout(t); };
-  const t = setTimeout(clear, 6000);
+  const clear = () => {
+    hint.hidden = true;
+    clearTimeout(t);
+    $('playShell').removeEventListener('pointerdown', clear);
+    window.removeEventListener('keydown', clear);
+  };
+  const t = setTimeout(clear, 10000);
   $('playShell').addEventListener('pointerdown', clear, { once: true });
   window.addEventListener('keydown', clear, { once: true });
 }

@@ -48,6 +48,11 @@ describe('Stalemate Arcade kit', () => {
     expect(html).toMatch(/<body class="arcade" data-arcade-game="turdanoid"/);
   });
 
+  it('Turdanoid consumes arcade variables on body, not :root', () => {
+    expect(html).toMatch(/body\s*\{\s*--bg-a:var\(--ta-ink/);
+    expect(html).not.toMatch(/:root\s*\{\s*--bg-a:var\(--ta-ink/);
+  });
+
   it('first run never blocks play with the modal coach (ten-second rule)', () => {
     const fn = html.slice(
       html.indexOf('function maybeShowCoach'),
@@ -56,6 +61,8 @@ describe('Stalemate Arcade kit', () => {
     expect(fn).not.toMatch(/coachOverlay/);
     expect(fn).toMatch(/markCoachSeen/);
     expect(fn).toMatch(/arcHint/);
+    expect(fn).toMatch(/setTimeout\(clear, 10000\)/);
+    expect(fn).toMatch(/removeEventListener/);
     expect(html).toMatch(/id="arcHint"[^>]*hidden/);
   });
 });
