@@ -3601,6 +3601,9 @@ requestAnimationFrame(loop);
 
 let lastTouch = 0;
 document.addEventListener('touchend', e=>{
+  // Native controls already disable double-tap zoom via touch-action. Keep
+  // successive taps available to settings and menu buttons.
+  if(e.target.closest('button, a, input, select, textarea')) return;
   const now = Date.now();
   if(now - lastTouch <= 350) e.preventDefault();
   lastTouch = now;

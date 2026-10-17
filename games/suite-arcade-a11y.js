@@ -357,12 +357,13 @@ export function ensureArcadeA11yMount(doc) {
   if (topbar) {
     const topLinks = topbar.querySelector('.top-links');
     const titleGroup = topbar.querySelector('.title-group');
-    // TurdRummy: pin toggle in the title row (never append a third topbar flex row).
-    if (topLinks && titleGroup) {
+    // TurdRummy: use a reserved cell in the sticky action dock.
+    const actionDock = doc.querySelector('.action-dock');
+    if (topLinks && titleGroup && actionDock) {
       const slot = doc.createElement('div');
       slot.id = 'suite-arcade-a11y-mount';
-      slot.className = 'suite-a11y-topbar-slot suite-a11y-topbar-slot--title-row';
-      titleGroup.appendChild(slot);
+      slot.className = 'suite-a11y-rummy-dock-slot';
+      actionDock.appendChild(slot);
       return slot;
     }
     const topActions = topbar.querySelector('.top-actions');
@@ -398,7 +399,7 @@ export function ensureArcadeA11yMount(doc) {
       }
       return slot;
     }
-    // Bottom-left body mount: stays in the viewport (topbar scrolls on tall table pages).
+    // Bottom-right body mount: stays in the viewport (topbar scrolls on tall table pages).
     const slot = doc.createElement('div');
     slot.id = 'suite-arcade-a11y-mount';
     slot.className = 'suite-a11y-play-shell-slot suite-a11y-body-slot';

@@ -1081,14 +1081,14 @@ html.suite-motion-reduce .cover.cover-motion-on .art-piece {
   }
 }
 /* Portrait / tall: reserve space so topbar a11y never sits under fixed music. */
-body:not(.suite-hub-door) .topbar:has(.suite-a11y-topbar-slot:not(.suite-a11y-topbar-slot--title-row)) {
+body:not(.suite-hub-door) .topbar:has(.suite-a11y-topbar-slot) {
   padding-right: calc(44px + 10px + var(--suite-safe-right, 0px));
 }
 .suite-a11y-play-shell-slot {
   position: absolute;
   left: max(10px, calc(env(safe-area-inset-left, 0px) + 6px));
   bottom: max(68px, calc(env(safe-area-inset-bottom, 0px) + 52px));
-  z-index: 6;
+  z-index: 13; /* Keep the setting above Turdanoid's title and coach overlays. */
   pointer-events: auto;
 }
 /* Table pages: fixed bottom-right slot (clears top HUD rows + left welcome CTAs). */
@@ -1119,42 +1119,18 @@ body > .suite-a11y-play-shell-slot.suite-a11y-body-slot .suite-arcade-a11y-toggl
   align-items: center;
   flex-shrink: 0;
 }
-/* TurdRummy: colorblind toggle shares the title row (no extra topbar wrap row). */
-@media (max-width: 520px) {
-  .topbar:has(.top-links) .title-group {
-    position: relative;
-    box-sizing: border-box;
-    min-height: 44px;
-    max-height: 44px;
-    overflow: hidden;
-    padding-right: calc(44px + 6px);
-  }
-  .topbar:has(.top-links) .title-group h1 {
-    margin: 0;
-    line-height: 44px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .topbar:has(.top-links) .suite-a11y-topbar-slot--title-row {
-    position: fixed;
-    left: auto;
-    right: max(12px, calc(env(safe-area-inset-right, 0px) + 12px));
-    top: auto;
-    bottom: max(168px, calc(env(safe-area-inset-bottom, 0px) + 156px));
-    height: 44px;
-    margin: 0;
-    z-index: 10000;
-  }
-  .topbar:has(.top-links) .suite-a11y-topbar-slot--title-row .suite-arcade-a11y-toggle {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+/* TurdRummy: keep the setting in the sticky dock, clear of the card hand. */
+.action-dock:has(> .suite-a11y-rummy-dock-slot) {
+  padding-left: 72px;
+}
+.suite-a11y-rummy-dock-slot {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+}
+@media (min-width: 521px) {
+  .action-dock:has(> .suite-a11y-rummy-dock-slot) {
+    padding-left: 98px;
   }
 }
 .suite-a11y-dock-slot {
@@ -1166,13 +1142,8 @@ body > .suite-a11y-play-shell-slot.suite-a11y-body-slot .suite-arcade-a11y-toggl
   z-index: 1;
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  body:not(.suite-hub-door) .suite-arcade-a11y-toggle--inline {
-    position: fixed;
-    left: max(10px, calc(env(safe-area-inset-left, 0px) + 6px));
-    right: auto;
-    top: auto;
-    bottom: max(64px, calc(env(safe-area-inset-bottom, 0px) + 52px));
-    z-index: 10000;
+  body > .suite-a11y-play-shell-slot.suite-a11y-body-slot {
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
   }
 }
 .suite-arcade-a11y-toggle--topbtns {

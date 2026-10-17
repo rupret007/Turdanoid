@@ -224,6 +224,53 @@ async function assertA11yToggleLayout(page, game) {
 }
 
 describe('arcade a11y (Playwright)', () => {
+  for (const game of SIX_SUITE_GAMES) {
+    for (const viewport of VIEWPORTS) {
+      it(`${game.path} Clr receives taps at ${viewport.width}x${viewport.height}`, async () => {
+        const page = await browser.newPage({ viewport, hasTouch: true });
+        try {
+          await page.goto(`${baseUrl}${game.path}`, { waitUntil: 'domcontentloaded' });
+          const toggle = page.locator('#suite-arcade-a11y-toggle');
+          await toggle.waitFor();
+          for (const phase of layoutPhases(game)) {
+            await phase.prepare(page);
+            await assertA11yToggleLayout(page, game);
+            const hitTest = await toggle.evaluate((control) => {
+              const r = control.getBoundingClientRect();
+              // Check the center and inset corners: a box alone misses clipping and overlays.
+              const points = [
+                [r.left + r.width / 2, r.top + r.height / 2],
+                [r.left + 10, r.top + 10],
+                [r.right - 10, r.top + 10],
+                [r.left + 10, r.bottom - 10],
+                [r.right - 10, r.bottom - 10]
+              ];
+              return {
+                width: r.width,
+                height: r.height,
+                hits: points.map(([x, y]) => {
+                  const hit = document.elementFromPoint(x, y);
+                  return hit === control ? 'control' : hit?.id || hit?.className || null;
+                })
+              };
+            });
+            expect(hitTest.width).toBeGreaterThanOrEqual(44);
+            expect(hitTest.height).toBeGreaterThanOrEqual(44);
+            expect(hitTest.hits, phase.id).toEqual(Array(5).fill('control'));
+            expect(await toggle.textContent()).toBe('Clr');
+            await toggle.tap();
+            expect(await toggle.getAttribute('aria-pressed')).toBe('true');
+            expect(await page.evaluate(() => Suite.isColorblindMode())).toBe(true);
+            await toggle.tap();
+            expect(await toggle.getAttribute('aria-pressed')).toBe('false');
+          }
+        } finally {
+          await page.close();
+        }
+      });
+    }
+  }
+
   it('honors prefers-reduced-motion for ambient auto-scroll', async () => {
     if (!hasBrowser) {
       return;
