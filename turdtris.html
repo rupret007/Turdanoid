@@ -4049,7 +4049,9 @@ function paintAttractFrame(now) {
   attractLast = now;
   attractField.step(delta);
   ctx.clearRect(0, 0, w, h);
-  const colors = { I: '#7ad7ff', O: '#ffd56a', T: '#c98bff', S: '#7dffb2', Z: '#ff8f8f', J: '#7f9dff', L: '#ffb07a' };
+  const colors = (window.Suite && typeof Suite.turdtrisPieceColors === 'function')
+    ? Suite.turdtrisPieceColors()
+    : { I: '#7ad7ff', O: '#ffd56a', T: '#c98bff', S: '#7dffb2', Z: '#ff8f8f', J: '#7f9dff', L: '#ffb07a' };
   for (const piece of attractField.pieces()) {
     ctx.save();
     ctx.globalAlpha = piece.alpha;
