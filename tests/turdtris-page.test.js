@@ -186,12 +186,12 @@ describe('Turdtris page leftover after the mobile dock', () => {
     const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
     const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
     w.eval(`inputSettings = { das: ${das}, arr: ${arr}, softDrop: 0 };`);
-    w.eval(`tetromino.col = 4; ${held} = true; ${dasMs} = 0; ${arrMs} = 0;`);
-    const startCol = w.eval('tetromino.col');
+    w.eval('__dasMoves = 0; movePiece = function(){ __dasMoves++; };');
+    w.eval(`${held} = true; ${dasMs} = 0; ${arrMs} = 0;`);
     for (let ms = 0; ms < elapsedMs; ms += stepMs) {
       w.tickDasRepeat(Math.min(stepMs, elapsedMs - ms));
     }
-    return Math.abs(w.eval('tetromino.col') - startCol);
+    return w.eval('__dasMoves');
   }
 
   it.each([
@@ -236,10 +236,10 @@ describe('Turdtris page leftover after the mobile dock', () => {
     const held = direction === 'Left' ? 'dasLeftHeld' : 'dasRightHeld';
     const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
     const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
-    w.eval(`tetromino.col = 4; ${held} = true; ${dasMs} = 156; ${arrMs} = 0;`);
-    const startCol = w.eval('tetromino.col');
+    w.eval('__dasMoves = 0; movePiece = function(){ __dasMoves++; };');
+    w.eval(`${held} = true; ${dasMs} = 156; ${arrMs} = 0;`);
     w.tickDasRepeat(60_000);
-    expect(Math.abs(w.eval('tetromino.col') - startCol)).toBe(1);
+    expect(w.eval('__dasMoves')).toBe(1);
   });
 
   it('shows a new-best receipt and Space starts the next run', () => {
