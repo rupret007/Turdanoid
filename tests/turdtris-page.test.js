@@ -195,6 +195,115 @@ describe('Turdtris page leftover after the mobile dock', () => {
   });
 });
 
+describe('Turdtris per-piece lock-reset budget', () => {
+  let w;
+
+  beforeEach(() => {
+    w = bootPage('120');
+    w.eval(`
+      for (const row of playfield) row.fill(0);
+      playfield[rows - 1][4] = 'G';
+      tetromino = {
+        name: 'O', matrix: [[1, 1], [1, 1]], row: rows - 3, col: 4,
+        rotation: 0, lastActionRotate: false, lastKick: false
+      };
+      lockResets = 12;
+      lockAccumulator = 490;
+      dropAccumulator = 0;
+      lastFrameTime = 1000;
+    `);
+  });
+
+  afterEach(() => w.close());
+
+  it('cannot renew an exhausted budget by stepping off and back onto a ledge', () => {
+    const piece = w.eval('tetromino');
+    expect(w.isGrounded(piece)).toBe(true);
+    w.movePiece(1);
+    expect(piece.col).toBe(5);
+    expect(w.isGrounded(piece)).toBe(false);
+    w.loop(1016);
+    w.movePiece(-1);
+    expect(w.eval('tetromino')).toBe(piece);
+    expect(piece.row).toBe(w.eval('rows - 3'));
+    expect(piece.col).toBe(4);
+    expect(w.isGrounded(piece)).toBe(true);
+    expect(w.eval('lockResets')).toBe(12);
+    expect(w.eval('lockAccumulator')).toBe(490);
+    w.loop(1026);
+    expect(w.eval('runStats.pieces')).toBe(1);
+    expect(w.eval('playfield[rows - 3].slice(4, 6)')).toEqual(['O', 'O']);
+    expect(w.eval('tetromino')).not.toBe(piece);
+    expect(w.eval('lockResets')).toBe(0);
+    expect(w.eval('lockAccumulator')).toBe(0);
+  });
+
+  it('keeps a partially spent budget through airborne frames and allows its final reset', () => {
+    w.eval('lockResets = 10');
+    w.movePiece(1);
+    expect(w.eval('lockResets')).toBe(11);
+    w.loop(1016);
+    w.loop(1032);
+    expect(w.eval('lockResets')).toBe(11);
+    w.movePiece(-1);
+    expect(w.eval('lockResets')).toBe(12);
+    expect(w.eval('lockAccumulator')).toBe(0);
+    w.loop(1048);
+    expect(w.eval('lockAccumulator')).toBe(16);
+    expect(w.eval('runStats.pieces')).toBe(0);
+  });
+
+  it('pauses the spent lock timer in the air while normal gravity still drops the piece', () => {
+    const piece = w.eval('tetromino');
+    const row = piece.row;
+    w.movePiece(1);
+    w.loop(1016);
+    expect(piece.row).toBe(row);
+    expect(w.eval('lockAccumulator')).toBe(490);
+    expect(w.eval('runStats.pieces')).toBe(0);
+    w.eval('dropAccumulator = getGravityMs() - 10');
+    w.loop(1026);
+    expect(piece.row).toBe(row + 1);
+    expect(w.eval('playfield[rows - 1].slice(5, 7)')).toEqual(['O', 'O']);
+    expect(w.eval('runStats.pieces')).toBe(1);
+  });
+
+  it.each(['move', 'rotate'])('allows a legal grounded %s after the twelfth reset without extending the timer', action => {
+    w.eval('lockResets = 11');
+    const act = action === 'move' ? () => w.movePiece(-1) : () => w.tryRotate(1);
+    act();
+    expect(w.eval('lockResets')).toBe(12);
+    expect(w.eval('lockAccumulator')).toBe(0);
+    w.eval('lockAccumulator = 490');
+    if (action === 'move') { w.movePiece(1); } else { act(); }
+    expect(w.eval(action === 'move' ? 'tetromino.col' : 'tetromino.rotation'))
+      .toBe(action === 'move' ? 4 : 2);
+    expect(w.eval('lockResets')).toBe(12);
+    expect(w.eval('lockAccumulator')).toBe(490);
+    w.loop(1010);
+    expect(w.eval('runStats.pieces')).toBe(1);
+  });
+
+  it('does not spend a reset or extend the delay for a blocked move', () => {
+    w.eval("lockResets = 11; playfield[rows - 3][6] = 'G'");
+    w.movePiece(1);
+    expect(w.eval('tetromino.col')).toBe(4);
+    expect(w.eval('lockResets')).toBe(11);
+    expect(w.eval('lockAccumulator')).toBe(490);
+  });
+
+  it.each(['empty hold', 'occupied hold', 'restart'])('gives the replacement piece a fresh budget after %s', boundary => {
+    const piece = w.eval('tetromino');
+    if (boundary === 'occupied hold') { w.eval("holdName = 'T'"); }
+    if (boundary === 'restart') { w.restartGame(); } else { w.holdCurrentPiece(); }
+    expect(w.eval('tetromino')).not.toBe(piece);
+    expect(w.eval('lockResets')).toBe(0);
+    expect(w.eval('lockAccumulator')).toBe(0);
+    w.movePiece(-1);
+    expect(w.eval('lockResets')).toBe(1);
+  });
+});
+
 describe('Turdtris presentation integration preserves classic play', () => {
   let w;
 
