@@ -105,6 +105,9 @@ export class CrapeightsEngine {
     if (!this.canPlayCard(card)) {
       return { valid: false, message: 'Cannot play this card' };
     }
+    if (card.rank === '8' && !SUITS.includes(suitOverride)) {
+      return { valid: false, message: 'Declare a valid suit for an 8' };
+    }
 
     // Remove card from hand
     const index = this.playerHand.findIndex(c => c.rank === card.rank && c.suit === card.suit);
@@ -117,7 +120,7 @@ export class CrapeightsEngine {
     // Handle 8
     if (card.rank === '8') {
       this.lastPlayWasEight = true;
-      this.currentSuit = suitOverride || card.suit;
+      this.currentSuit = suitOverride;
       // 8 doesn't change direction in standard rules, just forces suit declaration
     } else {
       this.lastPlayWasEight = false;
