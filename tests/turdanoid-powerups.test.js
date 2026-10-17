@@ -56,10 +56,12 @@ function boot() {
 const hpSum = (bricks) => bricks.filter((b) => !b.indestructible).reduce((s, b) => s + b.hp, 0);
 
 describe('power-up catalogue', () => {
+  let dom;
   let g;
   beforeEach(() => {
-    ({ g } = boot());
+    ({ dom, g } = boot());
   });
+  afterEach(() => dom.window.close());
 
   it('gives every power a unique name, emoji and capsule label that match the QA names', () => {
     const defs = g.powerDefs;
@@ -94,12 +96,14 @@ describe('power-up catalogue', () => {
 });
 
 describe('power-up behaviour', () => {
+  let dom;
   let g;
   beforeEach(() => {
-    ({ g } = boot());
+    ({ dom, g } = boot());
     g.startGame();
     g.qaJumpToLevel(5);
   });
+  afterEach(() => dom.window.close());
 
   const catchLabel = (type) => {
     const name = POWER_DISPLAY_NAMES[type].toUpperCase();
@@ -355,7 +359,8 @@ describe('Chili Fire expiry', () => {
   });
 
   it.each([[1, 1], [2, 2]])('with %s Fire frames left, deals %s boss damage on the next hit', (frames, damage) => {
-    dom.window.document.getElementById('btnBoss').click();
+    g.qaBossSetPhase(1);
+    expect(g.boss).toBeTruthy();
     g.qaActivatePower('fire');
     g.activePowers.fire = frames;
     g.launch();
@@ -413,12 +418,14 @@ describe('Chili Fire expiry', () => {
 });
 
 describe('power-up safety bounds (Karen gate)', () => {
+  let dom;
   let g;
   beforeEach(() => {
-    ({ g } = boot());
+    ({ dom, g } = boot());
     g.startGame();
     g.qaJumpToLevel(5);
   });
+  afterEach(() => dom.window.close());
 
   it('caps Mosh Pit at maxBalls no matter how many are caught', () => {
     g.launch();
