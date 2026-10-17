@@ -4,9 +4,22 @@
 
 export const DAS_DELAY_MS = 156;
 export const ARR_MS = 33;
+/** Max simulated frame duration for DAS ticks (matches turdtris.html MAX_FRAME_MS). */
+export const MAX_TICK_MS = 33;
 export const MOBILE_REPEAT_MS = 52;
 /** Delay before held mobile D-pad keys start repeating (matches keyboard DAS feel). */
 export const MOBILE_REPEAT_INITIAL_DELAY_MS = 148;
+
+/**
+ * @param {number} deltaMs
+ * @returns {number}
+ */
+export function normalizeTickDelta(deltaMs) {
+  if (!Number.isFinite(deltaMs)) {
+    return 0;
+  }
+  return Math.min(MAX_TICK_MS, Math.max(0, deltaMs));
+}
 
 export class DasTracker {
   constructor() {
@@ -51,7 +64,7 @@ export class DasTracker {
   tick(deltaMs) {
     let moveLeft = 0;
     let moveRight = 0;
-    const dt = Math.max(0, deltaMs);
+    const dt = normalizeTickDelta(deltaMs);
 
     if (this.left) {
       const delayRemaining = Math.max(0, DAS_DELAY_MS - this.leftDas);

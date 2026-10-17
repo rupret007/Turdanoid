@@ -173,11 +173,41 @@ describe('Turdtris page leftover after the mobile dock', () => {
   it('clamps a multi-second hitch so gravity cannot slam the piece', () => {
     expect(w.clampFrameDelta(5000)).toBe(33);
     expect(w.clampFrameDelta(-12)).toBe(0);
+    expect(w.clampFrameDelta(Number.NaN)).toBe(0);
+    expect(w.clampFrameDelta(Number.POSITIVE_INFINITY)).toBe(0);
     const startRow = w.eval('tetromino.row');
     w.eval('lastFrameTime = 1000; loop(6000)');
     expect(w.eval('tetromino.row')).toBe(startRow);
     expect(w.eval('dropAccumulator')).toBeLessThanOrEqual(33);
   });
+
+  it.each(['Left', 'Right'])(
+    'keeps held %s keyboard repeats independent of frame duration',
+    (direction) => {
+      const das = w.eval('inputSettings.das');
+      const arr = w.eval('inputSettings.arr');
+      const elapsed = das + arr * 3;
+      const held = direction === 'Left' ? 'dasLeftHeld' : 'dasRightHeld';
+      const dasMs = direction === 'Left' ? 'dasLeftMs' : 'dasRightMs';
+      const arrMs = direction === 'Left' ? 'arrLeftMs' : 'arrRightMs';
+      const countRepeats = (stepMs) => {
+        w.eval(`tetromino.col = 4; ${held} = true; ${dasMs} = 0; ${arrMs} = 0;`);
+        const startCol = w.eval('tetromino.col');
+        if (stepMs === 1) {
+          for (let ms = 0; ms < elapsed; ms++) {
+            w.tickDasRepeat(1);
+          }
+        } else {
+          for (let ms = 0; ms < elapsed; ms += 33) {
+            w.tickDasRepeat(Math.min(33, elapsed - ms));
+          }
+        }
+        return Math.abs(w.eval('tetromino.col') - startCol);
+      };
+      expect(countRepeats(1)).toBe(3);
+      expect(countRepeats(33)).toBe(3);
+    }
+  );
 
   it('shows a new-best receipt and Space starts the next run', () => {
     w.eval('score = 260; runBestAtStart = 120; showGameOver(false)');

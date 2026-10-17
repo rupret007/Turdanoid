@@ -1737,10 +1737,12 @@ let arrRightMs = 0;
 
 function tickDasRepeat(delta) {
   if (!tetromino || gameOver || paused) return;
+  const dt = !Number.isFinite(delta) || delta <= 0 ? 0 : delta;
   if (dasLeftHeld) {
-    dasLeftMs += delta;
+    const delayRemaining = Math.max(0, inputSettings.das - dasLeftMs);
+    dasLeftMs += dt;
     if (dasLeftMs >= inputSettings.das) {
-      arrLeftMs += delta;
+      arrLeftMs += Math.max(0, dt - delayRemaining);
       while (arrLeftMs >= inputSettings.arr) {
         arrLeftMs -= inputSettings.arr;
         movePiece(-1);
@@ -1748,9 +1750,10 @@ function tickDasRepeat(delta) {
     }
   }
   if (dasRightHeld) {
-    dasRightMs += delta;
+    const delayRemaining = Math.max(0, inputSettings.das - dasRightMs);
+    dasRightMs += dt;
     if (dasRightMs >= inputSettings.das) {
-      arrRightMs += delta;
+      arrRightMs += Math.max(0, dt - delayRemaining);
       while (arrRightMs >= inputSettings.arr) {
         arrRightMs -= inputSettings.arr;
         movePiece(1);
