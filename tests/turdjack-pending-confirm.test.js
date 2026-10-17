@@ -166,20 +166,22 @@ describe('Crapjack pending decision survives page/store reload', () => {
 
   it('allows sequential non-ace deals without leaving openingHandInFlight set', async () => {
     const w = boot();
-    const runHand = (hiddenRank) => {
+    const runHand = async (hiddenRank) => {
       w.eval(`bankroll = 1000; currentBet = 20; roundActive = false; runningCount = 0;
+        cutCardsRemaining = 0; shoeDecks = 1;
         playerHand = []; dealerHand = []; shoe = [
           { rank: '${hiddenRank}', suit: 'S' }, { rank: '9', suit: 'D' },
           { rank: '5', suit: 'H' }, { rank: '2', suit: 'C' }
         ]; stats = normalizeStats({});`);
       w.startRound();
+      await flush();
     };
-    runHand('K');
+    await runHand('K');
     expect(w.eval('roundActive')).toBe(true);
     w.playerStand();
     await flush();
     expect(w.eval('roundActive')).toBe(false);
-    runHand('3');
+    await runHand('3');
     expect(w.eval('roundActive')).toBe(true);
     expect(w.eval('playerHand.length')).toBe(2);
     await flush();
