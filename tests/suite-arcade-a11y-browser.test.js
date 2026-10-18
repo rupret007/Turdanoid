@@ -100,9 +100,23 @@ const SIX_SUITE_GAMES = [
       });
       const start = page.locator('#startRoundBtn');
       if (await start.isVisible()) {
+        // The bot draws first and a random opening knock can end the round
+        // before interactive cards appear. Keep a live deal for layout checks.
+        await page.evaluate(() => {
+          let seed = 12345;
+          window.crypto.getRandomValues = (values) => {
+            for (let i = 0; i < values.length; i++) {
+              seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+              values[i] = seed;
+            }
+            return values;
+          };
+        });
         await start.click();
         await page.waitForSelector('#playerHand .card-button', { timeout: 15000 });
       }
+      expect(await page.locator('#playerHand .card-button').count()).toBe(10);
+      expect(await page.locator('#drawStockBtn').isEnabled()).toBe(true);
     }
   },
   {
