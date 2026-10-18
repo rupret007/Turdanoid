@@ -3,6 +3,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
+import { browserLaunchOptions } from './browser-options.js';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -80,10 +81,7 @@ beforeAll(async () => {
   });
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({
-    channel: process.env.PLAYWRIGHT_CHANNEL || 'chromium',
-    headless: true
-  });
+  browser = await chromium.launch(browserLaunchOptions());
 }, 30_000);
 
 afterAll(async () => {
@@ -124,10 +122,11 @@ async function prepTurdtris(page) {
 
 async function prepTurdjack(page) {
   await dismissGuides(page);
-  const quick = page.getByRole('button', { name: 'Quick Start' });
-  if (await quick.isVisible().catch(() => false)) {
-    await quick.click();
-  }
+  // A random opening blackjack ends the hand before table-first layout can
+  // be measured. Deal a known live hand through the actual Deal control.
+  await page.waitForFunction(() => window.__turdjackDev);
+  await page.evaluate(() => window.__turdjackDev.prepare('push'));
+  await page.locator('#dealBtn:visible, [data-mobile-action="deal"]:visible').first().click();
   const viewport = page.viewportSize();
   if (viewport && viewport.width <= 680) {
     await page.waitForFunction(

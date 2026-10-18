@@ -47,8 +47,8 @@ CI uses **Node 22**. Test tooling:
 ```bash
 npm ci                 # or npm install
 npm run lint
-npm test               # Vitest; 30s timeouts. Serial (`npx vitest run --maxWorkers=1`) if parallel flakes
 npx playwright install chromium   # one-time
+npm test               # Vitest, including required browser assertions; 30s timeouts
 PLAYWRIGHT_CHANNEL='' npm run test:smoke
 ```
 
@@ -56,6 +56,14 @@ There is no `npm run build`. Lint covers `games/` and `tests/`. Smoke serves the
 repo locally and drives every game in Playwright. Empty `PLAYWRIGHT_CHANNEL`
 uses bundled Chromium (Linux/macOS/CI); the default channel is local Edge for
 the Windows workflow.
+
+On minimal Debian/Ubuntu runners, `npm test` downloads missing NSS, NSPR, and
+ALSA runtime libraries into `node_modules/.cache/browser-test-deps` without
+sudo. Later runs reuse that cache. Browser suites still fail when Chromium
+cannot launch. CI installs the full system dependencies with
+`npx playwright install --with-deps chromium`.
+Browser tests use Playwright's headless Chromium with software rendering on
+Linux; `PLAYWRIGHT_CHANNEL` can select another installed channel.
 
 Windows wrappers: `test-runner.ps1`, `browser-smoke.ps1`.
 

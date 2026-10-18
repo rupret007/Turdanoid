@@ -64,4 +64,33 @@ describe('turdjack-confirm-modal', () => {
     await expect(promise).resolves.toBe(false);
     document.body.innerHTML = '';
   });
+
+  it('focuses the open dialog immediately and preserves the first Tab through the next frame', async () => {
+    document.body.innerHTML = `
+      <button id="trigger">Deal</button>
+      <div id="${JACK_CONFIRM_IDS.overlay}" style="display:none" aria-hidden="true">
+        <h2 id="${JACK_CONFIRM_IDS.title}"></h2>
+        <p id="${JACK_CONFIRM_IDS.message}"></p>
+        <button type="button" id="${JACK_CONFIRM_IDS.decline}">No</button>
+        <button type="button" id="${JACK_CONFIRM_IDS.accept}">Yes</button>
+      </div>`;
+    const frames = [];
+    const win = { requestAnimationFrame(fn) { frames.push(fn); } };
+    const trigger = document.getElementById('trigger');
+    trigger.focus();
+    const ask = createJackConfirmAsk(document, win);
+    try {
+      const promise = ask({ message: 'Buy insurance?' });
+      expect(document.activeElement.id).toBe(JACK_CONFIRM_IDS.decline);
+      document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      expect(document.activeElement.id).toBe(JACK_CONFIRM_IDS.accept);
+      for (const frame of frames) { frame(); }
+      expect(document.activeElement.id).toBe(JACK_CONFIRM_IDS.accept);
+      document.getElementById(JACK_CONFIRM_IDS.accept).click();
+      await expect(promise).resolves.toBe(true);
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      document.body.innerHTML = '';
+    }
+  });
 });

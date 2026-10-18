@@ -8,6 +8,7 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 import { chromium } from 'playwright';
+import { browserLaunchOptions } from './browser-options.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { COLORBLIND_STORAGE_KEY } from '../games/suite-arcade-a11y.js';
@@ -128,7 +129,9 @@ let baseUrl;
 
 beforeAll(async () => {
   if (!hasBrowser) {
-    return;
+    throw new Error(
+      'Playwright Chromium is required. Run npx playwright install chromium or set PLAYWRIGHT_CHANNEL.'
+    );
   }
   const types = {
     '.html': 'text/html',
@@ -153,10 +156,7 @@ beforeAll(async () => {
   });
   await new Promise((resolveServer) => server.listen(0, '127.0.0.1', resolveServer));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({
-    channel: process.env.PLAYWRIGHT_CHANNEL || 'chromium',
-    headless: true
-  });
+  browser = await chromium.launch(browserLaunchOptions());
 }, 30000);
 
 afterAll(async () => {
@@ -344,9 +344,6 @@ describe('arcade a11y (Playwright)', () => {
   }
 
   it('honors prefers-reduced-motion for ambient auto-scroll', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -370,9 +367,6 @@ describe('arcade a11y (Playwright)', () => {
   });
 
   it('fails overlap detection when the toggle is moved onto HUD chrome', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.setViewportSize({ width: 320, height: 568 });
@@ -408,9 +402,6 @@ describe('arcade a11y (Playwright)', () => {
   });
 
   it('keeps the colorblind toggle on-screen and clear of HUD controls (six games)', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     for (const game of SIX_SUITE_GAMES) {
       for (const viewport of VIEWPORTS) {
         const page = await browser.newPage();
@@ -430,9 +421,6 @@ describe('arcade a11y (Playwright)', () => {
   });
 
   it('freezes Turdanoid title parallax under prefers-reduced-motion', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -456,9 +444,6 @@ describe('arcade a11y (Playwright)', () => {
   });
 
   it('persists colorblind toggle across reload', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
@@ -492,14 +477,17 @@ describe('arcade a11y (Playwright)', () => {
 
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
     it(`Clr toggle clears title menu buttons on Turdanoid at ${viewport.width}x${viewport.height}`, async () => {
-      if (!hasBrowser) {
-        return;
-      }
-      const page = await browser.newPage({ viewport });
+      const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
       try {
         await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#suite-arcade-a11y-toggle');
         await page.waitForSelector('#titleScreen.show');
+        // The shared back pill replaces the inline Game Hub button.
+        await page.waitForSelector('.suite-back-pill');
+        await page.waitForSelector('#titleScreen #btnHub', { state: 'hidden' });
+        for (const id of ['btnBoss', 'btnHowTo']) {
+          await page.waitForSelector(`#titleScreen .menu-secondary #${id}`, { state: 'visible' });
+        }
         const result = await page.evaluate(() => {
           const overlap = (a, b) =>
             Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
@@ -509,25 +497,43 @@ describe('arcade a11y (Playwright)', () => {
               return null;
             }
             const style = getComputedStyle(el);
-            if (style.display === 'none' || style.visibility === 'hidden') {
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
               return null;
             }
             const r = el.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) {
+              return null;
+            }
             return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
           };
+          const inViewport = (rect) =>
+            Boolean(
+              rect &&
+              rect.left >= 0 &&
+              rect.top >= 0 &&
+              rect.right <= window.innerWidth &&
+              rect.bottom <= window.innerHeight
+            );
           const toggle = document.getElementById('suite-arcade-a11y-toggle');
           const toggleBox = box(toggle);
-          const menuBtns = document.querySelectorAll('.menu-secondary button');
+          const menuBtns = document.querySelectorAll('#titleScreen .menu-secondary button');
+          const menuButtons = [];
           const hits = [];
           for (const btn of menuBtns) {
             const btnBox = box(btn);
+            menuButtons.push({ id: btn.id, inViewport: inViewport(btnBox) });
             if (toggleBox && btnBox && overlap(toggleBox, btnBox)) {
               hits.push(btn.id || btn.textContent.trim());
             }
           }
-          return { toggleVisible: !!toggleBox, hits };
+          return { toggleInViewport: inViewport(toggleBox), menuButtons, hits };
         });
-        expect(result.toggleVisible).toBe(true);
+        expect(result.toggleInViewport).toBe(true);
+        expect(result.menuButtons).toEqual([
+          { id: 'btnBoss', inViewport: true },
+          { id: 'btnHowTo', inViewport: true },
+          { id: 'btnHub', inViewport: false }
+        ]);
         expect(result.hits).toEqual([]);
       } finally {
         await page.close();
