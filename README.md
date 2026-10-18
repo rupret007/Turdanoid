@@ -57,11 +57,15 @@ repo locally and drives every game in Playwright. Empty `PLAYWRIGHT_CHANNEL`
 uses bundled Chromium (Linux/macOS/CI); the default channel is local Edge for
 the Windows workflow.
 
-On minimal Debian/Ubuntu runners, `npm test` downloads missing NSS, NSPR, and
-ALSA runtime libraries into `node_modules/.cache/browser-test-deps` without
-sudo. Later runs reuse that cache. Browser suites still fail when Chromium
-cannot launch. CI installs the full system dependencies with
-`npx playwright install --with-deps chromium`.
+Install Chromium's runtime dependencies before running the tests. CI uses
+`npx playwright install --with-deps chromium`. On restricted Linux runners,
+provision trusted distro libraries in advance, either through the runner image
+or in `node_modules/.cache/browser-test-deps/usr/lib/<triplet>` (for example,
+`x86_64-linux-gnu` or `aarch64-linux-gnu`). The optional cache must belong to the
+current user, have no group/other write permissions, and contain no links that
+escape the cache. `npm test` uses that cache without downloading packages,
+extracting archives, or changing system files. An existing `LD_LIBRARY_PATH`
+takes precedence. Browser suites still fail when Chromium cannot launch.
 Browser tests use Playwright's headless Chromium with software rendering on
 Linux; `PLAYWRIGHT_CHANNEL` can select another installed channel.
 
