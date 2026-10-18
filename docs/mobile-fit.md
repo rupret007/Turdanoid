@@ -1,26 +1,30 @@
-# Mobile play viewport checks
+# One-screen phone play
 
-`npm run test:mobile` serves the repository locally and runs Playwright Chromium
-against all seven games and the legacy Neon Arkanoid page. Install Chromium with
-`npx playwright install chromium` first.
+The seven current games and legacy Neon Arkanoid share `assets/mobile-fit.css` and
+`assets/mobile-fit.js`. Each page opts in with `data-mobile-game`. The overrides
+apply at widths up to 980px; desktop cabinet styling remains game-owned.
 
-The matrix covers 360×640, 375×667, 390×844, 430×932, 667×375, and 844×390.
-It checks entry and play document dimensions, play area bounds, visible key control
-bounds, ancestor clipping, 44px action buttons, controls covered by another layer, opening the table
-menu, and rotating an already running game in both directions. Spades also checks
-the transition from bidding to play; Eights also checks that every card in a 30-card
-hand remains reachable through its card pages. Failures exit nonzero; existing tests remain
-unchanged.
+The document uses `100svh`/`100dvh`, safe-area padding, and no document scrolling
+or overscroll. Game regions flex between their HUD and controls. Arcade canvases
+fit both dimensions, retaining their aspect ratio. ResizeObserver and visual
+viewport/orientation listeners refit the existing session. Auxiliary rules and
+settings use menus/drawers. Music and colour controls retain their own 44px slots.
 
-Optional environment variables:
+Crapjack reserves space for money, the dealer and player hands, quick chips and
+all actions, in both betting and live states. Landscape puts actions beside the
+felt. Rummy and Spades use full card rows with separate 44px targets; Eights
+pages large hands. SameGame retains its established board dimensions and scales its grid through
+rotation. Its Aim menu supplies 44px arrow/Pop controls for precise selection
+when the game cells are smaller than a button; rotation never restarts the board.
 
-- `MOBILE_SHOTS=/path/to/shots`: save each game at 390×844.
-- `MOBILE_RESULTS=/path/to/results.json`: save per-game results.
-- `MOBILE_BROWSER=webkit`: run the same matrix in WebKit.
-- `MOBILE_GAMES=turdjack,turdrummy`: run selected games while developing.
+Run `npm ci`, `npx playwright install chromium`, then `npm run test:mobile`.
+The standalone Playwright test starts an ephemeral local server and checks all
+eight games at 360x640, 375x667, 390x844, 430x932, 667x375 and 844x390. It checks
+document bounds, scroll locking, key controls, touch targets, card hit testing,
+canvas aspect ratios, betting/dealing/resolution, draw/discard, bidding and live
+rotation. `MOBILE_BROWSER=webkit` uses WebKit when installed.
 
-Mobile rules are scoped by `body[data-mobile-game]` and the 980px breakpoint.
-Desktop styling stays with each game. Phone layouts reserve safe areas and use
-`100dvh` with a small-viewport fallback. Secondary settings live in overlay menus.
-Eights pages a growing hand without modifying the engine hand, scores, or rules.
-The shared music and accessibility settings retain their existing handlers.
+Set `MOBILE_SHOTS=/absolute/output/path` to save 390x844 after screenshots.
+Before images belong to the baseline checkout; capture them before applying the
+change. The task's paired screenshots and per-game report are stored outside
+the repository under `~/.local/share/storypool/doctor/mobile-fit/`.
