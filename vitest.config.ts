@@ -7,5 +7,8 @@ export default defineConfig({
     // Hub/page-boot tests can exceed 5s under load; do not weaken assertions.
     testTimeout: 30000,
     hookTimeout: 30000,
+    // Each browser suite launches Chromium; keep small runners within their
+    // process and temporary-storage budgets while executing every test.
+    fileParallelism: false,
   },
 })

@@ -2,6 +2,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
+import { browserLaunchOptions } from './browser-options.js';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
@@ -50,10 +51,7 @@ beforeAll(async () => {
   });
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({
-    channel: process.env.PLAYWRIGHT_CHANNEL || 'chromium',
-    headless: true
-  });
+  browser = await chromium.launch(browserLaunchOptions());
 }, 30_000);
 
 afterAll(async () => {
