@@ -6,6 +6,32 @@ import {
   nextFocusable
 } from '../games/turdjack-confirm-modal.js';
 
+function mountConfirmModal(doc) {
+  const overlay = doc.createElement('div');
+  overlay.id = JACK_CONFIRM_IDS.overlay;
+  overlay.style.display = 'none';
+  overlay.setAttribute('aria-hidden', 'true');
+
+  const title = doc.createElement('h2');
+  title.id = JACK_CONFIRM_IDS.title;
+  const message = doc.createElement('p');
+  message.id = JACK_CONFIRM_IDS.message;
+  overlay.append(title, message);
+
+  for (const [id, label] of [
+    [JACK_CONFIRM_IDS.decline, 'No'],
+    [JACK_CONFIRM_IDS.accept, 'Yes']
+  ]) {
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.id = id;
+    button.textContent = label;
+    overlay.append(button);
+  }
+
+  doc.body.replaceChildren(overlay);
+}
+
 describe('turdjack-confirm-modal', () => {
   it('Escape declines', () => {
     const onDecline = vi.fn();
@@ -29,13 +55,7 @@ describe('turdjack-confirm-modal', () => {
 
   it('resolves accept and decline through the DOM controller', async () => {
     const doc = document.implementation.createHTMLDocument('jack');
-    doc.body.innerHTML = `
-      <div id="${JACK_CONFIRM_IDS.overlay}" style="display:none" aria-hidden="true">
-        <h2 id="${JACK_CONFIRM_IDS.title}"></h2>
-        <p id="${JACK_CONFIRM_IDS.message}"></p>
-        <button type="button" id="${JACK_CONFIRM_IDS.decline}">No</button>
-        <button type="button" id="${JACK_CONFIRM_IDS.accept}">Yes</button>
-      </div>`;
+    mountConfirmModal(doc);
     const win = { requestAnimationFrame(fn) { fn(); } };
     const ask = createJackConfirmAsk(doc, win);
 
@@ -50,33 +70,23 @@ describe('turdjack-confirm-modal', () => {
   });
 
   it('Escape on keydown declines via controller', async () => {
-    document.body.innerHTML = `
-      <div id="${JACK_CONFIRM_IDS.overlay}" style="display:none" aria-hidden="true">
-        <h2 id="${JACK_CONFIRM_IDS.title}"></h2>
-        <p id="${JACK_CONFIRM_IDS.message}"></p>
-        <button type="button" id="${JACK_CONFIRM_IDS.decline}">No</button>
-        <button type="button" id="${JACK_CONFIRM_IDS.accept}">Yes</button>
-      </div>`;
+    mountConfirmModal(document);
     const win = { requestAnimationFrame(fn) { fn(); } };
     const ask = createJackConfirmAsk(document, win);
     const promise = ask({ message: 'Even money?' });
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await expect(promise).resolves.toBe(false);
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
   });
 
   it('focuses the open dialog immediately and preserves the first Tab through the next frame', async () => {
-    document.body.innerHTML = `
-      <button id="trigger">Deal</button>
-      <div id="${JACK_CONFIRM_IDS.overlay}" style="display:none" aria-hidden="true">
-        <h2 id="${JACK_CONFIRM_IDS.title}"></h2>
-        <p id="${JACK_CONFIRM_IDS.message}"></p>
-        <button type="button" id="${JACK_CONFIRM_IDS.decline}">No</button>
-        <button type="button" id="${JACK_CONFIRM_IDS.accept}">Yes</button>
-      </div>`;
+    mountConfirmModal(document);
+    const trigger = document.createElement('button');
+    trigger.id = 'trigger';
+    trigger.textContent = 'Deal';
+    document.body.prepend(trigger);
     const frames = [];
     const win = { requestAnimationFrame(fn) { frames.push(fn); } };
-    const trigger = document.getElementById('trigger');
     trigger.focus();
     const ask = createJackConfirmAsk(document, win);
     try {
@@ -90,7 +100,7 @@ describe('turdjack-confirm-modal', () => {
       await expect(promise).resolves.toBe(true);
       expect(document.activeElement).toBe(trigger);
     } finally {
-      document.body.innerHTML = '';
+      document.body.replaceChildren();
     }
   });
 });
