@@ -61,6 +61,10 @@ Windows wrappers: `test-runner.ps1`, `browser-smoke.ps1`.
 
 CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull request.
 
+On apt-based Linux containers with Chromium already installed, `npm test` can
+download missing NSS, NSPR and ALSA libraries into `node_modules/.cache/` without
+root access. Browser tests still run; dependency setup failures fail the command.
+
 ## Play online (`main` / Pages)
 
 - Hub: https://rupret007.github.io/Turdanoid/

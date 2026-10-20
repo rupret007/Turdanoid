@@ -186,10 +186,15 @@ const els = {
 const reduced = () => qs.get('reducedMotion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (reduced()) document.body.classList.add('reduced');
 
-function readPrefs() {
-  try { const p = JSON.parse(localStorage.getItem(Core.PREFS_KEY) || 'null'); return p && p.v === 1 ? p : { v: 1 }; } catch { return { v: 1 }; }
+// The storage property itself can throw before the core's guarded reads/writes run.
+function scoreStorage() {
+  try { return window.localStorage; } catch { return null; }
 }
-function writePrefs(p) { try { localStorage.setItem(Core.PREFS_KEY, JSON.stringify({ ...p, v: 1 })); } catch { /* full */ } }
+
+function readPrefs() {
+  try { const p = JSON.parse(scoreStorage()?.getItem(Core.PREFS_KEY) || 'null'); return p && p.v === 1 ? p : { v: 1 }; } catch { return { v: 1 }; }
+}
+function writePrefs(p) { try { scoreStorage()?.setItem(Core.PREFS_KEY, JSON.stringify({ ...p, v: 1 })); } catch { /* full */ } }
 
 // Sound hooks: shared suite synth, which honours the suite mute toggle.
 function sfx(name) {
@@ -291,7 +296,7 @@ function render() {
   }));
   for (const [id, el] of tileEls) if (!live.has(id)) { el.remove(); tileEls.delete(id); }
   els.score.textContent = state.score;
-  const best = Core.readBest(localStorage)[state.level];
+  const best = Core.readBest(scoreStorage())[state.level];
   els.best.textContent = Math.max(best, state.score);
   els.left.textContent = Core.tileCount(state.board);
   els.undo.disabled = state.history.length === 0;
@@ -360,7 +365,7 @@ function popAt(c, r) {
   floatText(res.points ? `+${res.points}` : 'plop', c, r);
   sfx(res.removed.length >= 6 ? 'ding' : 'blip');
   state = res.state;
-  if (state.over) Core.recordBest(localStorage, state.level, state.score);
+  if (state.over) Core.recordBest(scoreStorage(), state.level, state.score);
   const finish = () => {
     removedEls.forEach((el) => { el.remove(); tileEls.delete(Number(el.dataset.id)); });
     busy = false;
@@ -384,7 +389,7 @@ function doUndo() {
 
 function showOver() {
   const left = Core.tileCount(state.board);
-  const best = Core.readBest(localStorage)[state.level];
+  const best = Core.readBest(scoreStorage())[state.level];
   els.overTitle.textContent = state.cleared ? 'Squeaky clean! 🧼' : 'Clogged! 🪠';
   els.overText.textContent = state.cleared
     ? `Board flushed. +${Core.CLEAR_BONUS} bonus. Final ${state.score}.${state.score >= best ? ' New best!' : ''}`
