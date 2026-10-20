@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { URL } from 'node:url';
+import { Script } from 'node:vm';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Core from '../games/turdomania-core.js';
@@ -20,9 +21,12 @@ function boot(reduced = false) {
   w.setTimeout = vi.fn((callback, delay) => setTimeout(callback, delay));
   w.clearTimeout = (id) => clearTimeout(id);
   w.__core = Core;
+  const context = dom.getInternalVMContext();
   for (const script of w.document.querySelectorAll('script:not([src])')) {
     // JSDOM cannot load ES modules; supply the real imported core to the page.
-    w.eval(script.textContent.replace("import * as Core from './games/turdomania-core.js';", 'const Core = window.__core;'));
+    const source = script.textContent.replace("import * as Core from './games/turdomania-core.js';", 'const Core = window.__core;');
+    // Run only the checked-in page scripts in JSDOM's own window context.
+    new Script(source, { filename: 'turdomania.html' }).runInContext(context);
   }
   return {
     w,

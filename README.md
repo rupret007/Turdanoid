@@ -61,6 +61,24 @@ Windows wrappers: `test-runner.ps1`, `browser-smoke.ps1`.
 
 CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull request.
 
+On Debian/Ubuntu hosts without root access, if Chromium reports missing
+`libnspr4.so`, `libnss3.so`, or `libasound.so.2`, extract the distribution packages
+locally. Vitest adds this ignored cache to the browser's library search path, so
+plain `npm test` runs the browser tests:
+
+```bash
+mkdir -p node_modules/.cache/playwright-deps
+(
+  cd node_modules/.cache/playwright-deps
+  mkdir -p packages root lib
+  cd packages
+  apt-get download libnspr4 libnss3 libasound2t64
+  for package in *.deb; do dpkg-deb -x "$package" ../root; done
+  find ../root/usr/lib -name '*.so*' -exec cp -a {} ../lib/ \;
+)
+npm test
+```
+
 ## Play online (`main` / Pages)
 
 - Hub: https://rupret007.github.io/Turdanoid/
