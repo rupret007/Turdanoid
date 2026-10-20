@@ -179,7 +179,7 @@ window.tmFit = function (levelKey) {
   }
   var f = tmFit(TM_DIMS[lvl] ? lvl : 'normal');
   window.TM_INIT = { level: TM_DIMS[lvl] ? lvl : 'normal', cols: f.cols, rows: f.rows };
-  var cell = Math.max(1, Math.min(56, Math.floor(Math.min(f.availW / f.cols, f.availH / f.rows))));
+  var cell = Math.max(22, Math.min(56, Math.floor(Math.min(f.availW / f.cols, f.availH / f.rows))));
   var st = document.documentElement.style;
   st.setProperty('--cell', cell + 'px'); st.setProperty('--board-w', cell * f.cols + 'px'); st.setProperty('--board-h', cell * f.rows + 'px');
 })();
@@ -243,7 +243,7 @@ function start(levelKey, seed) {
 
 function layout() {
   const { availW, availH } = window.tmView();
-  cell = Math.max(1, Math.min(56, Math.floor(Math.min(availW / state.cols, availH / state.rows))));
+  cell = Math.max(22, Math.min(56, Math.floor(Math.min(availW / state.cols, availH / state.rows))));
   const st = document.documentElement.style;
   st.setProperty('--cell', cell + 'px');
   st.setProperty('--board-w', cell * state.cols + 'px');
