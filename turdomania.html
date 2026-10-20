@@ -182,9 +182,9 @@ function scoreStorage() {
 }
 
 function readPrefs() {
-  try { const p = JSON.parse(localStorage.getItem(Core.PREFS_KEY) || 'null'); return p && p.v === 1 ? p : { v: 1 }; } catch { return { v: 1 }; }
+  try { const p = JSON.parse(scoreStorage()?.getItem(Core.PREFS_KEY) || 'null'); return p && p.v === 1 ? p : { v: 1 }; } catch { return { v: 1 }; }
 }
-function writePrefs(p) { try { localStorage.setItem(Core.PREFS_KEY, JSON.stringify({ ...p, v: 1 })); } catch { /* full */ } }
+function writePrefs(p) { try { scoreStorage()?.setItem(Core.PREFS_KEY, JSON.stringify({ ...p, v: 1 })); } catch { /* full */ } }
 
 // Sound hooks: shared suite synth, which honours the suite mute toggle.
 function sfx(name) {

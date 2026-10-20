@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { Script } from 'node:vm';
 
 import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -43,7 +44,8 @@ function boot({ denial, saved = {}, reduced = true } = {}) {
   win.__core = Core;
   // Execute both shipped inline scripts, replacing only the module import for JSDOM.
   for (const script of win.document.querySelectorAll('script:not([src])')) {
-    win.eval(script.textContent.replace("import * as Core from './games/turdomania-core.js';", 'const Core = window.__core;'));
+    const source = script.textContent.replace("import * as Core from './games/turdomania-core.js';", 'const Core = window.__core;');
+    new Script(source, { filename: 'turdomania-inline.js' }).runInContext(dom.getInternalVMContext());
   }
   return { win, errors, el: (id) => win.document.getElementById(id) };
 }
