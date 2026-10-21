@@ -18,15 +18,16 @@ export function bootDailyHub(doc, storage, now = () => Date.now()) {
     next.textContent = `Next puzzle at ${reset} · America/Chicago. Records stay on this device.`;
     if (daily.storageStatus === 'unavailable') next.textContent += ' Storage is unavailable here.';
     let previous = doc.getElementById('daily-hub-previous');
-    if (daily.resume && daily.resume.challenge.id !== daily.challenge.id) {
+    const pending = daily.previous || (daily.resume && daily.resume.challenge.id !== daily.challenge.id ? daily.resume : null);
+    if (pending) {
       if (!previous) {
         previous = doc.createElement('a');
         previous.id = 'daily-hub-previous';
         previous.className = 'daily-previous';
         next.after(previous);
       }
-      previous.href = `turdomania.html?daily=${daily.resume.challenge.date}&v=${daily.resume.challenge.rules}`;
-      previous.textContent = `Finish your ${daily.resume.challenge.date} Dump →`;
+      previous.href = `turdomania.html?daily=${pending.challenge.date}&v=${pending.challenge.rules}`;
+      previous.textContent = `Finish your ${pending.challenge.date} Dump →`;
     } else if (previous) previous.remove();
   }
   update();
