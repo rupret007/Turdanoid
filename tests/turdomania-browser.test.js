@@ -59,6 +59,55 @@ async function popFirst(page) {
 }
 
 describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', () => {
+  it('keeps the first-play hint clear of tiles, HUD and controls after rotating a short phone', async () => {
+    const page = await openPage('/turdomania.html?seed=42&reducedMotion=1', { width: 320, height: 568 });
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.waitForTimeout(200);
+    const overlaps = await page.evaluate(() => {
+      const hint = document.getElementById('startHint').getBoundingClientRect();
+      return [...document.querySelectorAll('#board, header.hud .stat, .dock button, .dock summary')].filter(el => {
+        if (!el.getClientRects().length) { return false; }
+        const b = el.getBoundingClientRect();
+        return hint.left < b.right && hint.right > b.left && hint.top < b.bottom && hint.bottom > b.top;
+      }).map(el => el.id || el.textContent);
+    });
+    expect(overlaps).toEqual([]);
+    for (const selector of ['#undoBtn', '#newBtn', '.tm-aim summary']) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.y + box.height).toBeLessThanOrEqual(296);
+    }
+    await page.close();
+  });
+  it('keeps its first-play hint through hovering and invalid taps, then remembers a successful pop', async () => {
+    const page = await openPage('/turdomania.html?seed=42&reducedMotion=1');
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
+    const lone = await page.evaluate(() => {
+      const { state, Core } = window.__turdomania;
+      for (let c = 0; c < state.board.length; c++) {
+        for (let r = 0; r < state.board[c].length; r++) {
+          if (Core.findGroup(state.board, c, r).length === 1) { return [c, r]; }
+        }
+      }
+    });
+    const tile = page.locator(`.tile[data-col="${lone[0]}"][data-row="${lone[1]}"]`);
+    await tile.hover();
+    await tile.click();
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
+    expect(await page.evaluate(() => window.__turdomania.state.moves)).toBe(0);
+    await page.evaluate(() => document.fonts.ready);
+    const undoBefore = await page.locator('#undoBtn').boundingBox();
+    await popFirst(page);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
+    const undoAfter = await page.locator('#undoBtn').boundingBox();
+    expect(undoAfter.y).toBeCloseTo(undoBefore.y, 1);
+    await page.locator('#undoBtn').click();
+    await page.locator('#newBtn').click();
+    await page.reload();
+    await page.waitForFunction(() => window.__turdomania);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
+    await page.close();
+  });
   it('keeps all three HUD stats inside the reserved chrome and above the board at 375×667', async () => {
     const page = await openPage('/turdomania.html?seed=42', { width: 375, height: 667 });
     await page.evaluate(() => document.fonts.ready);
@@ -189,7 +238,9 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     await page.goto(`${origin}/turdomania.html?seed=42&reducedMotion=1`);
     await page.waitForFunction(() => window.__turdomania);
     const original = await page.evaluate(() => window.__turdomania.state.board);
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
     await popFirst(page);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
     await page.locator('#undoBtn').click();
     expect(await page.evaluate(() => window.__turdomania.state.board)).toEqual(original);
     expect(errors).toEqual([]);

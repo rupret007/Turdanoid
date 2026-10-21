@@ -9,7 +9,7 @@ const pages = [
   ['neon-arkanoid.html', '#howToPlay', '[onclick="dismissHowToPlay()"]', '[onclick="quickStartPlay()"]'],
   ['turdjack.html', '#welcomeGuide', '#closeGuideBtn', '#quickGuideBtn'],
   ['turdspades.html', '#guide', '#closeGuide', '#quickStart'],
-  ['turdtris.html', '#welcomeGuide', '[onclick="hideWelcomeGuide()"]', '[onclick="quickStartRun()"]'],
+  ['turdtris.html', '#welcomeGuide', '[onclick="hideWelcomeGuide()"]', '[onclick="startAttractMode()"]'],
   ['crapeights.html', '#welcomeGuide', '#closeGuideBtn', '#quickStartBtn']
 ];
 
@@ -30,11 +30,11 @@ describe.each(pages)('%s welcome guide copy', (file, guideSelector, closeSelecto
   }
 
   it('labels the dismiss action Close Guide', () => {
-    expectButtonLabel(closeSelector, 'Close Guide');
+    expectButtonLabel(closeSelector, file === 'turdtris.html' ? 'Resume run' : 'Close Guide');
   });
 
   it('keeps the Quick Start label', () => {
-    expectButtonLabel(quickSelector, 'Quick Start');
+    expectButtonLabel(quickSelector, file === 'turdtris.html' ? 'Play' : 'Quick Start');
   });
 });
 
@@ -81,11 +81,11 @@ describe('table guides teach tap controls before optional keyboard shortcuts', (
   });
 });
 
-const closeGuideLocator = "getByRole('button', { name: 'Close Guide' })";
+const closeGuideLocator = "getByRole('button', { name: 'Play', exact: true })";
 const staleReviewLocator = "getByRole('button', { name: 'Review Then Start' })";
 
-describe('Turdtris automation matches Close Guide', () => {
-  it('browser-smoke Turdtris checks click Close Guide before gameplay assertions', () => {
+describe('Turdtris automation uses the primary Play action', () => {
+  it('browser-smoke Turdtris checks click Play before gameplay assertions', () => {
     const source = readFileSync(join(root, 'browser-smoke.js'), 'utf8');
     for (const name of ['turdtris-mobile', 'turdtris-held-input-pause', 'turdtris-restart-churn']) {
       const start = source.indexOf(`'${name}'`);
@@ -98,13 +98,13 @@ describe('Turdtris automation matches Close Guide', () => {
     expect(source).not.toContain(staleReviewLocator);
   });
 
-  it('turdtris autoplay clicks Close Guide', () => {
+  it('turdtris autoplay clicks Play', () => {
     const source = readFileSync(join(root, 'scripts/turdtris-autoplay.mjs'), 'utf8');
     expect(source).toContain(closeGuideLocator);
     expect(source).not.toContain(staleReviewLocator);
   });
 
-  it('suite overlap Turdtris prep clicks Close Guide when visible', () => {
+  it('suite overlap Turdtris prep clicks Play when visible', () => {
     const source = readFileSync(join(root, 'scripts/suite-overlap-check.mjs'), 'utf8');
     expect(source).toContain(closeGuideLocator);
     expect(source).not.toContain(staleReviewLocator);

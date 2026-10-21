@@ -62,7 +62,7 @@ const PAGES = [
         name: 'playing',
         prep: async (page) => {
           await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
-          const close = page.getByRole('button', { name: 'Close Guide' });
+          const close = page.getByRole('button', { name: 'Play', exact: true });
           if (await close.isVisible().catch(() => false)) {
             await close.click();
           }

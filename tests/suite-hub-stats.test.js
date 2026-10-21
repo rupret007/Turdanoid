@@ -59,6 +59,18 @@ describe('suite-hub-stats', () => {
     decorateHubStatBadges(doc, {
       getItem: (k) => (k === 'turdtrisHighScore' ? '9001' : null)
     });
-    expect(doc.querySelector('.suite-hub-stat')?.textContent).toBe('Best 9,001');
+    expect(doc.querySelector('.suite-hub-stat')?.textContent).toBe('Classic best 9,001');
+    expect(doc.querySelector('.suite-hub-stat').hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('keeps separate mode and difficulty records visible without altering their storage', () => {
+    const records = {
+      turdtrisHighScore: '1234567', turdtrisSprint40BestMs_v1: '61234', turdtrisUltra120Best_v1: '98765',
+      turdomania_best_v1: JSON.stringify({ v: 1, best: { easy: 7777, normal: 123456, hard: 99 } })
+    };
+    const read = key => records[key] ?? null;
+    expect(readHubStatBadge(read, 'turdtris.html').text).toBe('Classic best 1,234,567 · Sprint best 1:01.2 · Ultra best 98,765');
+    expect(readHubStatBadge(read, 'turdomania.html').text).toBe('Easy best 7,777 · Normal best 123,456 · Hard best 99');
+    expect(JSON.parse(records.turdomania_best_v1).best.normal).toBe(123456);
   });
 });

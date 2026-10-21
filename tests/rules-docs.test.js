@@ -95,17 +95,17 @@ describe('RULES.md follows the shipped games', () => {
     expect(documented).not.toContain('Infinity Rotation');
   });
 
-  it('records Turdtris Close Guide as overlay dismissal', () => {
+  it('records Turdtris mode-aware Play and active-run resume', () => {
     const game = readRepoFile('turdtris.html');
     const documented = section(rules, 'Turdtris (Tetris Clone)');
 
     expect(game).toContain('onclick="hideWelcomeGuide()"');
-    expect(game).toMatch(/>Close Guide<\/button>/);
-    expect(game).toContain('onclick="quickStartRun()"');
-    expect(game).toMatch(/>Quick Start<\/button>/);
+    expect(game).toMatch(/>Resume run<\/button>/);
+    expect(game).toContain('onclick="startAttractMode()"');
+    expect(game).toMatch(/>Play<\/button>/);
     expect(documented).toContain('**Play** starts the selected mode');
-    expect(documented).toContain('**Quick Start** starts a live run');
-    expect(documented).toContain('**Close Guide** dismisses the overlay without starting a new run');
+    expect(documented).toContain('**Rules & tips** opens optional help');
+    expect(documented).toContain('**Resume run** returns to an already active run without resetting it');
     expect(documented).not.toContain('Review Then Start');
   });
 

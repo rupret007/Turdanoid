@@ -42,7 +42,7 @@ async function clickVisible(page, selector) {
 async function enter(page, game) {
   if(game === 'turdjack') await clickVisible(page, '#closeGuideBtn');
   if(game === 'TurdAnoid') { await tap(page, page.locator('#btnStart')); await clickVisible(page, '#btnCoachNext'); await clickVisible(page, '#btnCoachNext'); await clickVisible(page, '#btnCoachNext'); }
-  if(game === 'turdtris') await clickVisible(page, '[onclick="quickStartRun()"]');
+  if(game === 'turdtris') await clickVisible(page, '[onclick="startAttractMode()"]');
   if(game === 'crapeights') await clickVisible(page, '#closeGuideBtn');
   if(game === 'turdrummy') await clickVisible(page, '#startRoundBtn');
   if(game === 'turdspades') await clickVisible(page, '#quickStart');

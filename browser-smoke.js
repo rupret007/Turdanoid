@@ -630,7 +630,7 @@ async function main() {
     await runCheck(browser, 'turdtris-mobile', 'turdtris.html', {
       mobile: true,
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Close Guide' }).click();
+        await page.getByRole('button', { name: 'Play', exact: true }).click();
         const playfield = page.locator('#game');
         if (!(await playfield.isVisible())) fail('turdtris-mobile', 'playfield not visible after guide close');
 
@@ -768,7 +768,7 @@ async function main() {
     await runCheck(browser, 'turdtris-held-input-pause', 'turdtris.html', {
       mobile: true,
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Close Guide' }).click();
+        await page.getByRole('button', { name: 'Play', exact: true }).click();
         await page.keyboard.down('ArrowDown');
         await page.keyboard.press('p');
         await page.getByRole('button', { name: 'Resume', exact: true }).click();
@@ -847,7 +847,7 @@ async function main() {
 
     await runCheck(browser, 'turdtris-restart-churn', 'turdtris.html', {
       actions: async (page) => {
-        await page.getByRole('button', { name: 'Close Guide' }).click();
+        await page.getByRole('button', { name: 'Play', exact: true }).click();
         await page.waitForTimeout(180);
         const turdtrisBlurState = await page.evaluate(() => {
           window.dispatchEvent(new Event('blur'));
@@ -1252,7 +1252,7 @@ async function main() {
         });
         await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 3000 });
         await declineJackConfirmIfOpen(page);
-        await page.locator('.mobile-menu summary').click();
+        await page.locator('.mobile-menu > details > summary').click();
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
         if (!(await resetButton.isDisabled())) fail('turdjack-mobile', 'reset control should stay disabled during an active hand');
@@ -1357,7 +1357,7 @@ async function main() {
       actions: async (page, getDialogCount) => {
         await page.getByRole('button', { name: 'Quick Start' }).click();
         await page.waitForTimeout(200);
-        await page.locator('.mobile-menu summary').click();
+        await page.locator('.mobile-menu > details > summary').click();
         const before = getDialogCount();
         await page.getByRole('button', { name: /New Match/ }).last().click();
         await page.waitForTimeout(200);

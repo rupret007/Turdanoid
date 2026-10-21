@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand */
+/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand, currentBet, bankroll */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
@@ -115,7 +115,7 @@ async function prepTurdanoid(page) {
 
 async function prepTurdtris(page) {
   await dismissGuides(page);
-  const closeGuide = page.getByRole('button', { name: 'Close Guide' });
+  const closeGuide = page.getByRole('button', { name: 'Play', exact: true });
   if (await closeGuide.isVisible().catch(() => false)) {
     await closeGuide.click();
   }
@@ -270,6 +270,36 @@ function measureMusicToggleOverlap(page, guardSelector) {
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('suite music toggle layout', () => {
+  it.each(['blackjack', 'insurance', 'even-money', 'bust'])('keeps rotated Crapjack chips usable after %s and retains Bet Tools', async (scenario) => {
+    const page = await browser.newPage({ viewport: { width: 360, height: 640 }, reducedMotion: 'reduce' });
+    try {
+      await page.goto(`${baseUrl}/turdjack.html`);
+      await prepTurdjack(page, scenario);
+      await page.setViewportSize({ width: 640, height: 360 });
+      await page.waitForTimeout(200);
+      for (const button of await page.locator('#mobileFeltChipRack button').all()) {
+        const box = await button.boundingBox();
+        expect(box.width).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(await button.evaluate(el => {
+          const b = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+          return hit === el || el.contains(hit);
+        })).toBe(true);
+      }
+      if (scenario !== 'bust') {
+        await page.locator('.mobile-menu summary').first().click();
+        const tools = page.locator('.mobile-menu-actions .mobile-pit-extra');
+        await tools.locator('summary').click();
+        const before = await page.evaluate(() => currentBet);
+        await tools.locator('[data-mobile-action="max-bet"]').click();
+        expect(await page.evaluate(() => currentBet)).toBe(await page.evaluate(() => bankroll));
+        expect(await page.evaluate(() => currentBet)).toBeGreaterThan(before);
+      }
+    } finally {
+      await page.close();
+    }
+  });
   for (const spec of SUITE_PAGES) {
     for (const viewport of VIEWPORTS) {
       it(`#suite-music-toggle clears pause, sound, and HUD chrome on ${spec.slug} at ${viewport.width}×${viewport.height}`, async () => {
