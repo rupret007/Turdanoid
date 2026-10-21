@@ -1252,7 +1252,7 @@ async function main() {
         });
         await page.waitForFunction(() => roundActive && playerHand.length === 2, undefined, { timeout: 3000 });
         await declineJackConfirmIfOpen(page);
-        await page.locator('.mobile-menu summary').click();
+        await page.locator('.mobile-menu > details > summary').click();
         const resetButton = page.locator('[data-reset-bank]').last();
         if (!(await resetButton.isVisible())) fail('turdjack-mobile', 'mobile reset control not visible after opening menu');
         if (!(await resetButton.isDisabled())) fail('turdjack-mobile', 'reset control should stay disabled during an active hand');
@@ -1357,7 +1357,7 @@ async function main() {
       actions: async (page, getDialogCount) => {
         await page.getByRole('button', { name: 'Quick Start' }).click();
         await page.waitForTimeout(200);
-        await page.locator('.mobile-menu summary').click();
+        await page.locator('.mobile-menu > details > summary').click();
         const before = getDialogCount();
         await page.getByRole('button', { name: /New Match/ }).last().click();
         await page.waitForTimeout(200);
