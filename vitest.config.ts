@@ -1,4 +1,7 @@
 import { defineConfig } from 'vitest/config'
+import { prepareBrowserLibraries } from './scripts/browser-libraries.mjs'
+
+prepareBrowserLibraries()
 
 export default defineConfig({
   test: {

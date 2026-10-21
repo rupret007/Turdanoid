@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mobile-game="turdanoid">
 <head>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex">
@@ -237,6 +237,8 @@
   #coachCard button{padding:12px 28px;font-size:15px;font-weight:800}
   #coachStep{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.65;margin-bottom:6px}
 </style>
+<link rel="stylesheet" href="assets/mobile-fit.css">
+<script src="assets/mobile-fit.js" defer></script>
 </head>
 <body data-suite-no-bg="1">
 <div id="app">
@@ -863,8 +865,8 @@ function resize(){
     playShell.style.width = '100%';
     playShell.style.height = '100%';
   }
-  W = Math.max(280, canvasW);
-  H = Math.max(380, canvasH);
+  W = r.width > 0 ? Math.max(1, canvasW) : 280;
+  H = r.height > 0 ? Math.max(1, canvasH) : 380;
   DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2));
   cv.width = Math.floor(W*DPR);
   cv.height = Math.floor(H*DPR);
