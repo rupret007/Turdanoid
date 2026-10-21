@@ -83,6 +83,15 @@ async function check(page, game, selectors, state) {
       assert(card.y + card.height <= dock.y, `${game} ${state}: the entire hand must stay above the action dock`);
     }
   }
+  if (game === 'turdrummy' && metrics.w > metrics.h) {
+    const dock = await page.locator('.action-dock').boundingBox();
+    for (const pile of await page.locator('#stockPile .back-card, #discardPile .card').all()) {
+      if (await pile.isVisible()) {
+        const card = await pile.boundingBox();
+        assert(card.y + card.height <= dock.y, `${game} ${state}: the complete draw/discard piles must remain above the actions`);
+      }
+    }
+  }
   if(game==='turdrummy') {
     const stats=await page.locator('.status .stat').evaluateAll(elements=>elements.map(stat=>{
       const card=stat.getBoundingClientRect();
