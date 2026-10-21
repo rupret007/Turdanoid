@@ -94,6 +94,22 @@ async function check(page, game, selectors, state) {
     for(const [width,height] of viewports.filter(v=>!process.env.MOBILE_VIEWPORT || v.join('x')===process.env.MOBILE_VIEWPORT)) for(const [game,...selectors] of games.filter(g=>!process.env.MOBILE_GAME || g[0]===process.env.MOBILE_GAME)) {
       const context = await browser.newContext({viewport:{width,height},hasTouch:true,isMobile:true,reducedMotion:'reduce'});
       await context.addInitScript(()=>localStorage.setItem('turdanoid_v3_coach_v1','1'));
+      if(game==='turdrummy') {
+        // A valid random opening can let the bot knock before a human turn.
+        // Fix the deal and AI noise so this matrix always exercises draw/discard.
+        await context.addInitScript(()=>{
+          let seed=0x524d5931;
+          const next=()=>{
+            seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+            return seed;
+          };
+          window.crypto.getRandomValues=array=>{
+            for(let i=0;i<array.length;i++) array[i]=next();
+            return array;
+          };
+          Math.random=()=>next()/0x100000000;
+        });
+      }
       const page=await context.newPage(); page.setDefaultTimeout(10000);
       const errors=[];page.on('pageerror',e=>errors.push(e.message));
       try {
