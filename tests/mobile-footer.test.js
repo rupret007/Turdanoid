@@ -7,6 +7,11 @@ it('reserves a music footer inserted after the first layout without a viewport r
     runScripts: 'outside-only', pretendToBeVisual: true
   });
   const { window } = dom;
+  const observers = [];
+  const MutationObserver = window.MutationObserver;
+  window.MutationObserver = class extends MutationObserver {
+    constructor(callback) { super(callback); observers.push(this); }
+  };
   window.matchMedia = () => ({ matches: true, addEventListener() {} });
   window.ResizeObserver = class { observe() {} };
   let resized = 0;
@@ -19,7 +24,11 @@ it('reserves a music footer inserted after the first layout without a viewport r
   window.document.body.append(footer);
   await Promise.resolve();
   await Promise.resolve();
-  expect(window.document.documentElement.style.getPropertyValue('--mobile-footer')).toBe('50px');
-  expect(resized).toBeGreaterThan(0);
-  dom.window.close();
+  try {
+    expect(window.document.documentElement.style.getPropertyValue('--mobile-footer')).toBe('50px');
+    expect(resized).toBeGreaterThan(0);
+  } finally {
+    for (const observer of observers) { observer.disconnect(); }
+    dom.window.close();
+  }
 });

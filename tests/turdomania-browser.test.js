@@ -138,6 +138,9 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     for (const level of ['normal', 'hard']) {
       const page = await openPage(`/turdomania.html?seed=11&level=${level}`, { width: 320, height: 568 });
       await page.evaluate(() => document.fonts.ready);
+      // Font loading changes the dock; let its ResizeObserver and queued refit
+      // finish before measuring the board. Keep the actual 32px requirement.
+      await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
       const report = await page.evaluate(() => {
         const tile = document.querySelector('.tile').getBoundingClientRect();
         const newButton = document.getElementById('newBtn').getBoundingClientRect();
