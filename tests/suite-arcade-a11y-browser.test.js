@@ -100,7 +100,9 @@ const SIX_SUITE_GAMES = [
       const start = page.locator('#startRoundBtn');
       if (await start.isVisible()) {
         await start.click();
-        await page.waitForSelector('#playerHand .card-button', { timeout: 15000 });
+        // The color control must work on either turn. Bot-turn cards are
+        // deliberately read-only divs; waiting for a human button can hang.
+        await page.waitForSelector('#playerHand .card', { timeout: 15000 });
       }
     }
   },
