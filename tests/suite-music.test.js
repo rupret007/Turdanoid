@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MUSIC_PREF_KEY,
+  PLAYBACK_KEY,
   STALEMATE_PLAYLIST,
   STALEMATE_TRACK_ONLY_BEEN_18_TITLE,
   advanceTrackIndex,
@@ -29,6 +30,8 @@ class MockAudio {
     this.volume = 1;
     this.paused = true;
     this.src = '';
+    this.currentTime = 0;
+    this.duration = NaN;
     this._listeners = {};
   }
 
@@ -133,5 +136,46 @@ describe('suite-music playlist', () => {
     muted = true;
     player.sync();
     expect(audio.paused).toBe(true);
+  });
+});
+
+describe('saved playback position and selection', () => {
+  function setup(storage, flags = {}) {
+    const audio = new MockAudio();
+    const player = createSuiteMusic({ storage, AudioCtor: function () { return audio; },
+      isSuiteMuted: () => !!flags.muted, isGameBlocked: () => !!flags.blocked,
+      resolveSrc: path => `https://example.test/assets/${path}` });
+    const emit = event => audio._listeners[event]?.forEach(fn => fn());
+    return { player, audio, emit };
+  }
+  it('restores the same track after metadata without erasing a pending seek on an unarmed page', () => {
+    const storage = memoryStorage({ turdsuite_music_track_v1: '1', [PLAYBACK_KEY]: JSON.stringify({ v: 1, track: STALEMATE_PLAYLIST[1].path, seconds: 23.5 }) });
+    const { player, audio, emit } = setup(storage);
+    player.sync(); player.savePosition();
+    expect(JSON.parse(storage.data[PLAYBACK_KEY]).seconds).toBe(23.5);
+    audio.duration = 176; emit('loadedmetadata');
+    expect(audio.currentTime).toBe(23.5); expect(audio.paused).toBe(true);
+    player.armFromGesture(); expect(audio.paused).toBe(false);
+    audio.currentTime = 31.25; player.pause();
+    const next = setup(storage); next.audio.duration = 176; next.emit('loadedmetadata');
+    expect(next.player.trackTitle).toBe('Andrea'); expect(next.audio.currentTime).toBe(31.25);
+  });
+  it.each(['bad json', JSON.stringify({ v: 1, track: STALEMATE_PLAYLIST[0].path, seconds: -5 }), JSON.stringify({ v: 1, track: 'wrong', seconds: 20 })])('ignores invalid playback saves: %s', saved => {
+    const { audio, emit } = setup(memoryStorage({ [PLAYBACK_KEY]: saved }));
+    audio.duration = 126; emit('loadedmetadata'); expect(audio.currentTime).toBe(0);
+  });
+  it('ignores an out-of-duration seek and respects mute and game gates during next/selection', () => {
+    const flags = { muted: true };
+    const storage = memoryStorage({ [PLAYBACK_KEY]: JSON.stringify({ v: 1, track: STALEMATE_PLAYLIST[0].path, seconds: 500 }) });
+    const { player, audio, emit } = setup(storage, flags);
+    audio.duration = 126; emit('loadedmetadata'); expect(audio.currentTime).toBe(0);
+    player.nextTrack(); expect(player.trackTitle).toBe('Andrea'); expect(audio.paused).toBe(true);
+    flags.muted = false; flags.blocked = true; player.playTrackAt(4); expect(audio.paused).toBe(true);
+    flags.blocked = false; player.sync(); expect(audio.paused).toBe(false);
+    audio.currentTime = 67; emit('ended'); expect(player.trackTitle).toBe('Manic');
+  });
+  it('continues selection/playback when storage throws', () => {
+    const { player, audio } = setup({ getItem() { throw Error('denied'); }, setItem() { throw Error('full'); } });
+    player.nextTrack(); expect(player.trackTitle).toBe('Andrea'); expect(audio.paused).toBe(false);
   });
 });
