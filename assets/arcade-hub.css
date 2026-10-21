@@ -65,10 +65,11 @@ body.arcade .changelog { margin-top:20px; }
   .arcade-grid-heading h2 { font-size:1.3rem; line-height:1.1; }
   .arcade-grid-heading p { font-size:.7rem; margin:2px 0 0; }
   body.arcade .games { grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
-  body.arcade .game-card .body { display:grid; grid-template-columns:minmax(0,1fr); align-items:start; padding:4px 8px; min-height:48px; gap:2px; }
+  body.arcade .game-card .body { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; padding:4px 8px; min-height:48px; gap:2px; }
   body.arcade .game-card .game-info { display:contents; }
-  body.arcade .game-card .title-row { grid-column:1; grid-row:1; min-width:0; }
+  body.arcade .game-card .title-row { grid-column:1/-1; grid-row:1; min-width:0; }
   body.arcade .game-card h2 { font-size:1rem; line-height:1.1; overflow-wrap:anywhere; }
   body.arcade .game-card p { grid-column:1/-1; grid-row:2; font-size:.68rem; white-space:normal; overflow:visible; line-height:1.2; margin:0; }
+  body.arcade .game-card .suite-hub-stat { grid-column:2; grid-row:3; display:block; margin:0; padding:0; border:0; max-width:54px; font-size:.58rem; line-height:1.2; overflow-wrap:anywhere; }
   body.arcade .game-card .play { grid-column:1; grid-row:3; display:block; align-self:start; margin:0; padding:0; border:0; box-shadow:none; background:none; color:#bcf6d2; font-size:.65rem; line-height:1.2; letter-spacing:0; min-width:0; white-space:normal; }
 }
