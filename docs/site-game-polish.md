@@ -29,6 +29,15 @@ remote CI results must be checked on the actual release commit. Final focused
 checks pass 190 tests and the full local mobile gate passes all 96 cases. The
 first smoke caught the hub's new music status pushing a returning player's
 seventh game below a 320×568 screen; the status now follows the game grid.
+Actual screenshot review also found a landscape Turdtris board edge under the
+music strip and a puzzle hint overlapping its stats. Both layouts are corrected;
+the matrix now rejects play areas underneath the music strip, and a 568×320 hint
+check covers tiles, HUD and controls. An initial Linux CI deal exposed Crapjack's
+Bet Tools row covering the main chip rack after instant round completion. Optional
+Bet Tools now live in Table Menu, preserving their existing actions. Four directed
+opening outcomes verify the rotated chip targets and actual Max betting. The
+first new menu test incorrectly attempted a duplicate chip shortcut intentionally
+hidden on phones; it was corrected to exercise the real visible Max action.
 
 StalemateSite imports committed source through its existing sync script and pins
 the full source SHA. Merge source first with that commit reachable, then publish

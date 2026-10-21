@@ -125,6 +125,7 @@
     if (menu) {
       const settings = game === 'turdtris' ? ['#suite-difficulty-mount', '.run-settings']
         : game === 'crapeights' ? ['#suite-difficulty-mount']
+        : game === 'turdjack' ? ['.mobile-pit-extra']
         : game === 'neon-arkanoid' ? ['.suite-difficulty'] : [];
       settings.forEach(selector => {
         const element = document.querySelector(selector);

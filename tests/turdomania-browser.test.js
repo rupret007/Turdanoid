@@ -59,6 +59,26 @@ async function popFirst(page) {
 }
 
 describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', () => {
+  it('keeps the first-play hint clear of tiles, HUD and controls after rotating a short phone', async () => {
+    const page = await openPage('/turdomania.html?seed=42&reducedMotion=1', { width: 320, height: 568 });
+    await page.setViewportSize({ width: 568, height: 320 });
+    await page.waitForTimeout(200);
+    const overlaps = await page.evaluate(() => {
+      const hint = document.getElementById('startHint').getBoundingClientRect();
+      return [...document.querySelectorAll('#board, header.hud .stat, .dock button, .dock summary')].filter(el => {
+        if (!el.getClientRects().length) { return false; }
+        const b = el.getBoundingClientRect();
+        return hint.left < b.right && hint.right > b.left && hint.top < b.bottom && hint.bottom > b.top;
+      }).map(el => el.id || el.textContent);
+    });
+    expect(overlaps).toEqual([]);
+    for (const selector of ['#undoBtn', '#newBtn', '.tm-aim summary']) {
+      const box = await page.locator(selector).boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.y + box.height).toBeLessThanOrEqual(296);
+    }
+    await page.close();
+  });
   it('keeps its first-play hint through hovering and invalid taps, then remembers a successful pop', async () => {
     const page = await openPage('/turdomania.html?seed=42&reducedMotion=1');
     expect(await page.locator('#startHint').isVisible()).toBe(true);

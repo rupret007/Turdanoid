@@ -31,6 +31,8 @@ async function bounds(page, selector, label, target=false) {
     const r=await el.boundingBox(); const v=page.viewportSize();
     assert(r,`${label}: ${selector} changed during measurement`);
     assert(r.x>=-1&&r.y>=-1&&r.x+r.width<=v.width+1&&r.y+r.height<=v.height+1,`${label}: ${selector} outside ${JSON.stringify(r)}`);
+    const music=await page.locator('#suite-music-status').boundingBox();
+    if(music) assert(r.y+r.height<=music.y+1,`${label}: ${selector} underneath music status`);
     const clipped=await el.evaluate(e=>{const r=e.getBoundingClientRect();for(let p=e.parentElement;p&&p!==document.body;p=p.parentElement){const c=getComputedStyle(p),a=p.getBoundingClientRect();if(/hidden|clip|auto|scroll/.test(c.overflowY)&& (r.top<a.top-1||r.bottom>a.bottom+1))return p.id||p.className;if(/hidden|clip|auto|scroll/.test(c.overflowX)&&(r.left<a.left-1||r.right>a.right+1))return p.id||p.className;}return '';});
     assert(!clipped,`${label}: ${selector} clipped by ${clipped}`);
     if(target) assert(r.width>=43.9&&r.height>=43.9,`${label}: ${selector} target below 44px: ${JSON.stringify(r)}`);
