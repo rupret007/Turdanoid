@@ -77,6 +77,12 @@ async function check(page, game, selectors, state) {
     assert(box.width >= 44 && box.height >= 44 && box.y >= -1 && box.x >= -1 && box.y + box.height <= metrics.h+1 && box.x + box.width <= metrics.w+1, `${game} ${state} card target fits: ${JSON.stringify(box)}`);
     if (!box.disabled) assert(!box.covered, `${game} ${state} card covered`);
   }
+  if (game === 'turdspades' && metrics.w > metrics.h) {
+    const dock = await page.locator('.dock').boundingBox();
+    for (const card of cards) {
+      assert(card.y + card.height <= dock.y, `${game} ${state}: the entire hand must stay above the action dock`);
+    }
+  }
   if(game==='turdrummy') {
     const stats=await page.locator('.status .stat').evaluateAll(elements=>elements.map(stat=>{
       const card=stat.getBoundingClientRect();
