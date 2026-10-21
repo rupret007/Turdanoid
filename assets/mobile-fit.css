@@ -49,6 +49,7 @@
   html[data-mobile-game="crapeights"] .shell>.hud { flex:none; padding:2px!important; margin:0!important; display:flex; height:36px; }
   html[data-mobile-game="crapeights"] .hud-card { flex:1; padding:0!important; }
   html[data-mobile-game="crapeights"] .hud-card .v { font-size:12px; }
+  html[data-mobile-game="crapeights"] .mobile-menu-actions>#suite-difficulty-mount { grid-column:1/-1; justify-self:stretch; }
   html[data-mobile-game="crapeights"] .layout { display:flex; flex:1; min-height:0; gap:0; }
   html[data-mobile-game="crapeights"] .table { display:flex; flex-direction:column; min-height:0!important; padding:6px!important; margin:0!important; gap:3px; }
   html[data-mobile-game="crapeights"] .turn-banner { min-height:44px; padding:0; flex:none; }
@@ -73,8 +74,10 @@
   html[data-mobile-game="turdrummy"] .top-links { display:flex; width:auto; gap:4px; margin-left:auto; }
   html[data-mobile-game="turdrummy"] .top-links>* { min-width:44px; min-height:44px; font-size:10px; padding:2px; }
   html[data-mobile-game="turdrummy"] .status { flex:none; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); padding:2px!important; gap:2px; }
-  html[data-mobile-game="turdrummy"] .stat { padding:2px; }
-  html[data-mobile-game="turdrummy"] .stat-label { font-size:8px; }
+  html[data-mobile-game="turdrummy"] .stat { min-width:0; padding:2px 6px; }
+  html[data-mobile-game="turdrummy"] .stat-label { font-size:8px; min-width:0; }
+  html[data-mobile-game="turdrummy"] .stat-label .lbl-full { display:none; }
+  html[data-mobile-game="turdrummy"] .stat-label .lbl-short { display:inline; }
   html[data-mobile-game="turdrummy"] .stat-value { font-size:12px; }
   html[data-mobile-game="turdrummy"] .table-stage { display:flex; flex-direction:column; flex:1; min-height:0; overflow:visible; }
   html[data-mobile-game="turdrummy"] .table { display:flex; flex-direction:column; flex:1; min-height:0; margin:2px; padding:2px; gap:2px; overflow:visible; }

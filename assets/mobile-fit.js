@@ -118,7 +118,9 @@
     menu = document.querySelector('.mobile-settings-panel') || menu;
     if (game === 'turdrummy') ['.tr-difficulty-topbar'].forEach(selector => move(document.querySelector(selector), menu));
     if (menu) {
-      [...(game === 'turdtris' ? ['#suite-difficulty-mount', '.run-settings'] : [])].forEach(selector => {
+      const settings = game === 'turdtris' ? ['#suite-difficulty-mount', '.run-settings']
+        : game === 'crapeights' ? ['#suite-difficulty-mount'] : [];
+      settings.forEach(selector => {
         const element = document.querySelector(selector);
         move(element, menu);
       });
