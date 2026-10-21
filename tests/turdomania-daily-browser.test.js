@@ -62,6 +62,38 @@ async function finishDaily(page) {
 }
 
 describe.runIf(hasBrowser)('Daily Dump browser behavior (emulated Chromium)', () => {
+  it('preserves free-play 8×12 boards with 32px tiles on a short phone and keeps Aim clear of controls', async () => {
+    for (const level of ['normal', 'hard']) {
+      const page = await openPage(`/turdomania.html?seed=11&level=${level}`, { width: 320, height: 568 });
+      await page.evaluate(() => document.fonts.ready);
+      const report = await page.evaluate(() => {
+        const tile = document.querySelector('.tile').getBoundingClientRect();
+        const newButton = document.getElementById('newBtn').getBoundingClientRect();
+        return { dims: [window.__turdomania.state.cols, window.__turdomania.state.rows], tile: tile.width, newBottom: newButton.bottom, hudHeight: document.querySelector('header.hud').offsetHeight, dockHeight: document.querySelector('.dock').offsetHeight, dockTop: document.querySelector('.dock').getBoundingClientRect().top };
+      });
+      expect(report.dims).toEqual([8, 12]);
+      expect(report.tile, JSON.stringify(report)).toBeGreaterThanOrEqual(32);
+      expect(report.newBottom).toBeLessThanOrEqual(568);
+      await page.close();
+    }
+    const page = await openPage('/turdomania.html', { width: 360, height: 640 });
+    await page.locator('.tm-aim summary').click();
+    const controls = await page.evaluate(() => ['#newBtn', '#undoBtn', '[data-board-key="ArrowLeft"]', '[data-board-key="ArrowRight"]', '[data-board-key="ArrowUp"]', '[data-board-key="ArrowDown"]', '[data-board-key="Enter"]'].map((selector) => {
+      const button = document.querySelector(selector);
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return { selector, visible: hit === button || button.contains(hit), left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    }));
+    for (const control of controls) {
+      expect(control.visible, control.selector).toBe(true);
+      expect(control.left).toBeGreaterThanOrEqual(0);
+      expect(control.right).toBeLessThanOrEqual(360);
+      expect(control.top).toBeGreaterThanOrEqual(0);
+      expect(control.bottom).toBeLessThanOrEqual(640);
+    }
+    await page.close();
+  });
+
   it('keeps the exact board on short phones, desktop and rotation, with visible controls', async () => {
     let expected = null;
     for (const viewport of [{ width: 1440, height: 900 }, { width: 320, height: 568 }, { width: 667, height: 375 }]) {

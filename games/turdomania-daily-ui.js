@@ -52,9 +52,11 @@ export function createDailyUI({ params, storage, gameURL, announce }) {
   const header = document.querySelector('header.hud');
   const panel = element('div', '', 'daily-info');
   panel.id = 'dailyInfo';
-  document.body.classList.add('daily-entry');
   const todayLink = Daily.challengeLink(Daily.makeChallenge(), gameURL);
   if (!ui.enabled) {
+    // The hub is the daily entry point. Keep free play's established compact HUD.
+    if (!request.requested) { return ui; }
+    document.body.classList.add('daily-entry');
     panel.classList.add('daily-cta');
     const link = element('a', 'Play The Daily Dump →');
     link.href = todayLink;
@@ -68,6 +70,7 @@ export function createDailyUI({ params, storage, gameURL, announce }) {
     return ui;
   }
 
+  document.body.classList.add('daily-entry');
   const challenge = request.challenge;
   const latest = Daily.loadActive(storage);
   const previousRun = Daily.readDailyStatus(storage).previous;
