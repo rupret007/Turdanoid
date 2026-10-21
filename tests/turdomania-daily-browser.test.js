@@ -135,6 +135,14 @@ describe.runIf(hasBrowser)('Daily Dump browser behavior (emulated Chromium)', ()
     await page.waitForFunction(() => window.__turdomania);
     expect(await page.evaluate(() => window.__turdomania.state)).toEqual(afterMove);
     expect(await finishDaily(page)).toBe(true);
+    expect(await page.locator('#dailyResultNext').textContent()).toContain('midnight America/Chicago');
+    for (const viewport of [{ width: 320, height: 568 }, { width: 667, height: 375 }]) {
+      await page.setViewportSize(viewport);
+      const arrival = await page.locator('#dailyResultNext').boundingBox();
+      expect(arrival.y).toBeGreaterThanOrEqual(0);
+      expect(arrival.y + arrival.height).toBeLessThanOrEqual(viewport.height);
+      expect(await page.locator('#dailyResultNext').isVisible()).toBe(true);
+    }
     const first = await page.evaluate(() => Object.entries(window.localStorage).filter(([key]) => key.startsWith('stalemate_daily_dump_result')));
     expect(first).toHaveLength(1);
     await page.locator('#againBtn').click();
@@ -142,6 +150,10 @@ describe.runIf(hasBrowser)('Daily Dump browser behavior (emulated Chromium)', ()
     expect(await finishDaily(page)).toBe(true);
     expect(await page.evaluate(() => Object.entries(window.localStorage).filter(([key]) => key.startsWith('stalemate_daily_dump_result')))).toEqual(first);
     expect(await page.evaluate(() => window.localStorage.getItem('turdomania_best_v1'))).toBeNull();
+    await page.clock.setSystemTime(new Date('2026-10-22T06:00:00Z'));
+    await page.evaluate(() => document.dispatchEvent(new window.Event('visibilitychange')));
+    expect(await page.locator('#dailyResultNext').textContent()).toContain('Today’s puzzle is ready');
+    expect(await page.evaluate(() => window.__turdomania.daily.challenge.date)).toBe('2026-10-21');
     await page.close();
   });
 
