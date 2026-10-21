@@ -139,3 +139,9 @@ body.arcade #mobileLaunch{font-family:var(--arc-display);font-size:18px;letter-s
   body.arcade #titleScreen .menu-secondary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(100%,340px)}
   body.arcade #titleScreen .menu-secondary button{margin:0;padding:8px 4px;font-size:15px;min-width:0}
 }
+
+/* Shared suite controls inherit the kit without changing game-specific layout. */
+body.arcade :is(.btn,.dock button,.action-grid button,.suite-music-toggle,.suite-hub-mute,summary) { font-family:var(--arc-display); font-weight:600; letter-spacing:.025em; }
+body.arcade :is(.welcome-card,.guide-card,.overlay-card,.how-card) { color:var(--arc-text); border-color:color-mix(in srgb,var(--arc-sig) 42%,#37352c); }
+body.arcade :is(.welcome-card,.guide-card,.overlay-card,.how-card)::before { content:""; display:block; height:8px; margin-bottom:12px; background:conic-gradient(#f4f0e6 25%,#27241f 0 50%,#f4f0e6 0 75%,#27241f 0) 0 0/16px 16px; }
+body.arcade :is(button,a,summary,select):focus-visible { outline:3px solid var(--arc-gold); outline-offset:3px; }
