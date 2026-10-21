@@ -85,7 +85,7 @@ async function prepTurdanoid(page) {
 
 async function prepTurdtris(page) {
   await dismissCommonOverlays(page);
-  const closeGuide = page.getByRole('button', { name: 'Close Guide' });
+  const closeGuide = page.getByRole('button', { name: 'Play', exact: true });
   if (await closeGuide.isVisible().catch(() => false)) await closeGuide.click();
   await page.waitForSelector('#game', { state: 'visible', timeout: 10000 });
 }

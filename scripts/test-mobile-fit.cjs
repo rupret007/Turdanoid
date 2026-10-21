@@ -12,7 +12,7 @@ const sizes = [[360,640],[375,667],[390,844],[430,932],[667,375],[844,390]];
 const games = {
   turdjack: { start:'#quickGuideBtn', controls:['#mobilePit [data-mobile-action]','#mobileFeltChipRack button','.mobile-menu summary'], area:'.table-stage' },
   TurdAnoid: { start:'#btnStart', controls:['#btnPause','#btnSound'], area:'#game' },
-  turdtris: { start:'button:has-text("Quick Start")', controls:['#mobileControls button','.mobile-menu summary'], area:'#game' },
+  turdtris: { start:'[onclick="startAttractMode()"]', controls:['#mobileControls button','.mobile-menu summary'], area:'#game' },
   crapeights: { start:'#quickStartBtn', controls:['#playBtn','#drawBtn','#passBtn','#smartBtn','#drawPileBtn','#playerHand button:not([hidden])'], area:'#playerHand' },
   turdrummy: { start:'#startRoundBtn', controls:['.action-grid button','#soundToggleBtn','#difficultyBtn','#quickGuideBtn','#playerHand button'], area:'.table' },
   turdspades: { start:'#quickStart', controls:['#lockBid','#bidDown','#bidUp','#bidNil','#playBtn','#sortSuit','#sortRank','#nextRoundDock','#youCards button'], area:'.table-arena' },

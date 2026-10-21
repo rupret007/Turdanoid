@@ -120,6 +120,47 @@ describe('Turdtris challenge page integration', () => {
     `);
   }
 
+  it.each(['classic', 'sprint', 'ultra'])('primary Play honors %s and help resumes the same run', (mode) => {
+    w.showWelcomeGuide();
+    expect(w.document.getElementById('guideResume').hidden).toBe(true);
+    w.document.getElementById('attractModeSetting').value = mode;
+    w.document.querySelector('[onclick="startAttractMode()"]').click();
+    expect(w.eval('runMode')).toBe(mode);
+    expect(w.document.getElementById('modeSetting').value).toBe(mode);
+    expect(w.eval('onboardingOpen')).toBe(false);
+    w.eval('score = 123; runStats.elapsedMs = 4321');
+    const board = w.eval('JSON.stringify(playfield)');
+    w.showWelcomeGuide();
+    expect(w.document.getElementById('guideResume').hidden).toBe(false);
+    w.document.getElementById('guideResume').click();
+    expect(w.eval('runMode')).toBe(mode);
+    expect(w.eval('score')).toBe(123);
+    expect(w.eval('runStats.elapsedMs')).toBe(4321);
+    expect(w.eval('JSON.stringify(playfield)')).toBe(board);
+    expect(w.eval('paused')).toBe(false);
+    expect(w.document.querySelector('[onclick="quickStartRun()"]')).toBeNull();
+  });
+
+  it('keeps the chosen mode pending if its module has not loaded yet', () => {
+    w.showWelcomeGuide();
+    w.document.getElementById('attractModeSetting').value = 'ultra';
+    w.TurdtrisModes = null;
+    w.startAttractMode();
+    expect(w.eval('onboardingOpen')).toBe(true);
+    expect(w.eval('runMode')).toBe('classic');
+    w.TurdtrisModes = modes;
+    w.startAttractMode();
+    expect(w.eval('runMode')).toBe('ultra');
+  });
+
+  it.each(['Enter', 'Space'])('starts the selected mode with %s instead of bypassing the picker', (code) => {
+    w.showWelcomeGuide();
+    w.document.getElementById('attractModeSetting').value = 'ultra';
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+    expect(w.eval('runMode')).toBe('ultra');
+    expect(w.eval('onboardingOpen')).toBe(false);
+  });
+
   it('loads Classic by default even when both challenge records exist', () => {
     expect(w.eval('runMode')).toBe('classic');
     expect(w.document.getElementById('modeSetting').value).toBe('classic');

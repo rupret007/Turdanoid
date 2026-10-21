@@ -59,6 +59,31 @@ async function popFirst(page) {
 }
 
 describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', () => {
+  it('keeps its first-play hint through hovering and invalid taps, then remembers a successful pop', async () => {
+    const page = await openPage('/turdomania.html?seed=42&reducedMotion=1');
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
+    const lone = await page.evaluate(() => {
+      const { state, Core } = window.__turdomania;
+      for (let c = 0; c < state.board.length; c++) {
+        for (let r = 0; r < state.board[c].length; r++) {
+          if (Core.findGroup(state.board, c, r).length === 1) { return [c, r]; }
+        }
+      }
+    });
+    const tile = page.locator(`.tile[data-col="${lone[0]}"][data-row="${lone[1]}"]`);
+    await tile.hover();
+    await tile.click();
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
+    expect(await page.evaluate(() => window.__turdomania.state.moves)).toBe(0);
+    await popFirst(page);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
+    await page.locator('#undoBtn').click();
+    await page.locator('#newBtn').click();
+    await page.reload();
+    await page.waitForFunction(() => window.__turdomania);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
+    await page.close();
+  });
   it('keeps all three HUD stats inside the reserved chrome and above the board at 375×667', async () => {
     const page = await openPage('/turdomania.html?seed=42', { width: 375, height: 667 });
     await page.evaluate(() => document.fonts.ready);
@@ -189,7 +214,9 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     await page.goto(`${origin}/turdomania.html?seed=42&reducedMotion=1`);
     await page.waitForFunction(() => window.__turdomania);
     const original = await page.evaluate(() => window.__turdomania.state.board);
+    expect(await page.locator('#startHint').isVisible()).toBe(true);
     await popFirst(page);
+    expect(await page.locator('#startHint').isVisible()).toBe(false);
     await page.locator('#undoBtn').click();
     expect(await page.evaluate(() => window.__turdomania.state.board)).toEqual(original);
     expect(errors).toEqual([]);
