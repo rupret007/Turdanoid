@@ -77,6 +77,23 @@ async function check(page, game, selectors, state) {
     assert(box.width >= 44 && box.height >= 44 && box.y >= -1 && box.x >= -1 && box.y + box.height <= metrics.h+1 && box.x + box.width <= metrics.w+1, `${game} ${state} card target fits: ${JSON.stringify(box)}`);
     if (!box.disabled) assert(!box.covered, `${game} ${state} card covered`);
   }
+  if(game==='turdrummy') {
+    const stats=await page.locator('.status .stat').evaluateAll(elements=>elements.map(stat=>{
+      const card=stat.getBoundingClientRect();
+      return [...stat.querySelectorAll('.stat-label,.stat-value')].filter(part=>part.checkVisibility()).map(part=>{
+        const range=document.createRange();range.selectNodeContents(part);
+        const text=range.getBoundingClientRect();
+        const style=getComputedStyle(part);
+        const clipped=(/hidden|clip|auto|scroll/.test(style.overflowX)&&part.scrollWidth>part.clientWidth+1)||(/hidden|clip|auto|scroll/.test(style.overflowY)&&part.scrollHeight>part.clientHeight+1);
+        return {label:part.innerText,card:{left:card.left,right:card.right,top:card.top,bottom:card.bottom},text:{left:text.left,right:text.right,top:text.top,bottom:text.bottom},clipped};
+      });
+    }).flat());
+    assert.equal(stats.length,12,'Rummy retains all six visible stat labels and values');
+    for(const stat of stats) {
+      const {card,text}=stat;
+      assert(!stat.clipped&&text.left>=card.left-1&&text.right<=card.right+1&&text.top>=card.top-1&&text.bottom<=card.bottom+1&&text.left>=-1&&text.right<=metrics.w+1,`${game} ${state} stat text fits: ${JSON.stringify(stat)}`);
+    }
+  }
   // Overflow-hidden alone cannot satisfy the test: the whole board must also fit.
   if(['turdtris','neon-arkanoid'].includes(game)) {
     const box = await page.locator(game==='turdtris'?'#game':'#gameCanvas').boundingBox();
@@ -119,6 +136,17 @@ async function check(page, game, selectors, state) {
         for (const {name,box} of welcome) assert(box.x >= -1 && box.y >= -1 && box.right <= width+1 && box.bottom <= height+1, `${game} welcome ${name} fits: ${JSON.stringify(box)}`);
         await enter(page,game);
         await check(page,game,selectors, 'ready');
+        if(game==='crapeights') {
+          await tap(page,page.locator('.mobile-menu summary'));
+          for(const level of ['easy','hard','normal']) {
+            const button=page.locator(`.suite-difficulty-btn[data-level="${level}"]`);
+            assert(await button.evaluate(element=>Boolean(element.closest('.mobile-menu-actions'))),'Eights difficulty belongs in the table menu');
+            await tap(page,button);
+            assert.equal(await button.getAttribute('aria-pressed'),'true',`${level} difficulty responds to touch`);
+          }
+          await tap(page,page.locator('.mobile-menu summary'));
+          await check(page,game,selectors,'difficulty menu closed');
+        }
         if(game==='turdjack') {
           await tap(page, page.locator('.mobile-felt-chip-rack [data-chip="10"]'));
           await tap(page, page.locator('[data-mobile-action="deal"]'));
