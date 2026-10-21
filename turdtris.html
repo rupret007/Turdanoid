@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-mobile-game="turdtris">
 <head>
+  <script src="assets/suite-share.js"></script>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1663,6 +1664,7 @@ let b2b = 0;
 let softDrop = false;
 let paused = false;
 let gameOver = false;
+const resultShare = window.SuiteShare?.create({ host: document.getElementById('endOverlayCard'), game: 'turdtris' });
 let statusText = 'Guideline-inspired run: SRS, bag randomizer, and escalating garbage.';
 let activeMutator = 'Warmup Flow';
 let sceneShake = 0;
@@ -3379,6 +3381,7 @@ function showGameOver(won) {
   }
 
   playSfx(isWin ? 'victory' : 'gameover');
+  resultShare?.setResult({ mode: runMode, score, lines: linesCleared, elapsedMs: runStats.elapsedMs, completed: isWin });
   updateScore();
 }
 
@@ -3403,6 +3406,7 @@ function togglePause() {
 }
 
 function restartGame() {
+  resultShare?.setResult(null);
   const menu = document.querySelector('.mobile-menu details');
   if (menu) menu.open = false;
   clearHeldInput();
