@@ -672,7 +672,7 @@
       status.setAttribute('role', 'status');
       status.setAttribute('aria-live', 'polite');
       status.addEventListener('keydown', function (event) { event.stopPropagation(); });
-      const statusHost = isSuiteHubPage(currentPageName()) ? document.querySelector('.masthead') : document.body;
+      const statusHost = isSuiteHubPage(currentPageName()) ? document.querySelector('.shell') : document.body;
       (statusHost || document.body).appendChild(status);
       window.dispatchEvent(new Event('resize'));
       syncMusicStatus({ paused: true, title: '' });

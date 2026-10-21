@@ -25,7 +25,10 @@ Validation evidence is kept in the parent workspace's
 music strip. The existing 32px short-phone tile assertion and 44px game controls
 remain unchanged; layout and input behavior were corrected. A full local suite
 passed 1,865 tests before the final input guards; final focused/mobile/smoke and
-remote CI results must be checked on the actual release commit.
+remote CI results must be checked on the actual release commit. Final focused
+checks pass 190 tests and the full local mobile gate passes all 96 cases. The
+first smoke caught the hub's new music status pushing a returning player's
+seventh game below a 320×568 screen; the status now follows the game grid.
 
 StalemateSite imports committed source through its existing sync script and pins
 the full source SHA. Merge source first with that commit reachable, then publish
