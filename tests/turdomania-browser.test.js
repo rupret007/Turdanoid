@@ -95,8 +95,12 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     await tile.click();
     expect(await page.locator('#startHint').isVisible()).toBe(true);
     expect(await page.evaluate(() => window.__turdomania.state.moves)).toBe(0);
+    await page.evaluate(() => document.fonts.ready);
+    const undoBefore = await page.locator('#undoBtn').boundingBox();
     await popFirst(page);
     expect(await page.locator('#startHint').isVisible()).toBe(false);
+    const undoAfter = await page.locator('#undoBtn').boundingBox();
+    expect(undoAfter.y).toBeCloseTo(undoBefore.y, 1);
     await page.locator('#undoBtn').click();
     await page.locator('#newBtn').click();
     await page.reload();
