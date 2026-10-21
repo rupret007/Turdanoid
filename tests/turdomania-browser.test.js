@@ -59,6 +59,32 @@ async function popFirst(page) {
 }
 
 describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', () => {
+  it('keeps all three HUD stats inside the reserved chrome and above the board at 375×667', async () => {
+    const page = await openPage('/turdomania.html?seed=42', { width: 375, height: 667 });
+    await page.evaluate(() => document.fonts.ready);
+    const layout = await page.evaluate(() => {
+      const hud = document.querySelector('header.hud').getBoundingClientRect();
+      const board = document.getElementById('boardWrap').getBoundingClientRect();
+      return {
+        hud: { top: hud.top, bottom: hud.bottom, left: hud.left, right: hud.right },
+        boardTop: board.top,
+        stats: [...document.querySelectorAll('header.hud .stat')].map((stat) => {
+          const rect = stat.getBoundingClientRect();
+          return { label: stat.textContent, top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right };
+        })
+      };
+    });
+    expect(layout.stats).toHaveLength(3);
+    for (const stat of layout.stats) {
+      expect(stat.top, stat.label).toBeGreaterThanOrEqual(layout.hud.top);
+      expect(stat.bottom, stat.label).toBeLessThanOrEqual(layout.hud.bottom);
+      expect(stat.left, stat.label).toBeGreaterThanOrEqual(layout.hud.left);
+      expect(stat.right, stat.label).toBeLessThanOrEqual(layout.hud.right);
+      expect(stat.bottom, stat.label).toBeLessThanOrEqual(layout.boardTop);
+    }
+    await page.close();
+  });
+
   it('preserves free-play 8×12 boards with 32px tiles on a short phone and keeps Aim clear of controls', async () => {
     for (const level of ['normal', 'hard']) {
       const page = await openPage(`/turdomania.html?seed=11&level=${level}`, { width: 320, height: 568 });
