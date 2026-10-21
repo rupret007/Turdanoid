@@ -141,15 +141,15 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
       const board = await page.evaluate(() => window.__turdomania.state.board);
       await page.setViewportSize({ width: 568, height: 320 });
       await page.evaluate(() => document.fonts.ready);
-      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
       const fit = await page.evaluate(() => {
         const board = document.getElementById('board').getBoundingClientRect();
         const footer = document.getElementById('suite-music-status').getBoundingClientRect();
         return { top: board.top, bottom: board.bottom, footerTop: footer.top,
           wrap: document.getElementById('boardWrap').getBoundingClientRect().toJSON(),
-          body: document.body.getBoundingClientRect().toJSON(), padding: getComputedStyle(document.body).padding,
+          body: document.body.getBoundingClientRect().toJSON(), padding: window.getComputedStyle(document.body).padding,
           dock: document.querySelector('.dock').getBoundingClientRect().toJSON(),
-          dockChildren: [...document.querySelector('.dock').children].filter(el => el.checkVisibility()).map(el => ({ id:el.id, rect:el.getBoundingClientRect().toJSON(), margin:getComputedStyle(el).margin })),
+          dockChildren: [...document.querySelector('.dock').children].filter(el => el.checkVisibility()).map(el => ({ id:el.id, rect:el.getBoundingClientRect().toJSON(), margin:window.getComputedStyle(el).margin })),
           tile: document.querySelector('.tile').getBoundingClientRect().width,
           controls: [...document.querySelectorAll('#suite-music-status button')].map(el => el.getBoundingClientRect().height) };
       });
