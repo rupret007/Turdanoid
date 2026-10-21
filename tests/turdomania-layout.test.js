@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import * as Core from '../games/turdomania-core.js';
+import { inlineTurdomaniaImports, installTurdomaniaModules } from './turdomania-page-harness.js';
 
 const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'turdomania.html'), 'utf8');
 const pages = [];
@@ -29,7 +29,7 @@ function boot(width, height) {
   window.innerHeight = height;
   Object.defineProperty(document.documentElement, 'clientWidth', { get: () => window.innerWidth });
   Object.defineProperty(document.documentElement, 'clientHeight', { get: () => window.innerHeight });
-  window.Core = Core;
+  installTurdomaniaModules(window);
   window.matchMedia = () => ({ matches: false });
   let frame;
   window.requestAnimationFrame = (callback) => { frame = callback; return 1; };
@@ -39,7 +39,7 @@ function boot(width, height) {
   return {
     document,
     cell: () => Number.parseInt(document.documentElement.style.getPropertyValue('--cell'), 10),
-    start: () => window.eval(scripts[1].textContent.replace("import * as Core from './games/turdomania-core.js';", '')),
+    start: () => window.eval(inlineTurdomaniaImports(scripts[1].textContent)),
     resize(w, h) {
       window.innerWidth = w;
       window.innerHeight = h;

@@ -318,7 +318,7 @@ function layout() {
   const footer = document.querySelector('.stalemate-strip')?.getBoundingClientRect().height || 0;
   const landscape = viewW <= 980 && viewW > viewH;
   const bodyStyle = getComputedStyle(document.body);
-  const padding = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
+  const padding = (parseFloat(bodyStyle.paddingTop) || 0) + (parseFloat(bodyStyle.paddingBottom) || 0);
   const help = document.querySelector('.help');
   const helpHeight = help && getComputedStyle(help).display !== 'none' ? help.getBoundingClientRect().height + 8 : 0;
   // Measure the actual kit, daily banner and footer; fonts and settings can change their height.
