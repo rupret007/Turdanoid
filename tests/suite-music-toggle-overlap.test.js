@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, Suite, getComputedStyle, Element */
+/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
@@ -122,16 +122,49 @@ async function prepTurdtris(page) {
   await page.waitForSelector('#game', { state: 'visible', timeout: 10_000 });
 }
 
-async function prepTurdjack(page) {
+async function prepTurdjack(page, scenario = 'bust') {
   await dismissGuides(page);
-  const quick = page.getByRole('button', { name: 'Quick Start' });
-  if (await quick.isVisible().catch(() => false)) {
-    await quick.click();
+  // The local fixture stacks real cards; Quick Start still drives the actual deal.
+  // Naturals can settle immediately, so an active-hand class is not always ready state.
+  await page.waitForFunction(() => window.__turdjackDev);
+  await page.evaluate((name) => {
+    window.__turdjackDev.prepare(name === 'even-money' ? 'blackjack' : name);
+    window.__turdjackDev._autoInsurance = null;
+    if (name === 'even-money') {
+      // Shoe draws pop from the end: player Ace, dealer Ace, player King, hole 7.
+      shoe.splice(-4, 4,
+        { rank: '7', suit: 'C' }, { rank: 'K', suit: 'S' },
+        { rank: 'A', suit: 'H' }, { rank: 'A', suit: 'S' }
+      );
+    }
+    showWelcomeGuide();
+  }, scenario);
+  const quick = page.getByRole('button', { name: 'Quick Start', exact: true });
+  await quick.waitFor({ state: 'visible' });
+  await quick.click();
+  await page.waitForFunction(() => {
+    if (pendingDecision) {
+      return document.getElementById('jackConfirmOverlay').getAttribute('aria-hidden') === 'false';
+    }
+    return playerHand.length === 2 && !openingHandInFlight;
+  }, null, { timeout: 10_000 });
+  const expectedDecision = ['insurance', 'even-money'].includes(scenario) ? scenario : null;
+  expect(await page.evaluate(() => pendingDecision)).toBe(expectedDecision);
+  const dialog = page.locator('#jackConfirmOverlay');
+  if (expectedDecision) {
+    expect(await dialog.isVisible()).toBe(true);
+    await page.locator('#jackConfirmNo').click();
+    await dialog.waitFor({ state: 'hidden' });
   }
+  await page.waitForFunction(() => pendingDecision === null && !openingHandInFlight, null, { timeout: 10_000 });
+  expect(await dialog.isVisible()).toBe(false);
+  const active = await page.evaluate(() => roundActive);
+  expect(active).toBe(scenario === 'bust');
   const viewport = page.viewportSize();
   if (viewport && viewport.width <= 680) {
     await page.waitForFunction(
-      () => document.body.classList.contains('jack-table-first'),
+      (expected) => document.body.classList.contains('jack-table-first') === expected,
+      active,
       { timeout: 10_000 }
     );
   }
@@ -243,10 +276,15 @@ function measureMusicToggleOverlap(page, guardSelector) {
         const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
         try {
           await page.goto(`${baseUrl}/${spec.path}`, { waitUntil: 'domcontentloaded' });
-          await spec.prep(page);
-          await page.waitForTimeout(150);
-          const result = await measureMusicToggleOverlap(page, GUARD_SELECTOR);
-          expect(result.ok, JSON.stringify(result)).toBe(true);
+          // Preserve all 24 viewport cases and their live-hand coverage, and also
+          // exercise the three opening outcomes that made random prep unreliable.
+          const scenarios = spec.slug === 'turdjack' ? ['blackjack', 'insurance', 'even-money', 'bust'] : [undefined];
+          for (const scenario of scenarios) {
+            await spec.prep(page, scenario);
+            await page.waitForTimeout(150);
+            const result = await measureMusicToggleOverlap(page, GUARD_SELECTOR);
+            expect(result.ok, JSON.stringify({ scenario, ...result })).toBe(true);
+          }
         } finally {
           await page.close();
         }
