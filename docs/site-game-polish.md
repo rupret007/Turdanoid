@@ -43,3 +43,10 @@ StalemateSite imports committed source through its existing sync script and pins
 the full source SHA. Merge source first with that commit reachable, then publish
 the tested site import. No physical-phone acceptance or improved retention is
 claimed.
+
+After PR #92 merged, site CI preserved a WebKit failure showing Undo underneath
+the music footer while `--mobile-footer` still read 0px. The footer can be
+inserted after the initial layout and fallback timer. Mobile layout now measures
+late footer insertion immediately and observes its dimensions. A regression
+inserts the footer after load without a viewport resize: it fails on the merged
+baseline and passes with this correction. Existing touch assertions stay intact.
