@@ -16,8 +16,8 @@ import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { mountDifficultyPicker } from '../assets/suite-difficulty-ui.js';
-import * as TurdomaniaCore from '../games/turdomania-core.js';
 import { validEightsSnapshot } from './continue-fixtures.js';
+import { inlineTurdomaniaImports, installTurdomaniaModules } from './turdomania-page-harness.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const turdanoidHtml = readFileSync(join(root, 'TurdAnoid.html'), 'utf8');
@@ -25,9 +25,8 @@ const turdtrisHtml = readFileSync(join(root, 'turdtris.html'), 'utf8').replace(
   /<script type="module">[\s\S]*?<\/script>\s*/g,
   ''
 );
-const turdomaniaHtml = readFileSync(join(root, 'turdomania.html'), 'utf8')
-  .replace('<script type="module">', '<script>')
-  .replace("import * as Core from './games/turdomania-core.js';", '');
+const turdomaniaHtml = inlineTurdomaniaImports(readFileSync(join(root, 'turdomania.html'), 'utf8'))
+  .replace('<script type="module">', '<script>');
 const turdrummyHtml = readFileSync(join(root, 'turdrummy.html'), 'utf8');
 const crapeightsHtml = readFileSync(join(root, 'crapeights.html'), 'utf8');
 const suiteJs = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');
@@ -126,7 +125,7 @@ function bootTurdomania(difficulty = 'normal') {
     runScripts: 'dangerously',
     url: 'http://localhost/turdomania.html',
     beforeParse(window) {
-      window.Core = TurdomaniaCore;
+      installTurdomaniaModules(window);
       window.requestAnimationFrame = () => 1;
       window.cancelAnimationFrame = () => {};
       window.matchMedia = () => ({

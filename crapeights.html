@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mobile-game="crapeights">
 <head>
   <meta charset="UTF-8">
   <meta name="robots" content="noindex">
@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#121a11">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="assets/turdsuite.css">
+<link rel="stylesheet" href="assets/arcade.css">
   <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>Crappy Eights</title>
@@ -597,8 +598,10 @@
     }
 
 </style>
+<link rel="stylesheet" href="assets/mobile-fit.css">
+<script src="assets/mobile-fit.js" defer></script>
 </head>
-<body class="suite-ambient">
+<body class="suite-ambient arcade" data-arcade-game="crapeights">
   <a class="ce-skip" href="#playTable">Skip to card table</a>
   <div class="overlay" id="welcomeGuide" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <div class="overlay-card">

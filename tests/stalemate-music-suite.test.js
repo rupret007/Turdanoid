@@ -153,9 +153,9 @@ describe('site-wide music UI', () => {
     expect(manic.tagName).toBe('BUTTON');
   });
 
-  it('renames the hub to Stalemate Games and removes the Neon Arkanoid promo link', () => {
-    expect(hubHtml).toContain('<title>Stalemate Games');
-    expect(hubHtml).toContain('Stalemate Games</h1>');
+  it('brands the hub as Stalemate Arcade and removes the Neon Arkanoid promo link', () => {
+    expect(hubHtml).toContain('<title>Stalemate Arcade');
+    expect(hubHtml).toContain('Stalemate Arcade</h1>');
     expect(hubHtml).not.toContain('href="neon-arkanoid.html"');
     expect(hubHtml).not.toContain('PLAY THE ORIGINAL NEON ARKANOID');
   });
