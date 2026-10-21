@@ -107,7 +107,11 @@
       const current = version, snapshot = result;
       const fullText = snapshot.text + '\n' + snapshot.url;
       status.textContent = ''; fallback.hidden = true; button.disabled = true;
-      const update = text => { if (current === version) status.textContent = text; };
+      const update = text => {
+        if (current !== version) return;
+        status.textContent = text;
+        status.scrollIntoView?.({ block: 'nearest' });
+      };
       try {
         let payload = { title: snapshot.name + ' · Stalemate Arcade', text: snapshot.text, url: snapshot.url };
         if (file && root.navigator.canShare) {
