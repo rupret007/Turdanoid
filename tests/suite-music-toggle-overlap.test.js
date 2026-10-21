@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand */
+/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand, currentBet, bankroll */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
