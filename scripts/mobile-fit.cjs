@@ -91,6 +91,12 @@ async function check(page, game, selectors, state) {
         assert(card.y + card.height <= dock.y, `${game} ${state}: the complete draw/discard piles must remain above the actions`);
       }
     }
+    const stock = await page.locator('#stockPile .back-card').boundingBox();
+    const count = await page.locator('#stockPile > span').boundingBox();
+    if (stock && count) {
+      assert(stock.y + stock.height <= count.y, `${game} ${state}: stock count must remain below the complete card back`);
+      assert(count.y + count.height <= dock.y, `${game} ${state}: stock count must remain above the actions`);
+    }
   }
   if(game==='turdrummy') {
     const stats=await page.locator('.status .stat').evaluateAll(elements=>elements.map(stat=>{
