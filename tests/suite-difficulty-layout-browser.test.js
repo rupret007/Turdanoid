@@ -145,6 +145,45 @@ function turdanoidTargets() {
 }
 
 describe('gameplay chrome clearance', () => {
+  it.each([[568, 320], [667, 375]])('keeps a four-card dealer hand above the footer at %sx%s', async (width, height) => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+    page.setDefaultTimeout(5000);
+    try {
+      await page.addInitScript(() => {
+        localStorage.setItem('stalemate.music', 'off');
+        let seed = 0x524d5931;
+        const next = () => seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        Math.random = () => next() / 0x100000000;
+        window.crypto.getRandomValues = array => { for (let i = 0; i < array.length; i++) { array[i] = next(); } return array; };
+      });
+      await page.goto(baseUrl + '/turdjack.html');
+      await page.evaluate(() => document.fonts.ready);
+      await page.locator('#closeGuideBtn').click();
+      await page.locator('.mobile-felt-chip-rack [data-chip="10"]').click();
+      await page.locator('[data-mobile-action="deal"]').click();
+      await page.waitForFunction(() => !document.querySelector('[data-mobile-action="stand"]').disabled || document.getElementById('handsText').textContent === '1' || document.getElementById('jackConfirmNo')?.offsetHeight > 0);
+      if (await page.locator('#jackConfirmNo').isVisible()) { await page.locator('#jackConfirmNo').click(); }
+      if (await page.locator('[data-mobile-action="stand"]').isEnabled()) { await page.locator('[data-mobile-action="stand"]').click(); }
+      await page.waitForFunction(() => document.getElementById('handsText').textContent === '1');
+      await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
+      const cards = await page.locator('#dealerCards .playing-card').all();
+      expect(cards.length).toBeGreaterThanOrEqual(4);
+      const footer = await page.locator('#suite-music-status').boundingBox();
+      const table = await page.locator('.table-stage').boundingBox();
+      for (const card of await page.locator('#dealerCards .playing-card, #playerCards .playing-card').all()) {
+        const rect = await card.boundingBox();
+        expect(rect.y + rect.height).toBeLessThanOrEqual(footer.y);
+        expect(rect.x + rect.width).toBeLessThanOrEqual(table.x + table.width);
+        expect(rect.width).toBeGreaterThanOrEqual(44);
+        expect(rect.height).toBeGreaterThanOrEqual(44);
+      }
+    } finally {
+      await page.screenshot({ path: resolve(root, 'test-results/jack-clearance-' + width + '.png') });
+      await page.close();
+    }
+  });
+
   it.each([[320, 568], [390, 844], [667, 375], [844, 390]])('keeps the brick wall below the entire HUD at %sx%s', async (width, height) => {
     if (!hasBrowser) { return; }
     const page = await browser.newPage({ viewport: { width, height } });
