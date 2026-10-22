@@ -166,6 +166,9 @@ describe('gameplay chrome clearance', () => {
       if (await page.locator('#jackConfirmNo').isVisible()) { await page.locator('#jackConfirmNo').click(); }
       if (await page.locator('[data-mobile-action="stand"]').isEnabled()) { await page.locator('[data-mobile-action="stand"]').click(); }
       await page.waitForFunction(() => document.getElementById('handsText').textContent === '1');
+      await page.waitForFunction(() => [...document.querySelectorAll('#dealerCards .playing-card, #playerCards .playing-card')]
+        .flatMap(card => card.getAnimations()).filter(animation => animation.effect?.getTiming().iterations !== Infinity)
+        .every(animation => animation.playState === 'finished' || animation.playState === 'idle'));
       await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
       const cards = await page.locator('#dealerCards .playing-card').all();
       expect(cards.length).toBeGreaterThanOrEqual(4);
