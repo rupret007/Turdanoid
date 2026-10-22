@@ -77,6 +77,27 @@ async function check(page, game, selectors, state) {
     assert(box.width >= 44 && box.height >= 44 && box.y >= -1 && box.x >= -1 && box.y + box.height <= metrics.h+1 && box.x + box.width <= metrics.w+1, `${game} ${state} card target fits: ${JSON.stringify(box)}`);
     if (!box.disabled) assert(!box.covered, `${game} ${state} card covered`);
   }
+  if (game === 'turdspades' && metrics.w > metrics.h) {
+    const dock = await page.locator('.dock').boundingBox();
+    for (const card of cards) {
+      assert(card.y + card.height <= dock.y, `${game} ${state}: the entire hand must stay above the action dock`);
+    }
+  }
+  if (game === 'turdrummy' && metrics.w > metrics.h) {
+    const dock = await page.locator('.action-dock').boundingBox();
+    for (const pile of await page.locator('#stockPile .back-card, #discardPile .card').all()) {
+      if (await pile.isVisible()) {
+        const card = await pile.boundingBox();
+        assert(card.y + card.height <= dock.y, `${game} ${state}: the complete draw/discard piles must remain above the actions`);
+      }
+    }
+    const stock = await page.locator('#stockPile .back-card').boundingBox();
+    const count = await page.locator('#stockPile > span').boundingBox();
+    if (stock && count) {
+      assert(stock.y + stock.height <= count.y, `${game} ${state}: stock count must remain below the complete card back`);
+      assert(count.y + count.height <= dock.y, `${game} ${state}: stock count must remain above the actions`);
+    }
+  }
   if(game==='turdrummy') {
     const stats=await page.locator('.status .stat').evaluateAll(elements=>elements.map(stat=>{
       const card=stat.getBoundingClientRect();

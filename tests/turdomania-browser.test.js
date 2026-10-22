@@ -134,6 +134,34 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     await page.close();
   });
 
+  it('preserves the short-phone board and 22px tiles above 44px music controls after rotation', async () => {
+    for (const level of ['normal', 'hard']) {
+      const page = await openPage(`/turdomania.html?seed=11&level=${level}`, { width: 320, height: 568 });
+      await page.waitForSelector('#suite-music-status');
+      const board = await page.evaluate(() => window.__turdomania.state.board);
+      await page.setViewportSize({ width: 568, height: 320 });
+      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
+      const fit = await page.evaluate(() => {
+        const board = document.getElementById('board').getBoundingClientRect();
+        const footer = document.getElementById('suite-music-status').getBoundingClientRect();
+        return { top: board.top, bottom: board.bottom, footerTop: footer.top,
+          wrap: document.getElementById('boardWrap').getBoundingClientRect().toJSON(),
+          body: document.body.getBoundingClientRect().toJSON(), padding: window.getComputedStyle(document.body).padding,
+          dock: document.querySelector('.dock').getBoundingClientRect().toJSON(),
+          dockChildren: [...document.querySelector('.dock').children].filter(el => el.checkVisibility()).map(el => ({ id:el.id, rect:el.getBoundingClientRect().toJSON(), margin:window.getComputedStyle(el).margin })),
+          tile: document.querySelector('.tile').getBoundingClientRect().width,
+          controls: [...document.querySelectorAll('#suite-music-status button')].map(el => el.getBoundingClientRect().height) };
+      });
+      expect(fit.tile).toBeGreaterThanOrEqual(22);
+      expect(fit.top).toBeGreaterThanOrEqual(0);
+      expect(fit.bottom, JSON.stringify(fit)).toBeLessThanOrEqual(fit.footerTop);
+      expect(fit.controls.every(height => height >= 44)).toBe(true);
+      expect(await page.evaluate(() => window.__turdomania.state.board)).toEqual(board);
+      await page.close();
+    }
+  });
+
   it('preserves free-play 8×12 boards with 32px tiles on a short phone and keeps Aim clear of controls', async () => {
     for (const level of ['normal', 'hard']) {
       const page = await openPage(`/turdomania.html?seed=11&level=${level}`, { width: 320, height: 568 });
