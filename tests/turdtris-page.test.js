@@ -577,6 +577,24 @@ describe('Turdtris page audio integration', () => {
     expect(w.turdtrisRuntime.soundEnabled()).toBe(false);
   });
 
+  it('follows shared music changes after entering muted and keeps sound/mute gates', () => {
+    w.close();
+    w = bootPage('120', undefined, { 'stalemate.music': 'off' });
+    let enabled = false, muted = false;
+    w.Suite = { isMusicEnabled: () => enabled, isMuted: () => muted,
+      setMusicEnabled: value => { enabled = value; } };
+    expect(w.suiteMusicBlocked()).toBe(true);
+    enabled = true;
+    expect(w.suiteMusicBlocked()).toBe(false);
+    w.syncSettings();
+    expect(w.document.getElementById('musicToggle').getAttribute('aria-pressed')).toBe('true');
+    expect(w.turdtrisRuntime.musicEnabled()).toBe(true);
+    w.toggleMusic(); expect(enabled).toBe(false);
+    w.toggleMusic(); expect(enabled).toBe(true);
+    muted = true; expect(w.suiteMusicBlocked()).toBe(true);
+    muted = false; w.toggleSound(); expect(w.suiteMusicBlocked()).toBe(true);
+  });
+
   it('defaults music on without writing any existing preference', () => {
     expect(w.turdtrisRuntime.musicEnabled()).toBe(true);
     expect(w.localStorage.getItem('turdtrisMusic_v1')).toBeNull();
