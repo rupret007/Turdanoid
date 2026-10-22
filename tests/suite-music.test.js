@@ -204,6 +204,26 @@ describe('music loading and recovery', () => {
     expect(states.at(-1).status).toBe('playing');
   });
 
+  it('does not restart an in-flight or already playing request on repeated sync', async () => {
+    const { audio, states, player, emit } = setup();
+    const pending = Promise.withResolvers();
+    const play = vi.spyOn(audio, 'play').mockImplementation(() => { audio.paused = false; return pending.promise; });
+    player.armFromGesture(); player.sync();
+    expect(play).toHaveBeenCalledTimes(1);
+    pending.resolve(); await Promise.resolve(); player.sync();
+    expect(play).toHaveBeenCalledTimes(1);
+    emit('playing'); player.sync();
+    expect(states.at(-1).status).toBe('playing');
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps buffered playback playing when only the network fetch stalls', () => {
+    const { audio, states, player, emit } = setup();
+    player.armFromGesture(); audio.readyState = 4; emit('playing'); emit('stalled');
+    expect(states.at(-1).status).toBe('playing');
+    audio.readyState = 2; emit('waiting'); expect(states.at(-1).status).toBe('loading');
+  });
+
   it('reports a media error even if the browser still says unpaused, and never retries on repeated sync', () => {
     const { audio, states, player, emit } = setup();
     const play = vi.spyOn(audio, 'play');
@@ -244,6 +264,7 @@ describe('music loading and recovery', () => {
     audio.play = MockAudio.prototype.play.bind(audio); player.nextTrack(); await Promise.resolve();
     oldReject(new Error('old load')); await Promise.resolve();
     expect(states.at(-1)).toMatchObject({ title: 'Andrea', status: 'playing' });
+    player.pause();
     audio.play = () => new Promise((resolve, fail) => { reject = fail; });
     player.sync(); player.pause(); reject(Object.assign(new Error('interrupted'), { name: 'AbortError' }));
     await Promise.resolve(); expect(states.at(-1)).toMatchObject({ status: 'paused', canRetry: false });
