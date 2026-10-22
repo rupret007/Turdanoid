@@ -224,6 +224,40 @@ describe('music loading and recovery', () => {
     audio.readyState = 2; emit('waiting'); expect(states.at(-1).status).toBe('loading');
   });
 
+  it('recognizes actual playback after a seek when WebKit emits waiting without another playing event', () => {
+    const { audio, states, player, emit } = setup();
+    player.armFromGesture(); audio.readyState = 4; emit('playing');
+    audio.seeking = true; emit('seeking');
+    audio.currentTime = 23; emit('timeupdate');
+    audio.readyState = 2; emit('waiting');
+    audio.seeking = false; emit('seeked');
+    emit('timeupdate'); expect(states.at(-1).status).toBe('loading');
+    audio.currentTime = 23.25; emit('timeupdate');
+    expect(states.at(-1).status).toBe('playing');
+    emit('stalled'); expect(states.at(-1).status).toBe('loading');
+    emit('timeupdate'); expect(states.at(-1).status).toBe('loading');
+    audio.currentTime = 23.5; emit('timeupdate');
+    expect(states.at(-1).status).toBe('playing');
+  });
+
+  it('does not mistake a seek, pause, failure or closed playback gate for playback progress', () => {
+    const { audio, flags, states, player, emit } = setup();
+    player.armFromGesture(); emit('playing'); emit('waiting');
+    audio.seeking = true; emit('seeking'); audio.currentTime = 40; emit('timeupdate');
+    expect(states.at(-1).status).toBe('loading');
+    audio.seeking = false; emit('seeked');
+    audio.paused = true; audio.currentTime = 41; emit('timeupdate');
+    expect(states.at(-1).status).toBe('loading');
+    audio.paused = false;
+    for (const gate of ['muted', 'blocked', 'hidden']) {
+      flags[gate] = true; audio.currentTime += 1; emit('timeupdate');
+      expect(states.at(-1).status).toBe('loading'); flags[gate] = false;
+    }
+    audio.error = { code: 2 }; emit('error');
+    audio.paused = false; audio.currentTime += 1; emit('timeupdate');
+    expect(states.at(-1).status).toBe('error');
+  });
+
   it('reports a media error even if the browser still says unpaused, and never retries on repeated sync', () => {
     const { audio, states, player, emit } = setup();
     const play = vi.spyOn(audio, 'play');
