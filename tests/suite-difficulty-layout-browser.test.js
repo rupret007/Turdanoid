@@ -144,6 +144,93 @@ function turdanoidTargets() {
   ];
 }
 
+describe('gameplay chrome clearance', () => {
+  it.each([[568, 320], [667, 375]])('keeps a four-card dealer hand above the footer at %sx%s', async (width, height) => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+    page.setDefaultTimeout(5000);
+    try {
+      await page.addInitScript(() => {
+        localStorage.setItem('stalemate.music', 'off');
+        let seed = 0x524d5931;
+        const next = () => seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        Math.random = () => next() / 0x100000000;
+        window.crypto.getRandomValues = array => { for (let i = 0; i < array.length; i++) { array[i] = next(); } return array; };
+      });
+      await page.goto(baseUrl + '/turdjack.html');
+      await page.evaluate(() => document.fonts.ready);
+      await page.locator('#closeGuideBtn').click();
+      await page.locator('.mobile-felt-chip-rack [data-chip="10"]').click();
+      await page.locator('[data-mobile-action="deal"]').click();
+      await page.waitForFunction(() => !document.querySelector('[data-mobile-action="stand"]').disabled || document.getElementById('handsText').textContent === '1' || document.getElementById('jackConfirmNo')?.offsetHeight > 0);
+      if (await page.locator('#jackConfirmNo').isVisible()) { await page.locator('#jackConfirmNo').click(); }
+      if (await page.locator('[data-mobile-action="stand"]').isEnabled()) { await page.locator('[data-mobile-action="stand"]').click(); }
+      await page.waitForFunction(() => document.getElementById('handsText').textContent === '1');
+      await page.waitForFunction(() => [...document.querySelectorAll('#dealerCards .playing-card, #playerCards .playing-card')]
+        .flatMap(card => card.getAnimations()).filter(animation => animation.effect?.getTiming().iterations !== Infinity)
+        .every(animation => animation.playState === 'finished' || animation.playState === 'idle'));
+      await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
+      const cards = await page.locator('#dealerCards .playing-card').all();
+      expect(cards.length).toBeGreaterThanOrEqual(4);
+      const footer = await page.locator('#suite-music-status').boundingBox();
+      const table = await page.locator('.table-stage').boundingBox();
+      for (const card of await page.locator('#dealerCards .playing-card, #playerCards .playing-card').all()) {
+        const rect = await card.boundingBox();
+        expect(rect.y + rect.height).toBeLessThanOrEqual(footer.y);
+        expect(rect.x + rect.width).toBeLessThanOrEqual(table.x + table.width);
+        expect(rect.width).toBeGreaterThanOrEqual(44);
+        expect(rect.height).toBeGreaterThanOrEqual(44);
+      }
+    } finally {
+      await page.screenshot({ path: resolve(root, 'test-results/jack-clearance-' + width + '.png') });
+      await page.close();
+    }
+  });
+
+  it.each([[320, 568], [390, 844], [667, 375], [844, 390]])('keeps the brick wall below the entire HUD at %sx%s', async (width, height) => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width, height } });
+    try {
+      await page.addInitScript(() => localStorage.setItem('turdanoid_v3_coach_v1', '1'));
+      await page.goto(baseUrl + '/TurdAnoid.html');
+      await page.evaluate(() => document.fonts.ready);
+      await page.locator('#btnStart').click();
+      await page.waitForFunction(() => window.__turdanoid?.state === 'playing');
+      const original = await page.evaluate(() => window.__turdanoid.bricks.map(b => [b.hp, b.maxHp]));
+      for (const [w, h] of [[width, height], [height, width], [width, height]]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
+        const layout = await page.evaluate(() => {
+          const game = window.__turdanoid;
+          const canvas = document.getElementById('game').getBoundingClientRect();
+          const hud = document.querySelector('.hud').getBoundingClientRect();
+          const top = Math.min(...game.bricks.map(b => canvas.top + b.y * canvas.height / game.H));
+          const controls = [...document.querySelectorAll('.suite-back-pill, #btnSound, #btnPause, #suite-music-toggle, #suite-arcade-a11y-toggle')]
+            .filter(el => el.checkVisibility()).map(el => el.getBoundingClientRect());
+          return { top, hudBottom: hud.bottom, outside: game.bricks.filter(b => b.x < 0 || b.x + b.w > game.W + 0.5 || b.y + b.h >= game.paddle.y).length,
+            collisions: controls.filter(r => r.left < hud.right && r.right > hud.left && r.top < hud.bottom && r.bottom > hud.top).length };
+        });
+        expect(layout.top).toBeGreaterThanOrEqual(layout.hudBottom + 4);
+        expect(layout.collisions).toBe(0);
+        expect(layout.outside).toBe(0);
+        expect(await page.evaluate(() => window.__turdanoid.bricks.map(b => [b.hp, b.maxHp]))).toEqual(original);
+      }
+    } finally { await page.close(); }
+  });
+
+  it.each(['TurdAnoid', 'turdtris', 'turdomania', 'turdjack', 'crapeights', 'turdrummy', 'turdspades'])('keeps the desktop music label clear of the Hub pill in %s', async game => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    try {
+      await page.goto(baseUrl + '/' + game + '.html');
+      await page.locator('.suite-music-title').waitFor();
+      const pill = await page.locator('.suite-back-pill').boundingBox();
+      const label = await page.locator('.suite-music-title').boundingBox();
+      expect(label.x).toBeGreaterThanOrEqual(pill.x + pill.width + 4);
+    } finally { await page.close(); }
+  });
+});
+
 describe('shared difficulty picker layout', () => {
   for (const spec of PAGES) {
     for (const state of spec.states) {

@@ -83,6 +83,16 @@ async function check(page, game, selectors, state) {
       assert(card.y + card.height <= dock.y, `${game} ${state}: the entire hand must stay above the action dock`);
     }
   }
+  if (game === 'turdjack') {
+    const footer = await page.locator('#suite-music-status').boundingBox();
+    const table = await page.locator('.table-stage').boundingBox();
+    for (const card of await page.locator('#dealerCards .playing-card, #playerCards .playing-card, #splitCards .playing-card').all()) {
+      if (!await card.isVisible()) continue;
+      const rect = await card.boundingBox();
+      assert(rect.y >= 0 && rect.y + rect.height <= footer.y, `${game} ${state}: complete card height must remain above the music footer`);
+      assert(rect.x + rect.width <= table.x + table.width + 1, `${game} ${state}: hands must remain inside the card area, clear of betting controls`);
+    }
+  }
   if (game === 'turdrummy' && metrics.w > metrics.h) {
     const dock = await page.locator('.action-dock').boundingBox();
     for (const pile of await page.locator('#stockPile .back-card, #discardPile .card').all()) {
