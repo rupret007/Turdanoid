@@ -144,6 +144,51 @@ function turdanoidTargets() {
   ];
 }
 
+describe('gameplay chrome clearance', () => {
+  it.each([[320, 568], [390, 844], [667, 375], [844, 390]])('keeps the brick wall below the entire HUD at %sx%s', async (width, height) => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width, height } });
+    try {
+      await page.addInitScript(() => localStorage.setItem('turdanoid_v3_coach_v1', '1'));
+      await page.goto(baseUrl + '/TurdAnoid.html');
+      await page.evaluate(() => document.fonts.ready);
+      await page.locator('#btnStart').click();
+      await page.waitForFunction(() => window.__turdanoid?.state === 'playing');
+      const original = await page.evaluate(() => window.__turdanoid.bricks.map(b => [b.hp, b.maxHp]));
+      for (const [w, h] of [[width, height], [height, width], [width, height]]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.evaluate(() => new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve))));
+        const layout = await page.evaluate(() => {
+          const game = window.__turdanoid;
+          const canvas = document.getElementById('game').getBoundingClientRect();
+          const hud = document.querySelector('.hud').getBoundingClientRect();
+          const top = Math.min(...game.bricks.map(b => canvas.top + b.y * canvas.height / game.H));
+          const controls = [...document.querySelectorAll('.suite-back-pill, #btnSound, #btnPause, #suite-music-toggle, #suite-arcade-a11y-toggle')]
+            .filter(el => el.checkVisibility()).map(el => el.getBoundingClientRect());
+          return { top, hudBottom: hud.bottom, outside: game.bricks.filter(b => b.x < 0 || b.x + b.w > game.W + 0.5 || b.y + b.h >= game.paddle.y).length,
+            collisions: controls.filter(r => r.left < hud.right && r.right > hud.left && r.top < hud.bottom && r.bottom > hud.top).length };
+        });
+        expect(layout.top).toBeGreaterThanOrEqual(layout.hudBottom + 4);
+        expect(layout.collisions).toBe(0);
+        expect(layout.outside).toBe(0);
+        expect(await page.evaluate(() => window.__turdanoid.bricks.map(b => [b.hp, b.maxHp]))).toEqual(original);
+      }
+    } finally { await page.close(); }
+  });
+
+  it.each(['TurdAnoid', 'turdtris', 'turdomania', 'turdjack', 'crapeights', 'turdrummy', 'turdspades'])('keeps the desktop music label clear of the Hub pill in %s', async game => {
+    if (!hasBrowser) { return; }
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    try {
+      await page.goto(baseUrl + '/' + game + '.html');
+      await page.locator('.suite-music-title').waitFor();
+      const pill = await page.locator('.suite-back-pill').boundingBox();
+      const label = await page.locator('.suite-music-title').boundingBox();
+      expect(label.x).toBeGreaterThanOrEqual(pill.x + pill.width + 4);
+    } finally { await page.close(); }
+  });
+});
+
 describe('shared difficulty picker layout', () => {
   for (const spec of PAGES) {
     for (const state of spec.states) {
