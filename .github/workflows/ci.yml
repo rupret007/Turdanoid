@@ -31,6 +31,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Mobile viewport regression matrix
+        run: npm run test:mobile
+
       - name: Browser smoke tests
         run: npm run test:smoke
         env:
