@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   MUSIC_PREF_KEY,
@@ -177,5 +177,75 @@ describe('saved playback position and selection', () => {
   it('continues selection/playback when storage throws', () => {
     const { player, audio } = setup({ getItem() { throw Error('denied'); }, setItem() { throw Error('full'); } });
     player.nextTrack(); expect(player.trackTitle).toBe('Andrea'); expect(audio.paused).toBe(false);
+  });
+});
+
+describe('music loading and recovery', () => {
+  function setup() {
+    const audio = new MockAudio();
+    const flags = { muted: false, blocked: false, hidden: false };
+    const states = [];
+    const player = createSuiteMusic({ AudioCtor: function () { return audio; },
+      isSuiteMuted: () => flags.muted, isGameBlocked: () => flags.blocked,
+      isDocumentHidden: () => flags.hidden, resolveSrc: path => path,
+      onStateChange: state => states.push(state) });
+    const emit = event => audio._listeners[event]?.forEach(fn => fn());
+    return { audio, flags, states, player, emit };
+  }
+
+  it('announces loading until playback starts, and buffering until it resumes', async () => {
+    const { audio, states, player, emit } = setup();
+    let finish;
+    audio.play = () => { audio.paused = false; return new Promise(resolve => { finish = resolve; }); };
+    player.armFromGesture(); expect(states.at(-1).status).toBe('loading');
+    emit('playing'); expect(states.at(-1).status).toBe('playing');
+    emit('waiting'); expect(states.at(-1).status).toBe('loading');
+    emit('playing'); finish(); await Promise.resolve();
+    expect(states.at(-1).status).toBe('playing');
+  });
+
+  it('reports a media error even if the browser still says unpaused, and never retries on repeated sync', () => {
+    const { audio, states, player, emit } = setup();
+    const play = vi.spyOn(audio, 'play');
+    player.armFromGesture(); audio.error = { code: 4 }; emit('error');
+    expect(states.at(-1)).toMatchObject({ status: 'error', paused: true, canRetry: true });
+    expect(player.isPlaying()).toBe(false);
+    for (let i = 0; i < 10; i++) { player.sync(); player.armFromGesture(); }
+    expect(play).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries the same song and saved position after metadata, respecting every playback gate', async () => {
+    const { audio, flags, states, player, emit } = setup();
+    const play = vi.spyOn(audio, 'play'); audio.load = vi.fn(() => { audio.error = null; });
+    player.armFromGesture(); audio.currentTime = 23; audio.error = { code: 2 }; emit('error');
+    for (const gate of ['muted', 'blocked', 'hidden']) {
+      flags[gate] = true; player.retryTrack(); expect(play).toHaveBeenCalledTimes(1); flags[gate] = false;
+    }
+    player.retryTrack(); expect(audio.load).toHaveBeenCalledTimes(1);
+    expect(audio.src).toContain('manic.m4a'); audio.duration = 120; emit('loadedmetadata');
+    expect(audio.currentTime).toBe(23); await Promise.resolve();
+    expect(states.at(-1)).toMatchObject({ status: 'playing', canRetry: false });
+  });
+
+  it('offers a gesture retry for autoplay rejection and lets Next recover independently', async () => {
+    const { audio, states, player } = setup();
+    audio.play = () => Promise.reject(Object.assign(new Error('gesture needed'), { name: 'NotAllowedError' }));
+    player.armFromGesture(); await Promise.resolve();
+    expect(states.at(-1)).toMatchObject({ status: 'blocked', canRetry: true });
+    audio.play = MockAudio.prototype.play.bind(audio); player.nextTrack(); await Promise.resolve();
+    expect(states.at(-1)).toMatchObject({ title: 'Andrea', status: 'playing', canRetry: false });
+  });
+
+  it('ignores old play rejections after switching songs or pausing', async () => {
+    const { audio, states, player } = setup();
+    let reject;
+    audio.play = () => new Promise((resolve, fail) => { reject = fail; });
+    player.armFromGesture(); const oldReject = reject;
+    audio.play = MockAudio.prototype.play.bind(audio); player.nextTrack(); await Promise.resolve();
+    oldReject(new Error('old load')); await Promise.resolve();
+    expect(states.at(-1)).toMatchObject({ title: 'Andrea', status: 'playing' });
+    audio.play = () => new Promise((resolve, fail) => { reject = fail; });
+    player.sync(); player.pause(); reject(Object.assign(new Error('interrupted'), { name: 'AbortError' }));
+    await Promise.resolve(); expect(states.at(-1)).toMatchObject({ status: 'paused', canRetry: false });
   });
 });
