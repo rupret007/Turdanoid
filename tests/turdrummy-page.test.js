@@ -33,16 +33,37 @@ const coreSources = [
 
 const openPages = [];
 
-function boot({ reduced = false, canAnimate = true, stored = {} } = {}) {
+function boot({ reduced = false, canAnimate = true, stored = {}, storageFailure } = {}) {
   let nextTimer = 1;
   const timers = new Map();
   const animations = [];
+  const errors = [];
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
     pretendToBeVisual: true,
     url: 'http://localhost/turdrummy.html',
     beforeParse(window) {
+      window.addEventListener('error', (event) => {
+        errors.push(event.message);
+        event.preventDefault();
+      });
       for (const src of coreSources) {window.eval(src);}
+      if (storageFailure === 'getter') {
+        Object.defineProperty(window, 'localStorage', { get() {
+          throw new window.DOMException('Storage blocked', 'SecurityError');
+        } });
+      } else if (storageFailure) {
+        const storage = window.localStorage;
+        Object.defineProperty(window, 'localStorage', { value: {
+          getItem: storageFailure === 'read'
+            ? () => { throw new window.DOMException('Storage blocked', 'SecurityError'); }
+            : storage.getItem.bind(storage),
+          setItem: storageFailure === 'write'
+            ? () => { throw new window.DOMException('Storage full', 'QuotaExceededError'); }
+            : storage.setItem.bind(storage),
+          removeItem: storage.removeItem.bind(storage)
+        } });
+      }
       window.__SUITE_SKIP_MODULES = true;
       window.eval(tableContinueCore);
       window.eval(suiteJs);
@@ -83,6 +104,7 @@ function boot({ reduced = false, canAnimate = true, stored = {} } = {}) {
   const w = dom.window;
   return {
     w,
+    errors,
     animations,
     timers,
     run(code) {
@@ -128,6 +150,29 @@ function setFixture(page, { phase = 'discard', playerScore = 0 } = {}) {
 
 afterEach(() => {
   openPages.splice(0).forEach((dom) => dom.window.close());
+});
+
+describe('storage failure recovery', () => {
+  it.each(['getter', 'read', 'write'])('keeps a real round playable when storage %s fails', (storageFailure) => {
+    const page = boot({ storageFailure, reduced: true });
+    expect(page.errors).toEqual([]);
+    page.run('closeGuide(); startFirstRoundIfNeeded();');
+    expect(page.$$('#playerHand [data-hand-id]')).toHaveLength(10);
+    // The opening dealer is the player, so execute the scheduled real bot turn.
+    const aiTimer = page.run('aiTurnTimeoutId');
+    page.timers.get(aiTimer).callback();
+    page.timers.delete(aiTimer);
+    expect(page.$('#drawStockBtn').disabled).toBe(false);
+    page.$('#drawStockBtn').click();
+    expect(page.$$('#playerHand [data-hand-id]')).toHaveLength(11);
+    page.$('#playerHand [data-card-id]').click();
+    page.$('#discardBtn').click();
+    expect(page.$$('#playerHand [data-hand-id]')).toHaveLength(10);
+    expect(() => page.run('cycleDifficulty(); finishCoach(); saveStats();')).not.toThrow();
+    expect(page.$('#difficultyBtn').textContent).toContain('Sharp');
+    expect(page.$('#coachCard').hidden).toBe(true);
+    expect(page.errors).toEqual([]);
+  });
 });
 
 describe('TurdRummy hand presentation', () => {
