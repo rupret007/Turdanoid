@@ -108,6 +108,20 @@ describe('suite-arcade-a11y wiring', () => {
     dom?.window?.close();
   });
 
+  it('mounts the toggle in the table action dock on Crappy Eights (not a fixed body slot)', () => {
+    dom = new JSDOM(
+      `<!DOCTYPE html><html><body>
+        <div class="topbar"><div class="actions"></div><div class="mobile-menu"></div></div>
+        <section class="table"><div class="action-dock"><button id="smartBtn">Smart</button></div></section>
+      </body></html>`,
+      { url: 'http://localhost/crapeights.html', runScripts: 'outside-only' }
+    );
+    Object.defineProperty(dom.window, 'innerWidth', { value: 390, configurable: true });
+    const mount = ensureArcadeA11yMount(dom.window.document);
+    expect(mount?.classList.contains('suite-a11y-table-dock-slot')).toBe(true);
+    expect(dom.window.document.querySelector('.suite-a11y-body-slot')).toBeNull();
+  });
+
   it('injects a 44px colorblind toggle on game pages', () => {
     dom = new JSDOM(
       '<!DOCTYPE html><html><body><div class="topbar"><div class="mobile-menu"></div></div></body></html>',

@@ -225,7 +225,7 @@ async function assertA11yToggleLayout(page, game) {
   expect(report.floating).toBe(false);
 }
 
-describe('arcade a11y (Playwright)', () => {
+(hasBrowser ? describe.sequential : describe.skip)('arcade a11y (Playwright)', () => {
   for (const state of ['title', 'playing', 'paused']) {
     for (const key of ['Enter', 'Space']) {
       it(`${key} on the toggle changes colors without leaving Turdanoid ${state}`, async () => {
@@ -279,6 +279,7 @@ describe('arcade a11y (Playwright)', () => {
           await overlay.waitFor({ state: 'visible' });
           expect(await page.locator('#jackConfirmTitle').textContent()).toBe('Insurance');
           expect(await toggle.isVisible()).toBe(false);
+          await page.waitForFunction(() => document.activeElement.id === 'jackConfirmNo');
           await page.keyboard.press('Tab');
           expect(await page.evaluate(() => document.activeElement.id)).toBe('jackConfirmYes');
           if (decision === 'escape') {
