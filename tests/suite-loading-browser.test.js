@@ -31,6 +31,23 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('recoverable game startup', () => {
+  for (const [game, start] of [['turdjack', '#quickGuideBtn'], ['turdspades', '#quickStart']]) {
+    it(`${game}: Enter on Hub keeps its native navigation action`, async () => {
+      const page = await browser.newPage();
+      try {
+        await page.goto(`${origin}/${game}.html`);
+        await page.locator(start).focus();
+        await page.keyboard.press('Enter');
+        expect(await page.locator(start).isVisible()).toBe(false);
+        if (game === 'turdjack') {expect(await page.evaluate(() => window.eval('roundActive'))).toBe(true);}
+        await page.locator('.suite-back-pill').focus();
+        await page.keyboard.press('Enter');
+        await page.waitForURL(origin + '/', { timeout: 2000 });
+        expect(await page.locator('h1').textContent()).toBe('Stalemate Arcade');
+      } finally {await page.close();}
+    });
+  }
+
   it('Rummy keeps an exposed fanned card under the pointer through press and release', async () => {
     // Captured from actual play: 11 cards, waiting for the player's discard.
     const entries = JSON.parse(await readFile(resolve(root, 'tests/fixtures/turdrummy-pointer-save.json'), 'utf8'));

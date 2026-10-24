@@ -12,6 +12,8 @@ Desktop Rummy cards retain their fan geometry while hovered or pressed. Previous
 
 Turdanoid replay and the R shortcut restart the current mode. Boss Flush previously called the Classic entry point on replay; it now resets the run without changing the selected mode. Regression coverage checks both winning and losing Boss results.
 
+Crapjack and Spades leave native link/form activation to the browser. Enter on Hub previously triggered a game shortcut, and keyboard Quick Play in Crapjack dismissed help without dealing. Focused action buttons now activate their own commands; Spades retains Enter-to-play for a selected hand card. Named chip/opponent groups and small-screen headings retain their accessibility semantics. Crappy Eights hides its table skip link while the table is inert behind a modal, and restores it when the table becomes usable.
+
 Validation commands (matching CI's Node 22 runtime):
 
 ```sh

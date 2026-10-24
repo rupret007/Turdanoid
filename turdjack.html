@@ -5019,6 +5019,10 @@
         if (isJackConfirmOpen()) {
           return;
         }
+        // Native links, form fields and focused buttons own their activation.
+        // Otherwise Enter on Hub deals a hand, and Quick Play only hides help.
+        if (e.code !== 'Escape' && e.target.closest?.('a, input, select, textarea, summary, [contenteditable="true"]')) return;
+        if ((e.code === 'Enter' || e.code === 'Space') && e.target.closest?.('button')) return;
         if (onboardingOpen) {
           if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') {
             e.preventDefault();

@@ -1975,6 +1975,8 @@
       el.quickStart.addEventListener('click', closeGuide);
       el.closeGuide.addEventListener('click', closeGuide);
       document.addEventListener('keydown', (e) => {
+        if (e.code !== 'Escape' && e.target.closest?.('a, input, select, textarea, summary, [contenteditable="true"]')) return;
+        if ((e.code === 'Enter' || e.code === 'Space') && e.target.closest?.('button') && !e.target.closest('#youCards button[data-id]')) return;
         if (el.guide.classList.contains('show')) {
           if (e.code === 'Enter' || e.code === 'Escape' || e.code === 'Space') {
             e.preventDefault();
