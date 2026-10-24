@@ -45,7 +45,9 @@ describe('native chess interface', () => {
   it('plays keyboard moves with retained focus, rejects an illegal move and reviews history', async () => {
     const page = await pageAt();
     try {
-      await start(page); await page.locator('[data-square=e2]').focus();
+      await start(page);
+      expect(await page.locator('#undo').evaluate(el => globalThis.getComputedStyle(el).fontFamily)).toContain('Source Sans 3');
+      await page.locator('[data-square=e2]').focus();
       await page.keyboard.press('Enter'); await page.keyboard.press('ArrowUp'); await page.keyboard.press('ArrowUp'); await page.keyboard.press('Enter');
       await moves(page, 1);
       expect(await page.locator('[data-square=e4]').evaluate(el => el === document.activeElement)).toBe(true);

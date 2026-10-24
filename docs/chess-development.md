@@ -42,3 +42,5 @@ A completed search now keeps one warm single-threaded worker for the next ordina
 A native hub assertion also exposed an asynchronous label race: initial Last played decoration preceded chess-save validation, leaving the old accessible label after visible Continue appeared. Shared decoration now updates labels it generated, preserving explicitly authored labels. The new browser assertion failed before this fix; failure logs are retained.
 
 The first complete receiving-site gate passed: 4 documentation tests, 235 unit tests, 109 deploy fixture checks and 175 browser tests. This includes old games/content, actual withheld worker cancellation and offline/retry behavior. Final engine refinement/import and exact-head CI still pending.
+
+Final rendered review found the first reading-font override still lost to the shared kit's selector specificity. It is corrected explicitly, and a browser regression checks the actual computed control font. Earlier measurements/screenshots remain evidence of that finding; recapture final visuals after the corrected import. No publication occurred before this correction.

@@ -36,3 +36,5 @@ body.chess-page #board .square{min-width:0!important;min-height:0!important}
  .turn-card .chess-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
  .turn-card .chess-actions button{font-size:13px;padding:6px 3px}
 }
+/* Match the shared kit's selector weight so its display font cannot win. */
+body.arcade.chess-page :is(button,select){font-family:var(--arc-body,system-ui,sans-serif)}
