@@ -56,7 +56,7 @@ describe('Turdtris optional challenge rules', () => {
 });
 
 const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'turdtris.html'), 'utf8')
-  .replace(/<script type="module">[\s\S]*?<\/script>\s*/g, '');
+  .replace(/<script type="module"[^>]*>[\s\S]*?<\/script>\s*/g, '');
 
 function canvasContext() {
   const gradient = { addColorStop() {} };

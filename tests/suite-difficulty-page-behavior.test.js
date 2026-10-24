@@ -22,11 +22,11 @@ import { inlineTurdomaniaImports, installTurdomaniaModules } from './turdomania-
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const turdanoidHtml = readFileSync(join(root, 'TurdAnoid.html'), 'utf8');
 const turdtrisHtml = readFileSync(join(root, 'turdtris.html'), 'utf8').replace(
-  /<script type="module">[\s\S]*?<\/script>\s*/g,
+  /<script type="module"[^>]*>[\s\S]*?<\/script>\s*/g,
   ''
 );
 const turdomaniaHtml = inlineTurdomaniaImports(readFileSync(join(root, 'turdomania.html'), 'utf8'))
-  .replace('<script type="module">', '<script>');
+  .replace(/<script type="module"[^>]*>/, '<script>');
 const turdrummyHtml = readFileSync(join(root, 'turdrummy.html'), 'utf8');
 const crapeightsHtml = readFileSync(join(root, 'crapeights.html'), 'utf8');
 const suiteJs = readFileSync(join(root, 'assets/turdsuite.js'), 'utf8');

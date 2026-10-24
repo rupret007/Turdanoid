@@ -14,7 +14,7 @@ import * as TurdtrisPresentation from '../games/turdtris-presentation.js';
 const html = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'turdtris.html'),
   'utf8'
-).replace(/<script type="module">[\s\S]*?<\/script>\s*/g, '');
+).replace(/<script type="module"[^>]*>[\s\S]*?<\/script>\s*/g, '');
 
 function makeCtxStub() {
   const gradient = { addColorStop() {} };
