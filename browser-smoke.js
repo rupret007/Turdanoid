@@ -16,6 +16,7 @@ function fail(name, message) {
 }
 
 async function runCheck(browser, name, path, options = {}) {
+  const failureCountBefore = failures.length;
   const context = await browser.newContext(
     { ...(options.mobile ? devices['iPhone 12'] : { viewport: { width: 1440, height: 900 } }), ...options.context }
   );
@@ -49,6 +50,7 @@ async function runCheck(browser, name, path, options = {}) {
   if (consoleErrors.length) fail(name, `console errors: ${consoleErrors.join(' | ')}`);
   if (pageErrors.length) fail(name, `page errors: ${pageErrors.join(' | ')}`);
   await context.close();
+  console.log(`${failures.length === failureCountBefore ? 'PASS' : 'FAIL'} ${name}`);
 }
 
 async function launchBrowser() {
@@ -1394,6 +1396,7 @@ async function main() {
         await page.locator('#startRoundBtn').click();
         await page.waitForTimeout(250);
         const before = getDialogCount();
+        await page.locator('.mobile-settings > summary').click();
         await page.locator('#resetMatchBtn').click();
         await page.waitForTimeout(200);
         const seen = getDialogCount() - before;
@@ -1465,8 +1468,13 @@ async function main() {
             renderAll();
           });
           await checkTouchHandTargets(page, `${name}-coach`, '#playerHand .card-button', 10);
+          const menu = page.locator('.mobile-settings > summary');
+          if (!await page.locator('#tableDrawer > summary').isVisible()) await menu.tap();
           await checkTouchHandTargets(page, `${name}-drawer`, '#tableDrawer > summary', 1);
+          if (await page.locator('.mobile-settings[open]').count()) await menu.tap();
           await page.locator('#coachSkipBtn').tap();
+          await page.locator('#tableDrawer > summary').waitFor({ state: 'visible' });
+          await checkTouchHandTargets(page, `${name}-drawer-after-coach`, '#tableDrawer > summary', 1);
           await page.locator('#drawStockBtn').tap();
           await checkTouchHandTargets(page, name, '#playerHand .card-button', 11);
           for (const index of [0, 5, 10]) {
@@ -1603,6 +1611,7 @@ async function main() {
             || !result.summary.includes('6♥') || !result.summary.includes('7♥')) {
             fail(name, `visible score and layoff receipt must match the awarded round: ${JSON.stringify(result)}`);
           }
+          if (!await page.locator('#newRoundBtn').isVisible()) await page.locator('.mobile-settings > summary').click();
           await page.locator('#newRoundBtn').click();
           const next = await page.evaluate(() => {
             clearAiTurnTimeout();

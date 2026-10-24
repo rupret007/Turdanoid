@@ -17,6 +17,6 @@
     "jsdom": "29.0.1",
     "playwright": "^1.49.1",
     "prettier": "^3.4.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }
