@@ -8,6 +8,8 @@ Rummy gives coach text a readable column and stable 44px actions. Phone settings
 
 Rules, scoring, save formats and keys are unchanged. Site-specific music policies belong in the receiving site's importer; these upstream changes retain the existing shared player.
 
+Desktop Rummy cards retain their fan geometry while hovered or pressed. Previously, an exposed card edge moved between pointerdown and pointerup, releasing over a neighbour and losing the click. Shadow feedback remains on hover; selection still lifts the card after activation. A saved table captured from normal play reproduces the failure with a real browser pointer, and passes with the stable geometry.
+
 Validation commands (matching CI's Node 22 runtime):
 
 ```sh

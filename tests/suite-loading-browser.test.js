@@ -31,6 +31,35 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('recoverable game startup', () => {
+  it('Rummy keeps an exposed fanned card under the pointer through press and release', async () => {
+    // Captured from actual play: 11 cards, waiting for the player's discard.
+    const entries = JSON.parse(await readFile(resolve(root, 'tests/fixtures/turdrummy-pointer-save.json'), 'utf8'));
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+    try {
+      await page.addInitScript(saved => {
+        for (const entry of saved) {localStorage.setItem(entry.name, entry.value);}
+      }, entries);
+      await page.goto(`${origin}/turdrummy.html`);
+      const card = page.locator('#playerHand button[data-card-id="D13-25"]');
+      await card.scrollIntoViewIfNeeded();
+      const point = await card.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        for (const y of [.12, .2, .35, .5, .7, .85]) {
+          for (const x of [.12, .2, .35, .5, .7, .85]) {
+            const point = { x: rect.x + rect.width * x, y: rect.y + rect.height * y };
+            const hit = document.elementFromPoint(point.x, point.y);
+            if (hit && (hit === element || element.contains(hit))) {return point;}
+          }
+        }
+        return null;
+      });
+      expect(point).not.toBeNull();
+      await page.mouse.click(point.x, point.y);
+      expect(await card.getAttribute('aria-pressed')).toBe('true');
+      expect(await page.evaluate(() => window.Suite.table.load('turdrummy.html').selectedCardId)).toBe('D13-25');
+    } finally {await page.close();}
+  });
+
   for (const file of ['TurdAnoid', 'turdtris', 'turdomania', 'turdjack', 'crapeights', 'turdrummy', 'turdspades']) {
     it(`${file}: a stalled script offers a keyboard-usable exit, then retires when ready`, async () => {
       const page = await browser.newPage({ viewport: { width: 320, height: 568 } });

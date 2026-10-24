@@ -748,14 +748,13 @@
     }
 
     .card-button:hover {
-      transform: translateY(-5px);
       box-shadow: var(--suite-card-shadow-lift), var(--suite-paper-edge);
       z-index: calc(var(--fan-z, 1) + 4);
     }
 
-    .card-button:active {
-      transform: translateY(-2px) scale(0.98);
-    }
+    /* Keep an unselected card's hit area still through pointerdown/up. Moving
+       an exposed fan edge can release over its neighbour and lose the click.
+       The selected state below still lifts the card after activation. */
 
     .card-button:focus-visible {
       outline: 2px solid var(--mint);
