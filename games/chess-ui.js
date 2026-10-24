@@ -27,9 +27,9 @@ let statsSaved = true;
 let opened = false;
 const squares = new Map();
 
-function cancelSearch() {
+function cancelSearch(keepWarm = false) {
   generation++;
-  engine.cancel();
+  if (!keepWarm || busy) { engine.cancel(); }
   busy = false;
 }
 function announce(message) { feedback = message; $('status').textContent = message; }
@@ -171,6 +171,7 @@ function afterMove(move) {
   selected = null; hintMove = null; feedback = '';
   focused = move.to;
   persist();
+  if (game.result) { engine.cancel(); }
   if (game.result?.winner) {
     if (game.mode === 'local' || game.result.winner === game.side) { suite?.win?.(); } else { suite?.buzz?.(); }
   } else if (game.result) { suite?.ding?.(); }
@@ -199,7 +200,7 @@ function animateMove(move) {
 }
 async function queueComputer(hint = false) {
   if (!opened || !game || game.result || busy || !livePosition() || suspended || document.hidden || document.querySelector('dialog[open]') || (hint ? !humanTurn() : humanTurn())) { return; }
-  if (!hint && claimReason(game.chess)) { claimDraw(game); persist(); render(); return; }
+  if (!hint && claimReason(game.chess)) { cancelSearch(); claimDraw(game); persist(); render(); return; }
   const turnGame = game;
   const fen = game.chess.fen();
   const ticket = ++generation;
@@ -247,7 +248,7 @@ function activate(square) {
       promotionMove = { from: selected, to: square };
       $('promotion').showModal(); return;
     }
-    cancelSearch(); failure = false;
+    cancelSearch(true); failure = false;
     afterMove(playMove(game, { from: selected, to: square })); return;
   }
   if (piece?.color === game.chess.turn()) {
@@ -337,7 +338,7 @@ $('promotion').querySelectorAll('[data-promote]').forEach(button => {
   button.innerHTML = pieceSvg(button.dataset.promote, 'w') + button.textContent;
   button.addEventListener('click', () => {
     const move = { ...promotionMove, promotion: button.dataset.promote };
-    promotionMove = null; $('promotion').close(); cancelSearch(); afterMove(playMove(game, move)); focusBoard(move.to);
+    promotionMove = null; $('promotion').close(); cancelSearch(true); afterMove(playMove(game, move)); focusBoard(move.to);
   });
 });
 $('cancel-promotion').addEventListener('click', () => $('promotion').close());

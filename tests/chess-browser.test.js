@@ -113,6 +113,15 @@ describe('native chess interface', () => {
       expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+  it('keeps one real engine warm across ordinary turns', async () => {
+    const page = await pageAt(); const downloads = [];
+    page.on('request', request => { if (request.url().endsWith('.wasm')) { downloads.push(request.url()); } });
+    try {
+      await start(page, 'computer'); await move(page, 'e2e4'); await moves(page, 2);
+      await move(page, 'g1f3'); await moves(page, 4);
+      expect(downloads).toHaveLength(1); expect(page.workers()).toHaveLength(1);
+    } finally { await page.close(); }
+  });
   it('recovers deliberately from a blocked engine without silently changing modes', async () => {
     const page = await pageAt();
     try {

@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { LEVELS } from './chess-core.js';
 
-// A worker belongs to exactly one request. Terminating it is a hard cancellation
-// boundary: no stale bestmove, queued readyok or old search can reach a new turn.
+// One active request owns the worker. A completed search leaves it warm for the
+// next turn, avoiding repeated WASM downloads/compilation. Cancellation terminates
+// both active and idle workers: no old search can cross that boundary.
 export class ChessEngine {
   constructor({ workerFactory = url => new globalThis.Worker(url), timeout = 15000 } = {}) {
     this.workerFactory = workerFactory;
     this.timeout = timeout;
     this.active = null;
+    this.idle = null;
   }
 
   cancel() {
     const job = this.active;
     this.active = null;
+    this.idle?.terminate();
+    this.idle = null;
     if (job) {
       clearTimeout(job.timer);
       job.worker?.terminate();
@@ -21,9 +25,11 @@ export class ChessEngine {
   }
 
   search(moves, level = 'casual', { hint = false, start = null } = {}) {
+    const warm = this.idle;
+    this.idle = null;
     this.cancel();
     const tuning = LEVELS[hint ? 'sharp' : level];
-    if (!tuning) { return Promise.reject(new Error('Unknown difficulty')); }
+    if (!tuning) { warm?.terminate(); return Promise.reject(new Error('Unknown difficulty')); }
     return new Promise((resolve, reject) => {
       const job = { resolve, worker: null, timer: null, stage: 'uci' };
       this.active = job;
@@ -31,11 +37,20 @@ export class ChessEngine {
         if (this.active !== job) { return; }
         this.active = null;
         clearTimeout(job.timer);
-        job.worker?.terminate();
-        if (error) { reject(error); } else { resolve(value); }
+        if (error) {
+          job.worker?.terminate(); reject(error);
+        } else {
+          this.idle = job.worker;
+          job.worker.onmessage = null;
+          job.worker.onerror = event => {
+            event.preventDefault?.();
+            if (this.idle === job.worker) { this.idle = null; job.worker.terminate(); }
+          };
+          resolve(value);
+        }
       };
       try {
-        job.worker = this.workerFactory(new globalThis.URL('../assets/chess/stockfish-19-lite-single.js', import.meta.url));
+        job.worker = warm || this.workerFactory(new globalThis.URL('../assets/chess/stockfish-19-lite-single.js', import.meta.url));
         job.timer = setTimeout(() => finish(null, new Error('The computer took too long to respond.')), this.timeout);
         job.worker.onerror = event => { event.preventDefault?.(); finish(null, new Error('The computer could not load.')); };
         job.worker.onmessage = event => {
@@ -44,6 +59,7 @@ export class ChessEngine {
             if (line.trim() === 'uciok' && job.stage === 'uci') {
               job.stage = 'ready';
               job.worker.postMessage('setoption name Hash value 16');
+              job.worker.postMessage('setoption name Clear Hash');
               job.worker.postMessage(`setoption name Skill Level value ${tuning.skill}`);
               job.worker.postMessage('isready');
             } else if (line.trim() === 'readyok' && job.stage === 'ready') {

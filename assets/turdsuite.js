@@ -615,7 +615,7 @@
       play.appendChild(arrow);
     }
     const title = card.querySelector('h2');
-    if (title && (lastPlayed || inProgress) && !card.getAttribute('aria-label')) {
+    if (title && (lastPlayed || inProgress) && (!card.getAttribute('aria-label') || card.dataset.suiteHubGeneratedLabel === '1')) {
       // aria-label replaces the card's whole accessible name, so spell out the
       // same things a sighted player reads: game, blurb, then action + state.
       // The badge is a CSS ::after and is hidden on phones, so this label is the
@@ -623,6 +623,7 @@
       const blurb = (card.querySelector('.game-info p') || {}).textContent || '';
       const action = inProgress ? 'Continue' : 'Play again';
       const state = inProgress ? 'in progress' : 'last played';
+      card.dataset.suiteHubGeneratedLabel = '1';
       card.setAttribute(
         'aria-label',
         [title.textContent.trim(), blurb.trim(), action + ' — ' + state].filter(Boolean).join('. ')
