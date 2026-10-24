@@ -130,6 +130,26 @@ describe('native chess interface', () => {
       expect((await download).suggestedFilename()).toBe('royal-flush-chess.pgn');
     } finally { await page.close(); }
   });
+  it.each([{ width: 320, height: 568 }, { width: 844, height: 390 }])('keeps board cells square at $width × $height', async viewport => {
+    const page = await pageAt(viewport);
+    try {
+      await start(page);
+      const geometry = await page.locator('#board').evaluate(el => {
+        const board = el.getBoundingClientRect(), cell = el.querySelector('button').getBoundingClientRect();
+        return { board: Math.abs(board.width - board.height), cell: Math.abs(cell.width - cell.height), size: cell.width };
+      });
+      expect(geometry.board).toBeLessThan(1); expect(geometry.cell).toBeLessThan(1);
+      expect(geometry.size).toBeGreaterThanOrEqual(24);
+      if (viewport.width === 320) {
+        const flip = await page.locator('#flip').boundingBox();
+        expect(flip.y + flip.height).toBeLessThanOrEqual(viewport.height);
+      }
+      await page.locator('details').last().locator('summary').click();
+      await page.locator('#suite-arcade-a11y-toggle').click();
+      expect(await page.locator('html').getAttribute('class')).toContain('suite-colorblind');
+      expect(await page.locator('#suite-arcade-a11y-toggle').textContent()).toBe('Contrast on');
+    } finally { await page.close(); }
+  });
   it('plays when storage is denied without modifying legacy saves', async () => {
     const page = await browser.newPage();
     try {

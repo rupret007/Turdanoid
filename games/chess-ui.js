@@ -150,15 +150,17 @@ function render() {
   else if (busy) { status = humanTurn() ? 'Looking for a hint… You can still make your move.' : 'Computer thinking…'; }
   else if (!status) { status = game.chess.isCheck() ? 'Your king is under attack. Move out of check.' : local ? 'Pass the device after your move. Tap a piece to see its moves.' : humanTurn() ? 'Your move. Tap a piece, then a marked square.' : 'Preparing the computer…'; }
   $('status').textContent = status;
+  $('save-status').classList.toggle('storage-problem', !saveOk || !statsSaved);
   $('save-status').textContent = saveOk && statsSaved ? 'Saved on this device only.' : 'Storage is unavailable. Keep this page open; download PGN to keep your moves.';
   $('hint').hidden = local;
   $('hint').disabled = !!ended || !humanTurn() || busy || !livePosition() || suspended;
   $('undo').textContent = local ? 'Undo move' : 'Undo turn';
-  $('undo').disabled = !!ended || !game.chess.history().length || !livePosition() || suspended;
+  $('undo').disabled = !!ended || !game.chess.history().length || !livePosition() || suspended ||
+    (!local && !game.chess.history({ verbose: true }).some(move => move.color === game.side));
   $('claim').disabled = !!ended || !humanTurn() || !livePosition() || busy || suspended;
   $('resign').disabled = !!ended;
   $('engine-recovery').hidden = !failure || !!ended || suspended;
-  $('resume-playing').hidden = !suspended;
+  $('resume-playing').hidden = !suspended || !!ended;
   $('result').hidden = !ended;
   $('result-details').textContent = ended ? `${game.mode === 'local' ? 'Local two-player game' : `Computer practice · ${LEVELS[game.level].label}`}. ${game.chess.history().length} half-moves. ${game.hints} hints, ${game.undos} takebacks. ${ended.winner ? ended.winner === game.side && !local ? 'Nice work! Ready for another?' : 'Every game teaches you something.' : 'Want a rematch?'}` : '';
   $('mode-help').textContent = local ? 'Two players, one device. Undo takes back one move; both players should agree. Use Flip board when passing the device. Resign concedes for the side whose turn it is.' : 'Untimed practice. Undo takes back your last turn (your move and the computer reply, if played). Hints suggest a move without playing it. Hints and takebacks are counted in your result. Resign concedes your game, even during the computer’s turn.';
@@ -169,10 +171,31 @@ function afterMove(move) {
   selected = null; hintMove = null; feedback = '';
   focused = move.to;
   persist();
-  if (game.result) { suite?.win?.(); }
+  if (game.result?.winner) {
+    if (game.mode === 'local' || game.result.winner === game.side) { suite?.win?.(); } else { suite?.buzz?.(); }
+  } else if (game.result) { suite?.ding?.(); }
   else { suite?.beep?.(move.captured ? 330 : 520, 0.045, 'triangle', 0.035); }
   render();
+  animateMove(move);
   void queueComputer();
+}
+function animateMove(move) {
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { return; }
+  function slide(from, to) {
+    const button = squares.get(to);
+    const svg = button?.querySelector('svg');
+    if (!svg?.animate) { return; }
+    const size = button.getBoundingClientRect().width;
+    const sign = game.flipped ? -1 : 1;
+    const dx = (from.charCodeAt(0) - to.charCodeAt(0)) * size * sign;
+    const dy = (Number(to[1]) - Number(from[1])) * size * sign;
+    button.style.zIndex = '5';
+    const animation = svg.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'translate(0,0)' }], { duration: 140, easing: 'ease-out' });
+    animation.finished.then(() => button.style.removeProperty('z-index')).catch(() => button.style.removeProperty('z-index'));
+  }
+  slide(move.from, move.to);
+  if (move.flags.includes('k')) { slide(`h${move.from[1]}`, `f${move.from[1]}`); }
+  if (move.flags.includes('q')) { slide(`a${move.from[1]}`, `d${move.from[1]}`); }
 }
 async function queueComputer(hint = false) {
   if (!opened || !game || game.result || busy || !livePosition() || suspended || document.hidden || document.querySelector('dialog[open]') || (hint ? !humanTurn() : humanTurn())) { return; }

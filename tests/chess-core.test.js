@@ -71,6 +71,7 @@ describe('practice and persistence', () => {
   it('undoes an answered turn, a pending move, or one local move', () => {
     const game = sequence(createGame(), 'e2e4 e7e5'); expect(undoTurn(game)).toBe(2);
     playMove(game, 'd2d4'); expect(undoTurn(game)).toBe(1);
+    const black = sequence(createGame({ side: 'b' }), 'e2e4'); expect(undoTurn(black)).toBe(0);
     const local = sequence(createGame({ mode: 'local' }), 'e2e4 e7e5'); expect(undoTurn(local)).toBe(1);
   });
   it('roundtrips legal moves, settings and aids without touching old keys', () => {

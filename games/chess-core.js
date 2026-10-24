@@ -96,7 +96,8 @@ export function resign(game) {
 }
 
 export function undoTurn(game) {
-  if (game.result || !game.chess.history().length) { return 0; }
+  if (game.result || !game.chess.history().length ||
+      (game.mode === 'computer' && !game.chess.history({ verbose: true }).some(move => move.color === game.side))) { return 0; }
   let count = 0;
   do {
     game.chess.undo(); count++;

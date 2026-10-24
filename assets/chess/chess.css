@@ -9,3 +9,30 @@ body.chess-page{margin:0;min-height:100dvh;color:#f4f0e6;background:radial-gradi
 
 .chess-audio-controls{display:flex;gap:6px;align-items:center}.chess-page .suite-music-toggle{position:static!important;inset:auto!important;transform:none!important;min-width:44px}.chess-page .suite-music-status{position:static!important;margin:12px auto 0;width:min(1080px,100%);inset:auto!important;transform:none!important}.chess-page .suite-listen-manic{position:static!important;display:inline-flex;margin:8px 12px;min-height:44px;align-items:center}
 @media(max-width:360px){.chess-header h1{font-size:20px}.chess-audio-controls{gap:3px}.chess-header button{padding:7px;font-size:12px}.chess-hub{font-size:13px}.chess-page .suite-music-toggle{min-width:38px;width:38px}}
+/* Controls and notation use the reading face; display type stays in headings. */
+body.chess-page button,body.chess-page select{font-family:var(--arc-body,system-ui,sans-serif)}
+body.chess-page .chess-moves button{font-variant-numeric:tabular-nums;font-weight:700}
+.chess-page .turn-card{border-top:3px solid var(--ch-blue)}
+.chess-page .square.last:before{border-color:#3e2a10}
+
+/* Dense board cells need their square geometry; primary controls remain 44px.
+   At 320px each cell is 36px, above WCAG 2.2's 24px target minimum. */
+body.chess-page #board .square{min-width:0!important;min-height:0!important}
+.chess-board{grid-template-rows:repeat(8,minmax(0,1fr))}
+.chess-contrast-control{display:flex;margin-top:12px}
+.suite-colorblind body.chess-page .square{background:#f6f3dd}
+.suite-colorblind body.chess-page .square.dark{background:#526779}
+.suite-colorblind body.chess-page .square.selected{background:#bdd7fc}
+.suite-colorblind body.chess-page .square.last:before{border-color:#10151f;filter:drop-shadow(0 0 1px #fff)}
+
+@media(max-width:740px) and (orientation:portrait){
+ .player-strip{min-height:28px;font-size:12px}
+ .chess-game{gap:10px}
+ .chess-console .turn-card{padding:10px 12px}
+ .turn-card .chess-kicker{display:none}
+ .turn-card h2{font-size:22px;line-height:1.1;margin-bottom:5px}
+ .turn-card #status{font-size:13px;line-height:1.3;margin:4px 0}
+ .turn-card #save-status:not(.storage-problem){display:none}
+ .turn-card .chess-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+ .turn-card .chess-actions button{font-size:13px;padding:6px 3px}
+}
