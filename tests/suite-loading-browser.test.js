@@ -39,7 +39,12 @@ describe.skipIf(!available)('recoverable game startup', () => {
         await page.locator(start).focus();
         await page.keyboard.press('Enter');
         expect(await page.locator(start).isVisible()).toBe(false);
-        if (game === 'turdjack') {expect(await page.evaluate(() => window.eval('roundActive'))).toBe(true);}
+        if (game === 'turdjack') {
+          const dealt = await page.evaluate(() => window.eval('({ active: roundActive, player: playerHand.length, dealer: dealerHand.length, natural: handValue(playerHand) === 21 || handValue(dealerHand) === 21 })'));
+          expect(dealt.player).toBe(2); expect(dealt.dealer).toBe(2);
+          // A legitimate two-card natural can settle immediately after Quick Start.
+          expect(dealt.active || dealt.natural).toBe(true);
+        }
         await page.locator('.suite-back-pill').focus();
         await page.keyboard.press('Enter');
         await page.waitForURL(origin + '/', { timeout: 2000 });

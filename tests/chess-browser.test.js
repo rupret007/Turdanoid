@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve, dirname, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGame, playMove, snapshot, SAVE_KEY } from '../games/chess-core.js';
+import { contrastRatio } from '../games/suite-arcade-a11y.js';
 let browser, server, base;
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' };
@@ -115,6 +116,22 @@ describe('native chess interface', () => {
       expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+  it('keeps Play disabled until the required chess interface is ready', async () => {
+    const page = await browser.newPage();
+    let release;
+    const pending = new Promise(done => { release = done; });
+    await page.route('**/games/chess-ui.js', async route => { await pending; await route.continue(); });
+    try {
+      await page.goto(base + '/chess.html', { waitUntil: 'commit' });
+      await page.locator('#new-game button[type=submit]').waitFor();
+      expect(await page.locator('#new-game button[type=submit]').isDisabled()).toBe(true);
+      release();
+      await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
+      expect(await page.locator('#new-game button[type=submit]').isEnabled()).toBe(true);
+      await page.locator('#new-game button[type=submit]').click();
+      expect(await page.locator('#board').isVisible()).toBe(true);
+    } finally { release(); await page.close(); }
+  });
   it('keeps one real engine warm across ordinary turns', async () => {
     const page = await pageAt(); const downloads = [];
     page.on('request', request => { if (request.url().endsWith('.wasm')) { downloads.push(request.url()); } });
@@ -142,7 +159,7 @@ describe('native chess interface', () => {
       expect((await download).suggestedFilename()).toBe('royal-flush-chess.pgn');
     } finally { await page.close(); }
   });
-  it.each([{ width: 320, height: 568 }, { width: 844, height: 390 }])('keeps board cells square at $width × $height', async viewport => {
+  it.each([{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 568, height: 320 }, { width: 667, height: 375 }])('keeps board cells square at $width × $height', async viewport => {
     const page = await pageAt(viewport);
     try {
       await start(page);
@@ -150,6 +167,10 @@ describe('native chess interface', () => {
         const board = el.getBoundingClientRect(), cell = el.querySelector('button').getBoundingClientRect();
         return { board: Math.abs(board.width - board.height), cell: Math.abs(cell.width - cell.height), size: cell.width };
       });
+      if (viewport.width > viewport.height) {
+        const boardBox = await page.locator('#board').boundingBox();
+        expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(viewport.height);
+      }
       expect(geometry.board).toBeLessThan(1); expect(geometry.cell).toBeLessThan(1);
       expect(geometry.size).toBeGreaterThanOrEqual(24);
       if (viewport.width === 320) {
@@ -160,6 +181,60 @@ describe('native chess interface', () => {
       await page.locator('#suite-arcade-a11y-toggle').click();
       expect(await page.locator('html').getAttribute('class')).toContain('suite-colorblind');
       expect(await page.locator('#suite-arcade-a11y-toggle').textContent()).toBe('Contrast on');
+    } finally { await page.close(); }
+  });
+  it('cancels a pending search on simulated visibility loss and resumes deliberately', async () => {
+    const page = await pageAt();
+    let release;
+    const pending = new Promise(done => { release = done; });
+    let held = false;
+    await page.context().route('**/stockfish-19-lite-single.wasm', async route => {
+      held = true; await pending; await route.continue().catch(() => {});
+    });
+    try {
+      await start(page, 'computer'); await move(page, 'e2e4');
+      await page.waitForFunction(() => document.querySelector('#status').textContent.includes('thinking'));
+      for (let attempt = 0; attempt < 1000 && !held; attempt++) { await new Promise(done => setTimeout(done, 10)); }
+      expect(held).toBe(true);
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+        document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      release();
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+        document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      expect(await page.locator('#resume-playing').isVisible()).toBe(true);
+      await moves(page, 1);
+      await page.context().unroute('**/stockfish-19-lite-single.wasm');
+      await page.locator('#resume-playing').click(); await moves(page, 2);
+    } finally { release(); await page.close(); }
+  });
+  it('keeps coordinate text and move dots readable in both board palettes', async () => {
+    const page = await pageAt();
+    const hex = css => '#' + css.match(/\d+/g).slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('');
+    try {
+      await start(page); await page.locator('details').last().locator('summary').click();
+      for (const high of [false, true]) {
+        if (high) { await page.locator('#suite-arcade-a11y-toggle').click(); }
+        await page.locator('[data-square=e2]').click();
+        await page.mouse.move(0, 0);
+        const colors = await page.evaluate(() => {
+          const coord = document.querySelector('[data-square=a3] .coord');
+          return {
+            text: globalThis.getComputedStyle(coord).color,
+            background: globalThis.getComputedStyle(coord.parentElement).backgroundColor,
+            dots: [...document.querySelectorAll('.square.legal')].map(button => ({
+              foreground: globalThis.getComputedStyle(button, '::after').backgroundColor,
+              background: globalThis.getComputedStyle(button).backgroundColor
+            }))
+          };
+        });
+        expect(contrastRatio(hex(colors.text), hex(colors.background))).toBeGreaterThanOrEqual(4.5);
+        for (const dot of colors.dots) { expect(contrastRatio(hex(dot.foreground), hex(dot.background))).toBeGreaterThanOrEqual(3); }
+        await page.keyboard.press('Escape');
+      }
     } finally { await page.close(); }
   });
   it('plays when storage is denied without modifying legacy saves', async () => {
