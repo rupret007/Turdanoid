@@ -10,6 +10,8 @@ Rules, scoring, save formats and keys are unchanged. Site-specific music policie
 
 Desktop Rummy cards retain their fan geometry while hovered or pressed. Previously, an exposed card edge moved between pointerdown and pointerup, releasing over a neighbour and losing the click. Shadow feedback remains on hover; selection still lifts the card after activation. A saved table captured from normal play reproduces the failure with a real browser pointer, and passes with the stable geometry.
 
+Turdanoid replay and the R shortcut restart the current mode. Boss Flush previously called the Classic entry point on replay; it now resets the run without changing the selected mode. Regression coverage checks both winning and losing Boss results.
+
 Validation commands (matching CI's Node 22 runtime):
 
 ```sh

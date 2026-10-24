@@ -1754,7 +1754,7 @@ function quitToMenu(){
   showOverlay(tTitle); pickTitleQuip();
   $('btnStart').focus();
 }
-function restartGame(){ hideOverlay(tEnd); startGame(); }
+function restartGame(){ hideOverlay(tEnd); beginRun(); }
 function gameOver(won){
   state = won?'win':'gameover';
   running=false;
