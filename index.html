@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="assets/arcade-hub.css">
   <script src="games/table-continue-core.js"></script>
   <script src="assets/turdsuite.js"></script>
-  <title>Stalemate Arcade — Seven Free Games</title>
+  <title>Stalemate Arcade — Eight Free Games</title>
   <style>
     :root {
       --bg-a: #10192d;
@@ -669,7 +669,7 @@
       .changelog { font-size: 0.78rem; padding: 8px 10px; }
     }
 
-    /* Squat phone landscape: two compact columns so seven ≥44px rows stay
+    /* Squat phone landscape: two compact columns so eight ≥44px rows stay
        reachable without horizontal overflow. Vertical scroll is allowed.
        Width can exceed 600px (844×390), so this block restates the phone-row
        chrome instead of depending on the portrait 600px query. */
@@ -744,14 +744,14 @@
     <div class="masthead">
       <p class="arcade-kicker">Punk rock. Bathroom humor. One more round.</p>
       <h1>Stalemate Arcade</h1>
-      <p class="subtitle">Seven games. Pick your next round.</p>
+      <p class="subtitle">Eight games. Pick your next round.</p>
       <div class="meta-row">
         <p class="hero-badge">No sign-in • works on phone and desktop</p>
         <button type="button" class="suite-hub-mute" id="suite-hub-mute" aria-pressed="false" aria-label="Sound on, tap to mute suite sounds">🔊 Sound on</button>
       </div>
     </div>
 
-    <div class="arcade-grid-heading"><h2>Seven games. Zero dignity.</h2><p>Your records stay on this device.</p></div>
+    <div class="arcade-grid-heading"><h2>Eight games. Zero dignity.</h2><p>Your records stay on this device.</p></div>
     <p class="arcade-mode-shortcut"><a href="turdtris.html?mode=ultra">Turdtris · 2-minute Ultra →</a></p>
     <section class="games" id="hub-games" aria-label="Choose a game">
       <a href="TurdAnoid.html" class="game-card" data-vibe="Bricks. Busted. Flushed." style="--c:#9effc8;--c2:#7ae6ff">
@@ -1036,6 +1036,17 @@
           <span class="play">Play <i>→</i></span>
         </div>
       </a>
+      <a href="chess.html" class="game-card" aria-label="Royal Flush Chess. Challenge the computer or a friend on this device. Play chess.">
+        <div class="cover" aria-hidden="true">
+          <svg viewBox="0 0 320 150" role="img" aria-label="Chess pieces on an arcade checkerboard">
+            <defs><pattern id="chessCoverBoard" width="48" height="48" patternTransform="rotate(-12)" patternUnits="userSpaceOnUse"><rect width="48" height="48" fill="#9cb2aa"/><path d="M0 0h24v24H0zM24 24h24v24H24z" fill="#e7dac0"/></pattern><linearGradient id="chessCoverShade" x2="0" y2="1"><stop stop-color="#0b182b" stop-opacity=".2"/><stop offset="1" stop-color="#0b182b"/></linearGradient></defs>
+            <rect width="320" height="150" fill="url(#chessCoverBoard)"/><rect width="320" height="150" fill="url(#chessCoverShade)"/>
+            <g stroke="#152238" stroke-width="3" stroke-linejoin="round"><g fill="#fff6dc"><path d="M105 29h10v-9h7v9h10v7h-10v11h-7V36h-10zM94 57c0-13 17-12 25-5 8-7 25-8 25 5 0 12-10 19-13 37h-24c-3-18-13-25-13-37zM100 96h38l6 14H94z"/></g><g fill="#253e52" stroke="#fff6dc"><path d="m176 43 13 13 13-25 13 25 13-13-10 50h-32zM183 96h38l6 14h-50z"/><circle cx="175" cy="37" r="5"/><circle cx="202" cy="25" r="5"/><circle cx="229" cy="37" r="5"/></g></g>
+            <rect x="19" y="120" width="282" height="24" rx="12" fill="#b5dc08"/><text x="160" y="137" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="900" fill="#10200b" letter-spacing="2">TAKE THE THRONE</text>
+          </svg>
+        </div>
+        <div class="body"><div class="game-info"><div class="title-row"><span class="emoji" aria-hidden="true">♟</span><h2>Royal Flush Chess</h2></div><p>Outthink the computer. Or a friend.</p></div><span class="play">Play <i>→</i></span></div>
+      </a>
     </section>
 
     <details class="changelog">
@@ -1068,7 +1079,7 @@
         <li>TurdSpades added with full bidding, trick-taking flow, and team scoring.</li>
       </ul>
     </details>
-    <p class="footer-note">Seven games • one sewer • Stalemate punk rock on every table — <a href="#hub-games">back to the grid</a></p>
+    <p class="footer-note">Eight games • one sewer • Stalemate punk rock on every table — <a href="#hub-games">back to the grid</a></p>
   </div>
   <script type="module">
     import { injectSkipLink, createAnnouncer } from './assets/suite-a11y.js';

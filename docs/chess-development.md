@@ -1,0 +1,28 @@
+# Chess release candidate — in progress
+
+October 24, 2026. This is a new feature, not yet a published or validated game.
+
+Reusable source: `Turdanoid-chess`, branch `codex/arcade-chess`, based on 410cf3f9a96a2afcf05ad82f286d0e166785708d (PR 102). Receiving site: `RadDadSite-chess`, branch `codex/chess-preview`, based on 6c6d8918a9736bbb258ec84e1ead791ced87e876 (PR 65). Existing checkouts and PRs are preserved. New draft PRs will be stacked on these branches. Never merge/push RadDadSite main, deploy Stalemate, change the established domain/hosting/DNS/production gates, or message anyone. Only update the existing independent Rad Dad preview after validation.
+
+## Decisions and research
+
+- [Chess.com bot options](https://support.chess.com/en/articles/8614091-how-can-i-play-against-the-chess-com-bots) provide color choice and optional hints/takebacks. [Official takeback guidance](https://support.chess.com/en/articles/8594400-can-i-take-back-a-bad-move) treats these as learning aids. We choose untimed computer practice and pass-and-play, manual hints and clearly described undo. Difficulty labels describe search settings, not calibrated Elo.
+- [Lichess features](https://lichess.org/features) include learning, analysis and PGN export. We choose a compact readable move list, review controls and PGN export rather than a separate chess platform. These are design choices, not evidence of retention.
+- Recent first-person feedback: [September 2026 history controls](https://www.reddit.com/r/lichess/comments/1wa2eaq/in_lichess_app_no_forward_or_back_button_when/) and [July 2026 weak bot behavior](https://www.reddit.com/r/chessbeginners/comments/1us1fq5/the_new_beginner_bots_on_chesscom_are_seemingly/). These anecdotes favor visible navigation and useful opponents; they are not representative research or popularity evidence.
+- [chess.js 1.4.0 documentation](https://jhlywa.github.io/chess.js/) and [source/license](https://github.com/jhlywa/chess.js) provide move legality, FEN/PGN and standard insufficient-material detection. Its threefold/50-move game-over shortcut must not determine our results. BSD-2-Clause, version pinned to npm 1.4.0 (upstream ce1ff9e9fc342984ff75ca475ab39f37888cb28a).
+- [Stockfish.js maintainer](https://github.com/nmrugg/stockfish.js/tree/v19.0.1): version 19.0.1, unmodified lite single-threaded worker, approximately 1.8 MB WASM. No shared-memory hosting headers required. GPL-3.0; source commit 0d5dd7944f88c817c07a26bc4fb1905d5f9c46d6. Corresponding-source bundle, networks, build instructions and licenses must be available alongside the binaries before publication.
+- [FIDE 2023 rules, articles 5 and 9](https://handbook.fide.com/chapter/e012023): threefold/50-move claims (including an intended legal move), fivefold/75-move automatic draws; checkmate takes precedence. Use position identity including side, legal en passant and castling rights. Standard material draws are supported; exhaustive blocked-position deadness is not claimed.
+
+## Requirements / next actions
+
+Rules/core, pinned worker with cancellation/recovery, accessible responsive UI, independent storage/results, hub and exact importer integration, corresponding source, meaningful rules/engine/browser tests, screenshots, old-suite regression/required CI, reviewable draft PRs, reproducible independent preview deployment and anonymous verification are all pending. Downloaded npm archives have verified SHA512 integrity. No chess UI or runtime tests exist yet.
+
+Physical-device and assistive-technology validation must be explicitly distinguished from emulation. Preserve failure evidence. Next executable step: implement core state/outcomes and worker client, then the playable UI.
+
+## Checkpoint — playable source
+
+Implemented Royal Flush Chess, original SVG pieces/cover, four bounded Stockfish levels, local play, hint/undo, review, promotion dialog, PGN export, independent validated save/results and hub integration. Engine cancels by terminating its request-owned worker. Standard-position saves replay legal UCI moves and reject post-terminal/forged state; old table keys remain untouched. Completed games stay reviewable after reload. Corresponding-source archive includes the exact lite network, upstream source and build instructions; its hash manifest is public. Local compiler reproduction is not claimed.
+
+First targeted core run: 22/22 passed. First Chromium native driver passed engine reply/hint/undo/cancellation, keyboard move, refresh/continue/hub, and local touch-sized Fool's Mate; screenshots in `../release-evidence/chess/`. First full suite: 1996 passed / 3 failed (two stale seven-game expectations; existing loading-driver read before reload initialized). These were corrected. First new browser suite: 5 passed / 4 failed (hidden mode-option driver wait, selection cleanup in driver, and deferred confirmation behavior). Confirmation now resolves synchronously. Focused rerun: 34/34 across chess native browser, hub phone layout and shared loading recovery. Lint identified one new browser global qualification, corrected; existing unused-page warning retained.
+
+No feature commit/PR, receiving-site import, cross-browser acceptance, full final suite/CI or chess deployment yet. Independent preview was re-read: version 4, public, same project/URL. Existing PR 102 and 65 are open/unmerged but have been marked ready externally; preserve their status. Next: commit source checkpoint, import exact commit, test integrated CSP/worker and three browser engines, then required CI and isolated publication.

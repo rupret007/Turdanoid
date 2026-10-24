@@ -77,7 +77,7 @@ describe.skipIf(!available)('recoverable game startup', () => {
     } finally {await page.close();}
   });
 
-  for (const file of ['TurdAnoid', 'turdtris', 'turdomania', 'turdjack', 'crapeights', 'turdrummy', 'turdspades']) {
+  for (const file of ['TurdAnoid', 'turdtris', 'turdomania', 'turdjack', 'crapeights', 'turdrummy', 'turdspades', 'chess']) {
     it(`${file}: a stalled script offers a keyboard-usable exit, then retires when ready`, async () => {
       const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
       let release;
@@ -101,7 +101,7 @@ describe.skipIf(!available)('recoverable game startup', () => {
         expect(await recovery.evaluate(el => el.contains(document.activeElement))).toBe(true);
         release();
         await page.waitForLoadState('load');
-        await page.waitForFunction(() => window.SuiteLoading.state === 'ready');
+        await page.waitForFunction(() => window.SuiteLoading?.state === 'ready');
         expect(await recovery.count()).toBe(0);
         expect(await page.getByRole('heading', { level: 1 }).count()).toBeGreaterThan(0);
       } finally {
@@ -118,12 +118,12 @@ describe.skipIf(!available)('recoverable game startup', () => {
     await page.route('**/games/turdtris-modes.js', route => broken ? route.abort() : route.continue());
     try {
       await page.goto(`${origin}/turdtris.html?mode=sprint#arcade`);
-      await page.waitForFunction(() => window.SuiteLoading.state === 'failed');
+      await page.waitForFunction(() => window.SuiteLoading?.state === 'failed');
       await page.evaluate(() => localStorage.setItem('turdtrisHighScore', '123'));
       const before = page.url();
       broken = false;
       await page.locator('#suite-load-state button').click();
-      await page.waitForFunction(() => window.SuiteLoading.state === 'ready');
+      await page.waitForFunction(() => window.SuiteLoading?.state === 'ready');
       expect(page.url()).toBe(before);
       expect(await page.evaluate(() => localStorage.getItem('turdtrisHighScore'))).toBe('123');
       expect(await page.locator('#attractPlay').isEnabled()).toBe(true);
@@ -137,7 +137,7 @@ describe.skipIf(!available)('recoverable game startup', () => {
     try {
       await page.route('**/games/turdomania-core.js', route => route.abort());
       await page.goto(`${origin}/turdomania.html`);
-      await page.waitForFunction(() => window.SuiteLoading.state === 'failed');
+      await page.waitForFunction(() => window.SuiteLoading?.state === 'failed');
       await page.keyboard.press('Escape');
       await page.waitForURL(origin + '/');
       expect(await page.locator('h1').textContent()).toBe('Stalemate Arcade');

@@ -278,11 +278,11 @@ describe.runIf(hasBrowser)('Turdomania browser behavior (emulated Chromium)', ()
     await page.close();
   });
 
-  it('keeps the hub focused on all seven games and existing local records', async () => {
+  it('keeps the hub focused on all eight games and existing local records', async () => {
     const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
     await page.goto(`${origin}/index.html`);
-    expect(await page.locator('.game-card').count()).toBe(7);
-    expect(await page.locator('title').textContent()).toBe('Stalemate Arcade — Seven Free Games');
+    expect(await page.locator('.game-card').count()).toBe(8);
+    expect(await page.locator('title').textContent()).toBe('Stalemate Arcade — Eight Free Games');
     expect(await page.locator('.daily-feature, #daily-hub-play, #daily-hub-status').count()).toBe(0);
     const hrefs = await page.locator('.game-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('href')));
     expect(hrefs).toContain('turdomania.html');
