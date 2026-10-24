@@ -58,3 +58,9 @@ Final full local suite: 2016 passed / one startup-driver assertion failed. Its C
 Short-landscape review now also covers 568×320 and 667×375. Their whole board remains visible and cells remain square and at least 24px; 17 native UI tests pass. No physical-phone or screen-reader acceptance is claimed.
 
 Promotion selection cues count distinct squares, not the four piece variants per destination; all four native promotion regression cases verify the displayed destination count. Final native chess UI suite:17/17 passed. Re-run exact-head CI and receiving-site import before publishing.
+
+The expanded three-browser matrix exposed a Firefox-only short-landscape defect after a result: the board's generic auto block margins centered it vertically beside the taller console, moving it below the viewport. It is now explicitly top aligned with zero block margins, retaining horizontal centering. The geometry regression now reaches a real native checkmate before measuring the short-landscape board. Failure screenshots/metrics are retained; the full final matrix must be repeated.
+
+Firefox also preserved the scrolled setup position when Play revealed the game. Enter/continue/rematch now reset to the game top before focusing the board. Whole-board tests check both top and bottom bounds, not merely bottom. The earlier old six-game accessibility timeout passed in8.55s when rechecked without competing full/browser-matrix workloads; no timeout/assertion was changed. Final CI still qualifies the frozen candidate.
+
+Firefox source verification after the fix: a natural native checkmate leaves scrollY0 and board bounds y86–306 at568×320, y86–361.07 at667×375. Final17-case chess UI suite passes; the expanded integrated matrix is repeated after importing this exact correction.

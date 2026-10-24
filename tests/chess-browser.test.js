@@ -170,7 +170,10 @@ describe('native chess interface', () => {
         return { board: Math.abs(board.width - board.height), cell: Math.abs(cell.width - cell.height), size: cell.width };
       });
       if (viewport.width > viewport.height) {
+        for (const lan of ['f2f3', 'e7e5', 'g2g4', 'd8h4']) { await move(page, lan); }
+        expect(await page.locator('#turn').textContent()).toBe('Black wins!');
         const boardBox = await page.locator('#board').boundingBox();
+        expect(boardBox.y).toBeGreaterThanOrEqual(0);
         expect(boardBox.y + boardBox.height).toBeLessThanOrEqual(viewport.height);
       }
       expect(geometry.board).toBeLessThan(1); expect(geometry.cell).toBeLessThan(1);
