@@ -40,7 +40,7 @@ describe.skipIf(!available)('recoverable game startup', () => {
       try {
         await page.clock.install();
         await page.goto(`${origin}/${file}.html`, { waitUntil: 'commit' });
-        await page.waitForFunction(() => !!window.SuiteLoading);
+        await page.waitForFunction(() => !!window.SuiteLoading, null, { polling: 100 });
         await page.clock.fastForward(13000);
         const recovery = page.locator('#suite-load-state');
         expect(await recovery.isVisible()).toBe(true);
