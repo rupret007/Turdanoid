@@ -86,6 +86,7 @@ describe.skipIf(!available)('recoverable game startup', () => {
         await page.waitForLoadState('load');
         await page.waitForFunction(() => window.SuiteLoading.state === 'ready');
         expect(await recovery.count()).toBe(0);
+        expect(await page.getByRole('heading', { level: 1 }).count()).toBeGreaterThan(0);
       } finally {
         release();
         await page.unrouteAll({ behavior: 'wait' });

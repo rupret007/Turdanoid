@@ -163,7 +163,7 @@
   /* SameGame: resize the board from measured chrome, never shrink buttons. */
   html[data-mobile-game="turdomania"] .help, html[data-mobile-game="turdomania"] .tagline { display:none; }
   html[data-mobile-game="turdomania"] header.hud { flex:none; padding:2px 48px; height:64px; gap:2px; }
-  html[data-mobile-game="turdomania"] header.hud h1 { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  html[data-mobile-game="turdomania"] header.hud h1 { display:block; position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   html[data-mobile-game="turdomania"] #boardWrap { flex:none; margin:auto; }
   html[data-mobile-game="turdomania"] .dock { flex:none; margin:4px 0 0; padding:0; }
 }
