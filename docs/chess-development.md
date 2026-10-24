@@ -56,3 +56,5 @@ The corrected complete local smoke runner passed, including all original games a
 Final full local suite: 2016 passed / one startup-driver assertion failed. Its Crapjack check assumed every random opening stays active, although a two-card natural can settle immediately. It now strictly verifies two dealt cards on both sides and requires either an active round or an actual 21-point natural; an undealt/incorrectly ended hand still fails. Game code/scoring are unchanged. The failure log is retained; focused verification and final CI follow.
 
 Short-landscape review now also covers 568×320 and 667×375. Their whole board remains visible and cells remain square and at least 24px; 17 native UI tests pass. No physical-phone or screen-reader acceptance is claimed.
+
+Promotion selection cues count distinct squares, not the four piece variants per destination; all four native promotion regression cases verify the displayed destination count. Final native chess UI suite:17/17 passed. Re-run exact-head CI and receiving-site import before publishing.

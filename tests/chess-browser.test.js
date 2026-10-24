@@ -92,7 +92,9 @@ describe('native chess interface', () => {
     try {
       await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
       await page.reload(); await page.locator('#continue').click();
-      await move(page, 'b7a8'); expect(await page.locator('#promotion').evaluate(el => el.open)).toBe(true);
+      await page.locator('[data-square=b7]').click();
+      expect(await page.locator('#status').textContent()).toContain('2 legal destinations marked.');
+      await page.locator('[data-square=a8]').click(); expect(await page.locator('#promotion').evaluate(el => el.open)).toBe(true);
       await page.locator(`[data-promote=${promotion}]`).click();
       const name = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[promotion];
       expect(await page.locator('[data-square=a8]').getAttribute('aria-label')).toContain('White ' + name);

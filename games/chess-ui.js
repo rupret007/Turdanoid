@@ -253,8 +253,8 @@ function activate(square) {
   }
   if (piece?.color === game.chess.turn()) {
     selected = square; hintMove = null;
-    const count = game.chess.moves({ square, verbose: true }).length;
-    feedback = `${colorName(piece.color)} ${pieceName(piece.type)} at ${square}. ${count ? `${count} legal destinations marked.` : 'No legal moves for this piece.'}`;
+    const count = new Set(game.chess.moves({ square, verbose: true }).map(move => move.to)).size;
+    feedback = `${colorName(piece.color)} ${pieceName(piece.type)} at ${square}. ${count ? `${count} legal ${count === 1 ? 'destination' : 'destinations'} marked.` : 'No legal moves for this piece.'}`;
   } else { feedback = selected ? 'That move is not legal. Choose a marked square or another piece.' : 'Select one of the pieces whose turn it is.'; }
   render();
 }
