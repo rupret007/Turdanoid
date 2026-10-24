@@ -30,8 +30,8 @@ async function pageAt(viewport = { width: 1280, height: 900 }, touch = false) {
   return page;
 }
 async function start(page, mode = 'local', side = 'w') {
+  await page.locator(`input[name=mode][value=${mode}]`).check();
   if (mode === 'computer') { await page.selectOption('#side', side); }
-  await page.selectOption('#mode', mode);
   await page.locator('#new-game button[type=submit]').click();
 }
 async function move(page, text, touch = false) {
@@ -153,7 +153,7 @@ describe('native chess interface', () => {
       await page.unroute('**/stockfish-19-lite-single.js');
       await page.locator('#retry').click(); await moves(page, 1);
       expect(await page.locator('#engine-recovery').isVisible()).toBe(false);
-      await page.locator('details').last().locator('summary').click(); await page.locator('#resign').click();
+      await page.locator('#game-options > summary').click(); await page.locator('#resign').click();
       await page.locator('#confirm-no').click(); expect(await page.locator('#result').isVisible()).toBe(false);
       await page.locator('#resign').click(); await page.locator('#confirm-yes').click();
       expect(await page.locator('#status').textContent()).toBe('Resignation');
@@ -182,7 +182,7 @@ describe('native chess interface', () => {
         const flip = await page.locator('#flip').boundingBox();
         expect(flip.y + flip.height).toBeLessThanOrEqual(viewport.height);
       }
-      await page.locator('details').last().locator('summary').click();
+      await page.locator('#game-options > summary').click();
       await page.locator('#suite-arcade-a11y-toggle').click();
       expect(await page.locator('html').getAttribute('class')).toContain('suite-colorblind');
       expect(await page.locator('#suite-arcade-a11y-toggle').textContent()).toBe('Contrast on');
@@ -220,7 +220,7 @@ describe('native chess interface', () => {
     const page = await pageAt();
     const hex = css => '#' + css.match(/\d+/g).slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('');
     try {
-      await start(page); await page.locator('details').last().locator('summary').click();
+      await start(page); await page.locator('#game-options > summary').click();
       for (const high of [false, true]) {
         if (high) { await page.locator('#suite-arcade-a11y-toggle').click(); }
         await page.locator('[data-square=e2]').click();
@@ -248,6 +248,124 @@ describe('native chess interface', () => {
       await page.addInitScript(() => { Object.defineProperty(globalThis, 'localStorage', { get() { throw new Error('denied'); } }); });
       await page.goto(base + '/chess.html'); await start(page); await move(page, 'e2e4'); await moves(page, 1);
       expect(await page.locator('#save-status').textContent()).toContain('Storage is unavailable');
+    } finally { await page.close(); }
+  });
+  it('returns to the saved board when a new game is cancelled', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); await move(page, 'e2e4');
+      const saved = await page.evaluate(key => localStorage.getItem(key), SAVE_KEY);
+      await page.locator('#game-options > summary').click(); await page.locator('#new').click();
+      await page.locator('#new-game button[type=submit]').click(); await page.locator('#confirm-no').click();
+      expect(await page.locator('#game').isVisible()).toBe(true);
+      expect(await page.locator('#setup').isVisible()).toBe(false);
+      expect(await page.evaluate(key => localStorage.getItem(key), SAVE_KEY)).toBe(saved);
+      await move(page, 'e7e5'); await moves(page, 2);
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('uses the promoting side for Black promotion artwork', async () => {
+    const page = await pageAt(); const game = createGame({ mode: 'local' });
+    for (const lan of ['a2a4', 'h7h5', 'a4a5', 'h5h4', 'a5a6', 'h4h3', 'a6b7', 'h3g2', 'b7a8q']) { playMove(game, lan); }
+    try {
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
+      await page.reload(); await page.locator('#continue').click(); await move(page, 'g2h1');
+      const pawnColor = await page.locator('[data-square=g2] svg g').getAttribute('fill');
+      for (const type of ['q', 'r', 'b', 'n']) {
+        expect(await page.locator(`[data-promote=${type}] svg g`).getAttribute('fill')).toBe(pawnColor);
+      }
+      await page.locator('#cancel-promotion').click(); await moves(page, 9);
+      expect(await page.locator('[data-square=g2]').getAttribute('aria-label')).toContain('Black pawn');
+    } finally { await page.close(); }
+  });
+  it('cancels promotion safely on simulated backgrounding and leaves resumption reachable', async () => {
+    const page = await pageAt(); const game = createGame({ mode: 'local' });
+    for (const lan of ['a2a4', 'h7h5', 'a4a5', 'h5h4', 'a5a6', 'h4h3', 'a6b7', 'h3g2']) { playMove(game, lan); }
+    try {
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
+      await page.reload(); await page.locator('#continue').click(); await move(page, 'b7a8');
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new globalThis.Event('visibilitychange'));
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      expect(await page.locator('#promotion').evaluate(el => el.open)).toBe(false);
+      expect(await page.locator('#resume-playing').isVisible()).toBe(true); await moves(page, 8);
+      expect(await page.locator('#status').textContent()).toContain('paused');
+      await page.locator('#resume-playing').click(); await move(page, 'b7a8'); await page.locator('[data-promote=n]').click(); await moves(page, 9);
+      expect(await page.locator('[data-square=a8]').getAttribute('aria-label')).toContain('White knight');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('describes a finished game honestly on its board and during review', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); for (const lan of ['f2f3', 'e7e5', 'g2g4', 'd8h4']) { await move(page, lan); }
+      expect(await page.locator('#board').getAttribute('aria-label')).toContain('Black wins');
+      expect(await page.locator('#board').getAttribute('aria-label')).not.toContain('to move');
+      await page.locator('#previous').click(); expect(await page.locator('#status').textContent()).not.toContain('to play');
+      expect(await page.locator('#live').textContent()).toBe('Final board');
+      await page.locator('#live').click(); expect(await page.locator('#status').textContent()).toBe('Checkmate');
+      expect(await page.locator('#undo').isDisabled()).toBe(true);
+    } finally { await page.close(); }
+  });
+  it('starts local play with White at the bottom regardless of hidden computer settings', async () => {
+    const page = await pageAt();
+    try {
+      await page.selectOption('#side', 'b'); await start(page);
+      expect(await page.locator('#board button').first().getAttribute('data-square')).toBe('a8');
+      expect(await page.locator('#turn').textContent()).toBe('White to move');
+      await page.keyboard.press('Enter'); expect(await page.locator('#status').textContent()).toContain('White pawn');
+      await page.keyboard.press('Escape'); await page.locator('#flip').click(); await move(page, 'e2e4'); await moves(page, 1);
+    } finally { await page.close(); }
+  });
+  it('opens long help at its heading rather than scrolling to the last button', async () => {
+    const page = await pageAt({ width: 320, height: 568 });
+    try {
+      await page.locator('#how-to').click();
+      expect(await page.locator('#guide').evaluate(el => el.scrollTop)).toBe(0);
+      const heading = await page.locator('#guide-title').boundingBox();
+      expect(heading.y).toBeGreaterThanOrEqual(0); expect(heading.y + heading.height).toBeLessThan(568);
+      await page.locator('#close-guide').click(); await page.locator('#how-to').click();
+      expect(await page.locator('#guide').evaluate(el => el.scrollTop)).toBe(0);
+    } finally { await page.close(); }
+  });
+  it('makes two-player selection visible, accessible and independent from computer assets', async () => {
+    const page = await pageAt({ width: 320, height: 568 }, true); const engineRequests = [];
+    page.on('request', r => { if (/stockfish.*\.(js|wasm)/.test(r.url())) { engineRequests.push(r.url()); } });
+    try {
+      const local = page.getByRole('radio', { name: /2 players.*Share this device/ });
+      expect(await local.isVisible()).toBe(true); await local.check();
+      expect(await page.locator('#computer-options').isVisible()).toBe(false);
+      await page.getByRole('button', { name: 'Play 2-player chess →' }).click();
+      await move(page, 'e2e4', true); await move(page, 'e7e5', true); await moves(page, 2);
+      expect(await page.locator('#game-label').textContent()).toContain('PASS & PLAY');
+      expect(engineRequests).toEqual([]); expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('offers an optional illustrated piece reference and useful illegal-move reminders', async () => {
+    const page = await pageAt({ width: 320, height: 568 });
+    try {
+      await page.locator('#how-to').click(); await page.locator('#piece-guide summary').click();
+      expect(await page.locator('#piece-reference dt').count()).toBe(6);
+      expect(await page.locator('#piece-reference svg').count()).toBe(12);
+      expect(await page.locator('#piece-reference').innerText()).toContain('The only piece that can jump');
+      await page.getByRole('button', { name: 'Close how to play' }).click();
+      await start(page); await move(page, 'e2e5'); await moves(page, 0);
+      expect(await page.locator('#status').textContent()).toContain('Pawns move forward');
+      await page.keyboard.press('Escape'); await move(page, 'e2e4'); await moves(page, 1);
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('preserves a real local move and mute through native back navigation', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); await page.locator('#mute').click(); await move(page, 'e2e4');
+      await page.locator('.chess-hub').click(); await page.waitForFunction(() => document.body.dataset.arcadeGame === 'hub');
+      await page.goBack(); await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
+      if (await page.locator('#continue').isVisible()) { await page.locator('#continue').click(); }
+      if (await page.locator('#resume-playing').isVisible()) { await page.locator('#resume-playing').click(); }
+      await moves(page, 1); expect(await page.evaluate(() => Suite.isMuted())).toBe(true);
+      await move(page, 'e7e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
 });
