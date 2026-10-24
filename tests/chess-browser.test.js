@@ -364,7 +364,7 @@ describe('native chess interface', () => {
       await page.goBack(); await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
       if (await page.locator('#continue').isVisible()) { await page.locator('#continue').click(); }
       if (await page.locator('#resume-playing').isVisible()) { await page.locator('#resume-playing').click(); }
-      await moves(page, 1); expect(await page.evaluate(() => Suite.isMuted())).toBe(true);
+      await moves(page, 1); expect(await page.evaluate(() => globalThis.Suite.isMuted())).toBe(true);
       await move(page, 'e7e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
