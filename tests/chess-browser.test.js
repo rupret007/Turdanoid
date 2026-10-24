@@ -109,6 +109,7 @@ describe('native chess interface', () => {
       await page.reload(); await page.locator('#continue').click(); await moves(page, 2);
       await page.goto(base + '/'); await page.waitForFunction(() => document.querySelector('a[href="chess.html"] .play').textContent.includes('Continue'));
       expect(await page.locator('.game-card').count()).toBe(8);
+      expect(await page.locator('.game-card[href="chess.html"]').getAttribute('aria-label')).toContain('Continue — in progress');
       expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });

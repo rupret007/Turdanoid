@@ -96,7 +96,7 @@ function renderBoard() {
   $('board').replaceChildren(frag);
   if (active) { focusBoard(active); }
   const topColor = game.flipped ? 'w' : 'b';
-  const label = color => game.mode === 'local' ? `${colorName(color)} pieces` : color === game.side ? `You · ${colorName(color)}` : `Computer · ${colorName(color)}`;
+  const label = color => game.mode === 'local' ? `${colorName(color)} pieces` : color === game.side ? `You · ${colorName(color)}` : `Computer · ${LEVELS[game.level].label} · ${colorName(color)}`;
   $('top-player').textContent = label(topColor);
   $('bottom-player').textContent = label(topColor === 'w' ? 'b' : 'w');
   const until = reviewing ?? history.length;
