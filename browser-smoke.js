@@ -1182,7 +1182,7 @@ async function main() {
         context: { viewport },
         actions: async (page) => {
           fs.mkdirSync(crapjackR7ShotDir, { recursive: true });
-          await page.keyboard.press('Enter');
+          await page.locator('#closeGuideBtn').click();
           await page.waitForTimeout(200);
           await page.evaluate(() => {
             createShoe(4);
@@ -1294,7 +1294,7 @@ async function main() {
 
     await runCheck(browser, 'turdjack-confirm-modals', 'turdjack.html', {
       actions: async (page, getDialogCount) => {
-        await page.keyboard.press('Enter');
+        await page.locator('#closeGuideBtn').click();
         await page.waitForTimeout(150);
         const dialogBaseline = getDialogCount();
 
