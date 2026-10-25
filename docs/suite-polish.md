@@ -23,6 +23,8 @@ Source tests cover behavior independently of either site. `tests/arcade-native-c
 
 Existing Crapjack/Rummy scenario entry points close the shared focus helper when directly hiding a guide, so controlled-position tests and supported moment links do not leave the board inert. The Rummy difficulty-layout test opens its real phone Table menu before checking reachable controls; stale rectangles from hidden baseline elements are not acceptance.
 
+Browser smoke setup uses the visible guide controls. Keyboard guide-dismissal checks focus Close Guide explicitly; fixture setup closes the guide before staging its intended hand. Enter on the initially focused Quick Start button retains that button's native action. Hub navigation dismisses an open modal through its control before following the background link. Gameplay, Continue and navigation assertions remain in force.
+
 Receiving validation must exercise the generated result at both site configurations. A source-only pass is insufficient for footer differences, content security policies, clean/subpath routing or embedded media. The root workspace's `SUITE-POLISH-HANDOFF.md` and `release-evidence/suite-polish/REVIEW-MATRIX.md` track exact revisions, before/after screenshots, commands, first failures, required CI, actual publication and live QA. Qualification remains in progress until those records prove the full goal.
 
 ## References and acceptance

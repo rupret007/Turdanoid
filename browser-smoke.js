@@ -197,6 +197,10 @@ async function main() {
               page.waitForURL(`${baseUrl}/${href}`),
               page.locator(`.game-card[href="${href}"]`).tap()
             ]);
+            // An opening modal owns input until its visible guide control is
+            // activated; the background Hub link is intentionally inert.
+            const closeGuide = page.locator('#closeGuideBtn:visible, #closeGuide:visible, #startRoundBtn:visible, #welcomeGuide #attractPlay:visible').first();
+            if (await closeGuide.isVisible()) await closeGuide.tap();
             const back = page.locator('a.suite-back-pill[aria-label="Back to game hub"]:visible, a.chess-hub:visible').first();
             if (!(await back.isVisible())) fail(name, `${href} must expose the Hub escape`);
             await Promise.all([
@@ -962,6 +966,7 @@ async function main() {
 
     await runCheck(browser, 'turdjack-guide-keyboard', 'turdjack.html', {
       actions: async (page) => {
+        await page.locator('#closeGuideBtn').focus();
         await page.keyboard.press('Enter');
         await page.waitForTimeout(150);
         const jackState = await page.evaluate(() => ({
@@ -982,7 +987,7 @@ async function main() {
       await runCheck(browser, name, 'turdjack.html', {
         mobile,
         actions: async (page) => {
-          await page.keyboard.press('Enter'); // Dismiss the guide, not a deal.
+          await page.locator('#closeGuideBtn').click();
           await page.evaluate(() => {
             rules = normalizeRules({ ...rules, decks: 1, allowSurrender: true, allowInsurance: false });
             createShoe(1);
@@ -1029,7 +1034,12 @@ async function main() {
           }
           if (!before.surrenderAvailable) fail(name, 'manual surrender must remain an available choice');
           if (mobile) await page.locator('#mobilePit [data-mobile-action="smart"]').click();
-          else await page.keyboard.press('Enter');
+          else {
+            // Exercise the background Smart shortcut, with no focused native
+            // button whose own Enter action should take precedence.
+            await page.locator('body').click({ position: { x: 1, y: 1 } });
+            await page.keyboard.press('Enter');
+          }
 
           const after = await page.evaluate(() => ({
             active: roundActive,
@@ -2407,7 +2417,7 @@ async function main() {
 
     await runCheck(browser, 'turdjack-continue-restore', 'turdjack.html', {
       actions: async (page) => {
-        await page.keyboard.press('Enter');
+        await page.locator('#closeGuideBtn').click();
         await page.waitForTimeout(120);
         const before = await page.evaluate(() => {
           createShoe(4);
