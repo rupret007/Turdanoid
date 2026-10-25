@@ -24,6 +24,15 @@ const VIEWPORTS = [
 /** Hub arcade/table titles (six games). */
 const SUITE_MUSIC_CONTROL = '#suite-music-toggle';
 
+async function closeVisibleGuide(page, selector) {
+  const close = page.locator(selector);
+  if (await close.isVisible()) {
+    // Use the actual control so the dialog restores its inert background too.
+    await close.click();
+    expect(await close.isVisible()).toBe(false);
+  }
+}
+
 const SIX_SUITE_GAMES = [
   {
     path: '/TurdAnoid.html',
@@ -62,13 +71,7 @@ const SIX_SUITE_GAMES = [
     controls: ['[data-sound-toggle]', SUITE_MUSIC_CONTROL],
     quick: ['#quickGuideBtn'],
     prepare: async (page) => {
-      await page.evaluate(() => {
-        const guide = document.getElementById('welcomeGuide');
-        if (guide) {
-          guide.classList.remove('show');
-          guide.setAttribute('aria-hidden', 'true');
-        }
-      });
+      await closeVisibleGuide(page, '#closeGuideBtn');
     }
   },
   {
@@ -112,14 +115,7 @@ const SIX_SUITE_GAMES = [
     controls: ['#helpBtn', '#nextRoundTop', SUITE_MUSIC_CONTROL],
     quick: ['#quickStart'],
     prepare: async (page) => {
-      await page.evaluate(() => {
-        const guide =
-          document.getElementById('welcomeGuide') || document.getElementById('guide');
-        if (guide) {
-          guide.classList.remove('show');
-          guide.setAttribute('aria-hidden', 'true');
-        }
-      });
+      await closeVisibleGuide(page, '#closeGuide');
     }
   }
 ];
@@ -466,15 +462,7 @@ describe('arcade a11y (Playwright)', () => {
       await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.Suite && typeof Suite.isColorblindMode === 'function');
       await page.waitForSelector('#suite-arcade-a11y-toggle');
-      await page.evaluate(() => {
-        const guide = document.getElementById('welcomeGuide');
-        if (guide) {
-          guide.style.display = 'none';
-        }
-        if (typeof window.hideWelcomeGuide === 'function') {
-          window.hideWelcomeGuide();
-        }
-      });
+      await closeVisibleGuide(page, '#closeGuideBtn');
       await page.click('#suite-arcade-a11y-toggle');
       await page.waitForFunction(() => window.Suite && Suite.isColorblindMode());
       expect(await page.evaluate(() => Suite.isColorblindMode())).toBe(true);

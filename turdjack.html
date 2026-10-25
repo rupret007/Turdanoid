@@ -2624,7 +2624,7 @@
       .table-stage .total-badge { min-height: 28px; min-width: 34px; padding: 2px 6px; font-size: .85rem; }
       .table-stage .hand-meter { margin-top: 2px; }
       .table-stage .cards { gap: 6px; }
-      .table::after { top: 120px; bottom: auto; max-width: 200px; }
+      .table::after { top: 120px; bottom: auto; }
       .table-stage:has(#splitHandWrap:not([hidden])) {
         grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) 72px;
         grid-template-rows: auto auto auto auto;
@@ -2820,6 +2820,7 @@
         <button class="btn" data-sound-toggle onclick="toggleSound()">🔊 Sound On</button>
         <button class="btn danger" id="resetStatsBtn" data-reset-bank>↻ Reset Bank</button>
       </div>
+      <span class="suite-a11y-header-slot" id="suite-arcade-a11y-mount"></span>
       <div class="mobile-menu">
         <details>
           <summary>Table Menu</summary>

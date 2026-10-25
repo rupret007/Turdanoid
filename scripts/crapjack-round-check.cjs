@@ -12,7 +12,7 @@ if (!base || !out) throw new Error('Supply an existing server URL and new eviden
   for (const [engine, type] of Object.entries({ chromium, webkit })) {
     const browser = await type.launch({ headless: true });
     try {
-      for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+      for (const viewport of [{ width: 1024, height: 768 }, { width: 1280, height: 800 }, { width: 390, height: 844 }]) {
         const touch = viewport.width < 981;
         const context = await browser.newContext({ viewport, hasTouch: touch, isMobile: touch });
         const page = await context.newPage();
@@ -50,6 +50,21 @@ if (!base || !out) throw new Error('Supply an existing server URL and new eviden
         try {
           await page.goto(new URL('turdjack.html', base).href, { waitUntil: 'load' });
           await page.keyboard.press('Escape');
+          await page.locator('#suite-arcade-a11y-toggle').waitFor({ state: 'visible' });
+          item.colorControl = await page.evaluate(() => {
+            const control = document.getElementById('suite-arcade-a11y-toggle');
+            const box = control.getBoundingClientRect();
+            const controls = [...document.querySelectorAll('.topbar button,.topbar a,.mobile-menu > details > summary,.pit-primary button,.pit-overflow > summary,#mobilePit button,#suite-music-toggle')]
+              .filter(node => node !== control && node.checkVisibility({ checkVisibilityCSS: true }));
+            const overlaps = controls.filter(node => {
+              const other = node.getBoundingClientRect();
+              return Math.min(box.right, other.right) - Math.max(box.left, other.left) > 1
+                && Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top) > 1;
+            }).map(node => node.id || node.getAttribute('aria-label') || node.textContent.trim());
+            return { width: box.width, height: box.height, overlaps };
+          });
+          assert(item.colorControl.width >= 44 && item.colorControl.height >= 44, 'Clr keeps its complete minimum target');
+          assert.deepEqual(item.colorControl.overlaps, [], 'Clr does not cover any part of another action target');
           const before = await ready();
           await activate(page.locator(touch ? '[data-mobile-action="stand"]' : '#standBtn'));
           assert(await page.locator('#standBtn').isDisabled(), 'Stand locks before the reveal timer');
