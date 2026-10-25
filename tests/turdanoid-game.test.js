@@ -126,6 +126,18 @@ describe('TurdAnoid game regressions', () => {
     expect(g.bricks.length).toBeGreaterThan(0);
   });
 
+  it.each([false, true])('replays Boss Flush after a result (won=%s)', (won) => {
+    dom.window.document.getElementById('btnBoss').click();
+    expect(g.gameMode).toBe('boss');
+    g.gameOver(won);
+    dom.window.document.getElementById('btnRestart').click();
+    expect(g.state).toBe('playing');
+    expect(g.gameMode).toBe('boss');
+    expect(g.boss.hp).toBe(g.boss.maxHp);
+    expect(g.score).toBe(0);
+    expect(g.lives).toBe(3);
+  });
+
   describe('level clear (regression: bonus/level fired every frame)', () => {
     it('awards the clear bonus and increments the level exactly once', () => {
       const baseScore = g.score;

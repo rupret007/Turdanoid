@@ -6,13 +6,13 @@ const http = require('node:http');
 const { chromium, webkit } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const prefix = fs.existsSync(path.join(root, 'play')) ? 'play/' : '';
-const viewports = [[360,640],[375,667],[390,844],[430,932],[667,375],[844,390]];
+const viewports = [[320,568],[360,640],[375,667],[390,844],[430,932],[667,375],[844,390]];
 const games = [
   ['turdjack', '.mobile-felt-chip-rack [data-chip="10"]', '[data-mobile-action="deal"]', '[data-mobile-action="hit"]', '[data-mobile-action="stand"]', '[data-mobile-action="double"]', '[data-mobile-action="split"]', '[data-mobile-action="surrender"]'],
   ['TurdAnoid', '#game', '#btnPause', '#btnSound', '#mobileLaunch'],
   ['turdtris', '#game', '#mobileControls [data-action="left"]', '#mobileControls [data-action="right"]', '#mobileControls [data-action="rotate"]', '#mobileControls [data-action="drop"]', '#mobileControls [data-action="hold"]'],
   ['crapeights', '#drawPileBtn', '#playBtn', '#drawBtn', '#passBtn', '#smartBtn'],
-  ['turdrummy', '#playerHand', '#soundToggleBtn', '#quickGuideBtn', '#newRoundBtn', '#resetMatchBtn', '#drawStockBtn', '#drawDiscardBtn', '#discardBtn', '#knockBtn', '#ginBtn', '#sortSuitBtn', '#sortRankBtn'],
+  ['turdrummy', '#playerHand', '#drawStockBtn', '#drawDiscardBtn', '#discardBtn', '#knockBtn', '#ginBtn', '#sortSuitBtn', '#sortRankBtn'],
   ['turdspades', '#youCards', '#bidDown', '#bidUp', '#bidNil', '#lockBid'],
   ['turdomania', '#board', '#undoBtn', '#newBtn', '.tm-aim summary'],
   ['neon-arkanoid', '#gameCanvas', '[data-action="left"]', '[data-action="launch"]', '[data-action="right"]']
@@ -29,7 +29,7 @@ async function tap(page, locator) {
   const element = await locator.elementHandle();
   await page.waitForFunction(e => !e.disabled, element);
   const box = await locator.boundingBox();
-  assert(box && box.width >= 44 && box.height >= 44, 'tap target is at least 44px');
+  assert(box && box.width >= 44 && box.height >= 44, `tap target is at least 44px: ${await locator.getAttribute('id')} ${JSON.stringify(box)}`);
   const viewport = page.viewportSize();
   assert(box.x >= -1 && box.y >= -1 && box.x+box.width <= viewport.width+1 && box.y+box.height <= viewport.height+1, 'tap target is fully on screen');
   assert(await locator.evaluate(e => {const r=e.getBoundingClientRect(); const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===e||e.contains(hit);}), 'tap target receives touch');
@@ -50,7 +50,15 @@ async function enter(page, game) {
   await page.waitForTimeout(300);
   if(game === 'turdrummy') {
     await page.locator('#playerHand button').first().waitFor();
-    await clickVisible(page, '#coachSkipBtn');
+    for(let step=0;step<4;step++) {
+      const metrics=await page.locator('#coachBody').evaluate(element=>{
+        const text=element.getBoundingClientRect(),card=element.closest('.coach').getBoundingClientRect();
+        return {width:text.width,size:parseFloat(getComputedStyle(element).fontSize),fits:text.left>=card.left&&text.right<=card.right&&text.top>=card.top&&text.bottom<=card.bottom};
+      });
+      assert(metrics.width>=120&&metrics.size>=12&&metrics.fits,`Rummy coach step ${step+1} is fully readable: ${JSON.stringify(metrics)}`);
+      await tap(page,page.locator('#coachNextBtn'));
+    }
+    assert(await page.locator('#coachCard').isHidden(),'the completed coach retires');
   }
 }
 async function check(page, game, selectors, state) {
@@ -68,6 +76,7 @@ async function check(page, game, selectors, state) {
       if(await locator.isEnabled()) assert(await locator.evaluate(e => { const b=e.getBoundingClientRect(); const top=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2); return top===e || e.contains(top); }), `${game} ${state} ${selector} is covered: ${await locator.evaluate(e => {const r=e.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,200);})}`);
     }
   }
+  const settingsOpen=await page.locator('.mobile-settings[open]').count()>0;
   const cards = await page.locator('.mobile-hand button:not(.mobile-card-hidden), .mobile-hand .card:not(.mobile-card-hidden)').evaluateAll(elements => elements.filter(e => e.checkVisibility() && e.getBoundingClientRect().width > 0).map(e => {
     const b = e.getBoundingClientRect();
     const top = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
@@ -75,7 +84,9 @@ async function check(page, game, selectors, state) {
   }));
   for (const box of cards) {
     assert(box.width >= 44 && box.height >= 44 && box.y >= -1 && box.x >= -1 && box.y + box.height <= metrics.h+1 && box.x + box.width <= metrics.w+1, `${game} ${state} card target fits: ${JSON.stringify(box)}`);
-    if (!box.disabled) assert(!box.covered, `${game} ${state} card covered`);
+    // The settings panel intentionally sits over the table. Verify its controls
+    // while open, and recheck hand hit targets immediately after it closes.
+    if (!box.disabled && !settingsOpen) assert(!box.covered, `${game} ${state} card covered`);
   }
   if (game === 'turdspades' && metrics.w > metrics.h) {
     const dock = await page.locator('.dock').boundingBox();
@@ -167,15 +178,30 @@ async function check(page, game, selectors, state) {
         for (const {name,box} of welcome) assert(box.x >= -1 && box.y >= -1 && box.right <= width+1 && box.bottom <= height+1, `${game} welcome ${name} fits: ${JSON.stringify(box)}`);
         await enter(page,game);
         await check(page,game,selectors, 'ready');
+        if(game==='turdrummy') {
+          await tap(page,page.locator('.mobile-settings > summary'));
+          const difficulty=await page.locator('.suite-difficulty-btn[data-level="hard"]').isVisible()?'.suite-difficulty-btn[data-level="hard"]':'#difficultyBtn';
+          await check(page,game,['#soundToggleBtn',difficulty,'#quickGuideBtn','#newRoundBtn','#resetMatchBtn'],'table menu');
+          const sound=await page.locator('#soundToggleBtn').getAttribute('aria-pressed');
+          await tap(page,page.locator('#soundToggleBtn'));
+          assert.notEqual(await page.locator('#soundToggleBtn').getAttribute('aria-pressed'),sound,'Rummy sound preference responds inside the table menu');
+          await tap(page,page.locator('#soundToggleBtn'));
+          await tap(page,page.locator('.mobile-settings > summary'));
+          await check(page,game,selectors,'table menu closed');
+        }
         if(game==='crapeights') {
-          await tap(page,page.locator('.mobile-menu summary'));
+          const menu=page.locator('.mobile-menu details');
           for(const level of ['easy','hard','normal']) {
+            // Table actions can close the menu. Reopen it through its real
+            // summary before checking/tapping the next difficulty control.
+            if(!await menu.evaluate(element=>element.open)) await tap(page,menu.locator(':scope > summary'));
             const button=page.locator(`.suite-difficulty-btn[data-level="${level}"]`);
             assert(await button.evaluate(element=>Boolean(element.closest('.mobile-menu-actions'))),'Eights difficulty belongs in the table menu');
             await tap(page,button);
             assert.equal(await button.getAttribute('aria-pressed'),'true',`${level} difficulty responds to touch`);
           }
-          await tap(page,page.locator('.mobile-menu summary'));
+          if(await menu.evaluate(element=>element.open)) await tap(page,menu.locator(':scope > summary'));
+          assert.equal(await menu.evaluate(element=>element.open),false,'Eights table menu is closed before checking the hand');
           await check(page,game,selectors,'difficulty menu closed');
         }
         if(game==='turdjack') {

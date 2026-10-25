@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-mobile-game="turdomania">
 <head>
+<script src="assets/suite-loading.js"></script>
 <script src="assets/suite-share.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -233,10 +234,10 @@ window.tmFit = function (levelKey) {
 })();
 </script>
 </main>
-<p class="help">Tap a pile of 2+ touching matches. Stuff falls, empty columns slide left. Score = (pile − 2)². Keys: arrows, Enter/Space, U undo, N new.</p>
+<p class="help" role="region" aria-label="How to play">Tap a pile of 2+ touching matches. Stuff falls, empty columns slide left. Score = (pile − 2)². Keys: arrows, Enter/Space, U undo, N new.</p>
 <div id="live" class="sr-only" aria-live="polite"></div>
 
-<script type="module">
+<script type="module" data-game-required>
 import * as Core from './games/turdomania-core.js';
 
 const qs = new URLSearchParams(location.search);
@@ -617,6 +618,7 @@ try {
 // Test hook: deterministic actions without hunting pixels.
 window.__turdomaniaPop = (c, r) => popAt(c, r);
 window.__turdomaniaUndo = doUndo;
+window.SuiteLoading?.ready();
 </script>
 </body>
 </html>

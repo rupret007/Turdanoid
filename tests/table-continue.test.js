@@ -51,7 +51,7 @@ function memoryStorage(initial = {}) {
 }
 
 describe('table continue store', () => {
-  it('keeps the seven-game door and four live table continues', () => {
+  it('keeps the eight-game door and four live table continues', () => {
     expect(LIVE_HUB_GAMES).toEqual([
       'TurdAnoid.html',
       'turdtris.html',
@@ -59,7 +59,8 @@ describe('table continue store', () => {
       'crapeights.html',
       'turdrummy.html',
       'turdspades.html',
-      'turdomania.html'
+      'turdomania.html',
+      'chess.html'
     ]);
     expect(TABLE_CONTINUE_GAMES).toEqual([
       'turdjack.html',
@@ -169,7 +170,7 @@ describe('table continue store', () => {
     expect(rummy).toContain('function tryRestoreTable');
     expect(rummy).toContain('turdrummy_stats_v1');
     expect(rummy).toContain('JSON.stringify({\n          stats: state.stats\n        })');
-    expect(rummy).toContain('<div class="overlay" id="guideOverlay">');
+    expect(rummy).toMatch(/<div class="overlay" id="guideOverlay"[^>]*>/);
     expect(rummy).not.toContain('<div class="overlay show" id="guideOverlay">');
     expect(eights).toContain("Suite.table.remember('crapeights.html'");
     expect(jack).toContain("Suite.table.remember('turdjack.html'");
