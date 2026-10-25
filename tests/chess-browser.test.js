@@ -405,6 +405,29 @@ describe('native chess interface', () => {
       expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+  it.each(['pieces/spatial-wn.svg', 'chess-board.css', 'chessground.js'])('keeps saved play safe and offers deliberate recovery if %s fails', async asset => {
+    const page = await pageAt();
+    try {
+      await start(page); await move(page, 'e2e4'); await moves(page, 1); await page.locator('#mute').click();
+      const saved = await page.evaluate(key => localStorage.getItem(key), SAVE_KEY);
+      await page.context().route(`**/assets/chess/${asset}`, route => route.abort()); await page.reload();
+      await page.locator('#suite-load-state').waitFor({ state: 'visible' });
+      expect(await page.locator('#new-game button[type=submit]').isDisabled()).toBe(true);
+      expect(await page.evaluate(key => localStorage.getItem(key), SAVE_KEY)).toBe(saved);
+      await page.context().unroute(`**/assets/chess/${asset}`); await page.getByRole('button', { name: 'Try again', exact: true }).click();
+      await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready'); await page.locator('#continue').click();
+      await moves(page, 1); expect(await page.evaluate(() => globalThis.Suite.isMuted())).toBe(true);
+      await move(page, 'e7e5'); await moves(page, 2);
+    } finally { await page.close(); }
+  });
+  it('accepts the next move immediately after help closes during a game', async () => {
+    const page = await pageAt({ width: 320, height: 568 });
+    try {
+      await start(page); await move(page, 'e2e4'); await page.locator('#game-options > summary').click(); await page.locator('#help').click();
+      await page.locator('#piece-guide > summary').click(); await page.getByRole('button', { name: 'Close how to play' }).click();
+      await move(page, 'e7e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
   it('uses the real renderer for native legal, illegal and outside drags', async () => {
     const page = await pageAt();
     try {

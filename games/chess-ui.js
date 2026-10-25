@@ -2,8 +2,17 @@
 import { Chess, createGame, playMove, claimDraw, claimReason, intendedClaims, undoTurn, resign,
   loadGame, saveGame, recordResult, readResults, exportPgn, LEVELS, colorName, pieceName } from './chess-core.js';
 import { ChessEngine } from './chess-engine.js';
-import { pieceSvg, PIECE_GUIDE } from './chess-pieces.js';
+import { pieceSvg, PIECE_GUIDE, loadPieceArtwork } from './chess-pieces.js';
 import { ChessBoard } from './chess-board.js';
+
+// The game is not ready with missing pieces or board styling. Keep the existing
+// deliberate loading/retry UI and saved position until every visual asset loads.
+const hasBoardStyle = link => !!link.sheet?.cssRules?.length;
+await Promise.all([loadPieceArtwork(), ...[...document.querySelectorAll('link[data-game-required]')].map(link => hasBoardStyle(link) ? Promise.resolve() : new Promise((resolve, reject) => {
+  if (globalThis.SuiteLoading?.state === 'failed') { reject(new Error('The chessboard style could not load.')); return; }
+  link.addEventListener('load', () => hasBoardStyle(link) ? resolve() : reject(new Error('The chessboard style could not load.')), { once: true });
+  link.addEventListener('error', () => reject(new Error('The chessboard style could not load.')), { once: true });
+}))]);
 
 const $ = id => document.getElementById(id);
 const suite = globalThis.Suite;
@@ -354,14 +363,18 @@ $('promotion').querySelectorAll('[data-promote]').forEach(button => {
     promotionMove = null; $('promotion').close(); cancelSearch(true); afterMove(playMove(game, move)); focusBoard(move.to);
   });
 });
-$('cancel-promotion').addEventListener('click', () => $('promotion').close());
+function closePromotion() { promotionMove = null; $('promotion').close(); render(); if (canMove()) { focusBoard(); } }
+$('cancel-promotion').addEventListener('click', closePromotion);
+$('promotion').addEventListener('cancel', event => { event.preventDefault(); closePromotion(); });
 $('promotion').addEventListener('close', () => { promotionMove = null; render(); if (canMove()) { focusBoard(); } });
 function help() {
   cancelSearch(); $('guide').showModal(); $('guide-title').focus({ preventScroll: true }); $('guide').scrollTop = 0; render();
 }
 $('help').addEventListener('click', help); $('how-to').addEventListener('click', help);
-$('close-guide').addEventListener('click', () => $('guide').close());
-$('dismiss-guide').addEventListener('click', () => $('guide').close());
+function closeGuide() { $('guide').close(); render(); void queueComputer(); }
+$('close-guide').addEventListener('click', closeGuide);
+$('dismiss-guide').addEventListener('click', closeGuide);
+$('guide').addEventListener('cancel', event => { event.preventDefault(); closeGuide(); });
 $('guide').addEventListener('close', () => { render(); void queueComputer(); });
 $('claim').addEventListener('click', () => {
   if (claimReason(game.chess)) { claimDraw(game); cancelSearch(); persist(); render(); return; }

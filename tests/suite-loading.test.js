@@ -63,9 +63,9 @@ describe('game download recovery', () => {
     expect(w.document.querySelector('dialog')).toBeNull();
   });
 
-  it('immediately explains a failed required entry module, but tolerates an optional asset', () => {
+  it.each(['script', 'link'])('immediately explains a failed required %s, but tolerates an optional asset', kind => {
     const { w } = boot();
-    const script = w.document.createElement('script');
+    const script = w.document.createElement(kind);
     w.document.head.append(script);
     script.dispatchEvent(new w.Event('error'));
     expect(w.SuiteLoading.state).toBe('pending');

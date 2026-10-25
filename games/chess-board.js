@@ -38,6 +38,9 @@ export class ChessBoard {
 
   startGesture(event) {
     if (event.isTrusted && (event.button === undefined || event.button === 0)) {
+      // Native dialog focus restoration and automatic scrolling can precede
+      // the asynchronous scroll event. Hit-test the board at its actual position.
+      this.ground.state.dom.bounds.clear();
       const point = event.touches?.[0] || event;
       this.gesture = { x: point.clientX, y: point.clientY, key: this.key, token: ++this.gestureSerial };
     }

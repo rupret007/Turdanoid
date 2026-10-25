@@ -16,3 +16,12 @@ export function pieceSvg(type, color) {
   const source = new globalThis.URL(`../assets/chess/pieces/spatial-${color}${type}.svg`, import.meta.url).href;
   return `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" data-color="${color}"><image href="${source}" width="48" height="48"/></svg>`;
 }
+
+export async function loadPieceArtwork() {
+  await Promise.all(['w', 'b'].flatMap(color => Object.keys(PIECE_GUIDE).map(type => new Promise((resolve, reject) => {
+    const image = new globalThis.Image();
+    image.onload = () => image.naturalWidth ? resolve() : reject(new Error('The chess pieces could not load.'));
+    image.onerror = () => reject(new Error('The chess pieces could not load.'));
+    image.src = new globalThis.URL(`../assets/chess/pieces/spatial-${color}${type}.svg`, import.meta.url).href;
+  }))));
+}
