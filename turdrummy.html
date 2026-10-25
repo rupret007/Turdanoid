@@ -4600,6 +4600,7 @@
       hideTrophy();
       finishCoach();
       el.guideOverlay.classList.remove("show");
+      window.SuiteDialogFocus?.close(el.guideOverlay);
       roundLog.length = 0;
       const table = Moments.buildTableState(kind);
       state.initialized = true;

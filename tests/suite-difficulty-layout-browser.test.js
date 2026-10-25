@@ -84,6 +84,29 @@ const PAGES = [
           await page.evaluate(() => localStorage.setItem('turdsuite_guides_seen_v1', '1'));
           await page.locator('#startRoundBtn').click();
           await page.waitForTimeout(300);
+          // Difficulty lives in the phone Table menu. A closed details can
+          // retain stale child rectangles, so measure the real open controls.
+          const menu = page.locator('.mobile-settings');
+          expect(await menu.evaluate((element) => element.open)).toBe(false);
+          await menu.locator(':scope > summary').focus();
+          await page.keyboard.press('Enter');
+          expect(await menu.evaluate((element) => element.open)).toBe(true);
+          for (const level of ['easy', 'normal', 'hard']) {
+            const button = menu.locator(`.suite-difficulty-btn[data-level="${level}"]`);
+            const box = await button.boundingBox();
+            expect(box, `${level} difficulty button missing`).not.toBeNull();
+            expect(box.width, `${level} difficulty button width`).toBeGreaterThanOrEqual(44);
+            expect(box.height, `${level} difficulty button height`).toBeGreaterThanOrEqual(44);
+            expect(await button.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+              return element === hit || element.contains(hit);
+            }), `${level} difficulty button covered`).toBe(true);
+          }
+          await menu.locator('.suite-difficulty-btn[data-level="hard"]').click();
+          expect(await page.evaluate(() => window.Suite.difficulty.get())).toBe('hard');
+          expect(await menu.locator('.suite-difficulty-btn[data-level="hard"]').getAttribute('aria-pressed')).toBe('true');
+          expect(await page.locator('#difficultyBtn').getAttribute('aria-label')).toContain('Bot: Sharp');
         }
       }
     ],

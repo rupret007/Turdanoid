@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { jackDeck } from './continue-fixtures.js';
+import { validateJackSnapshot } from '../games/table-continue.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(root, 'turdjack.html'), 'utf8');
@@ -115,6 +116,54 @@ afterEach(() => {
   openPages.splice(0).forEach(({ dom, timers }) => {
     dom.window.close();
     timers.clear();
+  });
+});
+
+describe('Crapjack dealer settlement ownership', () => {
+  it.each(['none', 'manual', 'cut'])('keeps the next natural deal saveable after a completed hand, shuffle=%s', shuffle => {
+    const w = boot({ ranks: ['K', '10'], upcard: '9' });
+    w.Suite = { table: {
+      remember(page, snapshot) { w.latestSnapshot = JSON.parse(JSON.stringify(snapshot)); },
+      clear() {}
+    } };
+    w.playerStand();
+    expect(readState(w).roundActive).toBe(false);
+    // Deterministic unit shuffle: the second deal must remain a live player turn.
+    w.crypto.getRandomValues = pool => { pool.fill(3); return pool; };
+    if (shuffle === 'manual') { w.newShoe(); }
+    if (shuffle === 'cut') { w.eval('cutCardsRemaining = shoe.length;'); }
+    w.startRound();
+    expect(w.latestSnapshot.stats.hands).toBe(2);
+    expect(w.latestSnapshot.discard).toHaveLength(shuffle === 'none' ? 4 : 0);
+    expect(validateJackSnapshot(w.latestSnapshot)).not.toBeNull();
+    expectCompleteShoe(readState(w));
+  });
+
+  it.each([
+    { ranks: ['K', '10'], upcard: '9', result: 'wins', bank: 1100 },
+    { ranks: ['10', '6'], upcard: '9', result: 'losses', bank: 900 }
+  ])('settles $result once while rapid controls arrive during the dealer reveal', fixture => {
+    const w = boot(fixture);
+    w.eval('turdjackKit = { dealerRevealBeat(done) { window.finishReveal = done; }, dealerHitDelayMs() { return 0; } };');
+    w.document.getElementById('standBtn').click();
+    expect(w.eval('dealerResolving')).toBe(true);
+    const before = readState(w);
+    for (const code of ['KeyS', 'KeyH', 'KeyD', 'KeyP', 'KeyX', 'Enter']) {
+      w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code, bubbles: true }));
+    }
+    expect(readState(w)).toEqual(before);
+    for (const selector of ['#standBtn', '#hitBtn', '#doubleBtn', '#splitBtn', '#surrenderBtn', '[data-mobile-action="smart"]']) {
+      expect(w.document.querySelector(selector).disabled).toBe(true);
+    }
+    w.finishReveal();
+    w.finishReveal();
+    const after = readState(w);
+    expect(after.stats[fixture.result]).toBe(1);
+    expect(after.stats.decisions).toBe(1);
+    expect(after.bankroll).toBe(fixture.bank);
+    expect(after.roundActive).toBe(false);
+    expect(w.eval('dealerResolving')).toBe(false);
+    expectCompleteShoe(after);
   });
 });
 

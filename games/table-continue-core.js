@@ -728,6 +728,13 @@
     if (pendingDecision !== null && pendingDecision !== 'insurance' && pendingDecision !== 'even-money') {
       return null;
     }
+    const dealerResolving = snapshot.dealerResolving === true;
+    if (snapshot.dealerResolving !== undefined && typeof snapshot.dealerResolving !== 'boolean') {
+      return null;
+    }
+    if (dealerResolving && (pendingDecision !== null || snapshot.firstDecisionOpen)) {
+      return null;
+    }
     if (pendingDecision !== null) {
       const playerNatural = playerHand.length === 2 &&
         playerHand.some((card) => card.rank === 'A') &&
@@ -754,6 +761,7 @@
       kind: 'turdjack',
       v: CONTINUE_VERSION,
       pendingDecision,
+      ...(snapshot.dealerResolving === undefined ? {} : { dealerResolving }),
       bankroll,
       currentBet,
       splitBet,

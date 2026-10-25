@@ -13,6 +13,12 @@ const games = [
   { name: 'rummy', file: 'turdrummy.html', guide: '#guideOverlay', start: '#startRoundBtn', help: '#quickGuideBtn', phoneHelp: '#quickGuideBtn', hand: '#playerHand .card' },
   { name: 'spades', file: 'turdspades.html', guide: '#guide', start: '#quickStart', help: '#helpBtn', phoneHelp: '#helpBtn', hand: '#youCards .card' },
 ];
+const actionSelectors = {
+  crapjack: '#dealBtn,#hitBtn,#standBtn,#doubleBtn,#splitBtn,#surrenderBtn,#mobilePit .mobile-pit-row > button',
+  eights: '.action-dock button',
+  rummy: '.action-dock button',
+  spades: '#bidDown,#bidUp,#bidNil,#lockBid,.dock-grid button'
+};
 async function inGuide(page, game) {
   return page.evaluate(({ guide, name }) => {
     const focused = document.activeElement;
@@ -138,6 +144,17 @@ async function focusedControlIsInView(page) {
             assert(item.layout.cards.length > 0, 'a real hand is rendered');
             for (const card of item.layout.cards) {
               assert(card.y >= 0 && card.bottom <= item.layout.handBoundary + 1, 'hand clears the table edge, action dock and optional music strip');
+            }
+            item.actionTargets = await page.evaluate(selector => [...document.querySelectorAll(selector)]
+              .filter(button => button.checkVisibility({ checkVisibilityCSS: true }) && !button.closest('details:not([open])'))
+              .map(button => {
+                const box = button.getBoundingClientRect();
+                const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+                return { action: button.id || button.dataset.mobileAction || button.textContent.trim(), y: box.y, bottom: box.bottom, disabled: button.disabled, hit: button.contains(hit) };
+              }), actionSelectors[game.name]);
+            assert(item.actionTargets.length > 0, 'essential action controls are displayed');
+            for (const target of item.actionTargets) {
+              assert((target.hit || target.disabled) && target.y >= 0 && target.bottom <= item.layout.boundary + 1, `essential action ${target.action} has an unobstructed visible center when enabled`);
             }
             assert.deepEqual(item.errors, [], 'no uncaught page errors');
             item.status = 'passed';
