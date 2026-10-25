@@ -38,9 +38,25 @@ async function move(page, text, touch = false) {
   for (const square of [text.slice(0, 2), text.slice(2, 4)]) {
     const button = page.locator(`[data-square=${square}]`);
     if (touch) { await button.tap(); } else { await button.click(); }
+    // Chessground queues its public input callbacks; observe the resulting UI
+    // after a browser frame instead of assuming click() commits synchronously.
+    await page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
   }
 }
 async function moves(page, count) { await page.waitForFunction(n => document.querySelectorAll('#moves button').length === n, count); }
+async function drag(page, from, to) {
+  const a = await page.locator(`[data-square=${from}]`).boundingBox();
+  const b = typeof to === 'string' ? await page.locator(`[data-square=${to}]`).boundingBox() : to;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down();
+  await page.mouse.move(b.x + (b.width || 0) / 2, b.y + (b.height || 0) / 2, { steps: 8 });
+  // The library samples a dragged piece on animation frames, as on Lichess.
+  await page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+  await page.mouse.up();
+}
+async function artAt(page, square, role, color) {
+  await page.waitForFunction(({ square, role, color }) => [...document.querySelectorAll('cg-board > piece')]
+    .some(p => p.cgKey === square && p.classList.contains(role) && p.classList.contains(color)), { square, role, color }, { timeout: 3000 });
+}
 
 describe('native chess interface', () => {
   it('plays keyboard moves with retained focus, rejects an illegal move and reviews history', async () => {
@@ -93,8 +109,11 @@ describe('native chess interface', () => {
       await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
       await page.reload(); await page.locator('#continue').click();
       await page.locator('[data-square=b7]').click();
+      await page.waitForFunction(() => document.getElementById('status').textContent.includes('2 legal destinations marked.'));
       expect(await page.locator('#status').textContent()).toContain('2 legal destinations marked.');
-      await page.locator('[data-square=a8]').click(); expect(await page.locator('#promotion').evaluate(el => el.open)).toBe(true);
+      await page.locator('[data-square=a8]').click();
+      await page.waitForFunction(() => document.getElementById('promotion').open);
+      expect(await page.locator('#promotion').evaluate(el => el.open)).toBe(true);
       await page.locator(`[data-promote=${promotion}]`).click();
       const name = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' }[promotion];
       expect(await page.locator('[data-square=a8]').getAttribute('aria-label')).toContain('White ' + name);
@@ -229,15 +248,17 @@ describe('native chess interface', () => {
           const coord = document.querySelector('[data-square=a3] .coord');
           return {
             text: globalThis.getComputedStyle(coord).color,
-            background: globalThis.getComputedStyle(coord.parentElement).backgroundColor,
-            dots: [...document.querySelectorAll('.square.legal')].map(button => ({
-              foreground: globalThis.getComputedStyle(button, '::after').backgroundColor,
-              background: globalThis.getComputedStyle(button).backgroundColor
+            background: globalThis.getComputedStyle(document.body).getPropertyValue(coord.parentElement.classList.contains('dark') ? '--board-dark' : '--board-light').trim(),
+            dots: [...document.querySelectorAll('cg-board square.move-dest')].map(square => ({
+              foreground: globalThis.getComputedStyle(square, '::after').backgroundColor,
+              background: globalThis.getComputedStyle(document.body).getPropertyValue(
+                (square.cgKey.charCodeAt(0) + Number(square.cgKey[1])) % 2 ? '--board-light' : '--board-dark').trim()
             }))
           };
         });
-        expect(contrastRatio(hex(colors.text), hex(colors.background))).toBeGreaterThanOrEqual(4.5);
-        for (const dot of colors.dots) { expect(contrastRatio(hex(dot.foreground), hex(dot.background))).toBeGreaterThanOrEqual(3); }
+        expect(contrastRatio(hex(colors.text), colors.background)).toBeGreaterThanOrEqual(4.5);
+        expect(colors.dots.length).toBeGreaterThan(0);
+        for (const dot of colors.dots) { expect(contrastRatio(hex(dot.foreground), dot.background)).toBeGreaterThanOrEqual(3); }
         await page.keyboard.press('Escape');
       }
     } finally { await page.close(); }
@@ -270,9 +291,9 @@ describe('native chess interface', () => {
     try {
       await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
       await page.reload(); await page.locator('#continue').click(); await move(page, 'g2h1');
-      const pawnColor = await page.locator('[data-square=g2] svg g').getAttribute('fill');
       for (const type of ['q', 'r', 'b', 'n']) {
-        expect(await page.locator(`[data-promote=${type}] svg g`).getAttribute('fill')).toBe(pawnColor);
+        expect(await page.locator(`[data-promote=${type}] svg`).getAttribute('data-color')).toBe('b');
+        expect(await page.locator(`[data-promote=${type}] svg image`).getAttribute('href')).toContain(`spatial-b${type}.svg`);
       }
       await page.locator('#cancel-promotion').click(); await moves(page, 9);
       expect(await page.locator('[data-square=g2]').getAttribute('aria-label')).toContain('Black pawn');
@@ -382,6 +403,89 @@ describe('native chess interface', () => {
         }
       }
       expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('uses the real renderer for native legal, illegal and outside drags', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); expect(await page.locator('#board').getAttribute('data-renderer')).toBe('chessground');
+      await drag(page, 'e2', 'e4'); await moves(page, 1); await artAt(page, 'e4', 'pawn', 'white');
+      await drag(page, 'e7', 'e3'); await page.waitForFunction(() => document.getElementById('status').textContent.includes('cancelled'));
+      await moves(page, 1); await artAt(page, 'e7', 'pawn', 'black');
+      await drag(page, 'b8', { x: 0, y: 0 }); await artAt(page, 'b8', 'knight', 'black'); await moves(page, 1);
+      await drag(page, 'e7', 'e5'); await moves(page, 2); await artAt(page, 'e5', 'pawn', 'black');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('plays native castling for both colors and moves both pieces', async () => {
+    const page = await pageAt();
+    try {
+      await start(page);
+      for (const lan of ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'g8f6']) { await move(page, lan); }
+      await drag(page, 'e1', 'g1'); await moves(page, 7); await artAt(page, 'g1', 'king', 'white'); await artAt(page, 'f1', 'rook', 'white');
+      await move(page, 'f8c5'); await move(page, 'a2a3'); await drag(page, 'e8', 'g8'); await moves(page, 10);
+      await artAt(page, 'g8', 'king', 'black'); await artAt(page, 'f8', 'rook', 'black'); expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('removes the correct pawn during native en passant and restores it on undo', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); for (const lan of ['e2e4', 'a7a6', 'e4e5', 'd7d5']) { await move(page, lan); }
+      await drag(page, 'e5', 'd6'); await moves(page, 5); await artAt(page, 'd6', 'pawn', 'white');
+      expect(await page.locator('[data-square=d5]').getAttribute('aria-label')).toContain('empty');
+      expect(await page.locator('#bottom-captured').innerText()).toContain('pawn');
+      await page.locator('#undo').click(); await moves(page, 4); await artAt(page, 'd5', 'pawn', 'black'); await artAt(page, 'e5', 'pawn', 'white');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('restores a dragged promotion until a choice is made and supports cancellation (legal fixture)', async () => {
+    const page = await pageAt(); const game = createGame({ mode: 'local' });
+    for (const lan of ['a2a4', 'h7h5', 'a4a5', 'h5h4', 'a5a6', 'h4h3', 'a6b7', 'h3g2']) { playMove(game, lan); }
+    try {
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
+      await page.reload(); await page.locator('#continue').click(); await drag(page, 'b7', 'a8');
+      await page.waitForFunction(() => document.getElementById('promotion').open); await moves(page, 8); await artAt(page, 'b7', 'pawn', 'white');
+      await page.locator('#cancel-promotion').click(); await artAt(page, 'a8', 'rook', 'black');
+      await drag(page, 'b7', 'a8'); await page.locator('[data-promote=n]').click(); await moves(page, 9); await artAt(page, 'a8', 'knight', 'white');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('cancels an active drag with Escape and does not commit its later mouseup', async () => {
+    const page = await pageAt();
+    try {
+      await start(page); const a = await page.locator('[data-square=e2]').boundingBox(), b = await page.locator('[data-square=e4]').boundingBox();
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 });
+      await page.keyboard.press('Escape'); await page.mouse.up(); await page.evaluate(() => new Promise(globalThis.requestAnimationFrame));
+      await moves(page, 0); await artAt(page, 'e2', 'pawn', 'white');
+      await drag(page, 'e2', 'e4'); await moves(page, 1); expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('retains every move under rapid native clicks without duplicate callbacks', async () => {
+    const page = await pageAt();
+    try {
+      await start(page);
+      for (const square of ['e2', 'e4', 'e7', 'e5', 'g1', 'f3', 'b8', 'c6']) {
+        const b = await page.locator(`[data-square=${square}]`).boundingBox(); await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+      }
+      await moves(page, 4); expect(await page.locator('#moves').innerText()).toContain('Nc6');
+      await artAt(page, 'c6', 'knight', 'black'); expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('plays a trusted browser touch drag and cancels an interrupted touch', async () => {
+    const page = await pageAt({ width: 390, height: 844 }, true);
+    try {
+      await start(page); const session = await page.context().newCDPSession(page);
+      const points = async (from, to, cancel = false) => {
+        const a = await page.locator(`[data-square=${from}]`).boundingBox(), b = await page.locator(`[data-square=${to}]`).boundingBox();
+        const x = a.x + a.width / 2, y = a.y + a.height / 2;
+        await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+        for (let i = 1; i <= 8; i++) { await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (b.x + b.width / 2 - x) * i / 8, y: y + (b.y + b.height / 2 - y) * i / 8 }] }); }
+        await page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+        await session.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] });
+      };
+      await points('e2', 'e4'); await moves(page, 1); await artAt(page, 'e4', 'pawn', 'white');
+      await points('e7', 'e5', true); await page.evaluate(() => new Promise(globalThis.requestAnimationFrame)); await moves(page, 1); await artAt(page, 'e7', 'pawn', 'black');
+      await points('e7', 'e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
   it('retains full captured-piece details without pushing a computer board offscreen (legal layout fixture)', async () => {
