@@ -324,10 +324,15 @@ describe.skipIf(!available)('arcade native controls and legacy storage recovery'
       const held = await page.evaluate(() => ({ x: window.gameInstance.paddle.x, left: window.gameInstance.controls.left }));
       expect(held.left).toBe(true);
       expect(held.x).toBeLessThan(before);
+      // More frames may pass while the native pointer remains down. Measure
+      // stationary input from the actual release, not an earlier held frame.
+      await page.clock.runFor(32);
       await page.mouse.up();
-      expect(await page.evaluate(() => window.gameInstance.controls.left || window.gameInstance.controls.right)).toBe(false);
+      const released = await page.evaluate(() => ({ x: window.gameInstance.paddle.x, ...window.gameInstance.controls }));
+      expect(released.left || released.right || released.pointerActive).toBe(false);
+      expect(released.x).toBeLessThan(held.x);
       await page.clock.runFor(50);
-      expect(await page.evaluate(() => window.gameInstance.paddle.x)).toBe(held.x);
+      expect(await page.evaluate(() => window.gameInstance.paddle.x)).toBe(released.x);
     } finally {await page.close();}
   });
 
