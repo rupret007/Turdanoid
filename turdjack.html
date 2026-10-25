@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="assets/turdsuite.css">
 <link rel="stylesheet" href="assets/arcade.css">
   <script src="games/table-continue-core.js"></script>
+  <script src="games/suite-dialog-focus.js"></script>
   <script src="assets/turdsuite.js"></script>
   <title>Crapjack 21</title>
   <style>
@@ -2157,6 +2158,9 @@
     .welcome-card {
       position: relative;
       width: min(640px, 100%);
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
       border: 1px solid rgba(255, 215, 106, 0.45);
       border-radius: 18px;
       background:
@@ -2748,7 +2752,7 @@
 </head>
 <body class="suite-ambient suite-no-zoom arcade" data-arcade-game="crapjack">
   <div id="jackLiveRegion" class="sr-live" aria-live="polite" aria-atomic="true"></div>
-  <div class="welcome-guide" id="welcomeGuide" role="region" aria-label="Start Crapjack 21">
+  <div class="welcome-guide" id="welcomeGuide" role="dialog" aria-modal="true" aria-label="Start Crapjack 21">
     <div class="welcome-card">
           <h2>Crapjack 21</h2>
       <p>Beat the dealer without busting. Manage bankroll, pick smart actions, and use house rules to your advantage.</p>
@@ -3760,12 +3764,19 @@
       const guide = document.getElementById('welcomeGuide');
       if (guide) guide.style.display = 'flex';
       onboardingOpen = true;
+      window.SuiteDialogFocus?.open(guide, {
+        initialFocus: '#quickGuideBtn',
+        fallbackFocus: () => [...document.querySelectorAll('[data-mobile-action="hit"], [data-mobile-action="deal"]'), ui.hitBtn, ui.dealBtn, document.getElementById('helpBtn')]
+          .find(button => button && !button.disabled && button.getClientRects().length > 0),
+        onEscape: hideWelcomeGuide
+      });
     }
 
     function hideWelcomeGuide() {
       const guide = document.getElementById('welcomeGuide');
       if (guide) guide.style.display = 'none';
       onboardingOpen = false;
+      window.SuiteDialogFocus?.close(guide);
       if (window.Suite && Suite.guide) Suite.guide.mark('turdjack.html');
     }
 
@@ -4973,6 +4984,10 @@
     }
 
     function wireEvents() {
+      const tableMenu = document.querySelector('.mobile-menu details');
+      tableMenu?.addEventListener('click', event => {
+        if (event.target.closest('button, a')) tableMenu.open = false;
+      });
       document.querySelectorAll('[data-chip]').forEach((btn) => {
         btn.addEventListener('click', () => addBet(parseInt(btn.dataset.chip, 10)));
       });

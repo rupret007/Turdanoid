@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createGame, playMove, snapshot, SAVE_KEY } from '../games/chess-core.js';
 import { contrastRatio } from '../games/suite-arcade-a11y.js';
 let browser, server, base;
+let wasmContentType = 'application/wasm';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' };
 beforeAll(async () => {
@@ -15,7 +16,10 @@ beforeAll(async () => {
     const pathname = new globalThis.URL(req.url, 'http://localhost').pathname;
     const file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
     if (!file.startsWith(root + sep)) { res.writeHead(403).end(); return; }
-    try { res.writeHead(200, { 'Content-Type': mime[extname(file)] || 'application/octet-stream' }); res.end(await readFile(file)); }
+    try {
+      const contentType = extname(file) === '.wasm' ? wasmContentType : mime[extname(file)] || 'application/octet-stream';
+      res.writeHead(200, contentType === null ? {} : { 'Content-Type': contentType }); res.end(await readFile(file));
+    }
     catch { res.writeHead(404).end(); }
   });
   await new Promise(done => server.listen(0, '127.0.0.1', done));
@@ -162,14 +166,32 @@ describe('native chess interface', () => {
       expect(downloads).toHaveLength(1); expect(page.workers()).toHaveLength(1);
     } finally { await page.close(); }
   });
+  it.each([null, 'application/octet-stream'])('plays two real computer replies and reuses one binary when HTTP WASM metadata is %s', async contentType => {
+    const page = await pageAt(), downloads = [], responses = [];
+    page.on('request', request => { if (request.url().endsWith('stockfish-19-lite-single.wasm')) { downloads.push(request.url()); } });
+    page.on('response', response => { if (response.url().endsWith('stockfish-19-lite-single.wasm')) { responses.push(response); } });
+    try {
+      // Serve an actually absent header for null, rather than substituting an
+      // empty fulfilled response. Native WebAssembly compilation still runs.
+      wasmContentType = contentType;
+      await start(page, 'computer'); await move(page, 'e2e4'); await moves(page, 2);
+      const worker = page.workers()[0];
+      await move(page, 'g1f3'); await moves(page, 4);
+      expect(downloads).toHaveLength(1); expect(responses).toHaveLength(1);
+      expect(responses[0].headers()['content-type']).toBe(contentType ?? undefined);
+      expect(page.workers()).toHaveLength(1); expect(page.workers()[0]).toBe(worker);
+      expect(await page.locator('#engine-recovery').isVisible()).toBe(false);
+      expect(page.chessErrors).toEqual([]);
+    } finally { wasmContentType = 'application/wasm'; await page.close(); }
+  });
   it('recovers deliberately from a blocked engine without silently changing modes', async () => {
     const page = await pageAt();
     try {
-      await page.route('**/stockfish-19-lite-single.js', route => route.abort());
+      await page.route('**/stockfish-loader.js', route => route.abort());
       await start(page, 'computer', 'b');
       await page.locator('#engine-recovery').waitFor({ state: 'visible' });
       expect(await page.locator('#game-label').textContent()).toContain('COMPUTER');
-      await page.unroute('**/stockfish-19-lite-single.js');
+      await page.unroute('**/stockfish-loader.js');
       await page.locator('#retry').click(); await moves(page, 1);
       expect(await page.locator('#engine-recovery').isVisible()).toBe(false);
       await page.locator('#game-options > summary').click(); await page.locator('#resign').click();
