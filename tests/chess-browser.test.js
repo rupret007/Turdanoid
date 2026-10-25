@@ -368,4 +368,33 @@ describe('native chess interface', () => {
       await move(page, 'e7e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+  it.each(['computer', 'local'])('keeps the board and both player strips visible in short landscape during %s play', async mode => {
+    const page = await pageAt({ width: 390, height: 844 });
+    try {
+      await start(page, mode); await move(page, 'e2e4');
+      if (mode === 'local') { await move(page, 'e7e5'); } else { await moves(page, 2); }
+      for (const viewport of [{ width: 568, height: 320 }, { width: 667, height: 375 }, { width: 844, height: 390 }]) {
+        await page.setViewportSize(viewport);
+        for (const flip of [false, true]) {
+          if (flip) { await page.locator('#flip').click(); }
+          const box = await page.locator('.chess-table').boundingBox();
+          expect(box.y).toBeGreaterThanOrEqual(0); expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+        }
+      }
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+  it('retains full captured-piece details without pushing a computer board offscreen (legal layout fixture)', async () => {
+    const page = await pageAt({ width: 568, height: 320 }); const game = createGame({ mode: 'computer', side: 'b' });
+    for (const lan of ['a2a4', 'h7h5', 'a4a5', 'h5h4', 'a5a6', 'h4h3', 'a6b7', 'h3g2', 'b7a8q']) { playMove(game, lan); }
+    try {
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
+      await page.reload(); await page.locator('#continue').click();
+      const box = await page.locator('.chess-table').boundingBox(); expect(box.y + box.height).toBeLessThanOrEqual(320);
+      expect(await page.locator('#white-captured-review').innerText()).toContain('rook');
+      expect(await page.locator('#white-captured-review').innerText()).toContain('pawn');
+      expect(await page.locator('#black-captured-review').innerText()).toContain('pawn');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
 });
