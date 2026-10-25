@@ -13,6 +13,7 @@ This pass starts from the accepted Chessground/Spatial source at `10a0e6e2019462
 - Existing game geometry is refined to keep cards, actions, fields, queues and HUD text clear of measured music controls and each other. Rad Dad's music-free adapter must not acquire an empty footer reservation. Original art and game identity are retained.
 - Leaving the phone layout restores canvas dimensions owned by the responsive fitter. Turdtris and legacy Neon retain their proper board proportions and desktop size through repeated breakpoint changes, and Neon's visible dock accepts mouse input on narrow desktops.
 - The existing chess worker now uses the proven shared delivery loader when a static host omits or mislabels the WASM content type. Native tests retain two real computer replies and one warm worker/download under both HTTP conditions.
+- Chess refreshes its existing music gate when Play, setup, dialogs, results or visibility change. Native Play can start the armed playlist while setup/help/results remain quiet; game-sound and music preferences retain their existing separate controls.
 
 ## Implementation boundaries
 

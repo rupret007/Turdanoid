@@ -190,14 +190,18 @@ async function check(page, game, selectors, state) {
           await check(page,game,selectors,'table menu closed');
         }
         if(game==='crapeights') {
-          await tap(page,page.locator('.mobile-menu summary'));
+          const menu=page.locator('.mobile-menu details');
           for(const level of ['easy','hard','normal']) {
+            // Table actions can close the menu. Reopen it through its real
+            // summary before checking/tapping the next difficulty control.
+            if(!await menu.evaluate(element=>element.open)) await tap(page,menu.locator(':scope > summary'));
             const button=page.locator(`.suite-difficulty-btn[data-level="${level}"]`);
             assert(await button.evaluate(element=>Boolean(element.closest('.mobile-menu-actions'))),'Eights difficulty belongs in the table menu');
             await tap(page,button);
             assert.equal(await button.getAttribute('aria-pressed'),'true',`${level} difficulty responds to touch`);
           }
-          await tap(page,page.locator('.mobile-menu summary'));
+          if(await menu.evaluate(element=>element.open)) await tap(page,menu.locator(':scope > summary'));
+          assert.equal(await menu.evaluate(element=>element.open),false,'Eights table menu is closed before checking the hand');
           await check(page,game,selectors,'difficulty menu closed');
         }
         if(game==='turdjack') {

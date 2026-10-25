@@ -10,7 +10,7 @@ import { contrastRatio } from '../games/suite-arcade-a11y.js';
 let browser, server, base;
 let wasmContentType = 'application/wasm';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.wasm': 'application/wasm', '.m4a': 'audio/mp4' };
 beforeAll(async () => {
   server = createServer(async (req, res) => {
     const pathname = new globalThis.URL(req.url, 'http://localhost').pathname;
@@ -61,8 +61,86 @@ async function artAt(page, square, role, color) {
   await page.waitForFunction(({ square, role, color }) => [...document.querySelectorAll('cg-board > piece')]
     .some(p => p.cgKey === square && p.classList.contains(role) && p.classList.contains(color)), { square, role, color }, { timeout: 3000 });
 }
+async function musicState(page) {
+  // Resolve the real player once before synchronous native-browser polling.
+  return page.evaluate(async () => {
+    globalThis.__chessMusicReview = await globalThis.Suite.music();
+    const player = globalThis.__chessMusicReview;
+    return { armed: player.armed, paused: player.audioElement.paused, time: player.audioElement.currentTime };
+  });
+}
+async function musicPlaying(page, title = 'Manic') {
+  await page.waitForFunction(expected => {
+    const player = globalThis.__chessMusicReview;
+    return player.trackTitle === expected && !player.audioElement.paused && player.audioElement.currentTime > 0.2
+      && document.querySelector('.suite-music-title').textContent === `Now playing: ${expected}`;
+  }, title, { timeout: 5000 });
+  const before = await page.evaluate(() => globalThis.__chessMusicReview.audioElement.currentTime);
+  await page.waitForFunction(time => globalThis.__chessMusicReview.audioElement.currentTime > time + 0.1, before, { timeout: 5000 });
+}
+async function musicPaused(page) {
+  await page.waitForFunction(() => globalThis.__chessMusicReview.audioElement.paused
+    && !document.querySelector('.suite-music-title').textContent.startsWith('Now playing:'));
+}
 
 describe('native chess interface', () => {
+  it('starts real decoded music from native Play and preserves separate sound/music preferences through Continue', async () => {
+    const page = await pageAt();
+    try {
+      expect(await musicState(page)).toEqual({ armed: false, paused: true, time: 0 });
+      await start(page);
+      await musicPlaying(page);
+      await page.getByRole('button', { name: 'Next song', exact: true }).click();
+      await musicPlaying(page, 'Andrea');
+      await page.locator('#mute').click();
+      expect(await page.evaluate(() => globalThis.Suite.isMuted())).toBe(true);
+      expect(await page.evaluate(() => globalThis.Suite.isMusicEnabled())).toBe(true);
+      await musicPlaying(page, 'Andrea');
+      await page.locator('#suite-music-toggle').click();
+      await musicPaused(page);
+      await move(page, 'e2e4'); await moves(page, 1);
+      await page.reload();
+      await musicState(page);
+      expect(await page.evaluate(() => globalThis.Suite.isMuted())).toBe(true);
+      expect(await page.evaluate(() => globalThis.Suite.isMusicEnabled())).toBe(false);
+      await page.locator('#continue').click(); await moves(page, 1);
+      await musicPaused(page);
+      await page.locator('#suite-music-toggle').click();
+      await musicPlaying(page, 'Andrea');
+      expect(await page.evaluate(() => globalThis.Suite.isMuted())).toBe(true);
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  }, 15000);
+  it('resynchronizes real music around native help, draw, setup, result and simulated visibility gates', async () => {
+    const page = await pageAt();
+    try {
+      await musicState(page); await start(page); await musicPlaying(page);
+      await page.locator('#game-options > summary').click(); await page.locator('#help').click();
+      await musicPaused(page);
+      await page.getByRole('button', { name: 'Close how to play' }).click(); await musicPlaying(page);
+      await page.locator('#claim').click(); await musicPaused(page);
+      await page.locator('#draw-cancel').click(); await musicPlaying(page);
+      await page.locator('#new').click(); await musicPaused(page);
+      await page.locator('#new-game button[type=submit]').click(); await musicPlaying(page);
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+        document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      await musicPaused(page);
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+        document.dispatchEvent(new globalThis.Event('visibilitychange'));
+      });
+      await musicPaused(page);
+      await page.locator('#resume-playing').click(); await musicPlaying(page);
+      for (const lan of ['f2f3', 'e7e5', 'g2g4', 'd8h4']) { await move(page, lan); }
+      await moves(page, 4);
+      expect(await page.locator('#status').textContent()).toBe('Checkmate');
+      await musicPaused(page);
+      await page.locator('#rematch').click(); await musicPlaying(page);
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  }, 15000);
   it('plays keyboard moves with retained focus, rejects an illegal move and reviews history', async () => {
     const page = await pageAt();
     try {
