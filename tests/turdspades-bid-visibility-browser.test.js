@@ -31,8 +31,8 @@ afterAll(async () => {
   if (server) { await new Promise(done => server.close(done)); }
 });
 
-async function bidVisibility(page) {
-  return page.evaluate(() => {
+async function bidVisibility(page, selector = '#bidDown,#bidUp,#bidNil,#lockBid,#bidChips button') {
+  return page.evaluate(selector => {
     const bubble = document.querySelector('.ts-bubble');
     const style = getComputedStyle(bubble);
     const decoration = style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0
@@ -40,7 +40,7 @@ async function bidVisibility(page) {
     const overlap = rect => !decoration ? 0
       : Math.max(0, Math.min(rect.right, decoration.right) - Math.max(rect.left, decoration.left))
         * Math.max(0, Math.min(rect.bottom, decoration.bottom) - Math.max(rect.top, decoration.top));
-    return [...document.querySelectorAll('#bidDown,#bidUp,#bidNil,#lockBid,#bidChips button')]
+    return [...document.querySelectorAll(selector)]
       .filter(button => button.checkVisibility() && !button.disabled)
       .map(button => {
         const rect = button.getBoundingClientRect();
@@ -48,7 +48,7 @@ async function bidVisibility(page) {
         label.selectNodeContents(button);
         return { id: button.id || button.dataset.bid, width: rect.width, height: rect.height, overlap: overlap(rect), labelOverlap: overlap(label.getBoundingClientRect()) };
       });
-  });
+  }, selector);
 }
 
 describe('Spades bid decision visibility during native partner banter', () => {
@@ -84,6 +84,41 @@ describe('Spades bid decision visibility during native partner banter', () => {
           await page.waitForFunction(() => state.phase === 'play' && state.currentPlayer === 0);
           const count = await page.locator('#youCards .card').count();
           await page.locator('#youCards .card:not([disabled])').first().click();
+          await page.locator('#playBtn').click();
+          expect(await page.locator('#youCards .card').count()).toBe(count - 1);
+          expect(errors).toEqual([]);
+        } finally { await browser.close(); }
+      }, 20000);
+      it.skipIf(!existsSync(type.executablePath()))(`${engine} keeps AI Sort and first human Play clear after fast Lock at ${width}px`, async () => {
+        const browser = await type.launch();
+        const page = await browser.newPage({ viewport: { width, height: 800 }, reducedMotion: 'no-preference' });
+        const errors = [];
+        page.on('pageerror', error => errors.push(error.message));
+        try {
+          await page.goto(`${origin}/turdspades.html`);
+          await page.locator('#quickStart').click();
+          await page.waitForFunction(() => document.body.dataset.turn === 'bid' && document.querySelector('.ts-bubble')?.classList.contains('show'));
+          await page.waitForTimeout(300);
+          await page.locator('#lockBid').click();
+          expect(await page.evaluate(() => state.phase === 'play' && state.currentPlayer !== 0)).toBe(true);
+          expect(await page.locator('.ts-bubble').evaluate(node => getComputedStyle(node).display)).not.toBe('none');
+          for (const control of await bidVisibility(page, '#sortSuit,#sortRank')) {
+            expect(control.overlap, `${control.id} AI-phase target`).toBe(0);
+            expect(control.labelOverlap, `${control.id} AI-phase label`).toBe(0);
+          }
+          await page.locator('#sortRank').click();
+          expect(await page.evaluate(() => state.sortMode)).toBe('rank');
+          await page.waitForFunction(() => state.phase === 'play' && state.currentPlayer === 0);
+          const count = await page.locator('#youCards .card').count();
+          await page.locator('#youCards .card:not([disabled])').first().click();
+          const controls = await bidVisibility(page, '.dock-grid button');
+          expect(controls.length).toBe(3);
+          for (const control of controls) {
+            expect(control.width, control.id).toBeGreaterThanOrEqual(44);
+            expect(control.height, control.id).toBeGreaterThanOrEqual(44);
+            expect(control.overlap, `${control.id} first-play target`).toBe(0);
+            expect(control.labelOverlap, `${control.id} first-play label`).toBe(0);
+          }
           await page.locator('#playBtn').click();
           expect(await page.locator('#youCards .card').count()).toBe(count - 1);
           expect(errors).toEqual([]);
