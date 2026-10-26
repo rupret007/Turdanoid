@@ -33,6 +33,104 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('arcade native controls and legacy storage recovery', () => {
+  it.each([[390,844], [844,390], [320,568], [1440,1000]])('Turdanoid: caught-ball launch stays clear of the paddle at %sx%s', async (width, height) => {
+    const page = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: 'reduce' });
+    try {
+      await page.goto(`${origin}/TurdAnoid.html`);
+      await page.locator('#btnStart').click();
+      const initial = await page.evaluate(() => ({
+        hint: document.getElementById('arcHint').hidden ? null : document.getElementById('arcHint').getBoundingClientRect().toJSON(),
+        launch: document.getElementById('mobileLaunch').getBoundingClientRect().toJSON()
+      }));
+      if (initial.hint) {expect(initial.hint.bottom + 6).toBeLessThanOrEqual(initial.launch.top);}
+      await page.locator('#mobileLaunch').tap();
+      // Specific power-up/collision fixture; the release itself is a native tap.
+      await page.evaluate(() => {
+        const g = window.__turdanoid;
+        g.qaActivatePower('catch');
+        Object.assign(g.balls[0], { x: g.paddle.x, y: g.paddle.y - g.balls[0].r, vx: 0, vy: 2 });
+        g.step(1000 / 60); g.render();
+      });
+      expect(await page.evaluate(() => window.__turdanoid.balls[0].stuck)).toBe(true);
+      const geometry = await page.evaluate(() => {
+        const g = window.__turdanoid, canvas = document.getElementById('game').getBoundingClientRect();
+        const scale = canvas.height / g.H, b = g.balls[0];
+        return { launch: document.getElementById('mobileLaunch').getBoundingClientRect().toJSON(),
+          powers: document.getElementById('powers').getBoundingClientRect().toJSON(),
+          hint: document.getElementById('arcHint').hidden ? null : document.getElementById('arcHint').getBoundingClientRect().toJSON(),
+          ballTop: canvas.top + (b.y - b.r) * scale,
+          paddleTop: canvas.top + g.paddle.y * scale };
+      });
+      expect(geometry.launch.height).toBeGreaterThanOrEqual(44);
+      expect(geometry.launch.top).toBeGreaterThanOrEqual(0);
+      expect(geometry.launch.bottom + 6).toBeLessThanOrEqual(geometry.ballTop);
+      expect(geometry.launch.bottom + 6).toBeLessThanOrEqual(geometry.paddleTop);
+      if (geometry.hint) {expect(geometry.hint.bottom + 6).toBeLessThanOrEqual(geometry.launch.top);}
+      const overlap = geometry.powers.left < geometry.launch.right && geometry.powers.right > geometry.launch.left
+        && geometry.powers.top < geometry.launch.bottom && geometry.powers.bottom > geometry.launch.top;
+      expect(overlap).toBe(false);
+      await page.locator('#mobileLaunch').tap();
+      expect(await page.evaluate(() => window.__turdanoid.waitingLaunch)).toBe(false);
+      expect(await page.evaluate(() => window.__turdanoid.balls[0].stuck)).toBe(false);
+    } finally {await page.close();}
+  });
+
+  it.each(['interrupted', 'closed'])('Turdomania: a fresh gesture recovers after its effects context becomes %s without changing mute intent', async state => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
+    try {
+      await page.addInitScript(() => {
+        const NativeContext = window.AudioContext;
+        window.__audioCreations = 0; window.__resumeCalls = 0;
+        window.AudioContext = class extends NativeContext {
+          constructor(...args) {super(...args); window.__audioCreations++;}
+        };
+      });
+      await page.route('**/turdomania.html', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: (await response.text()).replace('<html ', '<html data-arcade-audio="studio" ') });
+      });
+      // The canonical Rad Dad importer selects the studio facade this way.
+      // Source and Stalemate retain the classic facade and original playlist.
+      await page.route('**/assets/turdsuite.js', async route => {
+        const response = await route.fetch(), source = await response.text();
+        const adapted = source.replace("const AUDIO_PROFILE = 'classic';", "const AUDIO_PROFILE = document.documentElement.dataset.arcadeAudio === 'studio' ? 'studio' : 'classic';");
+        expect(adapted).not.toBe(source);
+        await route.fulfill({ response, body: adapted });
+      });
+      await page.goto(`${origin}/turdomania.html`);
+      await page.evaluate(() => window.Suite.audioReady());
+      expect(await page.evaluate(() => window.Suite.getSoundState().profile)).toBe('studio');
+      const pop = async () => {
+        await page.waitForTimeout(250);
+        const id = await page.evaluate(() => {
+          const { state, Core } = window.__turdomania;
+          for (let c = 0; c < state.cols; c++) {for (let r = 0; r < state.rows; r++) {
+            if (Core.findGroup(state.board, c, r).length >= 3) {return document.querySelector(`.tile[data-col="${c}"][data-row="${r}"]`).id;}
+          }}
+        });
+        expect(id).toBeTruthy(); await page.locator('#' + id).tap();
+      };
+      await pop(); await pop();
+      expect(await page.evaluate(() => window.Suite.getSoundState().accepted)).toBeGreaterThan(0);
+      await page.evaluate(async state => {
+        const context = window.Suite.getSoundContext();
+        if (state === 'closed') {await context.close(); return;}
+        await context.suspend();
+        const resume = context.resume.bind(context);
+        Object.defineProperty(context, 'state', { configurable: true, get: () => 'interrupted' });
+        context.resume = () => {window.__resumeCalls++; delete context.state; return resume();};
+      }, state);
+      await pop();
+      await expect.poll(() => page.evaluate(state => state === 'closed' ? window.__audioCreations : window.__resumeCalls, state)).toBeGreaterThan(state === 'closed' ? 1 : 0);
+      const before = await page.evaluate(() => window.Suite.getSoundState().accepted);
+      await pop();
+      expect(await page.evaluate(() => window.Suite.getSoundState().accepted)).toBeGreaterThan(before);
+      await page.evaluate(() => window.Suite.setMuted(true));
+      expect(await page.evaluate(() => window.Suite.getSoundContext())).toBeNull();
+      expect(await page.evaluate(() => window.Suite.isMuted())).toBe(true);
+    } finally {await page.close();}
+  });
+
   it('Turdtris: native key repeat cannot hard-drop additional pieces or undo a pause', async () => {
     const page = await browser.newPage();
     try {
