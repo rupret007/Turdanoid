@@ -41,6 +41,10 @@ workspace ARCADE-VISUAL-FEEL-HANDOFF.md records exact commits and final evidence
   Ordinary short desktop windows also measure the available board height after
   header/player strips. Chessground's existing resize observer updates its own
   geometry; rebuilding the renderer would disrupt focus and active gestures.
+  Native Chrome200% zoom exposed a gap at634×567: the one-column board extended
+  below the viewport. Apply the same measured cap to narrow windows above the
+  existing short-landscape breakpoint. Tall phones retain their full width;
+  native move/drag, saved position and keyboard focus survive the resize.
 
 ## Primary-source comparisons
 
