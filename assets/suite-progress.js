@@ -100,7 +100,7 @@
       if (event.maxCombo !== undefined) parts.push(`${integer(event.maxCombo)}× best combo`);
     }
     if (event.score !== undefined && event.game !== 'chess') parts.push(`${integer(event.score)} points`);
-    if (event.difficulty) parts.push(`Difficulty: ${event.difficulty}`);
+    if (event.difficulty && !(event.game === 'chess' && event.local === true)) parts.push(`Difficulty: ${event.difficulty}`);
     return parts.filter(Boolean).join(' · ');
   }
 
@@ -213,7 +213,7 @@
         body.append(grid);
       } else if (panel === 'recent') {
         body.append(element('h3', '', 'Recent completed results'));
-        body.append(element('p', '', 'Up to 10 results per game, starting with this update. Earlier game records do not invent past results. Turdomania Undo updates the same board result.'));
+        body.append(element('p', '', 'Up to 10 results per game, starting with this update. Earlier records stay in Game records. Finishing a Turdomania board again after Undo updates its result.'));
         const label = element('label', 'suite-progress-filter', 'Game '); const select = element('select');
         for (const game of [{ id: 'all', title: 'All games' }, ...Core.GAMES]) { const option = element('option', '', game.title); option.value = game.id; select.append(option); }
         select.value = gameFilter; select.id = 'progress-game-filter'; label.append(select); body.append(label);

@@ -1,7 +1,7 @@
 // @vitest-environment node
 /* global state, progressMeta, applyEightsSnapshot, applyRummySnapshot, updateAll,
 renderAll, clearAiTimer, clearAiTurnTimeout, createShoe, shoe, render, SuiteProgress,
-getComputedStyle, performance, innerHeight */
+getComputedStyle, performance, innerHeight, innerWidth, DOMMatrix */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium, webkit } from 'playwright';
 import { existsSync } from 'node:fs';
@@ -73,6 +73,11 @@ async function openJackHistory(page, phone) {
     await page.locator('.mobile-menu button[onclick*="intelToggleBtn"]').click();
   } else { await page.locator('#intelToggleBtn').click(); }
   if (!(await page.locator('#intelDrawer').evaluate(node => node.open))) { await page.locator('#intelDrawer > summary').click(); }
+  await page.waitForFunction(() => {
+    const slide = document.querySelector('#intelSlide');
+    const matrix = new DOMMatrix(getComputedStyle(slide).transform);
+    return slide.classList.contains('open') && Math.abs(matrix.m41) < .1 && slide.getBoundingClientRect().right <= innerWidth + 1;
+  });
 }
 async function openSpadesDetails(page) {
   if (!(await page.locator('#tsDrawerToggle').isVisible())) { await page.locator('#tsTableMenu > summary').click(); }
@@ -141,7 +146,10 @@ describe('card completed progress native result/reload/replay', () => {
             item.entry = await page.evaluate(name => SuiteProgress.snapshot().history[name][0], game);
             expect(item.entry.kind).toBe(game === 'turdjack' ? 'hand' : 'match');
             if (game === 'turdspades') { expect(item.entry).toMatchObject({ playerScore: 260, opponentScore: -30 }); }
-            if (game === 'turdspades') { await page.locator('#tsTrophy.show').waitFor({ state: 'hidden', timeout: 6000 }); }
+            if (game === 'turdspades') {
+              await page.locator('#tsTrophy.show').waitFor({ state: 'hidden', timeout: 6000 });
+              await page.waitForFunction(() => Number(getComputedStyle(document.querySelector('#tsTrophy')).opacity) <= .01);
+            }
             if (game === 'turdjack') { await openJackHistory(page, phone); }
             if (game === 'turdspades') {
               await openSpadesDetails(page);

@@ -126,6 +126,10 @@ describe('synchronous optional progress runtime and view', () => {
     expect(api.describeEvent(black.entry)).toBe('Local two-player · Black wins · 1 half-move · Resignation');
     expect(api.describeEvent({ ...black.entry, winner: 'w' })).toContain('White wins');
     expect(api.describeEvent({ ...black.entry, winner: null, reason: 'Stalemate', moves: 8 })).toContain('Draw · 8 half-moves · Stalemate');
+    const localAided = api.describeEvent({ ...black.entry, difficulty: 'unknown', assisted: true, hints: 1, undos: 1 });
+    expect(localAided).toContain('Black wins · 1 half-move · Resignation · Hints / takebacks used');
+    expect(localAided).not.toContain('Difficulty');
+    expect(api.describeEvent({ ...black.entry, local: false, difficulty: 'friendly' })).toContain('Difficulty: friendly');
     expect(api.describeEvent({ game: 'turdomania', cleared: true, cols: 8, rows: 10, left: 0, score: 1000, difficulty: 'normal' })).toContain('8×10 board');
   });
 });
