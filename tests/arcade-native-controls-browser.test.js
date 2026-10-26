@@ -33,6 +33,28 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('arcade native controls and legacy storage recovery', () => {
+  it('Turdtris: native key repeat cannot hard-drop additional pieces or undo a pause', async () => {
+    const page = await browser.newPage();
+    try {
+      await page.goto(`${origin}/turdtris.html`);
+      await page.locator('#attractPlay').click();
+      await page.keyboard.down('Space');
+      expect(await page.evaluate(() => window.eval('runStats.pieces'))).toBe(1);
+      await page.keyboard.down('Space');
+      await page.keyboard.down('Space');
+      expect(await page.evaluate(() => window.eval('runStats.pieces'))).toBe(1);
+      await page.keyboard.up('Space');
+      await page.keyboard.press('Space');
+      expect(await page.evaluate(() => window.eval('runStats.pieces'))).toBe(2);
+      await page.keyboard.down('p');
+      await page.keyboard.down('p');
+      expect(await page.evaluate(() => window.eval('paused'))).toBe(true);
+      await page.keyboard.up('p');
+      await page.keyboard.press('p');
+      expect(await page.evaluate(() => window.eval('paused'))).toBe(false);
+    } finally {await page.close();}
+  });
+
   for (const key of ['Enter', 'Space']) {
     for (const target of ['btnHowTo', 'btnBoss']) {
       it(`Turdanoid: ${key} activates the focused ${target} button`, async () => {

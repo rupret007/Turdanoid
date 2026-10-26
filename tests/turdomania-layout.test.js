@@ -62,14 +62,14 @@ describe('Turdomania playable cell sizes', () => {
     }
   );
 
-  it('preserves the board and the 22–56px range through resizing and rotation', () => {
+  it('uses larger desktop cells while preserving the board through phone resizing and rotation', () => {
     const page = boot(1440, 1200);
-    expect(page.cell()).toBe(56);
+    expect(page.cell()).toBe(72);
     page.start();
-    expect(page.cell()).toBe(56);
+    expect(page.cell()).toBe(72);
     const tiles = Array.from(page.document.querySelectorAll('#board .tile'), (tile) => tile.id);
     const board = page.document.getElementById('board');
-    for (const [width, height, expected] of [[320, 180, 22], [390, 844, 35], [844, 390, 30], [1440, 1200, 56]]) {
+    for (const [width, height, expected] of [[320, 180, 22], [390, 844, 35], [844, 390, 30], [1440, 1200, 72]]) {
       page.resize(width, height);
       expect(page.cell()).toBe(expected);
       expect(Array.from(board.querySelectorAll('.tile'), (tile) => tile.id)).toEqual(tiles);

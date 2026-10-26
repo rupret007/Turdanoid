@@ -79,6 +79,24 @@ describe('Turdtris page leftover after the mobile dock', () => {
     );
   }
 
+  it('a held hard-drop key places one piece until it is released', () => {
+    key('Space');
+    const after = w.eval('JSON.stringify({ playfield, score, pieces: runStats.pieces })');
+    for (let i = 0; i < 4; i++) {
+      w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code: 'Space', repeat: true, cancelable: true }));
+    }
+    expect(w.eval('JSON.stringify({ playfield, score, pieces: runStats.pieces })')).toBe(after);
+    key('Space');
+    expect(w.eval('runStats.pieces')).toBe(2);
+  });
+
+  it.each(['KeyP', 'KeyM'])('holding %s does not repeatedly toggle its setting', code => {
+    key(code);
+    const after = w.eval('JSON.stringify({ paused, soundEnabled })');
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { code, repeat: true, cancelable: true }));
+    expect(w.eval('JSON.stringify({ paused, soundEnabled })')).toBe(after);
+  });
+
   it('resumes at normal gravity after pausing with keyboard soft drop held', () => {
     key('ArrowDown');
     expect(w.eval('softDrop')).toBe(true);
