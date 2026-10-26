@@ -98,6 +98,9 @@ Browser tests are emulation, not physical acceptance or proof of enjoyment.
   playlist and the approved synth/levels are unchanged. The interrupted-state
   fixture models the condition documented in [WebKit's interruption report](https://bugs.webkit.org/show_bug.cgi?id=276016);
   it does not establish physical iPhone recovery on every OS version.
+  A full-voice-pool close test also reproduced twelve dead handles blocking the
+  replacement context in Chromium and WebKit. Clear only the old context's
+  bookkeeping on replacement; preserve current-context limits and cue rendering.
 - The Catch relaunch pill covered the paddle/caught ball on portrait, landscape
   and narrow phones. Position it above that lane with a one-line label and the
   existing 56px touch target; keep the first-play hint and active power badges clear of the pill. Native

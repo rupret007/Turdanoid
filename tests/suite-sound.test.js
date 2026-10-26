@@ -74,6 +74,23 @@ describe('studio audio scheduling and safety', () => {
     expect(f.sources.every(n => n.disconnect.mock.calls.length === 1)).toBe(true);
   });
 
+  it('does not let a closed context retain voice slots in its replacement', () => {
+    const f = contextFixture();
+    f.context.currentTime = 120;
+    for (const event of ['jack.deal', 'jack.chip', 'chess.move', 'ta.brick', 'ta.bounce', 'tris.drop']) {
+      expect(f.player.playEvent(event)).toBe(true);
+    }
+    expect(f.player.getState().activeVoices).toBe(12);
+    // A closed context cannot deliver another processing quantum/onended event.
+    f.context.state = 'closed';
+    const next = contextFixture();
+    f.getContext.mockReturnValue(next.context);
+    expect(f.player.playEvent('mania.blip')).toBe(true);
+    expect(f.player.getState().activeVoices).toBe(2);
+    expect(next.sources).toHaveLength(2); // Only the fresh cue, no old-cue replay.
+    expect(f.sources.every(voice => voice.stop.mock.calls.length > 0)).toBe(true);
+  });
+
   it('cancels a lower-priority result before its scheduled start when the same completion earns a milestone', () => {
     const f = contextFixture();
     expect(f.player.playEvent('rummy.roundWin')).toBe(true);
