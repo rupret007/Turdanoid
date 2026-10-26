@@ -494,6 +494,36 @@ describe('native chess interface', () => {
       await move(page, 'e7e5'); await moves(page, 2); expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+  it.each([{ width: 634, height: 567 }, { width: 740, height: 600 }, { width: 600, height: 540 }])('fits the complete board at narrow zoom-sized $width × $height without losing play or focus', async viewport => {
+    const page = await pageAt();
+    try {
+      await start(page);
+      await move(page, 'e2e4'); await moves(page, 1);
+      const saved = await page.evaluate(key => localStorage.getItem(key), SAVE_KEY);
+      await page.locator('[data-square=g1]').focus();
+      await page.setViewportSize(viewport);
+      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+      const layout = await page.evaluate(() => ({
+        board: document.getElementById('board').getBoundingClientRect().toJSON(),
+        bottom: document.getElementById('bottom-player').parentElement.getBoundingClientRect().bottom,
+        focus: document.activeElement?.dataset.square,
+        scrollWidth: document.documentElement.scrollWidth
+      }));
+      expect(layout.board.width).toBeGreaterThanOrEqual(216);
+      expect(layout.board.width).toBeCloseTo(layout.board.height, 0);
+      expect(layout.board.y).toBeGreaterThanOrEqual(0);
+      expect(layout.bottom).toBeLessThanOrEqual(viewport.height);
+      expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
+      expect(layout.focus).toBe('g1');
+      expect(await page.evaluate(key => localStorage.getItem(key), SAVE_KEY)).toBe(saved);
+      await move(page, 'e7e5'); await moves(page, 2);
+      await drag(page, 'g1', 'f3'); await moves(page, 3);
+      await artAt(page, 'f3', 'knight', 'white');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+
   it.each(['computer', 'local'])('keeps the board and both player strips visible in short landscape during %s play', async mode => {
     const page = await pageAt({ width: 390, height: 844 });
     try {
