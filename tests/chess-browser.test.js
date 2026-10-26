@@ -2,7 +2,7 @@
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGame, playMove, snapshot, SAVE_KEY } from '../games/chess-core.js';
@@ -11,6 +11,11 @@ let browser, server, base;
 let wasmContentType = 'application/wasm';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.wasm': 'application/wasm', '.m4a': 'audio/mp4' };
+async function progressCapture(page, name) {
+  if (!process.env.ARCADE_PROGRESS_SCREENSHOTS) { return; }
+  await mkdir(process.env.ARCADE_PROGRESS_SCREENSHOTS, { recursive: true });
+  await page.screenshot({ path: resolve(process.env.ARCADE_PROGRESS_SCREENSHOTS, name + '.png'), fullPage: true });
+}
 beforeAll(async () => {
   server = createServer(async (req, res) => {
     const pathname = new globalThis.URL(req.url, 'http://localhost').pathname;
@@ -624,4 +629,105 @@ describe('native chess interface', () => {
       expect(page.chessErrors).toEqual([]);
     } finally { await page.close(); }
   });
+});
+
+describe('personal chess progress', () => {
+  it('chooses a hub goal, completes a native phone mate, downloads its real result image and retains one result after reload/replay', async () => {
+    const page = await pageAt({ width: 390, height: 844 }, true);
+    try {
+      await page.goto(base + '/');
+      await page.locator('.suite-progress-open').click();
+      await page.locator('#progress-goal-chess-finish').click();
+      await page.locator('.suite-progress-close').click();
+      await page.locator('a.game-card[href="chess.html"]').click();
+      await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
+      await start(page, 'local');
+      for (const lan of ['e2e4', 'e7e5', 'd1h5', 'b8c6', 'f1c4', 'g8f6', 'h5f7']) { await move(page, lan, true); }
+      await page.locator('#result').waitFor({ state: 'visible' });
+      expect(await page.locator('#progress-result').innerText()).toContain('Final move');
+      const first = await page.evaluate(() => globalThis.SuiteProgress.snapshot());
+      expect(first.history.chess).toHaveLength(1);
+      expect(first.history.chess[0]).toMatchObject({ mode: 'local', local: true, assisted: false, moves: 7, outcome: 'complete' });
+      expect(first.earned['chess-finish'].source).toBe('event');
+      await progressCapture(page, 'chess-phone-native-result');
+      const downloadPromise = page.waitForEvent('download');
+      await page.getByRole('link', { name: 'Save image', exact: true }).click();
+      const download = await downloadPromise;
+      const image = await readFile(await download.path());
+      expect([...image.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+      await page.reload();
+      await page.locator('#continue').click();
+      await page.locator('#flip').click();
+      expect(await page.evaluate(() => globalThis.SuiteProgress.snapshot().history.chess.length)).toBe(1);
+      await page.locator('#rematch').click();
+      await move(page, 'e2e4', true);
+      expect(await page.locator('#result').isHidden()).toBe(true);
+      expect(await page.locator('.suite-result-share').isHidden()).toBe(true);
+      await page.locator('.chess-hub').click();
+      await page.locator('.suite-progress-open').click();
+      await page.getByRole('button', { name: 'Recent results', exact: true }).click();
+      const historyText = await page.locator('.suite-progress-view').innerText();
+      expect(historyText).toContain('Local two-player');
+      expect(historyText).toContain('White wins');
+      expect(historyText).toContain('7 half-moves');
+      await progressCapture(page, 'chess-phone-native-history');
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  }, 30000);
+
+  it('records native computer practice with assistance labels and retains its chosen level for replay', async () => {
+    const page = await pageAt();
+    try {
+      await start(page, 'computer');
+      await move(page, 'e2e4');
+      await page.waitForFunction(() => document.querySelectorAll('#moves button').length >= 2);
+      await page.locator('#hint').click();
+      await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Try '));
+      await page.locator('#game-options > summary').click();
+      await page.locator('#resign').click(); await page.locator('#confirm-yes').click();
+      const state = await page.evaluate(() => globalThis.SuiteProgress.snapshot());
+      expect(state.history.chess).toHaveLength(1);
+      expect(state.history.chess[0]).toMatchObject({ mode: 'computer', difficulty: 'friendly', local: false, assisted: true, hints: 1, outcome: 'loss' });
+      await progressCapture(page, 'chess-computer-assisted-result');
+      await page.locator('#rematch').click();
+      await page.waitForFunction(() => document.querySelector('#game-label').textContent.includes('Friendly'));
+      expect(await page.evaluate(() => globalThis.SuiteProgress.snapshot().history.chess.length)).toBe(1);
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  }, 30000);
+
+  it('reviews a valid legacy completed-game fixture without manufacturing history or goals', async () => {
+    const page = await pageAt({ width: 320, height: 667 });
+    const game = createGame({ mode: 'local' });
+    for (const lan of ['e2e4', 'e7e5', 'd1h5', 'b8c6', 'f1c4', 'g8f6', 'h5f7']) { playMove(game, lan); }
+    try {
+      await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: SAVE_KEY, value: JSON.stringify(snapshot(game)) });
+      await page.reload(); await page.locator('#continue').click();
+      expect(await page.locator('#result').isVisible()).toBe(true);
+      expect(await page.locator('.suite-result-share').isVisible()).toBe(true);
+      const state = await page.evaluate(() => globalThis.SuiteProgress.snapshot());
+      expect(state.history.chess || []).toHaveLength(0);
+      expect(state.earned['chess-finish']).toBeUndefined();
+      expect(page.chessErrors).toEqual([]);
+    } finally { await page.close(); }
+  });
+
+  it('keeps denied-storage play and sharing usable, and only reads allowlisted setup links', async () => {
+    const page = await browser.newPage({ viewport: { width: 844, height: 390 }, reducedMotion: 'reduce' });
+    await page.addInitScript(() => Object.defineProperty(globalThis, 'localStorage', { get() { throw new Error('Storage denied by test fixture'); } }));
+    try {
+      await page.goto(base + '/chess.html?mode=local&level=sharp&fen=untrusted&save=untrusted');
+      await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
+      expect(await page.locator('input[name=mode][value=local]').isChecked()).toBe(true);
+      await page.locator('#new-game button[type=submit]').click();
+      await move(page, 'e2e4');
+      await page.locator('#game-options > summary').click();
+      await page.locator('#resign').click(); await page.locator('#confirm-yes').click();
+      expect(await page.locator('#progress-result').innerText()).toContain('cannot be saved');
+      expect(await page.locator('.suite-result-share').isVisible()).toBe(true);
+      await progressCapture(page, 'chess-landscape-denied-storage');
+      await page.locator('#rematch').click();
+      expect(await page.locator('#result').isHidden()).toBe(true);
+    } finally { await page.close(); }
+  }, 30000);
 });
