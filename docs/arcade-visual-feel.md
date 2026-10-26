@@ -100,6 +100,6 @@ Browser tests are emulation, not physical acceptance or proof of enjoyment.
   it does not establish physical iPhone recovery on every OS version.
 - The Catch relaunch pill covered the paddle/caught ball on portrait, landscape
   and narrow phones. Position it above that lane with a one-line label and the
-  existing 56px touch target; keep the first-play hint above the pill. Native
+  existing 56px touch target; keep the first-play hint and active power badges clear of the pill. Native
   geometry/release regressions failed before the fix. Physics and Catch rules
   remain unchanged; before/after canonical-site captures are retained.

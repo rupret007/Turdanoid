@@ -33,15 +33,21 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('arcade native controls and legacy storage recovery', () => {
-  it.each([[390,844], [844,390], [320,568]])('Turdanoid: caught-ball launch stays clear of the paddle at %sx%s', async (width, height) => {
+  it.each([[390,844], [844,390], [320,568], [1440,1000]])('Turdanoid: caught-ball launch stays clear of the paddle at %sx%s', async (width, height) => {
     const page = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: 'reduce' });
     try {
       await page.goto(`${origin}/TurdAnoid.html`);
       await page.locator('#btnStart').click();
+      const initial = await page.evaluate(() => ({
+        hint: document.getElementById('arcHint').hidden ? null : document.getElementById('arcHint').getBoundingClientRect().toJSON(),
+        launch: document.getElementById('mobileLaunch').getBoundingClientRect().toJSON()
+      }));
+      if (initial.hint) {expect(initial.hint.bottom + 6).toBeLessThanOrEqual(initial.launch.top);}
+      await page.locator('#mobileLaunch').tap();
       // Specific power-up/collision fixture; the release itself is a native tap.
       await page.evaluate(() => {
         const g = window.__turdanoid;
-        g.qaActivatePower('catch'); g.launch();
+        g.qaActivatePower('catch');
         Object.assign(g.balls[0], { x: g.paddle.x, y: g.paddle.y - g.balls[0].r, vx: 0, vy: 2 });
         g.step(1000 / 60); g.render();
       });
@@ -50,6 +56,7 @@ describe.skipIf(!available)('arcade native controls and legacy storage recovery'
         const g = window.__turdanoid, canvas = document.getElementById('game').getBoundingClientRect();
         const scale = canvas.height / g.H, b = g.balls[0];
         return { launch: document.getElementById('mobileLaunch').getBoundingClientRect().toJSON(),
+          powers: document.getElementById('powers').getBoundingClientRect().toJSON(),
           hint: document.getElementById('arcHint').hidden ? null : document.getElementById('arcHint').getBoundingClientRect().toJSON(),
           ballTop: canvas.top + (b.y - b.r) * scale,
           paddleTop: canvas.top + g.paddle.y * scale };
@@ -59,13 +66,16 @@ describe.skipIf(!available)('arcade native controls and legacy storage recovery'
       expect(geometry.launch.bottom + 6).toBeLessThanOrEqual(geometry.ballTop);
       expect(geometry.launch.bottom + 6).toBeLessThanOrEqual(geometry.paddleTop);
       if (geometry.hint) {expect(geometry.hint.bottom + 6).toBeLessThanOrEqual(geometry.launch.top);}
+      const overlap = geometry.powers.left < geometry.launch.right && geometry.powers.right > geometry.launch.left
+        && geometry.powers.top < geometry.launch.bottom && geometry.powers.bottom > geometry.launch.top;
+      expect(overlap).toBe(false);
       await page.locator('#mobileLaunch').tap();
       expect(await page.evaluate(() => window.__turdanoid.waitingLaunch)).toBe(false);
       expect(await page.evaluate(() => window.__turdanoid.balls[0].stuck)).toBe(false);
     } finally {await page.close();}
   });
 
-  it.each(['interrupted', 'closed'])('Turdomania: a fresh gesture recovers a %s effects context without changing mute intent', async state => {
+  it.each(['interrupted', 'closed'])('Turdomania: a fresh gesture recovers after its effects context becomes %s without changing mute intent', async state => {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
     try {
       await page.addInitScript(() => {
