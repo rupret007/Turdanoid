@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createStudioAudio, STUDIO_CUES, STUDIO_EVENTS } from '../assets/suite-sound.js';
+import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
+import { createStudioAudio, resolveStudioCue, STUDIO_CUES, STUDIO_EVENTS } from '../assets/suite-sound.js';
 
 // Scheduler/state tests only. Audible quality is reviewed through rendered clips.
 function contextFixture() {
@@ -111,6 +113,19 @@ describe('studio audio scheduling and safety', () => {
     const f = contextFixture(); f.context.createWaveShaper = () => { throw Error('unsupported'); };
     expect(f.player.playEvent('chess.move')).toBe(false);
     expect(f.player.getState().unavailable).toBe(true);
+  });
+
+  it('covers every literal cue used by the live inline game adapters', () => {
+    for (const [page, bank, call] of [['turdjack', 'jack', 'playSfx'], ['turdrummy', 'rummy', 'playSfx'], ['crapeights', 'eights', 'playSfx'], ['turdtris', 'tris', 'playSfx'], ['turdomania', 'mania', 'sfx']]) {
+      const html = readFileSync(new URL('../' + page + '.html', import.meta.url), 'utf8');
+      const calls = html.matchAll(new RegExp('\\b' + call + '\\(\\s*([\'\"])([^\'\"]+)\\1', 'g'));
+      for (const match of calls) {
+        expect(resolveStudioCue(bank + '.' + match[2]), page + ': ' + match[2]).not.toBeNull();
+      }
+    }
+    expect(resolveStudioCue('jack.twentyOne')).toBe('accent');
+    expect(resolveStudioCue('tris.clear', { linesCleared: 1 })).toBe('clear');
+    expect(resolveStudioCue('tris.clear', { linesCleared: 4 })).toBe('milestone');
   });
 
   it('maps all eight game banks to finite short envelopes, without sampled recordings or unbounded loops', () => {
