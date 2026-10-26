@@ -82,3 +82,24 @@ game, phone/tablet/computer, browser and difficulty; avoid collecting identities
 5. Are results, replay and Continue clear? Would they choose another round, and why?
 
 Browser tests are emulation, not physical acceptance or proof of enjoyment.
+
+## Mobile follow-up from Jeff's playtest
+
+- Jeff confirmed Rad Dad Turdomania became audible when he disabled iPhone
+  Silent Mode, then requested keeping that normal device behavior. Preserve the
+  ambient effects session; no playback-session override or silent media loop.
+  [WebKit's explanation](https://bugs.webkit.org/show_bug.cgi?id=237322) describes
+  the default distinction between WebAudio effects and media playback.
+- Separate native regressions reproduce effects recovery failures after an
+  interrupted or closed context. Studio effects now attempt to resume either
+  suspended or interrupted contexts, and recreate a closed one only when a
+  fresh allowed cue requests sound. Mute, zero volume, gesture/pause/visibility
+  gates and dropped-cue/no-replay behavior remain. Classic Stalemate routing,
+  playlist and the approved synth/levels are unchanged. The interrupted-state
+  fixture models the condition documented in [WebKit's interruption report](https://bugs.webkit.org/show_bug.cgi?id=276016);
+  it does not establish physical iPhone recovery on every OS version.
+- The Catch relaunch pill covered the paddle/caught ball on portrait, landscape
+  and narrow phones. Position it above that lane with a one-line label and the
+  existing 56px touch target; keep the first-play hint above the pill. Native
+  geometry/release regressions failed before the fix. Physics and Catch rules
+  remain unchanged; before/after canonical-site captures are retained.
