@@ -1655,6 +1655,7 @@ function beginRun(){
   newLevel();
   state='playing'; running=true; paused=false;
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow); hideOverlay(tClearTally);
+  tEnd.scrollTop = 0;
   clearTally = null;
   updateHud(); updatePowers();
   audio();

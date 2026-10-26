@@ -148,6 +148,14 @@ describe.skipIf(!available)('action progress with real native pages and SDK', ()
       await share.tap();
       await expect.poll(() => page.locator('.suite-result-share-status').innerText()).toMatch(/copied|Select and copy/);
       expect((await snapshot(page)).history.turdanoid).toHaveLength(1);
+      await page.locator('#btnRestart').click();
+      await page.evaluate(() => window.__turdanoid.gameOver(false));
+      await panel.waitFor({ state: 'visible' });
+      await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBe(0);
+      const heading = await page.locator('#endTitle').boundingBox();
+      const panelBox = await panel.boundingBox();
+      expect(heading.y).toBeGreaterThanOrEqual(panelBox.y + 50);
+      expect((await snapshot(page)).history.turdanoid).toHaveLength(2);
       expect(page.progressErrors).toEqual([]);
     } finally { await page.close(); }
   });
