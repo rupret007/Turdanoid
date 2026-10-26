@@ -1464,17 +1464,17 @@
         const note = (String(text || '') + ' ' + String(summary || '')).toLowerCase();
         const last = setMessage._last || ''; if (note === last) return; setMessage._last = note;
         if (note.includes('spades broken') || note.includes('spades break')) {
-          Suite.hype(Suite.quip('spades_break') || 'SPADES BROKEN'); Suite.beep(420, 0.12, 'square', 0.07, -200);
+          Suite.hype(Suite.quip('spades_break') || 'SPADES BROKEN');
         } else if (note.includes('match winner: us') || note.includes('we won the match')) {
-          Suite.hype(Suite.quip('win') || 'MATCH WIN'); Suite.win();
+          Suite.hype(Suite.quip('win') || 'MATCH WIN');
         } else if (note.includes('match winner: them') || note.includes('they won the match')) {
-          Suite.hype(Suite.quip('lose') || 'OUTPLAYED'); Suite.fart();
+          Suite.hype(Suite.quip('lose') || 'OUTPLAYED');
         } else if (note.includes('we won the round') || note.includes('our team made')) {
           Suite.toast('🚽 ' + (Suite.quip('win_s') || 'NICE'));
         } else if (note.includes('they made bid') || note.includes('they won the round')) {
           Suite.toast('💩 ' + (Suite.quip('lose_s') || 'oof'));
         } else if (note.includes('bag') && note.includes('penalty')) {
-          Suite.hype('BAG PENALTY!'); Suite.fart();
+          Suite.hype('BAG PENALTY!');
         }
       } catch (e) {}
     }
@@ -1506,6 +1506,7 @@
     }
 
     function startMatch() {
+      window.Suite?.stopSounds?.();
       progressMeta = newCardProgress();
       state.scores = [0, 0];
       state.bags = [0, 0];

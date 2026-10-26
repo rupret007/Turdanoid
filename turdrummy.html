@@ -2563,6 +2563,7 @@
     const audioPlayer = (window.TurdRummyAudio && TurdRummyAudio.createPlayer)
       ? TurdRummyAudio.createPlayer(rummyStorage)
       : null;
+    window.Suite?.setSoundLocalEnabled?.(() => !!audioPlayer?.isEnabled());
 
     function playSfx(name) {
       try {
@@ -3805,13 +3806,13 @@
         if (!window.Suite) return;
         const note = (String(text || "") + " " + String(summary || "")).toLowerCase();
         const last = setMessage._last || ""; if (note === last) return; setMessage._last = note;
-        if (note.includes("you called gin"))           { Suite.hype(Suite.quip('gin') || 'GIN!'); Suite.win(); }
-        else if (note.includes("you knocked"))         { Suite.hype(Suite.quip('knock') || 'KNOCK KNOCK'); Suite.ding(); }
-        else if (note.includes("undercut! you"))       { Suite.hype('UNDERCUT!'); Suite.win(); }
-        else if (note.includes("match winner: player")){ Suite.hype(Suite.quip('win') || 'CHAMPION'); Suite.win(); }
-        else if (note.includes("ai called gin"))       { Suite.toast('💩 BOT GIN'); Suite.fart(); }
+        if (note.includes("you called gin"))           { Suite.hype(Suite.quip('gin') || 'GIN!');  }
+        else if (note.includes("you knocked"))         { Suite.hype(Suite.quip('knock') || 'KNOCK KNOCK');  }
+        else if (note.includes("undercut! you"))       { Suite.hype('UNDERCUT!');  }
+        else if (note.includes("match winner: player")){ Suite.hype(Suite.quip('win') || 'CHAMPION');  }
+        else if (note.includes("ai called gin"))       { Suite.toast('💩 BOT GIN');  }
         else if (note.includes("ai knocked"))          { Suite.toast('💩 BOT KNOCK'); }
-        else if (note.includes("match winner: ai"))    { Suite.hype(Suite.quip('lose') || 'OUTPLAYED'); Suite.fart(); }
+        else if (note.includes("match winner: ai"))    { Suite.hype(Suite.quip('lose') || 'OUTPLAYED');  }
       } catch (e) {}
     }
 
@@ -4503,6 +4504,7 @@
     }
 
     function resetMatch() {
+      window.Suite?.stopSounds?.();
       progressMeta = null;
       clearCardProgressResult();
       clearAiTurnTimeout();

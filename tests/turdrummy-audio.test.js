@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getSfxSpec, loadSoundPref, saveSoundPref, createPlayer, SOUND_KEY, SFX_TABLE } from '../games/turdrummy-audio.js';
 
 function fakeStorage() {
@@ -77,5 +77,32 @@ describe('createPlayer', () => {
   it('unlock() never throws when AudioContext is unavailable (headless/test env)', () => {
     const player = createPlayer(storage);
     expect(() => player.unlock()).not.toThrow();
+  });
+});
+
+describe('Rummy master/local mute routing', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('routes one named cue through the studio scene only after unlock and both mute gates', () => {
+    let masterMuted = true;
+    const playSound = vi.fn();
+    vi.stubGlobal('Suite', { isStudioAudio: () => true, playSound });
+    const player = createPlayer(fakeStorage(), { isMuted: () => masterMuted });
+    player.play('gin'); player.unlock(); player.play('gin');
+    expect(playSound).not.toHaveBeenCalled();
+    masterMuted = false; player.play('gin');
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('rummy.gin');
+    player.setEnabled(false); player.play('matchWin');
+    expect(playSound).toHaveBeenCalledTimes(1);
+    player.dispose();
+  });
+  it('drops hidden-tab cues instead of replaying them after returning', () => {
+    let hidden = true;
+    const playSound = vi.fn();
+    vi.stubGlobal('Suite', { isStudioAudio: () => true, playSound });
+    const player = createPlayer(fakeStorage(), { isHidden: () => hidden });
+    player.unlock(); player.play('gin'); hidden = false;
+    expect(playSound).not.toHaveBeenCalled();
+    player.play('discard'); expect(playSound).toHaveBeenCalledExactlyOnceWith('rummy.discard');
+    player.dispose();
   });
 });

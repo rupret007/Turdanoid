@@ -272,6 +272,7 @@ function writePrefs(p) { try { safeStorage.setItem(Core.PREFS_KEY, JSON.stringif
 
 // Sound hooks: shared suite synth, which honours the suite mute toggle.
 function sfx(name) {
+  if (window.Suite?.isStudioAudio?.()) return Suite.playSound('mania.' + name);
   try { if (window.Suite && Suite.audio) Suite.audio().then((a) => a && a.playPreset(name)); } catch { /* no audio */ }
 }
 function announce(msg) {
@@ -307,6 +308,7 @@ function resetView() {
 }
 
 function start(levelKey, seed) {
+  window.Suite?.stopSounds?.();
   progressRunId = window.SuiteProgress?.newRunId('turdomania') || null;
   progressRunResult = null;
   progressStartedAt = Date.now();
