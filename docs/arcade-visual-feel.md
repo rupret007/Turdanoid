@@ -22,7 +22,11 @@ workspace ARCADE-VISUAL-FEEL-HANDOFF.md records exact commits and final evidence
   cards and controls are retained rather than clipped. Existing compact/tablet
   and phone layouts remain scoped separately.
 - Crappy Eights: tall desktop/tablet body padding exceeded the shell's vertical
-  budget by12px. Matching that budget removes document overflow.
+  budget by12px. Matching that budget removes document overflow. Hand resizing
+  is coalesced on an animation frame to prevent synchronous WebKit observer loops.
+- Rummy: short desktops reserve the full player fan above the action dock, with
+  opponent and central piles alongside one another. Logical hands and scoring
+  are unchanged through portrait/landscape and phone-to-desktop transitions.
 - Turdanoid: a steadier high-contrast ball edge survives reduced motion;
   capsule labels gain a dark backing, larger type and a textual warning marker
   for negative effects. Artwork/physics/collision radii and power-up rules stay
@@ -34,6 +38,9 @@ workspace ARCADE-VISUAL-FEEL-HANDOFF.md records exact commits and final evidence
   a reply can now wait only for that animation's remainder. Search time counts
   toward the bound, and reduced motion/hints add no delay. Cancellation/generation
   guards still run before committing a reply. This changes readability, not AI.
+  Ordinary short desktop windows also measure the available board height after
+  header/player strips. Chessground's existing resize observer updates its own
+  geometry; rebuilding the renderer would disrupt focus and active gestures.
 
 ## Primary-source comparisons
 

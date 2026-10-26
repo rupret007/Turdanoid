@@ -29,6 +29,58 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)('arcade playfield and primary-action geometry', () => {
+  it.each(['local', 'computer'])('Chess: complete board and player strip fit a short desktop in %s mode', async mode => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    try {
+      await page.goto(`${origin}/chess.html`);
+      await page.locator(`input[value="${mode}"]`).check();
+      await page.locator('#new-game button[type=submit]').click();
+      for (const [width, height] of [[1280,720], [1024,768], [1440,1000], [1280,720]]) {
+        await page.setViewportSize({ width, height });
+        await page.evaluate(() => document.fonts.ready);
+        await page.waitForTimeout(160);
+        const geometry = await page.evaluate(() => ({
+          board: document.getElementById('board').getBoundingClientRect().toJSON(),
+          bottom: document.getElementById('bottom-player').parentElement.getBoundingClientRect().bottom
+        }));
+        expect(geometry.board.width).toBeGreaterThanOrEqual(216);
+        expect(geometry.board.width).toBeCloseTo(geometry.board.height, 0);
+        expect(geometry.bottom).toBeLessThanOrEqual(height + 1);
+      }
+      // Use the resized board's native inputs and verify the rendered piece,
+      // not just the surrounding geometry.
+      await page.locator('[data-square=e2]').click();
+      await page.locator('[data-square=e4]').click();
+      await page.waitForFunction(() => [...document.querySelectorAll('cg-board > piece')]
+        .some(piece => piece.cgKey === 'e4' && piece.classList.contains('pawn') && piece.classList.contains('white')));
+    } finally {await page.close();}
+  });
+
+  it('Rummy keeps the whole fan above the dock when returning from phone to a short desktop', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    try {
+      await page.goto(`${origin}/turdrummy.html`);
+      await page.locator('#startRoundBtn').click();
+      await page.locator('#coachSkipBtn').click();
+      await page.waitForTimeout(1000);
+      const ids = await page.locator('#playerHand [data-card-id]').evaluateAll(cards => cards.map(e => e.dataset.cardId).sort());
+      for (const [width, height] of [[1024,768], [390,844], [844,390], [1280,720]]) {
+        await page.setViewportSize({ width, height });
+        await page.waitForTimeout(200);
+        expect(await page.locator('#playerHand [data-card-id]').evaluateAll(cards => cards.map(e => e.dataset.cardId).sort())).toEqual(ids);
+        const geometry = await page.evaluate(() => ({
+          dock: document.querySelector('.action-dock').getBoundingClientRect().top,
+          cards: [...document.querySelectorAll('#playerHand .card')].filter(e => e.checkVisibility()).map(e => e.getBoundingClientRect().toJSON())
+        }));
+        expect(geometry.cards).toHaveLength(10);
+        for (const card of geometry.cards) {
+          expect(card.top).toBeGreaterThanOrEqual(0);
+          expect(card.bottom).toBeLessThanOrEqual(geometry.dock + 1);
+        }
+      }
+    } finally {await page.close();}
+  });
+
   it('Turdomania enlarges the same active puzzle on desktop and keeps progress through rotation', async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     try {
