@@ -926,7 +926,7 @@
     const value = dialog.querySelector('#suite-effects-value');
     const status = dialog.querySelector('#suite-effects-status');
     const preview = dialog.querySelector('#suite-effects-preview');
-    let restoreFocus = null;
+    let restoreFocus = null, previewTicket = 0;
     function renderAudioControls() {
       const state = Suite.getSoundState();
       enabled.checked = !state.muted;
@@ -956,15 +956,24 @@
     if (localControls.length) localControls.forEach(button => appendOpener(button));
     else if (currentPageName() === 'turdspades.html') appendOpener(null, document.querySelector('#tsTableMenu .actions'));
     else if (currentPageName() === 'turdomania.html') appendOpener(null, document.body, true);
-    enabled.addEventListener('change', () => { Suite.setMuted(!enabled.checked); renderAudioControls(); });
-    level.addEventListener('input', () => { Suite.setEffectsVolume(Number(level.value) / 100); renderAudioControls(); });
-    preview.addEventListener('click', () => {
+    enabled.addEventListener('change', () => { previewTicket++; Suite.setMuted(!enabled.checked); renderAudioControls(); });
+    level.addEventListener('input', () => { previewTicket++; Suite.setEffectsVolume(Number(level.value) / 100); renderAudioControls(); });
+    preview.addEventListener('click', async () => {
+      const ticket = ++previewTicket, requestedAt = Date.now();
+      let audio;
+      soundPreviewing = true;
+      try { audio = ctx(); } finally { soundPreviewing = false; }
+      // Safari can resolve gesture unlock on the next audio quantum. Only this
+      // explicit audition may wait briefly; gameplay cues are never queued.
+      try { if (audio?.state === 'suspended') await audio.resume(); } catch (e) { return; }
+      if (ticket !== previewTicket || !soundSettingsOpen || Date.now() - requestedAt > 250) return;
       soundPreviewing = true;
       try { Suite.playSound('shared.beep'); } finally { soundPreviewing = false; renderAudioControls(); }
     });
     dialog.querySelector('#suite-effects-close').addEventListener('click', () => dialog.close());
     dialog.addEventListener('keydown', event => event.stopPropagation());
     dialog.addEventListener('close', () => {
+      previewTicket++;
       soundSettingsOpen = false; Suite.stopSounds(); notifySoundState();
       if (restoreFocus?.isConnected) restoreFocus.focus({ preventScroll: true });
     });
@@ -1035,6 +1044,7 @@
       Suite.music().then(function (player) {
         if (player) player.armFromGesture();
       }).catch(function () {});
+      if (AUDIO_PROFILE === 'studio' && (!actx || actx.state !== 'running')) return;
       window.removeEventListener('pointerdown', unlock, AUDIO_PROFILE === 'studio');
       window.removeEventListener('keydown', unlock, AUDIO_PROFILE === 'studio');
     };
