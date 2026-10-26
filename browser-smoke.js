@@ -1447,6 +1447,13 @@ async function main() {
           await page.evaluate(() => {
             if (typeof closeGuide === 'function') closeGuide();
             document.getElementById('startRoundBtn')?.click();
+            // This checks the selectable hand's geometry. A random first bot
+            // turn can legally knock and replace its buttons with result cards.
+            // Hold the freshly dealt hand in the human-selection phase rather
+            // than make this layout assertion depend on the shuffle outcome.
+            clearAiTurnTimeout();
+            state.turn = 'player';
+            renderAll();
           });
           await page.locator('#playerHand .card-button').first().waitFor({ state: 'visible', timeout: 8000 });
           await page.evaluate(() => {
