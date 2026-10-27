@@ -40,6 +40,14 @@ describe('suite-hub-stats', () => {
     expect(readHubStatBadge(getItem, 'turdspades.html')?.text).toBe('1 match win');
   });
 
+  it('reads only finite completed runner bests from the existing shared progress store', () => {
+    const getItem = key => key === 'arcade_progress_v1' ? JSON.stringify({ version: 1, bests: { 'turdrush|endless|standard': [{ value: 1234 }, { value: 999 }] } }) : null;
+    expect(readHubStatBadge(getItem, 'turdrush.html')?.text).toBe('Best 1,234');
+    expect(readHubStatBadge(() => '{broken', 'turdrush.html')).toBeNull();
+    expect(readHubStatBadge(() => JSON.stringify({ version: 2, bests: { 'turdrush|endless|standard': [{ value: 1234 }] } }), 'turdrush.html')).toBeNull();
+    expect(readHubStatBadge(() => JSON.stringify({ version: 1, bests: { 'turdrush|endless|standard': [{ value: -1 }, { value: '99999' }] } }), 'turdrush.html')).toBeNull();
+  });
+
   it('reads Crapjack bankroll and Eights wins', () => {
     const store = {
       turdjackBankroll: '250',

@@ -1,6 +1,6 @@
 # Turdanoid
 
-Seven browser games, one sewer. Open `index.html` and pick a stall.
+Nine browser games, one sewer. Open `index.html` and pick a stall.
 
 This repository is **public**. GitHub Pages already serves **`main`**:
 [https://rupret007.github.io/Turdanoid/](https://rupret007.github.io/Turdanoid/).
@@ -23,6 +23,8 @@ The hub lineup, in order:
 | **TurdRummy** | `turdrummy.html` | Gin rummy, meld-grouped fan, layoff/undercut, 320px corner indices |
 | **TurdSpades** | `turdspades.html` | Partnership Spades, Nil, phone trick well, device-local continue |
 | **Turdomania** | `turdomania.html` | Clickomania/SameGame: pop 2+ matching poops, (n−2)² scoring, +1000 for a clean board, undo, 3 difficulties |
+| **Royal Flush Chess** | `chess.html` | Computer practice or local2-player, hints/Undo and original board art |
+| **Turd Rush** | `turdrush.html` | Original3D endless runner, three lanes, jump/slide, picks and personal bests |
 
 Legacy (not in the six-card grid): `neon-arkanoid.html`. `hub.html` redirects to `index.html`.
 
@@ -82,3 +84,5 @@ CI (`.github/workflows/ci.yml`) runs lint, unit tests, and smoke on every pull r
 - Game rules: `RULES.md` (blackjack section heading is **Turdjack**, matching `turdjack.html` and storage keys; the hub card is Crapjack 21).
 
 Vanilla HTML + JS. No bundler.
+
+Current runner architecture and release contract: [docs/turd-rush.md](docs/turd-rush.md). Historical branch/status notes above may predate this addition.

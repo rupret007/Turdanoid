@@ -53,7 +53,7 @@ function memoryStorage(initial = {}) {
 }
 
 describe('table continue store', () => {
-  it('keeps the eight-game door and four live table continues', () => {
+  it('keeps the nine-game door and four live table continues', () => {
     expect(LIVE_HUB_GAMES).toEqual([
       'TurdAnoid.html',
       'turdtris.html',
@@ -62,7 +62,8 @@ describe('table continue store', () => {
       'turdrummy.html',
       'turdspades.html',
       'turdomania.html',
-      'chess.html'
+      'chess.html',
+      'turdrush.html'
     ]);
     expect(TABLE_CONTINUE_GAMES).toEqual([
       'turdjack.html',

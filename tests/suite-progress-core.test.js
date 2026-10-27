@@ -18,12 +18,12 @@ function session() {
 function event(id, game, extra = {}) { return { id, game, kind: 'run', outcome: 'complete', ...extra }; }
 
 describe('optional device progress core', () => {
-  it('has exactly twelve named, actionable goals across the eight promoted games', () => {
-    expect(Core.GOALS).toHaveLength(12);
-    expect(new Set(Core.GOALS.map(goal => goal.game)).size).toBe(8);
-    expect(new Set(Core.GOALS.map(goal => goal.id)).size).toBe(12);
+  it('has exactly fourteen named, actionable goals across the nine promoted games', () => {
+    expect(Core.GOALS).toHaveLength(14);
+    expect(new Set(Core.GOALS.map(goal => goal.game)).size).toBe(9);
+    expect(new Set(Core.GOALS.map(goal => goal.id)).size).toBe(14);
     expect(Core.GOALS.every(goal => goal.title && goal.description && goal.icon)).toBe(true);
-    expect(Core.GAMES.map(game => game.href)).toEqual(['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html']);
+    expect(Core.GAMES.map(game => game.href)).toEqual(['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html', 'turdrush.html']);
   });
 
   it.each([
@@ -38,7 +38,9 @@ describe('optional device progress core', () => {
     ['rummy-gin', 'turdrummy', { kind: 'round', gin: true }],
     ['spades-contract', 'turdspades', { kind: 'round', bid: 5, tricks: 5, outcome: 'loss', team: 'you-north' }],
     ['mania-clear', 'turdomania', { cleared: true, left: 0 }],
-    ['chess-finish', 'chess', { completed: true, moves: 7, local: true, assisted: true }]
+    ['chess-finish', 'chess', { completed: true, moves: 7, local: true, assisted: true }],
+    ['rush-distance', 'turdrush', { distance: 500, picks: 49 }],
+    ['rush-picks', 'turdrush', { distance: 499, picks: 50 }]
   ])('awards %s from its actual criterion only once', (goal, game, values) => {
     const s = session(); const input = event(s.id(game), game, values);
     const first = s.record(input);
@@ -60,9 +62,37 @@ describe('optional device progress core', () => {
     ['turdspades', { kind: 'round', bid: 0, tricks: 13 }],
     ['turdspades', { kind: 'round', bid: 5, tricks: 4 }],
     ['turdomania', { cleared: false, left: 1, score: 999999 }],
-    ['chess', { completed: true, moves: 0 }]
+    ['chess', { completed: true, moves: 0 }],
+    ['turdrush', { distance: 499, picks: 49 }],
+    ['turdrush', { kind: 'round', distance: 500, picks: 50 }]
   ])('does not infer achievement from a near miss in %s', (game, values) => {
     const s = session(); expect(s.record(event(s.id(game), game, values)).newlyEarned).toHaveLength(0);
+  });
+
+  it('preserves old game receipts and bests when runner results are added, and deduplicates each run after reload', () => {
+    const s = session();
+    s.record(event(s.id('turdtris'), 'turdtris', { score: 1234, lines: 10, mode: 'classic', difficulty: 'normal' }));
+    const old = clean(s.state);
+    s.reload(); expect(clean(s.state)).toEqual(old);
+    const run = event(s.id('turdrush'), 'turdrush', { mode: 'endless', difficulty: 'standard', score: 777, elapsedMs: 60000, distance: 650, picks: 60 });
+    const result = s.record(run);
+    expect(result.newlyEarned.map(goal => goal.id)).toEqual(['rush-distance', 'rush-picks']);
+    expect(s.state.progress).toMatchObject({ 'rush-distance': 500, 'rush-picks': 50 });
+    expect(s.state.bests['turdrush|endless|standard'][0]).toMatchObject({ value: 777 });
+    expect(clean(s.state.history.turdtris)).toEqual(old.history.turdtris);
+    expect(clean(s.state.bests['turdtris|classic|normal'])).toEqual(old.bests['turdtris|classic|normal']);
+    s.reload(); const persisted = clean(s.state);
+    expect(s.record({ ...run, score: 99999, distance: 99999 }).recorded).toBe(false);
+    expect(clean(s.state)).toEqual(persisted);
+    expect(s.state.history.turdrush[0]).toMatchObject({ score: 777, distance: 650, picks: 60, elapsedMs: 60000 });
+  });
+
+  it('rejects invalid runner metrics without consuming a receipt or changing older progress', () => {
+    const s = session(); const id = s.id('turdrush'); const before = clean(s.state);
+    for (const values of [{ score: -1 }, { distance: -1 }, { picks: -1 }, { distance: 1.5 }, { picks: Infinity }, { elapsedMs: 1.5 }]) {
+      expect(s.record(event(id, 'turdrush', values)).error).toBe('invalid');
+      expect(clean(s.state)).toEqual(before);
+    }
   });
 
   it('keeps ten actual completions per game but deduplicates evicted IDs after reload', () => {
