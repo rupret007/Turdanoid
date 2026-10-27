@@ -188,6 +188,14 @@ async function check(page, game, selectors, state) {
           await tap(page,page.locator('#soundToggleBtn'));
           assert.notEqual(await page.locator('#soundToggleBtn').getAttribute('aria-pressed'),sound,'Rummy sound preference responds inside the table menu');
           await tap(page,page.locator('#soundToggleBtn'));
+          const soundBtn=page.locator('#soundToggleBtn');
+          const resting=await soundBtn.boundingBox();
+          await page.mouse.move(resting.x+resting.width/2, resting.y+resting.height/2);
+          await page.mouse.down();
+          const held=await soundBtn.boundingBox();
+          assert(held && held.width>=44 && held.height>=44, `sound button stays a 44px target while pressed: ${JSON.stringify(held)}`);
+          await page.mouse.up();
+          if(await soundBtn.getAttribute('aria-pressed')!==sound) await tap(page,soundBtn);
           await tap(page,page.locator('.mobile-settings > summary'));
           await check(page,game,selectors,'table menu closed');
         }
