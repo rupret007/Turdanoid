@@ -19,6 +19,11 @@ Local browser checks use Chromium/WebKit and emulated screens, not physical phon
   the excess bonuses; they are not retroactively reduced or directly comparable to
   corrected future play. No rules, payout rates or normal milestone amounts changed.
 
+- **Crapjack hidden denominations:** the phone/short-screen CSS hid the existing
+  chip amount text. Removing the two hiding overrides restores +$10/25/50/100
+  while retaining chip artwork, dimensions, layout and betting behavior. Native
+  browser regressions check painted text geometry and labeled betting amounts.
+
 ## Evidence and coverage
 
 Persistent full logs, failing reproductions, deterministic drivers and captures are
