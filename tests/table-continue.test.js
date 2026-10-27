@@ -26,6 +26,8 @@ import {
   validateSpadesSnapshot
 } from '../games/table-continue.js';
 import {
+  impossibleSpadesSnapshot,
+  spadeDeck,
   validEightsSnapshot,
   validJackSnapshot,
   validRummySnapshot,
@@ -134,6 +136,63 @@ describe('table continue store', () => {
       expect(validateEightsSnapshot(snapshot)).toBeNull();
     }
   );
+
+  it.each(['playerHand', 'aiHand'])('rejects an active Rummy save with a missing %s', hand => {
+    const snapshot = validRummySnapshot();
+    snapshot.stock.push(...snapshot[hand].splice(0));
+    expect(validateRummySnapshot(snapshot)).toBeNull();
+  });
+
+  it('rejects Spades play when an unplayed seat has no cards left', () => {
+    const snapshot = validSpadesSnapshot();
+    snapshot.hands[0] = [];
+    expect(validateSpadesSnapshot(snapshot)).toBeNull();
+  });
+
+  it('rejects the old synthetic Spades fixture with impossible turn/card counts', () => {
+    expect(validateSpadesSnapshot(impossibleSpadesSnapshot())).toBeNull();
+  });
+
+  it.each(['draw count', 'discard count', 'drawn identity', 'match flags'])(
+    'rejects an inconsistent active Rummy %s', fault => {
+      const snapshot = validRummySnapshot();
+      if (fault === 'draw count') { snapshot.playerHand.push(snapshot.stock.pop()); }
+      if (fault === 'discard count') { snapshot.phase = 'discard'; }
+      if (fault === 'drawn identity') {
+        snapshot.phase = 'discard'; snapshot.playerHand.push(snapshot.stock.pop());
+        snapshot.drawnCardId = snapshot.stock[0].id; snapshot.drawnCardSource = 'stock';
+      }
+      if (fault === 'match flags') { snapshot.matchOver = true; }
+      expect(validateRummySnapshot(snapshot)).toBeNull();
+    }
+  );
+
+  it.each(['hand count', 'turn', 'trick order', 'trick count', 'unbid play', 'partial bidding'])(
+    'rejects an impossible Spades %s', fault => {
+      const snapshot = validSpadesSnapshot();
+      if (fault === 'hand count') { snapshot.hands[1].pop(); }
+      if (fault === 'turn') { snapshot.currentPlayer = 2; }
+      if (fault === 'trick order') { snapshot.trick[1].player = 3; }
+      if (fault === 'trick count') { snapshot.tricks[0] += 1; }
+      if (fault === 'unbid play') { snapshot.bids[0] = null; }
+      if (fault === 'partial bidding') { snapshot.phase = 'bidding'; }
+      expect(validateSpadesSnapshot(snapshot)).toBeNull();
+    }
+  );
+
+  it('preserves a complete v1 Spades bidding table without public history', () => {
+    const snapshot = validSpadesSnapshot(), deck = spadeDeck();
+    snapshot.phase = 'bidding'; snapshot.trick = []; snapshot.tricks = [0, 0, 0, 0];
+    snapshot.hands = [0, 1, 2, 3].map(player => deck.slice(player * 13, (player + 1) * 13));
+    expect(validateSpadesSnapshot(snapshot)).toEqual(snapshot);
+  });
+
+  it('preserves a real human discard-phase Rummy save', () => {
+    const snapshot = validRummySnapshot();
+    const drawn = snapshot.stock.pop(); snapshot.playerHand.push(drawn);
+    snapshot.phase = 'discard'; snapshot.drawnCardId = drawn.id; snapshot.drawnCardSource = 'stock';
+    expect(validateRummySnapshot(snapshot)).toEqual(snapshot);
+  });
 
   it('remembers only playable tables and hides finished matches from Continue', () => {
     const storage = memoryStorage();

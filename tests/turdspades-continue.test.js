@@ -29,7 +29,7 @@ describe('turdspades continue (b3821b4 shape)', () => {
     expect(state.tricks).toEqual(validated.tricks);
     expect(state.spadesBroken).toBe(true);
     expect(state.selected).toBe(validated.selected);
-    expect(state.trick).toHaveLength(1);
+    expect(state.trick).toHaveLength(3);
     expect(state.trick[0].card.id).toBe(validated.trick[0].card.id);
     expect(state.playedThisRound).toEqual([]);
 
@@ -63,7 +63,11 @@ describe('turdspades continue (b3821b4 shape)', () => {
     const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
     const raw = validSpadesSnapshot();
     const completed = raw.hands[0].pop();
-    raw.playedThisRound = [completed, raw.trick[0].card];
+    raw.playedThisRound = [completed, ...raw.trick.map(entry => entry.card)];
+    raw.trick = [];
+    raw.tricks[3] += 1;
+    raw.leader = 3;
+    raw.currentPlayer = 3;
     expect(rememberContinue(storage, 'turdspades.html', raw)).toBe(true);
     const restored = loadContinue(storage, 'turdspades.html');
     expect(restored.playedThisRound).toEqual(raw.playedThisRound);
