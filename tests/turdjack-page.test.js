@@ -167,6 +167,60 @@ describe('Crapjack dealer settlement ownership', () => {
   });
 });
 
+describe('Crapjack neutral split rounds and streak bonuses', () => {
+  it.each([
+    { previous: 2, bonus: 50 }, { previous: 4, bonus: 150 },
+    { previous: 6, bonus: 400 }, { previous: 9, bonus: 1000 }
+  ])('still pays a newly reached heater milestone after $previous wins', ({ previous, bonus }) => {
+    const w = boot({ ranks: ['K', '9'], upcard: '9' });
+    w.eval(`hotStreak = ${previous}; coldStreak = 0;`);
+    w.playerStand();
+    expect(readState(w).bankroll).toBe(1100 + bonus);
+    expect(w.eval('hotStreak')).toBe(previous + 1);
+  });
+
+  it('still pays a newly reached pity milestone after four losses', () => {
+    const w = boot({ ranks: ['10', '6'], upcard: '9' });
+    w.eval('hotStreak = 0; coldStreak = 4;');
+    w.playerStand();
+    expect(readState(w).bankroll).toBe(925);
+    expect(w.eval('coldStreak')).toBe(5);
+  });
+
+  it.each([
+    { hot: 3, cold: 0 }, { hot: 5, cold: 0 }, { hot: 7, cold: 0 },
+    { hot: 10, cold: 0 }, { hot: 0, cold: 5 }
+  ])('does not repeat a milestone bonus after a split win/loss at $hot/$cold', ({ hot, cold }) => {
+    const w = boot();
+    w.auditStreak = { hot, cold };
+    w.eval(`
+      createShoe(1);
+      function takeAuditCard(rank, suit) {
+        const index = shoe.findIndex(card => card.rank === rank && card.suit === suit);
+        return shoe.splice(index, 1)[0];
+      }
+      playerHand = [takeAuditCard('10','H'), takeAuditCard('8','C')];
+      splitHand = [takeAuditCard('8','H'), takeAuditCard('6','C')];
+      dealerHand = [takeAuditCard('10','D'), takeAuditCard('7','S')];
+      discard = []; bankroll = 800; currentBet = 100; splitBet = 100;
+      splitRound = true; activeHandIndex = 1; firstDecisionOpen = true;
+      roundActive = true; dealerResolving = false;
+      hotStreak = auditStreak.hot; coldStreak = auditStreak.cold;
+      stats = normalizeStats({ hands: 1 });
+    `);
+    w.playerStand();
+    const result = readState(w);
+    expect(result.roundActive).toBe(false);
+    expect(result.stats).toMatchObject({ wins: 1, losses: 1 });
+    expect(result.bankroll).toBe(1000);
+    expect(w.eval('hotStreak')).toBe(0);
+    expect(w.eval('coldStreak')).toBe(0);
+    expectCompleteShoe(result);
+    w.playerStand();
+    expect(readState(w)).toEqual(result);
+  });
+});
+
 const softCases = [false, true].flatMap((dealerHitsSoft17) =>
   ['4', '5'].flatMap((rank) =>
     ['9', '10', 'A'].map((upcard) => ({

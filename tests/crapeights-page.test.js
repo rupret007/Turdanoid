@@ -118,6 +118,24 @@ describe('Crappy Eights live-page save and input regressions', () => {
     expect(boot(game.stored()).snapshot()).toEqual(game.stored());
   });
 
+  it.each(['missing card', 'missing discard', 'foreign wild'])(
+    'starts a valid fresh table instead of continuing a corrupt %s save', fault => {
+      const saved = validEightsSnapshot();
+      if (fault === 'missing card') {saved.deck.pop();}
+      if (fault === 'missing discard') {saved.deck.push(...saved.discard.splice(0));}
+      if (fault === 'foreign wild') {saved.pendingWildCard = { ...saved.players[1].hand[0] };}
+      const game = boot(saved);
+      const state = game.state();
+      expect(state.roundNumber).toBe(1);
+      expect(state.discard).toHaveLength(1);
+      expect(state.pendingWildCard).toBeNull();
+      expect(state.players.flatMap(player => player.hand).concat(state.deck, state.discard)).toHaveLength(52);
+      expect(game.w.eval('isHumanTurn()')).toBe(true);
+      game.w.document.getElementById('smartBtn').click();
+      expect(game.state()).not.toEqual(state);
+    }
+  );
+
   it('resolves old saved draw and skip penalties once while preserving all 52 cards', () => {
     const snapshot = validEightsSnapshot();
     snapshot.direction = -1;

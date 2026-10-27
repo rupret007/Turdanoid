@@ -117,6 +117,24 @@ describe('table continue store', () => {
     expect(validateJackSnapshot(settled)).toBeNull();
   });
 
+  it.each(['missing card', 'missing discard', 'foreign wild', 'non-eight wild', 'bot wild'])(
+    'rejects an impossible Eights save: %s', (fault) => {
+      const snapshot = validEightsSnapshot();
+      if (fault === 'missing card') {snapshot.deck.pop();}
+      if (fault === 'missing discard') {snapshot.deck.push(...snapshot.discard.splice(0));}
+      if (fault === 'foreign wild') {snapshot.pendingWildCard = { ...snapshot.players[1].hand[0] };}
+      if (fault === 'non-eight wild') {snapshot.pendingWildCard = { ...snapshot.players[0].hand[0] };}
+      if (fault === 'bot wild') {
+        const wild = snapshot.players[1].hand[0];
+        snapshot.players[1].hand[0] = snapshot.players[0].hand[0];
+        snapshot.players[0].hand[0] = wild;
+        snapshot.pendingWildCard = { ...wild };
+        snapshot.currentPlayer = 1;
+      }
+      expect(validateEightsSnapshot(snapshot)).toBeNull();
+    }
+  );
+
   it('remembers only playable tables and hides finished matches from Continue', () => {
     const storage = memoryStorage();
     expect(rememberContinue(storage, 'turdspades.html', validSpadesSnapshot())).toBe(true);
