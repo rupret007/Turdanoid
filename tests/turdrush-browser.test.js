@@ -79,6 +79,8 @@ async function capture(page, name) {
   if (!directory) {return;}
   await mkdir(directory, { recursive: true });
   await page.screenshot({ path: resolve(directory, name + '.png'), fullPage: true });
+  const touches = await page.evaluate(() => globalThis.__runnerTouchSamples);
+  if (touches) {await writeFile(resolve(directory, name + '-touch-events.json'), JSON.stringify(touches, null, 2));}
 }
 function mark(page, label) {
   const info = page.runnerTestInfo;
@@ -116,6 +118,7 @@ async function withPage(name, options, run) {
         state: state ? { phase: state.phase, elapsed: state.elapsed, distance: state.distance, score: state.score, player: state.player } : null,
         renderer: globalThis.__turdrush?.diagnostics, timing: globalThis.__runnerTestTiming,
         glClears: globalThis.__runnerNativeGlClears,
+        touchSamples: globalThis.__runnerTouchSamples,
         panels: Object.fromEntries(['rush-intro', 'rush-paused', 'rush-results', 'rush-unavailable', 'rush-guide', 'suite-audio-settings', 'rush-start', 'rush-resume', 'rush-pause'].map(id => [id, panel(id)])) };
     }), 1500) : { pageUnavailable: true };
     const diagnostic = { ...frozenInfo, failureObservedAt, elapsedMs: Date.now() - info.startedMs, failure,
@@ -253,6 +256,36 @@ async function resume(page) {
   mark(page, 'page.waitForFunction(from => globalThis.__turdrush.state.phase === \'running\' && globalThis.__turdrush.state.distance > from, distance)');
   await page.waitForFunction(from => globalThis.__turdrush.state.phase === 'running' && globalThis.__turdrush.state.distance > from, distance);
 }
+async function observeTouches(page) {
+  await page.evaluate(() => {
+    globalThis.__runnerTouchSamples = [];
+    for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) {
+      document.addEventListener(type, event => {
+        const state = globalThis.__turdrush.state;
+        globalThis.__runnerTouchSamples.push({ type, at: globalThis.performance.now(), id: event.pointerId, primary: event.isPrimary,
+          trusted: event.isTrusted, x: event.clientX, y: event.clientY, lane: state.player.lane, cooldown: state._laneCooldown });
+        if (globalThis.__runnerTouchSamples.length > 128) {globalThis.__runnerTouchSamples.shift();}
+      }, { capture: true, passive: true });
+    }
+  });
+}
+async function flickPackets(page, directions, firstId = 31) {
+  const box = await page.locator('#rush-canvas').boundingBox();
+  const x = Math.round(box.x + box.width * .5), y = Math.round(box.y + box.height * .65);
+  return directions.flatMap((direction, index) => {
+    const point = atX => ({ id: firstId + index, x: atX, y, radiusX: 3, radiusY: 3, force: 1 });
+    return [
+      { type: 'touchStart', touchPoints: [point(x)] },
+      { type: 'touchMove', touchPoints: [point(x + (direction === 'left' ? -70 : 70))] },
+      { type: 'touchEnd', touchPoints: [] }
+    ];
+  });
+}
+async function nativeBurst(client, packets) {
+  // The protocol connection preserves packet order; await all receipts after
+  // sending one deliberate input burst so IPC does not pace the user's flicks.
+  await Promise.all(packets.map(packet => client.send('Input.dispatchTouchEvent', packet)));
+}
 
 describe.skipIf(!available)('native Turd Rush interface', () => {
   it('starts real WebGL rendering and accepts native buttons/keys without repeating held actions', async () => {
@@ -336,6 +369,253 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       await page.locator('#rush-pause').click();
     });
   });
+
+  it('keeps rapid corrective horizontal touch flicks instead of consuming a cooldown-rejected swipe', async () => {
+    await withPage('native-touch-corrective', { viewport: { width: 390, height: 844 } }, async page => {
+      await begin(page);
+      await page.evaluate(() => {
+        globalThis.__runnerTouchSamples = [];
+        for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) {
+          document.addEventListener(type, event => {
+            if (event.target.id !== 'rush-canvas') {return;}
+            const state = globalThis.__turdrush.state;
+            globalThis.__runnerTouchSamples.push({ type, at: globalThis.performance.now(), id: event.pointerId, primary: event.isPrimary,
+              x: event.clientX, y: event.clientY, lane: state.player.lane, cooldown: state._laneCooldown });
+          }, { capture: true, passive: true });
+        }
+      });
+      const box = await page.locator('#rush-canvas').boundingBox();
+      const client = await page.context().newCDPSession(page);
+      const x = Math.round(box.x + box.width * .5), y = Math.round(box.y + box.height * .65);
+      const point = (id, atX) => ({ id, x: atX, y, radiusX: 3, radiusY: 3, force: 1 });
+      mark(page, 'two actual touch flicks: left then immediately corrective right');
+      try {
+        // Queue ordered native protocol packets before awaiting replies. Slow
+        // automation round trips must not turn a rapid human correction into
+        // two gestures separated by more than the actual100ms cooldown.
+        const packets = [
+          { type: 'touchStart', touchPoints: [point(11, x)] },
+          { type: 'touchMove', touchPoints: [point(11, x - 70)] },
+          { type: 'touchEnd', touchPoints: [] },
+          { type: 'touchStart', touchPoints: [point(12, x)] },
+          { type: 'touchMove', touchPoints: [point(12, x + 70)] },
+          { type: 'touchEnd', touchPoints: [] }
+        ];
+        await Promise.all(packets.map(packet => client.send('Input.dispatchTouchEvent', packet)));
+        const samples = await page.evaluate(() => globalThis.__runnerTouchSamples);
+        if (process.env.ARCADE_RUNNER_SCREENSHOTS) {
+          await mkdir(process.env.ARCADE_RUNNER_SCREENSHOTS, { recursive: true });
+          await writeFile(resolve(process.env.ARCADE_RUNNER_SCREENSHOTS, 'native-touch-corrective-events.json'), JSON.stringify(samples, null, 2));
+        }
+        await page.waitForFunction(() => globalThis.__turdrush.state.player.lane === 1, null, { timeout: 1500 });
+        expect(samples.filter(sample => sample.type === 'pointermove')).toHaveLength(2);
+        expect(samples.some(sample => sample.lane === 0)).toBe(true);
+        expect((await state(page)).player.lane).toBe(1);
+        await page.locator('#rush-pause').click();
+      } finally {await client.detach();}
+    });
+  });
+
+  it('keeps the owner swipe when a second touch releases its implicit pointer capture', async () => {
+    await withPage('native-touch-owner', { viewport: { width: 390, height: 844 } }, async page => {
+      await begin(page);
+      await page.evaluate(() => {
+        globalThis.__runnerTouchSamples = [];
+        for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) {
+          document.addEventListener(type, event => {
+            const state = globalThis.__turdrush.state;
+            globalThis.__runnerTouchSamples.push({ type, id: event.pointerId, primary: event.isPrimary, x: event.clientX, y: event.clientY, lane: state.player.lane });
+          }, { capture: true, passive: true });
+        }
+      });
+      const box = await page.locator('#rush-canvas').boundingBox();
+      const client = await page.context().newCDPSession(page);
+      const x = Math.round(box.x + box.width * .5), y = Math.round(box.y + box.height * .65);
+      const point = (id, atX = x, atY = y) => ({ id, x: atX, y: atY, radiusX: 3, radiusY: 3, force: 1 });
+      try {
+        await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(21)] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(21), point(22, x + 55, y + 40)] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(21), point(22, x + 56, y + 40)] });
+        const secondaryId = await page.evaluate(() => globalThis.__runnerTouchSamples.find(sample => sample.type === 'pointerdown' && !sample.primary).id);
+        // Exercise the actual browser's capture lifecycle, not a synthetic game
+        // action: only the secondary contact loses its native implicit capture.
+        await page.locator('#rush-canvas').evaluate((canvas, id) => canvas.releasePointerCapture(id), secondaryId);
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(21), point(22, x + 60, y + 40)] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(21, x - 70), point(22, x + 60, y + 40)] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await page.waitForFunction(() => globalThis.__turdrush.state.player.lane === 0, null, { timeout: 1500 });
+        const samples = await page.evaluate(() => globalThis.__runnerTouchSamples);
+        const lost = samples.findIndex(sample => sample.type === 'lostpointercapture' && !sample.primary);
+        const moved = samples.findIndex(sample => sample.type === 'pointermove' && sample.primary && sample.x === x - 70);
+        expect(lost).toBeGreaterThanOrEqual(0);
+        expect(lost).toBeLessThan(moved);
+        expect((await state(page)).player.lane).toBe(0);
+        await page.locator('#rush-pause').click();
+      } finally {await client.detach();}
+    });
+  });
+
+  it('keeps a bounded lane target through double flicks, triple corrections and edge no-ops', async () => {
+    await withPage('native-touch-targets', { viewport: { width: 390, height: 844 } }, async page => {
+      await begin(page); await observeTouches(page);
+      const client = await page.context().newCDPSession(page), outcomes = [];
+      const cases = [
+        [2, ['left', 'left', 'right'], 1], [0, ['right', 'right', 'left'], 1],
+        [2, ['left', 'left'], 0], [0, ['right', 'right'], 2],
+        [0, ['left', 'left', 'right'], 1], [2, ['right', 'right', 'left'], 1],
+        [1, ['left', 'right'], 1, 40]
+      ];
+      try {
+        for (let index = 0; index < cases.length; index++) {
+          const [from, directions, target, paced] = cases[index];
+          if (index) {
+            await page.locator('#rush-pause').click();
+            await page.locator('#rush-restart-paused').click();
+          }
+          if (from !== 1) {await page.keyboard.press(from === 0 ? 'ArrowLeft' : 'ArrowRight');}
+          await page.waitForFunction(lane => globalThis.__turdrush.state.player.lane === lane
+            && Math.abs(globalThis.__turdrush.state.player.x - (lane - 1) * 2.4) < .01, from);
+          const packets = await flickPackets(page, directions, 40 + index * 4);
+          mark(page, `native${paced ? ' paced40ms' : ' fast'} flicks from${from}: ${directions.join(',')}`);
+          if (paced) {
+            for (let cursor = 0; cursor < packets.length; cursor += 3) {
+              await nativeBurst(client, packets.slice(cursor, cursor + 3));
+              if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
+            }
+          } else {await nativeBurst(client, packets);}
+          await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
+          const after = await state(page);
+          outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
+          expect(after.phase).toBe('running');
+          expect(after.player.lane, JSON.stringify(outcomes.at(-1))).toBe(target);
+          expect(after.player.x).toBeCloseTo((target - 1) * 2.4, 2);
+        }
+        if (process.env.ARCADE_RUNNER_SCREENSHOTS) {
+          await mkdir(process.env.ARCADE_RUNNER_SCREENSHOTS, { recursive: true });
+          await writeFile(resolve(process.env.ARCADE_RUNNER_SCREENSHOTS, 'native-touch-target-cases.json'), JSON.stringify(outcomes, null, 2));
+        }
+        await page.locator('#rush-pause').click();
+      } finally {await client.detach();}
+    });
+  });
+
+  it('attributes cancelled contacts correctly and drops pending swipe movement on Pause', async () => {
+    await withPage('native-touch-cancel-pending', { viewport: { width: 390, height: 844 } }, async page => {
+      await begin(page); await observeTouches(page);
+      const client = await page.context().newCDPSession(page);
+      const restart = async () => {
+        if ((await state(page)).phase === 'running') {await page.locator('#rush-pause').click();}
+        await page.locator('#rush-restart-paused').click();
+        await page.waitForFunction(() => globalThis.__turdrush.state.phase === 'running');
+      };
+      try {
+        mark(page, 'completed B flick survives new below-threshold C cancellation');
+        let packets = await flickPackets(page, ['left', 'right', 'left'], 80);
+        // Contact C starts but never crosses the action threshold.
+        packets = [...packets.slice(0, 7), { type: 'touchCancel', touchPoints: [] }];
+        await nativeBurst(client, packets);
+        await page.waitForTimeout(350);
+        expect((await state(page)).player.lane).toBe(1);
+
+        await restart();
+        mark(page, 'owner B cancellation drops its still-pending corrective flick');
+        packets = await flickPackets(page, ['left', 'right'], 90);
+        await nativeBurst(client, [...packets.slice(0, -1), { type: 'touchCancel', touchPoints: [] }]);
+        await page.waitForTimeout(350);
+        expect((await state(page)).player.lane).toBe(0);
+
+        await restart();
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => globalThis.__turdrush.state.player.x > 2.39);
+        mark(page, 'a clamped C flick does not steal B ownership before C cancels');
+        packets = await flickPackets(page, ['left', 'left', 'left'], 100);
+        await nativeBurst(client, [...packets.slice(0, -1), { type: 'touchCancel', touchPoints: [] }]);
+        await page.waitForTimeout(350);
+        expect((await state(page)).player.lane).toBe(0);
+
+        await restart();
+        mark(page, 'native Pause touch interrupts a queued correction before the next RAF');
+        packets = await flickPackets(page, ['left', 'right'], 110);
+        const pauseBox = await page.locator('#rush-pause').boundingBox();
+        await nativeBurst(client, [...packets,
+          { type: 'touchStart', touchPoints: [{ id: 120, x: Math.round(pauseBox.x + pauseBox.width / 2), y: Math.round(pauseBox.y + pauseBox.height / 2) }] },
+          { type: 'touchEnd', touchPoints: [] }
+        ]);
+        expect((await state(page)).phase).toBe('paused');
+        expect((await state(page)).player.lane).toBe(0);
+        await frozen(page);
+        await resume(page);
+        await page.waitForTimeout(350);
+        expect((await state(page)).player.lane).toBe(0);
+        await page.locator('#rush-pause').click();
+      } finally {await client.detach();}
+    });
+  });
+
+  it('preserves an earlier completed flick through a simulated cancellation of a later native contact reusing its pointer ID', async () => {
+    await withPage('native-reused-pointer-owner', { viewport: { width: 390, height: 844 } }, async page => {
+      await begin(page); await observeTouches(page);
+      await page.evaluate(() => {
+        let contacts = 0, released = false;
+        const canvas = document.getElementById('rush-canvas');
+        canvas.addEventListener('pointerdown', () => contacts++);
+        canvas.addEventListener('pointermove', event => {
+          if (contacts === 3 && !released) {
+            released = true;
+            // Explicit lifecycle-boundary fixture only. Native mouse contacts
+            // reuse id1; tightly batched CDP moves can coalesce before capture
+            // activates. Route a cancellation without mutating game state/time.
+            canvas.dispatchEvent(new globalThis.PointerEvent('pointercancel', {
+              bubbles: true, pointerId: event.pointerId, pointerType: event.pointerType,
+              isPrimary: event.isPrimary, clientX: event.clientX, clientY: event.clientY
+            }));
+          }
+        });
+      });
+      const box = await page.locator('#rush-canvas').boundingBox();
+      const x = Math.round(box.x + box.width * .5), y = Math.round(box.y + box.height * .65);
+      const event = (type, atX, pressed) => ({ type, x: atX, y, button: type === 'mouseMoved' ? 'none' : 'left', buttons: pressed ? 1 : 0, clickCount: type === 'mouseMoved' ? 0 : 1 });
+      const packets = [
+        event('mouseMoved', x, false), event('mousePressed', x, true), event('mouseMoved', x - 70, true), event('mouseReleased', x - 70, false),
+        event('mouseMoved', x, false), event('mousePressed', x, true), event('mouseMoved', x + 70, true), event('mouseReleased', x + 70, false),
+        event('mouseMoved', x, false), event('mousePressed', x, true), event('mouseMoved', x + 2, true), event('mouseMoved', x + 3, true), event('mouseReleased', x + 3, false)
+      ];
+      const client = await page.context().newCDPSession(page);
+      try {
+        await Promise.all(packets.map(packet => client.send('Input.dispatchMouseEvent', packet)));
+        await page.waitForTimeout(350);
+        const samples = await page.evaluate(() => globalThis.__runnerTouchSamples);
+        const downs = samples.filter(sample => sample.type === 'pointerdown');
+        expect(downs).toHaveLength(3);
+        expect(new Set(downs.map(sample => sample.id)).size).toBe(1);
+        expect(samples.some(sample => sample.type === 'pointercancel' && !sample.trusted && sample.id === downs[2].id)).toBe(true);
+        expect((await state(page)).player.lane).toBe(1);
+        await page.locator('#rush-pause').click();
+      } finally {await client.detach();}
+    });
+  });
+
+  for (const [width, height] of [[320, 568], [390, 844], [568, 320]]) {
+    it(`visually separates the inline intro words at${width}x${height}`, async () => {
+      await withPage(`native-intro-word-gap-${width}`, { viewport: { width, height } }, async page => {
+        await page.evaluate(() => document.fonts.ready);
+        const heading = await page.locator('#rush-intro-title').evaluate(node => {
+          const first = node.firstChild, next = node.querySelector('em').firstChild;
+          const preceding = document.createRange(), following = document.createRange();
+          const end = first.textContent.trimEnd().length;
+          preceding.setStart(first, end - 1); preceding.setEnd(first, end);
+          following.setStart(next, 0); following.setEnd(next, 1);
+          return { visible: node.checkVisibility(), text: node.innerText.replace(/\s+/g, ' ').trim(),
+            a: preceding.getBoundingClientRect().toJSON(), clean: following.getBoundingClientRect().toJSON() };
+        });
+        expect(heading.visible).toBe(true);
+        expect(heading.text).toBe('Make a clean getaway.');
+        if (Math.abs(heading.a.top - heading.clean.top) < heading.a.height * .5) {
+          expect(heading.clean.left - heading.a.right, 'Inline a and clean need a real visible word gap').toBeGreaterThan(0);
+        }
+      });
+    });
+  }
 
   it('holds help and pause gates until deliberate Resume and does not replay held keyboard input', async () => {
     await withPage('native-pause-help', {}, async page => {
