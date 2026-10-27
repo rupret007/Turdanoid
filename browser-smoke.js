@@ -100,7 +100,7 @@ async function checkPhoneHub(page, name, firstScreen = true) {
     })
   }));
   if (layout.scrollWidth > layout.width) fail(name, 'hub should not scroll horizontally');
-  if (layout.cards.length !== 8) fail(name, 'phone hub must keep exactly eight launch links');
+  if (layout.cards.length !== 9) fail(name, 'phone hub must keep exactly nine launch links');
   for (const card of layout.cards) {
     if (card.rect.height < 44) fail(name, `${card.name} needs a full-row touch target`);
     if (firstScreen && (card.rect.top < 0 || card.rect.bottom > layout.height)) {
@@ -160,11 +160,11 @@ async function main() {
     await runCheck(browser, 'root-hub', '', {
       assert: async (page) => {
         const cards = await page.locator('.game-card').count();
-        if (cards !== 8) fail('root-hub', `expected 8 game cards, saw ${cards}`);
+        if (cards !== 9) fail('root-hub', `expected 9 game cards, saw ${cards}`);
         const hrefs = await page.locator('.game-card').evaluateAll((cards) => cards.map((card) => card.getAttribute('href')));
-        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html'];
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html', 'turdrush.html'];
         if (JSON.stringify(hrefs) !== JSON.stringify(expected)) {
-          fail('root-hub', `expected the eight-game lineup, saw ${JSON.stringify(hrefs)}`);
+          fail('root-hub', `expected the nine-game lineup, saw ${JSON.stringify(hrefs)}`);
         }
         if ((await page.locator('a[href="neon-arkanoid.html"]').count()) !== 0) {
           fail('root-hub', 'hub should not promote Neon Arkanoid with an off-grid link');
@@ -283,6 +283,7 @@ async function main() {
     await runCheck(browser, 'hub-keyboard-launch', '', {
       actions: async page => {
         const links = await page.locator('.game-card').evaluateAll(cards => cards.map(card => card.getAttribute('href')));
+        if (links.length !== 9) fail('hub-keyboard-launch', `expected nine keyboard launch links, saw ${links.length}`);
         for (let i = 0; i < 24; i++) {
           const onFirst = await page.evaluate(() => document.activeElement?.classList?.contains('game-card'));
           if (onFirst) break;
@@ -294,7 +295,7 @@ async function main() {
           if (href !== links[links.length - 1]) await page.keyboard.press('Tab');
         }
         await Promise.all([
-          page.waitForURL(`${baseUrl}/chess.html`),
+          page.waitForURL(`${baseUrl}/${links[links.length - 1]}`),
           page.keyboard.press('Enter')
         ]);
       }
@@ -321,11 +322,32 @@ async function main() {
       }
     });
 
+    await runCheck(browser, 'turdrush-input-and-pause', 'turdrush.html', {
+      actions: async page => {
+        await page.waitForFunction(() => window.SuiteLoading?.state === 'ready');
+        await page.locator('#rush-start').click();
+        await page.waitForFunction(() => window.__turdrush?.state.phase === 'running');
+        await page.keyboard.press('ArrowRight');
+        await page.waitForFunction(() => window.__turdrush.state.player.lane === 2);
+        await page.locator('#rush-pause').click();
+        await page.waitForFunction(() => window.__turdrush.state.phase === 'paused');
+        const before = await page.evaluate(() => window.__turdrush.state.elapsed);
+        await page.waitForTimeout(150);
+        if (await page.evaluate(() => window.__turdrush.state.elapsed) !== before) fail('turdrush-input-and-pause', 'Paused run must not advance its clock');
+        await page.locator('#rush-resume').click();
+        await page.waitForFunction(() => window.__turdrush.state.phase === 'running');
+        await page.keyboard.press('ArrowUp');
+        await page.waitForFunction(() => window.__turdrush.state.player.y > 0);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => window.__turdrush.state.phase === 'paused');
+      }
+    });
+
     await runCheck(browser, 'legacy-hub-redirect', 'hub.html', {
       assert: async (page) => {
         if (!page.url().endsWith('/')) fail('legacy-hub-redirect', `expected redirect to root, saw ${page.url()}`);
-        if ((await page.locator('.game-card').count()) !== 8) {
-          fail('legacy-hub-redirect', 'legacy hub URL did not land on the eight-game lineup');
+        if ((await page.locator('.game-card').count()) !== 9) {
+          fail('legacy-hub-redirect', 'legacy hub URL did not land on the nine-game lineup');
         }
       }
     });
@@ -1989,7 +2011,7 @@ async function main() {
             resumeText: resume?.textContent || ''
           };
         });
-        if (marked.cards !== 8) fail('hub-last-played', `hub should still show eight games, saw ${marked.cards}`);
+        if (marked.cards !== 9) fail('hub-last-played', `hub should still show nine games, saw ${marked.cards}`);
         if (marked.href !== 'turdspades.html') {
           fail('hub-last-played', `last opened game should be marked, saw ${marked.href}`);
         }
@@ -2017,15 +2039,15 @@ async function main() {
           play: document.querySelector('.game-card.in-progress .play')?.textContent || '',
           hrefs: Array.from(document.querySelectorAll('.game-card')).map((card) => card.getAttribute('href'))
         }));
-        if (afterJunk.cards !== 8 || afterJunk.last !== 0) {
+        if (afterJunk.cards !== 9 || afterJunk.last !== 0) {
           fail('hub-last-played', `malformed last-played data should not invent a mark, saw ${JSON.stringify(afterJunk)}`);
         }
         if (afterJunk.continuing !== 'turdspades.html' || !afterJunk.play.includes('Continue')) {
           fail('hub-last-played', `junk last-played data should not wipe a real table, saw ${JSON.stringify(afterJunk)}`);
         }
-        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html'];
+        const expected = ['TurdAnoid.html', 'turdtris.html', 'turdjack.html', 'crapeights.html', 'turdrummy.html', 'turdspades.html', 'turdomania.html', 'chess.html', 'turdrush.html'];
         if (JSON.stringify(afterJunk.hrefs) !== JSON.stringify(expected)) {
-          fail('hub-last-played', `eight-game door drifted, saw ${JSON.stringify(afterJunk.hrefs)}`);
+          fail('hub-last-played', `nine-game door drifted, saw ${JSON.stringify(afterJunk.hrefs)}`);
         }
       }
     });
@@ -2520,7 +2542,7 @@ async function main() {
           href: document.querySelector('.game-card.in-progress')?.getAttribute('href') || '',
           play: document.querySelector('.game-card.in-progress .play')?.textContent || ''
         }));
-        if (hub.cards !== 8 || hub.href !== 'turdjack.html' || !hub.play.includes('Continue')) {
+        if (hub.cards !== 9 || hub.href !== 'turdjack.html' || !hub.play.includes('Continue')) {
           fail('turdjack-continue-restore', `hub should mark the live Crapjack hand Continue, saw ${JSON.stringify(hub)}`);
         }
       }
@@ -2695,7 +2717,7 @@ async function main() {
             cards: document.querySelectorAll('.game-card').length
           };
         });
-        if (marked.cards !== 8 || marked.href !== 'TurdAnoid.html') {
+        if (marked.cards !== 9 || marked.href !== 'TurdAnoid.html') {
           fail('hub-turdanoid-last-played', `TurdAnoid should record last-played now that it loads the suite, saw ${JSON.stringify(marked)}`);
         }
         if (!marked.play.includes('Play again')) {

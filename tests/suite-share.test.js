@@ -28,7 +28,8 @@ describe('completed score sharing', () => {
     ['crapeights', { outcome: 'win', kind: 'match', difficulty: 'normal', playerScore: 16, target: 200, rounds: 8 }, 'crapeights.html', 'Match won'],
     ['turdrummy', { outcome: 'loss', kind: 'match', difficulty: 'mixed', playerScore: 70, opponentScore: 104, target: 100 }, 'turdrummy.html', 'Mixed strength'],
     ['turdspades', { outcome: 'loss', kind: 'match', difficulty: 'hard', playerScore: -30, opponentScore: 270 }, 'turdspades.html', 'Your team -30'],
-    ['chess', { outcome: 'complete', mode: 'local', local: true, winner: 'w', hints: 0, undos: 1, moves: 7, assisted: true }, 'chess.html?mode=local', 'White wins']
+    ['chess', { outcome: 'complete', mode: 'local', local: true, winner: 'w', hints: 0, undos: 1, moves: 7, assisted: true }, 'chess.html?mode=local', 'White wins'],
+    ['turdrush', { outcome: 'complete', score: 1234, distance: 555, picks: 23, elapsedMs: 45000 }, 'turdrush.html', 'Endless run']
   ])('shares completed %s with an honest result and clean project destination', (game, run, destination, detail) => {
     const { w, control, drawings } = boot(game);
     const result = w.SuiteShare.describe(game, run, w.location.href);
@@ -68,6 +69,16 @@ describe('completed score sharing', () => {
     expect(result.detail).toContain('Net not recorded');
     expect(result.text).not.toContain('$0');
   });
+  it('shares real runner metrics and a same-site game link, only for a completed result', () => {
+    const { w } = boot('turdrush');
+    const result = w.SuiteShare.describe('turdrush', { outcome: 'complete', score: 1234, distance: 555, picks: 23, elapsedMs: 45000 }, w.location.href);
+    expect(result.name).toBe('Turd Rush');
+    expect(result.metric).toBe('1,234 points');
+    expect(result.detail).toBe('555 metres · 23 guitar picks · 0:45.00');
+    expect(result.url).toBe('https://example.test/StalemateSite/play/turdrush.html');
+    expect(() => w.SuiteShare.describe('turdrush', { score: 1 }, w.location.href)).toThrow('completed');
+  });
+
   it('uses the accepted first-to-200 Eights rules in its shared result', () => {
     const { w } = boot('crapeights');
     expect(w.SuiteShare.describe('crapeights', { outcome: 'win', kind: 'match', target: 200, playerScore: 210 }, w.location.href).outcome).toBe('First to 200 points');

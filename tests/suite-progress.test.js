@@ -83,7 +83,15 @@ describe('synchronous optional progress runtime and view', () => {
     view.opener.click(); w.document.getElementById('progress-panel-records').click();
     expect(view.dialog.textContent).toContain('Classic best 12,345 · Sprint best 1:00.0');
     expect(view.dialog.querySelector('img')).toBeNull();
-    expect(view.dialog.querySelectorAll('dl > div')).toHaveLength(8);
+    expect(view.dialog.querySelectorAll('dl > div')).toHaveLength(9);
+  });
+
+  it('labels real runner distance and guitar picks in recent results', () => {
+    const { w, api } = boot();
+    api.record({ id: api.newRunId('turdrush'), game: 'turdrush', kind: 'run', outcome: 'complete', mode: 'endless', difficulty: 'standard', distance: 600, picks: 50, score: 1100, elapsedMs: 45000 });
+    const view = api.mountHub({ host: w.document.getElementById('progress') }); view.opener.click(); w.document.getElementById('progress-panel-recent').click();
+    expect(view.dialog.textContent).toContain('600 metres · 50 guitar picks · 0:45');
+    expect(view.dialog.textContent).toContain('1,100 points');
   });
 
   it('lists only real recorded results, labels casual/local/aided chess and filters by game', () => {
@@ -99,12 +107,12 @@ describe('synchronous optional progress runtime and view', () => {
     expect(view.dialog.querySelectorAll('svg')).toHaveLength(0);
   });
 
-  it('renders twelve original SVG badge icons with readable names and criteria', () => {
+  it('renders fourteen original SVG badge icons with readable names and criteria', () => {
     const { w, api } = boot(); const view = api.mountHub({ host: w.document.getElementById('progress') }); view.opener.click();
     const badges = view.dialog.querySelectorAll('.suite-progress-goals li');
-    expect(badges).toHaveLength(12);
+    expect(badges).toHaveLength(14);
     expect([...badges].every(item => item.querySelector('svg[aria-hidden=true] path') && item.querySelector('h4').textContent && item.querySelector('p').textContent)).toBe(true);
-    expect(new Set([...badges].map(item => item.querySelector('svg g').innerHTML)).size).toBe(12);
+    expect(new Set([...badges].map(item => item.querySelector('svg g').innerHTML)).size).toBe(14);
   });
 
   it('shows accessible partial progress from completed runs in both the badge and selected goal', () => {

@@ -16,6 +16,7 @@ const games = {
   crapeights: { start:'#quickStartBtn', controls:['#playBtn','#drawBtn','#passBtn','#smartBtn','#drawPileBtn','#playerHand button:not([hidden])'], area:'#playerHand' },
   turdrummy: { start:'#startRoundBtn', controls:['.action-grid button','#soundToggleBtn','#difficultyBtn','#quickGuideBtn','#playerHand button'], area:'.table' },
   turdspades: { start:'#quickStart', controls:['#lockBid','#bidDown','#bidUp','#bidNil','#playBtn','#sortSuit','#sortRank','#nextRoundDock','#youCards button'], area:'.table-arena' },
+  turdrush: { start:'#rush-start', controls:['[data-rush-action]','#rush-pause','#rush-mute'], area:'#rush-arena' },
   turdomania: { controls:['#undoBtn','#newBtn','.suite-difficulty-btn'], area:'#board' },
   'neon-arkanoid': { start:'button:has-text("Quick Start")', controls:['#mobileControls button','.mobile-menu summary'], area:'#gameCanvas' }
 };

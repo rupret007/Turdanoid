@@ -14,6 +14,7 @@ const games = [
   ['crapeights', '#drawPileBtn', '#playBtn', '#drawBtn', '#passBtn', '#smartBtn'],
   ['turdrummy', '#playerHand', '#drawStockBtn', '#drawDiscardBtn', '#discardBtn', '#knockBtn', '#ginBtn', '#sortSuitBtn', '#sortRankBtn'],
   ['turdspades', '#youCards', '#bidDown', '#bidUp', '#bidNil', '#lockBid'],
+  ['turdrush', '#rush-arena', '#rush-pause', '#rush-mute', '[data-rush-action]'],
   ['turdomania', '#board', '#undoBtn', '#newBtn', '.tm-aim summary'],
   ['neon-arkanoid', '#gameCanvas', '[data-action="left"]', '[data-action="launch"]', '[data-action="right"]']
 ];
@@ -42,6 +43,7 @@ async function clickVisible(page, selector) {
 async function enter(page, game) {
   if(game === 'turdjack') await clickVisible(page, '#closeGuideBtn');
   if(game === 'TurdAnoid') { await tap(page, page.locator('#btnStart')); await clickVisible(page, '#btnCoachNext'); await clickVisible(page, '#btnCoachNext'); await clickVisible(page, '#btnCoachNext'); }
+  if(game === 'turdrush') await clickVisible(page, '#rush-start');
   if(game === 'turdtris') await clickVisible(page, '[onclick="startAttractMode()"]');
   if(game === 'crapeights') await clickVisible(page, '#closeGuideBtn');
   if(game === 'turdrummy') await clickVisible(page, '#startRoundBtn');
