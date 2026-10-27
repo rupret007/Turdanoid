@@ -344,6 +344,45 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
     });
   });
 
+  it('shows the complete active onboarding lesson inside the568px landscape arena', async () => {
+    await withPage('native-landscape-onboarding', { viewport: { width: 568, height: 320 } }, async page => {
+      await page.evaluate(() => document.fonts.ready);
+      await begin(page);
+      await page.waitForFunction(() => {
+        const lesson = document.getElementById('rush-lesson');
+        return globalThis.__turdrush.state.phase === 'running' && lesson.checkVisibility() && lesson.textContent.trim().length > 10;
+      });
+      const geometry = await page.locator('#rush-lesson').evaluate(lesson => {
+        const text = document.createRange(); text.selectNodeContents(lesson);
+        return { text: lesson.textContent.trim(), visible: lesson.checkVisibility(),
+          scrollWidth: lesson.scrollWidth, clientWidth: lesson.clientWidth,
+          box: lesson.getBoundingClientRect().toJSON(),
+          textBoxes: [...text.getClientRects()].map(box => box.toJSON()),
+          arena: document.getElementById('rush-arena').getBoundingClientRect().toJSON(),
+          controls: [...document.querySelectorAll('[data-rush-action]')].map(button => button.getBoundingClientRect().toJSON()) };
+      });
+      expect(geometry.visible).toBe(true);
+      expect(geometry.text).toMatch(/Swipe left|Jump high|Golden picks/);
+      expect(geometry.clientWidth).toBeGreaterThan(0);
+      expect(geometry.scrollWidth, `Full lesson must fit: ${geometry.text}`).toBeLessThanOrEqual(geometry.clientWidth + 1);
+      expect(geometry.textBoxes.length).toBeGreaterThan(0);
+      for (const text of geometry.textBoxes) {
+        expect(text.width).toBeGreaterThan(0);
+        expect(text.height).toBeGreaterThan(0);
+        expect(text.left).toBeGreaterThanOrEqual(geometry.arena.left);
+        expect(text.right).toBeLessThanOrEqual(geometry.arena.right);
+        expect(text.top).toBeGreaterThanOrEqual(geometry.arena.top);
+        expect(text.bottom).toBeLessThanOrEqual(geometry.arena.bottom);
+        for (const control of geometry.controls) {
+          const intersection = Math.max(0, Math.min(text.right, control.right) - Math.max(text.left, control.left)) * Math.max(0, Math.min(text.bottom, control.bottom) - Math.max(text.top, control.top));
+          expect(intersection, 'Lesson must not cover an action button').toBe(0);
+        }
+      }
+      await capture(page, 'native-landscape-onboarding-active');
+      await page.locator('#rush-pause').click();
+    });
+  });
+
   for (const prefix of ['', '/studio']) {
     for (const [width, height] of [[320, 568], [568, 320]]) {
       it(`keeps real controls hittable without overlap at${width}x${height}${prefix || '/classic'}`, async () => {
