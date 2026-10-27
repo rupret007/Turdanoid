@@ -4,12 +4,13 @@
 // result callback. /studio/ applies Rad Dad's exact SDK audio-profile adaptation.
 import { Buffer } from 'node:buffer';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { availableParallelism, freemem, loadavg } from 'node:os';
 import { createServer } from 'node:http';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { chromium } from 'playwright';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished } from 'vitest';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const available = existsSync(chromium.executablePath());
@@ -20,12 +21,13 @@ beforeAll(async () => {
   if (!available) {return;}
   server = createServer(async (request, response) => {
     const original = new URL(request.url, 'http://localhost').pathname;
-    const pathname = original.replace(/^\/(?:fixture|studio)\//, '/');
+    const pathname = original.replace(/^\/(?:fixture|audio-fixture|studio)\//, '/');
     const file = resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
     if (!file.startsWith(root + sep)) {response.writeHead(403).end(); return;}
     try {
       let bytes = await readFile(file);
-      if (original.startsWith('/fixture/') && pathname === '/games/turdrush-core.js') {
+      const audioFixture = original.startsWith('/audio-fixture/');
+      if ((original.startsWith('/fixture/') || audioFixture) && pathname === '/games/turdrush-core.js') {
         const source = bytes.toString();
         const declaration = 'export function createRun(seed = 1)';
         if (!source.includes(declaration)) {throw new Error('Update the explicit core fixture adapter.');}
@@ -33,10 +35,21 @@ beforeAll(async () => {
 export function createRun(seed = 1) {
   const state = fixtureActualCreateRun(seed);
   state.distance = 512; state.elapsed = 30; state.speed = 15; state.picks = 5;
-  state.score = 5370; state.entities = [{ id: 9000, kind: 'barrier', lane: 1, at: 513 }];
+  state.score = 5370; state.entities = ${audioFixture ? JSON.stringify([{ id: 9000, kind: 'pick', lane: 1, at: 513 }, { id: 9001, kind: 'shield', lane: 1, at: 513 }, { id: 9002, kind: 'barrier', lane: 1, at: 516 }, { id: 9003, kind: 'barrier', lane: 1, at: 532 }]) : JSON.stringify([{ id: 9000, kind: 'barrier', lane: 1, at: 513 }])};
   state._nextChunk = 1e9; return state;
 }
 `);
+      }
+      if (audioFixture && pathname === '/games/turdrush-renderer.js') {
+        bytes = Buffer.from(bytes.toString() + `
++const observedReset = TurdRushRenderer.prototype.resetRun;
++TurdRushRenderer.prototype.resetRun = function (...args) {
++  const before = { elapsed: this.elapsed, shake: this.shake || 0, sparks: this.sparks.length };
++  const returned = Reflect.apply(observedReset, this, args);
++  (globalThis.__runnerResetObservations ||= []).push({ before, after: { elapsed: this.elapsed, shake: this.shake || 0, sparks: this.sparks.length } });
++  return returned;
++};
++`.replace(/^\+/gm, ''));
       }
       if (original.startsWith('/studio/') && pathname === '/assets/turdsuite.js') {
         const source = bytes.toString();
@@ -67,13 +80,102 @@ async function capture(page, name) {
   await mkdir(directory, { recursive: true });
   await page.screenshot({ path: resolve(directory, name + '.png'), fullPage: true });
 }
+function mark(page, label) {
+  const info = page.runnerTestInfo;
+  if (!info) {return;}
+  info.steps.push({ afterMs: Date.now() - info.startedMs, label });
+  if (info.steps.length > 48) {info.steps.shift();}
+}
+async function bounded(promise, milliseconds) {
+  let timer;
+  try {
+    return await Promise.race([promise, new Promise(done => {timer = setTimeout(() => done({ diagnosticTimedOutMs: milliseconds }), milliseconds);})]);
+  } catch (error) {return { diagnosticError: error.message };}
+  finally {clearTimeout(timer);}
+}
 async function withPage(name, options, run) {
   const viewport = options.viewport || { width: 1280, height: 900 };
-  const page = await browser.newPage({ viewport, hasTouch: viewport.width < 1000, reducedMotion: 'reduce' });
+  const info = { name, startedAt: new Date().toISOString(), startedMs: Date.now(),
+    availableCPUs: availableParallelism(), loadAtStart: loadavg(), freeMiBAtStart: Math.round(freemem() / 1024 / 1024),
+    steps: [{ afterMs: 0, label: 'create owned Chromium page' }] };
+  let page = null, reported = false;
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  const reportFailure = async failure => {
+    if (reported) {return;}
+    reported = true;
+    const frozenInfo = { ...info, steps: info.steps.map(step => ({ ...step })) };
+    const failureObservedAt = new Date().toISOString();
+    const snapshot = page && !page.isClosed() ? await bounded(page.evaluate(() => {
+      const state = globalThis.__turdrush?.state;
+      const panel = id => {const node = document.getElementById(id); return node ? { visible: node.checkVisibility(), open: !!node.open, disabled: !!node.disabled } : null;};
+      return { url: globalThis.location.href, atMs: Math.round(globalThis.performance.now()), hidden: document.hidden, loading: globalThis.SuiteLoading?.state,
+        audioLevel: document.getElementById('suite-effects-level')?.value,
+        bodyPhase: document.body?.dataset.rushPhase, activeElement: document.activeElement?.id,
+        state: state ? { phase: state.phase, elapsed: state.elapsed, distance: state.distance, score: state.score, player: state.player } : null,
+        renderer: globalThis.__turdrush?.diagnostics, timing: globalThis.__runnerTestTiming,
+        glClears: globalThis.__runnerNativeGlClears,
+        panels: Object.fromEntries(['rush-intro', 'rush-paused', 'rush-results', 'rush-unavailable', 'rush-guide', 'suite-audio-settings', 'rush-start', 'rush-resume', 'rush-pause'].map(id => [id, panel(id)])) };
+    }), 1500) : { pageUnavailable: true };
+    const diagnostic = { ...frozenInfo, failureObservedAt, elapsedMs: Date.now() - info.startedMs, failure,
+      loadAtFailure: loadavg(), freeMiBAtFailure: Math.round(freemem() / 1024 / 1024), pageErrors: errors, snapshot };
+    console.error('[turdrush-first-failure] ' + JSON.stringify(diagnostic));
+    const directory = process.env.ARCADE_RUNNER_SCREENSHOTS || (process.env.CI ? resolve(root, 'test-results/turdrush') : null);
+    if (directory) {
+      await mkdir(directory, { recursive: true });
+      await writeFile(resolve(directory, name + '-FIRST-FAILURE.json'), JSON.stringify(diagnostic, null, 2));
+      if (page && !page.isClosed()) {
+        await bounded(page.screenshot({ path: resolve(directory, name + '-FIRST-FAILURE.png'), timeout: 1500 }), 1600);
+      }
+    }
+  };
+  // Vitest's test-wide timeout does not throw through an outstanding Playwright
+  // promise immediately. Preserve its actual last stage before closing the page.
+  onTestFailed(context => reportFailure(context.task.result?.errors?.map(error => error.message) || ['Vitest marked the unchanged-deadline test failed']));
+  onTestFinished(async () => {if (page && !page.isClosed()) {await page.close();}});
+  console.info('[turdrush-test-start] ' + JSON.stringify({ name, startedAt: info.startedAt, availableCPUs: info.availableCPUs, loadAtStart: info.loadAtStart }));
   try {
-    await page.addInitScript(({ denied, unsupported }) => {
+    page = await browser.newPage({ viewport, hasTouch: viewport.width < 1000, reducedMotion: options.reducedMotion || 'reduce' });
+    page.runnerTestInfo = info;
+    page.on('pageerror', error => errors.push(error.message));
+    mark(page, 'install read-only timing observer and isolated preferences');
+    await page.addInitScript(({ denied, unsupported, observeGL }) => {
+      // Cheap counters only: do not clone gameplay state or change media/clocks.
+      const timing = { frames: 0, maxFrameGapMs: 0, framesOver100ms: 0, timerSamples: 0, maxTimerDelayMs: 0, inputs: [] };
+      let previousFrame = 0, previousTimer = globalThis.performance.now();
+      const frame = now => {
+        if (previousFrame) {
+          const gap = now - previousFrame;
+          timing.maxFrameGapMs = Math.max(timing.maxFrameGapMs, Math.round(gap));
+          if (gap > 100) {timing.framesOver100ms++;}
+        }
+        previousFrame = now; timing.frames++;
+        globalThis.requestAnimationFrame(frame);
+      };
+      globalThis.requestAnimationFrame(frame);
+      globalThis.setInterval(() => {
+        const now = globalThis.performance.now();
+        timing.maxTimerDelayMs = Math.max(timing.maxTimerDelayMs, Math.round(Math.max(0, now - previousTimer - 250)));
+        timing.timerSamples++; previousTimer = now;
+      }, 250);
+      for (const type of ['keydown', 'pointerdown']) {
+        document.addEventListener(type, event => {
+          timing.inputs.push({ atMs: Math.round(globalThis.performance.now()), type, key: event.key, repeat: event.repeat,
+            target: event.target.closest?.('button,a,canvas,input')?.id || event.target.closest?.('[data-rush-action]')?.dataset.rushAction || event.target.nodeName });
+          if (timing.inputs.length > 16) {timing.inputs.shift();}
+        }, { capture: true, passive: true });
+      }
+      globalThis.__runnerTestTiming = timing;
+      if (observeGL) {
+        globalThis.__runnerNativeGlClears = 0;
+        const prototype = globalThis.WebGL2RenderingContext?.prototype;
+        const nativeClear = prototype?.clear;
+        if (nativeClear) {
+          prototype.clear = function (...args) {
+            globalThis.__runnerNativeGlClears++;
+            return Reflect.apply(nativeClear, this, args);
+          };
+        }
+      }
       if (denied) {
         Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new globalThis.DOMException('Denied', 'SecurityError'); } });
       } else {
@@ -86,35 +188,44 @@ async function withPage(name, options, run) {
           return kind === 'webgl2' ? null : Reflect.apply(nativeContext, this, [kind, ...args]);
         };
       }
-    }, { denied: options.denied || false, unsupported: options.unsupported || false });
+    }, { denied: options.denied || false, unsupported: options.unsupported || false, observeGL: options.observeGL || false });
+    mark(page, 'navigate runner page');
     await page.goto(base + (options.prefix || '') + '/turdrush.html');
+    mark(page, 'wait shared ready and read-only runner API');
     await page.waitForFunction(() => globalThis.__turdrush && globalThis.SuiteLoading?.state === 'ready');
     if (!options.unsupported) {
       expect(await page.evaluate(() => globalThis.__turdrush.diagnostics.available)).toBe(true);
       expect(await page.locator('#rush-start').isEnabled()).toBe(true);
     }
+    mark(page, 'native test body');
     await run(page);
     expect(errors).toEqual([]);
     await capture(page, name);
+    console.info('[turdrush-test-pass] ' + JSON.stringify({ name, elapsedMs: Date.now() - info.startedMs, lastStage: info.steps.at(-1)?.label }));
   } catch (error) {
-    await capture(page, name + '-FIRST-FAILURE');
+    await reportFailure(error.message);
     throw error;
-  } finally {await page.close();}
+  } finally {if (page && !page.isClosed()) {await page.close();}}
 }
-const state = page => page.evaluate(() => globalThis.__turdrush.state);
-const progress = page => page.evaluate(() => globalThis.SuiteProgress.snapshot());
+const state = page => {mark(page, 'read-only runner state'); return page.evaluate(() => globalThis.__turdrush.state);};
+const progress = page => {mark(page, 'read-only progress snapshot'); return page.evaluate(() => globalThis.SuiteProgress.snapshot());};
 async function begin(page) {
+  mark(page, 'page.locator(\'#rush-start\').click()');
   await page.locator('#rush-start').click();
+  mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.phase === \'running\' && globalThis.__turdrush.state.distance > 0)');
   await page.waitForFunction(() => globalThis.__turdrush.state.phase === 'running' && globalThis.__turdrush.state.distance > 0);
 }
 async function frozen(page) {
   const before = await state(page);
+  mark(page, 'page.waitForTimeout(180); // Verify that a paused/finished run stays frozen across actual RAF ticks.');
   await page.waitForTimeout(180); // Verify that a paused/finished run stays frozen across actual RAF ticks.
   expect(await state(page)).toEqual(before);
 }
 async function resume(page) {
   const distance = (await state(page)).distance;
+  mark(page, 'page.locator(\'#rush-resume\').click()');
   await page.locator('#rush-resume').click();
+  mark(page, 'page.waitForFunction(from => globalThis.__turdrush.state.phase === \'running\' && globalThis.__turdrush.state.distance > from, distance)');
   await page.waitForFunction(from => globalThis.__turdrush.state.phase === 'running' && globalThis.__turdrush.state.distance > from, distance);
 }
 
@@ -124,16 +235,26 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       expect((await state(page)).phase).toBe('ready');
       await begin(page);
       expect(await page.evaluate(() => globalThis.__turdrush.diagnostics.drawCalls)).toBeGreaterThan(0);
+      mark(page, 'page.keyboard.press(\'ArrowLeft\')');
       await page.keyboard.press('ArrowLeft');
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.player.x <= -2.39)');
       await page.waitForFunction(() => globalThis.__turdrush.state.player.x <= -2.39);
+      mark(page, 'page.keyboard.down(\'ArrowRight\')');
       await page.keyboard.down('ArrowRight');
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.player.lane === 1 && Math.abs(globalThis.__turdrush.state.player.x) < 0.01)');
       await page.waitForFunction(() => globalThis.__turdrush.state.player.lane === 1 && Math.abs(globalThis.__turdrush.state.player.x) < 0.01);
+      mark(page, 'page.keyboard.down(\'ArrowRight\'); // Browser sets repeat=true on a held second keydown.');
       await page.keyboard.down('ArrowRight'); // Browser sets repeat=true on a held second keydown.
+      mark(page, 'page.waitForTimeout(180)');
       await page.waitForTimeout(180);
       expect((await state(page)).player.lane).toBe(1);
+      mark(page, 'page.keyboard.up(\'ArrowRight\')');
       await page.keyboard.up('ArrowRight');
+      mark(page, 'page.locator(\'[data-rush-action="jump"]\').click()');
       await page.locator('[data-rush-action="jump"]').click();
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.player.y > 0.5)');
       await page.waitForFunction(() => globalThis.__turdrush.state.player.y > 0.5);
+      mark(page, 'page.evaluate(() => {');
       await page.evaluate(() => {
         // Read-only observers bracket each native event's actual game handler.
         // Do not assume the720ms slide remains active across automation IPC.
@@ -151,6 +272,7 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
           }
         });
       });
+      mark(page, 'page.locator(\'[data-rush-action="slide"]\').dblclick({ delay: 20 })');
       await page.locator('[data-rush-action="slide"]').dblclick({ delay: 20 });
       const samples = await page.evaluate(() => globalThis.__runnerSlideSamples);
       expect(samples).toHaveLength(2);
@@ -159,6 +281,7 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       expect(samples[1].before).toBeGreaterThan(0);
       expect(samples[1].after).toBe(samples[1].before);
       expect((await state(page)).phase).toBe('running');
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
       await frozen(page);
     });
@@ -174,14 +297,17 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 65, y }] });
       await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 95, y }] });
       await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.player.x <= -2.39)');
       await page.waitForFunction(() => globalThis.__turdrush.state.player.x <= -2.39);
       expect((await state(page)).player.lane).toBe(0);
       await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
       await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 5, y }] });
       await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+      mark(page, 'page.waitForTimeout(180)');
       await page.waitForTimeout(180);
       expect((await state(page)).player.lane).toBe(0);
       await client.detach();
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
@@ -189,25 +315,32 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
   it('holds help and pause gates until deliberate Resume and does not replay held keyboard input', async () => {
     await withPage('native-pause-help', {}, async page => {
       await begin(page);
+      mark(page, 'page.locator(\'#rush-help\').click()');
       await page.locator('#rush-help').click();
       expect(await page.locator('#rush-guide').evaluate(dialog => dialog.open)).toBe(true);
       expect((await state(page)).phase).toBe('paused');
       expect(await page.evaluate(() => globalThis.Suite.getSoundState().paused)).toBe(true);
+      mark(page, 'page.keyboard.press(\'ArrowRight\')');
       await page.keyboard.press('ArrowRight');
       await frozen(page);
+      mark(page, 'page.locator(\'#rush-contrast\').click()');
       await page.locator('#rush-contrast').click();
       expect(await page.locator('#rush-contrast').getAttribute('aria-pressed')).toBe('true');
       expect(await page.evaluate(() => globalThis.__turdrush.diagnostics.highContrast)).toBe(true);
       expect(await page.evaluate(() => globalThis.Suite.isColorblindMode())).toBe(true);
       await frozen(page);
+      mark(page, 'page.locator(\'#rush-close-help\').click()');
       await page.locator('#rush-close-help').click();
       expect((await state(page)).phase).toBe('paused');
       await frozen(page);
       await resume(page);
       expect((await state(page)).player.lane).toBe(1);
+      mark(page, 'page.keyboard.down(\'p\')');
       await page.keyboard.down('p');
+      mark(page, 'page.keyboard.down(\'p\')');
       await page.keyboard.down('p');
       expect((await state(page)).phase).toBe('paused');
+      mark(page, 'page.keyboard.up(\'p\')');
       await page.keyboard.up('p');
       await frozen(page);
     });
@@ -216,12 +349,14 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
   it('requires explicit Resume after simulated backgrounding and actual viewport rotation', async () => {
     await withPage('native-interruption', { viewport: { width: 390, height: 844 } }, async page => {
       await begin(page);
+      mark(page, 'page.evaluate(() => {');
       await page.evaluate(() => {
         Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
         document.dispatchEvent(new globalThis.Event('visibilitychange'));
       });
       expect((await state(page)).phase).toBe('paused');
       await frozen(page);
+      mark(page, 'page.evaluate(() => {');
       await page.evaluate(() => {
         Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
         document.dispatchEvent(new globalThis.Event('visibilitychange'));
@@ -229,11 +364,14 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       });
       await frozen(page);
       await resume(page);
+      mark(page, 'page.setViewportSize({ width: 568, height: 320 })');
       await page.setViewportSize({ width: 568, height: 320 });
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.phase === \'paused\')');
       await page.waitForFunction(() => globalThis.__turdrush.state.phase === 'paused');
       await frozen(page);
       await resume(page);
       expect((await state(page)).phase).toBe('running');
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
@@ -242,20 +380,26 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
     await withPage('native-studio-audio', { prefix: '/studio' }, async page => {
       await begin(page);
       expect(await page.evaluate(() => globalThis.Suite.isStudioAudio())).toBe(true);
+      mark(page, 'page.getByRole(\'button\', { name: \'Audio settings\', exact: true }).click()');
       await page.getByRole('button', { name: 'Audio settings', exact: true }).click();
       expect(await page.locator('#suite-audio-settings').evaluate(dialog => dialog.open)).toBe(true);
       expect((await state(page)).phase).toBe('paused');
       await frozen(page);
+      mark(page, 'page.locator(\'#suite-effects-level\').focus()');
       await page.locator('#suite-effects-level').focus();
+      mark(page, 'page.keyboard.press(\'Home\')');
       await page.keyboard.press('Home');
+      mark(page, 'adjust effects volume with seven native ArrowRight presses');
       for (let step = 0; step < 7; step++) {await page.keyboard.press('ArrowRight');}
       expect(await page.locator('#suite-effects-level').inputValue()).toBe('35');
       expect(await page.evaluate(() => globalThis.Suite.getEffectsVolume())).toBe(0.35);
+      mark(page, 'page.locator(\'#suite-effects-close\').click()');
       await page.locator('#suite-effects-close').click();
       expect((await state(page)).phase).toBe('paused');
       await frozen(page);
       await resume(page);
       expect(await page.evaluate(() => globalThis.Suite.getSoundState().paused)).toBe(false);
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
@@ -263,12 +407,16 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
   it('plays with denied storage and never needs persistence to bind native controls', async () => {
     await withPage('native-storage-denied', { denied: true, viewport: { width: 320, height: 568 } }, async page => {
       await begin(page);
+      mark(page, 'page.locator(\'[data-rush-action="jump"]\').click()');
       await page.locator('[data-rush-action="jump"]').click();
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush.state.player.y > 0.2)');
       await page.waitForFunction(() => globalThis.__turdrush.state.player.y > 0.2);
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
       await frozen(page);
       await resume(page);
       expect((await state(page)).phase).toBe('running');
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
@@ -276,7 +424,9 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
   it('records one collision result per run and accepts one fresh run across native double-tap replay', async () => {
     await withPage('native-terminal-fixture', { prefix: '/fixture' }, async page => {
       expect((await progress(page)).history.turdrush).toBeUndefined();
+      mark(page, 'page.locator(\'#rush-start\').click()');
       await page.locator('#rush-start').click();
+      mark(page, 'page.locator(\'#rush-results\').waitFor({ state: \'visible\' })');
       await page.locator('#rush-results').waitFor({ state: 'visible' });
       expect((await state(page)).reason).toBe('barrier');
       let record = await progress(page);
@@ -286,21 +436,63 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       const firstId = record.history.turdrush[0].id;
       await frozen(page);
       expect((await progress(page)).history.turdrush).toHaveLength(1);
+      mark(page, 'page.getByRole(\'button\', { name: \'Share score\', exact: true }).click()');
       await page.getByRole('button', { name: 'Share score', exact: true }).click();
+      mark(page, 'page.waitForFunction(() => /copied|Select and copy/i.test(document.querySelector(\'.suite-result-share-status\').textContent))');
       await page.waitForFunction(() => /copied|Select and copy/i.test(document.querySelector('.suite-result-share-status').textContent));
       // A genuine native double tap may start one fresh run. It must not create
       // two starts/results; assertions above do not assume the550ms guard is
       // still active after asynchronous storage/share inspection.
+      mark(page, 'page.locator(\'#rush-again\').dblclick({ delay: 20 })');
       await page.locator('#rush-again').dblclick({ delay: 20 });
+      mark(page, 'page.waitForFunction(() => globalThis.SuiteProgress.snapshot().history.turdrush.length === 2)');
       await page.waitForFunction(() => globalThis.SuiteProgress.snapshot().history.turdrush.length === 2);
       record = await progress(page);
       expect(record.history.turdrush[1].id).not.toBe(firstId);
       const ids = record.history.turdrush.map(entry => entry.id);
       await frozen(page);
+      mark(page, 'page.reload()');
       await page.reload();
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush && globalThis.SuiteLoading?.state === \'ready\')');
       await page.waitForFunction(() => globalThis.__turdrush && globalThis.SuiteLoading?.state === 'ready');
       expect((await state(page)).phase).toBe('ready');
       expect((await progress(page)).history.turdrush.map(entry => entry.id)).toEqual(ids);
+    });
+  });
+
+  it('drops deferred old pickup and shield-hit sounds on results, retains terminal cues and resets replay visuals', async () => {
+    await withPage('native-deferred-audio-fixture', { prefix: '/audio-fixture', reducedMotion: 'no-preference' }, async page => {
+      mark(page, 'hold only the isolated SDK audio promise; keep native bank playback');
+      await page.evaluate(() => {
+        const nativeAudio = globalThis.Suite.audio.bind(globalThis.Suite);
+        let release;
+        const held = new Promise(done => {release = done;});
+        globalThis.__runnerPresetCalls = [];
+        globalThis.__releaseRunnerAudio = release;
+        globalThis.Suite.audio = () => held.then(nativeAudio).then(bank => ({
+          ...bank,
+          playPreset(...args) { globalThis.__runnerPresetCalls.push(args[0]); return bank.playPreset(...args); }
+        }));
+      });
+      mark(page, 'native Start; actual core picks, shield absorption and fatal collision');
+      await page.locator('#rush-start').click();
+      await page.locator('#rush-results').waitFor({ state: 'visible' });
+      expect((await state(page)).phase).toBe('over');
+      expect((await state(page)).picks).toBe(6);
+      expect((await state(page)).player.shield).toBe(0);
+      expect(await page.evaluate(() => globalThis.__runnerPresetCalls)).toEqual([]);
+      mark(page, 'release deferred SDK on results and inspect actual forwarded presets');
+      await page.evaluate(() => globalThis.__releaseRunnerAudio());
+      await page.waitForFunction(() => globalThis.__runnerPresetCalls.includes('lose'));
+      expect(await page.evaluate(() => globalThis.__runnerPresetCalls)).toEqual(['snap', 'lose']);
+      const first = (await progress(page)).history.turdrush[0].id;
+      await page.locator('#rush-again').click();
+      await page.waitForFunction(() => globalThis.SuiteProgress.snapshot().history.turdrush.length === 2);
+      const resets = await page.evaluate(() => globalThis.__runnerResetObservations);
+      expect(resets).toHaveLength(2);
+      expect(resets[1].before.elapsed).toBeGreaterThan(0);
+      expect(resets.every(reset => reset.after.elapsed === 0 && reset.after.shake === 0 && reset.after.sparks === 0)).toBe(true);
+      expect((await progress(page)).history.turdrush[1].id).not.toBe(first);
     });
   });
 
@@ -311,8 +503,11 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       expect(await page.locator('#rush-unavailable-text').innerText()).toContain('records are safe');
       expect(await page.locator('#rush-reload').isEnabled()).toBe(true);
       expect(await page.locator('#rush-start').isDisabled()).toBe(true);
+      mark(page, 'page.evaluate(() => localStorage.setItem(\'unrelated-player-progress\', \'kept\'))');
       await page.evaluate(() => localStorage.setItem('unrelated-player-progress', 'kept'));
+      mark(page, 'page.locator(\'#rush-reload\').click()');
       await page.locator('#rush-reload').click();
+      mark(page, 'page.locator(\'#rush-unavailable\').waitFor({ state: \'visible\' })');
       await page.locator('#rush-unavailable').waitFor({ state: 'visible' });
       expect(await page.evaluate(() => localStorage.getItem('unrelated-player-progress'))).toBe('kept');
       expect(await page.locator('#rush-unavailable a').getAttribute('href')).toBe('./');
@@ -329,25 +524,63 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
         extension.loseContext(); return true;
       });
       expect(supported).toBe(true);
+      mark(page, 'page.locator(\'#rush-unavailable\').waitFor({ state: \'visible\' })');
       await page.locator('#rush-unavailable').waitFor({ state: 'visible' });
       expect((await state(page)).phase).toBe('paused');
       expect(await page.evaluate(() => globalThis.__turdrush.diagnostics.available)).toBe(false);
       await frozen(page);
       expect((await progress(page)).history.turdrush).toBeUndefined();
+      mark(page, 'page.locator(\'#rush-reload\').click()');
       await page.locator('#rush-reload').click();
+      mark(page, 'page.waitForFunction(() => globalThis.__turdrush?.diagnostics.available && globalThis.SuiteLoading?.state === \'ready\')');
       await page.waitForFunction(() => globalThis.__turdrush?.diagnostics.available && globalThis.SuiteLoading?.state === 'ready');
       expect((await state(page)).phase).toBe('ready');
       await begin(page);
       expect((await state(page)).distance).toBeLessThan(20);
       expect((await progress(page)).history.turdrush).toBeUndefined();
+      mark(page, 'page.locator(\'#rush-pause\').click()');
+      await page.locator('#rush-pause').click();
+    });
+  });
+
+  it('stops native GPU redraws for a static reduced-motion intro and a paused run, then renders on Resume', async () => {
+    await withPage('native-paused-gpu', { observeGL: true }, async page => {
+      const settle = () => page.evaluate(() => new Promise(done => globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(done))));
+      // A late font swap can legitimately resize the canvas; finish that real
+      // layout work before asserting that the intro is otherwise static.
+      mark(page, 'wait fonts and two RAFs before static GPU sample');
+      await page.evaluate(() => document.fonts.ready);
+      await settle();
+      let clears = await page.evaluate(() => globalThis.__runnerNativeGlClears);
+      expect(clears).toBeGreaterThan(0);
+      mark(page, 'page.waitForTimeout(250); // A static intro needs no new GPU submission.');
+      await page.waitForTimeout(250); // A static intro needs no new GPU submission.
+      expect(await page.evaluate(() => globalThis.__runnerNativeGlClears)).toBe(clears);
+      await begin(page);
+      mark(page, 'page.waitForFunction(before => globalThis.__runnerNativeGlClears > before, clears, { timeout: 5000 })');
+      await page.waitForFunction(before => globalThis.__runnerNativeGlClears > before, clears, { timeout: 5000 });
+      mark(page, 'page.locator(\'#rush-pause\').click()');
+      await page.locator('#rush-pause').click();
+      await settle();
+      clears = await page.evaluate(() => globalThis.__runnerNativeGlClears);
+      mark(page, 'page.waitForTimeout(250); // Paused gameplay may update DOM, not redraw the identical 3D scene.');
+      await page.waitForTimeout(250); // Paused gameplay may update DOM, not redraw the identical 3D scene.
+      expect(await page.evaluate(() => globalThis.__runnerNativeGlClears)).toBe(clears);
+      await frozen(page);
+      await resume(page);
+      mark(page, 'page.waitForFunction(before => globalThis.__runnerNativeGlClears > before, clears, { timeout: 5000 })');
+      await page.waitForFunction(before => globalThis.__runnerNativeGlClears > before, clears, { timeout: 5000 });
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
 
   it('shows the complete active onboarding lesson inside the568px landscape arena', async () => {
     await withPage('native-landscape-onboarding', { viewport: { width: 568, height: 320 } }, async page => {
+      mark(page, 'page.evaluate(() => document.fonts.ready)');
       await page.evaluate(() => document.fonts.ready);
       await begin(page);
+      mark(page, 'page.waitForFunction(() => {');
       await page.waitForFunction(() => {
         const lesson = document.getElementById('rush-lesson');
         return globalThis.__turdrush.state.phase === 'running' && lesson.checkVisibility() && lesson.textContent.trim().length > 10;
@@ -379,6 +612,7 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
         }
       }
       await capture(page, 'native-landscape-onboarding-active');
+      mark(page, 'page.locator(\'#rush-pause\').click()');
       await page.locator('#rush-pause').click();
     });
   });
@@ -387,6 +621,7 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
     for (const [width, height] of [[320, 568], [568, 320]]) {
       it(`keeps real controls hittable without overlap at${width}x${height}${prefix || '/classic'}`, async () => {
         await withPage(`native-geometry-${prefix ? 'studio' : 'classic'}-${width}x${height}`, { prefix, viewport: { width, height } }, async page => {
+          mark(page, 'page.evaluate(() => document.fonts.ready)');
           await page.evaluate(() => document.fonts.ready);
           const start = await page.locator('#rush-start').evaluate(button => {
             const box = button.getBoundingClientRect();
@@ -427,6 +662,7 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
               expect(intersection, `${first.selector} vs ${second.selector}`).toBe(0);
             }
           }
+          mark(page, 'page.locator(\'#rush-pause\').click()');
           await page.locator('#rush-pause').click();
         });
       });
