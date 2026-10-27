@@ -486,7 +486,7 @@ describe('native chess interface', () => {
     const page = await pageAt();
     try {
       await start(page); await page.locator('#mute').click(); await move(page, 'e2e4');
-      await page.locator('.chess-hub').click(); await page.waitForFunction(() => document.body.dataset.arcadeGame === 'hub');
+      await page.locator('.chess-hub').click(); await page.waitForFunction(() => document.body?.dataset.arcadeGame === 'hub');
       await page.goBack(); await page.waitForFunction(() => globalThis.SuiteLoading?.state === 'ready');
       if (await page.locator('#continue').isVisible()) { await page.locator('#continue').click(); }
       if (await page.locator('#resume-playing').isVisible()) { await page.locator('#resume-playing').click(); }

@@ -3485,10 +3485,10 @@
         hotStreak = 0;
         return;
       }
-      if (roundPushes > 0) {
-        hotStreak = 0;
-        coldStreak = 0;
-      }
+      // A neutral split (one win and one loss) breaks the streak just like a
+      // push. Retaining a milestone would pay its bonus again on every tie.
+      hotStreak = 0;
+      coldStreak = 0;
     }
 
     function getTableFlavor() {
