@@ -24,6 +24,16 @@ Local browser checks use Chromium/WebKit and emulated screens, not physical phon
   while retaining chip artwork, dimensions, layout and betting behavior. Native
   browser regressions check painted text geometry and labeled betting amounts.
 
+- **Rummy and Spades impossible active saves:** a missing Rummy hand could claim a
+  one-card gin (+25 in the native reproduction), and a Spades turn with no playable
+  hand could stall. Live saves now enforce Gin draw/discard hand sizes and drawn-card
+  identity, plus Spades dealt-card counts and clockwise trick/turn consistency.
+  Valid v1 formats and the captured historical Rummy save remain supported. The old
+  hand-written Spades test fixture had physically impossible counts/turns; it is kept
+  as a negative regression, with a legal v1 table used for positive compatibility.
+  Invalid active tables follow existing fresh-game recovery; saves/records are not
+  reformatted, and ended-table handling remains compatible.
+
 ## Evidence and coverage
 
 Persistent full logs, failing reproductions, deterministic drivers and captures are
