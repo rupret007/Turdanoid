@@ -110,6 +110,8 @@ async function withPage(name, options, run) {
       const panel = id => {const node = document.getElementById(id); return node ? { visible: node.checkVisibility(), open: !!node.open, disabled: !!node.disabled } : null;};
       return { url: globalThis.location.href, atMs: Math.round(globalThis.performance.now()), hidden: document.hidden, loading: globalThis.SuiteLoading?.state,
         audioLevel: document.getElementById('suite-effects-level')?.value,
+        audioContexts: globalThis.__runnerNativeAudioContexts?.map(context => ({ state: context.state })),
+        nativeAudioNodes: globalThis.__runnerNativeAudioNodes, studioCalls: globalThis.__runnerStudioCalls,
         bodyPhase: document.body?.dataset.rushPhase, activeElement: document.activeElement?.id,
         state: state ? { phase: state.phase, elapsed: state.elapsed, distance: state.distance, score: state.score, player: state.player } : null,
         renderer: globalThis.__turdrush?.diagnostics, timing: globalThis.__runnerTestTiming,
@@ -138,7 +140,30 @@ async function withPage(name, options, run) {
     page.runnerTestInfo = info;
     page.on('pageerror', error => errors.push(error.message));
     mark(page, 'install read-only timing observer and isolated preferences');
-    await page.addInitScript(({ denied, unsupported, observeGL }) => {
+    await page.addInitScript(({ denied, unsupported, observeGL, observeAudio, unmuted }) => {
+      if (observeAudio) {
+        globalThis.__runnerNativeAudioContexts = [];
+        globalThis.__runnerNativeAudioNodes = [];
+        for (const name of ['AudioContext', 'webkitAudioContext']) {
+          const Native = globalThis[name];
+          if (typeof Native !== 'function') {continue;}
+          globalThis[name] = new Proxy(Native, {
+            construct(Target, args) {
+              const context = Reflect.construct(Target, args);
+              globalThis.__runnerNativeAudioContexts.push(context);
+              return context;
+            }
+          });
+        }
+        for (const name of ['AudioBufferSourceNode', 'OscillatorNode']) {
+          const prototype = globalThis[name]?.prototype, nativeStart = prototype?.start;
+          if (!nativeStart) {continue;}
+          prototype.start = function (...args) {
+            globalThis.__runnerNativeAudioNodes.push({ type: name, state: this.context.state, atMs: Math.round(globalThis.performance.now()) });
+            return Reflect.apply(nativeStart, this, args);
+          };
+        }
+      }
       // Cheap counters only: do not clone gameplay state or change media/clocks.
       const timing = { frames: 0, maxFrameGapMs: 0, framesOver100ms: 0, timerSamples: 0, maxTimerDelayMs: 0, inputs: [] };
       let previousFrame = 0, previousTimer = globalThis.performance.now();
@@ -179,7 +204,7 @@ async function withPage(name, options, run) {
       if (denied) {
         Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new globalThis.DOMException('Denied', 'SecurityError'); } });
       } else {
-        localStorage.setItem('turdsuite_muted', '1');
+        localStorage.setItem('turdsuite_muted', unmuted ? '0' : '1');
         localStorage.setItem('stalemate.music', 'off');
       }
       if (unsupported) {
@@ -188,7 +213,7 @@ async function withPage(name, options, run) {
           return kind === 'webgl2' ? null : Reflect.apply(nativeContext, this, [kind, ...args]);
         };
       }
-    }, { denied: options.denied || false, unsupported: options.unsupported || false, observeGL: options.observeGL || false });
+    }, { denied: options.denied || false, unsupported: options.unsupported || false, observeGL: options.observeGL || false, observeAudio: options.observeAudio || false, unmuted: options.unmuted || false });
     mark(page, 'navigate runner page');
     await page.goto(base + (options.prefix || '') + '/turdrush.html');
     mark(page, 'wait shared ready and read-only runner API');
@@ -400,6 +425,36 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       await resume(page);
       expect(await page.evaluate(() => globalThis.Suite.getSoundState().paused)).toBe(false);
       mark(page, 'page.locator(\'#rush-pause\').click()');
+      await page.locator('#rush-pause').click();
+    });
+  });
+
+  it('arms the native Studio sound context on Start so the first Right input produces a real accepted cue', async () => {
+    await withPage('native-studio-first-input', { prefix: '/studio', unmuted: true, observeAudio: true }, async page => {
+      expect(await page.evaluate(() => globalThis.__runnerNativeAudioContexts.length)).toBe(0);
+      await page.evaluate(() => {
+        globalThis.__runnerStudioCalls = [];
+        const nativePlay = globalThis.Suite.playSound;
+        globalThis.Suite.playSound = function (...args) {
+          const before = globalThis.__runnerNativeAudioNodes.length;
+          const accepted = Reflect.apply(nativePlay, this, args);
+          globalThis.__runnerStudioCalls.push({ event: args[0], accepted,
+            nativeStarts: globalThis.__runnerNativeAudioNodes.length - before,
+            phase: globalThis.__turdrush.state.phase });
+          return accepted;
+        };
+      });
+      await begin(page);
+      mark(page, 'Start must construct and resume the real native context before any game action');
+      expect(await page.evaluate(() => globalThis.__runnerNativeAudioContexts.length)).toBe(1);
+      await page.waitForFunction(() => globalThis.__runnerNativeAudioContexts[0].state === 'running', null, { timeout: 5000 });
+      mark(page, 'first native Right must be accepted immediately, not a later pickup/death sound');
+      await page.locator('[data-rush-action="right"]').click();
+      const calls = await page.evaluate(() => globalThis.__runnerStudioCalls.filter(call => call.event === 'tris.move'));
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ accepted: true, phase: 'running' });
+      expect(calls[0].nativeStarts).toBeGreaterThan(0);
+      expect((await state(page)).player.lane).toBe(2);
       await page.locator('#rush-pause').click();
     });
   });
