@@ -455,47 +455,57 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
     });
   });
 
-  it('keeps a bounded lane target through double flicks, triple corrections and edge no-ops', async () => {
-    await withPage('native-touch-targets', { viewport: { width: 390, height: 844 } }, async page => {
-      await begin(page); await observeTouches(page);
-      const client = await page.context().newCDPSession(page), outcomes = [];
-      const cases = [
-        [2, ['left', 'left', 'right'], 1], [0, ['right', 'right', 'left'], 1],
-        [2, ['left', 'left'], 0], [0, ['right', 'right'], 2],
-        [0, ['left', 'left', 'right'], 1], [2, ['right', 'right', 'left'], 1],
-        [1, ['left', 'right'], 1, 40]
-      ];
-      try {
-        for (let index = 0; index < cases.length; index++) {
-          const [from, directions, target, paced] = cases[index];
-          if (index) {
-            await page.locator('#rush-pause').click();
-            await page.locator('#rush-restart-paused').click();
+  async function expectLaneTargets(page, name, cases) {
+    await begin(page); await observeTouches(page);
+    const client = await page.context().newCDPSession(page), outcomes = [];
+    try {
+      for (let index = 0; index < cases.length; index++) {
+        const [from, directions, target, paced, firstId] = cases[index];
+        if (index) {
+          await page.locator('#rush-pause').click();
+          await page.locator('#rush-restart-paused').click();
+        }
+        if (from !== 1) {await page.keyboard.press(from === 0 ? 'ArrowLeft' : 'ArrowRight');}
+        await page.waitForFunction(lane => globalThis.__turdrush.state.player.lane === lane
+          && Math.abs(globalThis.__turdrush.state.player.x - (lane - 1) * 2.4) < .01, from);
+        const packets = await flickPackets(page, directions, firstId);
+        mark(page, `native${paced ? ' paced40ms' : ' fast'} flicks from${from}: ${directions.join(',')}`);
+        if (paced) {
+          for (let cursor = 0; cursor < packets.length; cursor += 3) {
+            await nativeBurst(client, packets.slice(cursor, cursor + 3));
+            if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
           }
-          if (from !== 1) {await page.keyboard.press(from === 0 ? 'ArrowLeft' : 'ArrowRight');}
-          await page.waitForFunction(lane => globalThis.__turdrush.state.player.lane === lane
-            && Math.abs(globalThis.__turdrush.state.player.x - (lane - 1) * 2.4) < .01, from);
-          const packets = await flickPackets(page, directions, 40 + index * 4);
-          mark(page, `native${paced ? ' paced40ms' : ' fast'} flicks from${from}: ${directions.join(',')}`);
-          if (paced) {
-            for (let cursor = 0; cursor < packets.length; cursor += 3) {
-              await nativeBurst(client, packets.slice(cursor, cursor + 3));
-              if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
-            }
-          } else {await nativeBurst(client, packets);}
-          await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
-          const after = await state(page);
-          outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
-          expect(after.phase).toBe('running');
-          expect(after.player.lane, JSON.stringify(outcomes.at(-1))).toBe(target);
-          expect(after.player.x).toBeCloseTo((target - 1) * 2.4, 2);
-        }
-        if (process.env.ARCADE_RUNNER_SCREENSHOTS) {
-          await mkdir(process.env.ARCADE_RUNNER_SCREENSHOTS, { recursive: true });
-          await writeFile(resolve(process.env.ARCADE_RUNNER_SCREENSHOTS, 'native-touch-target-cases.json'), JSON.stringify(outcomes, null, 2));
-        }
-        await page.locator('#rush-pause').click();
-      } finally {await client.detach();}
+        } else {await nativeBurst(client, packets);}
+        await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
+        const after = await state(page);
+        outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
+        expect(after.phase).toBe('running');
+        expect(after.player.lane, JSON.stringify(outcomes.at(-1))).toBe(target);
+        expect(after.player.x).toBeCloseTo((target - 1) * 2.4, 2);
+      }
+      if (process.env.ARCADE_RUNNER_SCREENSHOTS) {
+        await mkdir(process.env.ARCADE_RUNNER_SCREENSHOTS, { recursive: true });
+        await writeFile(resolve(process.env.ARCADE_RUNNER_SCREENSHOTS, `${name}.json`), JSON.stringify(outcomes, null, 2));
+      }
+      await page.locator('#rush-pause').click();
+    } finally {await client.detach();}
+  }
+
+  it('keeps a bounded lane target through double flicks and triple corrections', async () => {
+    await withPage('native-touch-targets', { viewport: { width: 390, height: 844 } }, async page => {
+      await expectLaneTargets(page, 'native-touch-target-cases', [
+        [2, ['left', 'left', 'right'], 1, 0, 40], [0, ['right', 'right', 'left'], 1, 0, 44],
+        [2, ['left', 'left'], 0, 0, 48], [0, ['right', 'right'], 2, 0, 52]
+      ]);
+    });
+  });
+
+  it('keeps a bounded lane target through edge corrections and paced opposite flicks', async () => {
+    await withPage('native-touch-targets-edges', { viewport: { width: 390, height: 844 } }, async page => {
+      await expectLaneTargets(page, 'native-touch-target-edge-cases', [
+        [0, ['left', 'left', 'right'], 1, 0, 56], [2, ['right', 'right', 'left'], 1, 0, 60],
+        [1, ['left', 'right'], 1, 40, 64]
+      ]);
     });
   });
 
