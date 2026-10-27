@@ -28,13 +28,6 @@ Arrows/WASD or swipes move one lane, jump and slide. Optional 44px on-screen
 controls and deliberate pause/resume remain available. OS key repeats do not
 queue actions. The first 6 seconds teach controls without hazards. Speakers require
 sidestepping; crates can be jumped; low pipes require grounded slide or dodge.
-
-Each touch contact contributes at most one swipe. Fresh horizontal flicks update
-one desired lane, clamped to the three-lane track, so quick corrections survive
-the existing movement cooldown. Pending intent expires after 250 ms of active
-play and clears on interruptions. Contact ownership keeps a second finger or a
-reused pointer ID from cancelling an earlier valid flick.
-
 After 250 m occasional full-width crate/pipe rows require jump/slide, with recovery
 spacing proved at the capped 24 m/s speed. Ordinary rows have a reachable safe lane
 and optional risk/reward pick trails. Pickups are visual; audio is optional.
