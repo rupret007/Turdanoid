@@ -376,7 +376,7 @@ export function syncArcadeA11yMount(doc) {
   }
   if (toggle.parentElement !== bodySlot) {
     bodySlot.appendChild(toggle);
-    toggle.className = 'suite-arcade-a11y-toggle suite-arcade-a11y-toggle--floating';
+    toggle.className = 'suite-arcade-a11y-toggle suite-arcade-a11y-toggle--inline';
   }
   const pitSlot = doc.querySelector('.suite-a11y-pit-slot, .suite-a11y-table-dock-slot');
   if (pitSlot && pitSlot !== bodySlot && pitSlot.childElementCount === 0) {
