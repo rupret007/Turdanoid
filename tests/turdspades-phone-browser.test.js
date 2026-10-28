@@ -3,6 +3,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
+import { browserLaunchOptions } from './browser-options.js';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -43,7 +44,7 @@ beforeAll(async () => {
   });
   await new Promise((resolveServer) => server.listen(0, '127.0.0.1', resolveServer));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'chromium', headless: true });
+  browser = await chromium.launch(browserLaunchOptions());
   if (process.env.TURDSPADES_SCREENSHOTS === '1') {
     await mkdir(artifactDirectory, { recursive: true });
   }

@@ -8,6 +8,7 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 import { chromium } from 'playwright';
+import { browserLaunchOptions } from './browser-options.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { COLORBLIND_STORAGE_KEY } from '../games/suite-arcade-a11y.js';
@@ -102,11 +103,25 @@ const SIX_SUITE_GAMES = [
       });
       const start = page.locator('#startRoundBtn');
       if (await start.isVisible()) {
+        // The bot draws first and a random opening knock can end the round
+        // before interactive cards appear. Keep a live deal for layout checks.
+        await page.evaluate(() => {
+          let seed = 12345;
+          window.crypto.getRandomValues = (values) => {
+            for (let i = 0; i < values.length; i++) {
+              seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+              values[i] = seed;
+            }
+            return values;
+          };
+        });
         await start.click();
         // The color control must work on either turn. Bot-turn cards are
         // deliberately read-only divs; waiting for a human button can hang.
         await page.waitForSelector('#playerHand .card', { timeout: 15000 });
       }
+      expect(await page.locator('#playerHand .card-button').count()).toBe(10);
+      expect(await page.locator('#drawStockBtn').isEnabled()).toBe(true);
     }
   },
   {
@@ -126,7 +141,9 @@ let baseUrl;
 
 beforeAll(async () => {
   if (!hasBrowser) {
-    return;
+    throw new Error(
+      'Playwright Chromium is required. Run npx playwright install chromium or set PLAYWRIGHT_CHANNEL.'
+    );
   }
   const types = {
     '.html': 'text/html',
@@ -151,10 +168,7 @@ beforeAll(async () => {
   });
   await new Promise((resolveServer) => server.listen(0, '127.0.0.1', resolveServer));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
-  browser = await chromium.launch({
-    channel: process.env.PLAYWRIGHT_CHANNEL || 'chromium',
-    headless: true
-  });
+  browser = await chromium.launch(browserLaunchOptions());
 }, 30000);
 
 afterAll(async () => {
@@ -343,9 +357,6 @@ async function assertA11yToggleLayout(page, game) {
   }
 
   it('honors prefers-reduced-motion for ambient auto-scroll', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -369,9 +380,6 @@ async function assertA11yToggleLayout(page, game) {
   });
 
   it('fails overlap detection when the toggle is moved onto HUD chrome', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.setViewportSize({ width: 320, height: 568 });
@@ -407,9 +415,6 @@ async function assertA11yToggleLayout(page, game) {
   });
 
   it('keeps the colorblind toggle on-screen and clear of HUD controls (six games)', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     for (const game of SIX_SUITE_GAMES) {
       for (const viewport of VIEWPORTS) {
         const page = await browser.newPage();
@@ -429,9 +434,6 @@ async function assertA11yToggleLayout(page, game) {
   });
 
   it('freezes Turdanoid title parallax under prefers-reduced-motion', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -455,9 +457,6 @@ async function assertA11yToggleLayout(page, game) {
   });
 
   it('persists colorblind toggle across reload', async () => {
-    if (!hasBrowser) {
-      return;
-    }
     const page = await browser.newPage();
     try {
       await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
@@ -480,4 +479,70 @@ async function assertA11yToggleLayout(page, game) {
       await page.close();
     }
   });
+
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+    it(`Clr toggle clears title menu buttons on Turdanoid at ${viewport.width}x${viewport.height}`, async () => {
+      const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
+      try {
+        await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
+        await page.waitForSelector('#suite-arcade-a11y-toggle');
+        await page.waitForSelector('#titleScreen.show');
+        // The shared back pill replaces the inline Game Hub button.
+        await page.waitForSelector('.suite-back-pill');
+        await page.waitForSelector('#titleScreen #btnHub', { state: 'hidden' });
+        for (const id of ['btnBoss', 'btnHowTo']) {
+          await page.waitForSelector(`#titleScreen .menu-secondary #${id}`, { state: 'visible' });
+        }
+        const result = await page.evaluate(() => {
+          const overlap = (a, b) =>
+            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+          const box = (el) => {
+            if (!el) {
+              return null;
+            }
+            const style = getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+              return null;
+            }
+            const r = el.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) {
+              return null;
+            }
+            return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+          };
+          const inViewport = (rect) =>
+            Boolean(
+              rect &&
+              rect.left >= 0 &&
+              rect.top >= 0 &&
+              rect.right <= window.innerWidth &&
+              rect.bottom <= window.innerHeight
+            );
+          const toggle = document.getElementById('suite-arcade-a11y-toggle');
+          const toggleBox = box(toggle);
+          const menuBtns = document.querySelectorAll('#titleScreen .menu-secondary button');
+          const menuButtons = [];
+          const hits = [];
+          for (const btn of menuBtns) {
+            const btnBox = box(btn);
+            menuButtons.push({ id: btn.id, inViewport: inViewport(btnBox) });
+            if (toggleBox && btnBox && overlap(toggleBox, btnBox)) {
+              hits.push(btn.id || btn.textContent.trim());
+            }
+          }
+          return { toggleInViewport: inViewport(toggleBox), menuButtons, hits };
+        });
+        expect(result.toggleInViewport).toBe(true);
+        expect(result.menuButtons).toEqual([
+          { id: 'btnBoss', inViewport: true },
+          { id: 'btnHowTo', inViewport: true },
+          { id: 'btnHub', inViewport: false }
+        ]);
+        expect(result.hits).toEqual([]);
+      } finally {
+        await page.close();
+      }
+    });
+  }
 });

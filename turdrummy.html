@@ -1264,6 +1264,12 @@
       overflow: hidden;
     }
 
+    /* Keep the guide actions reachable on short phone screens. */
+    #guideOverlay .overlay-card {
+      max-height: 100%;
+      overflow-y: auto;
+    }
+
     .overlay.show .overlay-card {
       animation: suitePop 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both;
     }
