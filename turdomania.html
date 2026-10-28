@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mobile-game="turdomania">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -96,6 +96,8 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   .tile.popping { transform: var(--pos) !important; }
 }
 </style>
+<link rel="stylesheet" href="assets/mobile-fit.css">
+<script src="assets/mobile-fit.js" defer></script>
 </head>
 <body class="suite-ambient turdomania">
 <header class="hud">
@@ -123,6 +125,13 @@ body.reduced .tile.popping { transform: var(--pos) !important; }
   <div class="suite-hud-settings" id="suite-difficulty-mount"></div>
   <button type="button" id="undoBtn" aria-keyshortcuts="U">↶ Undo</button>
   <button type="button" id="newBtn" aria-keyshortcuts="N">🚽 New board</button>
+  <details class="tm-aim"><summary>Aim</summary><nav aria-label="Precise board controls">
+    <button type="button" data-board-key="ArrowLeft" aria-label="Aim left">←</button>
+    <button type="button" data-board-key="ArrowUp" aria-label="Aim up">↑</button>
+    <button type="button" data-board-key="ArrowDown" aria-label="Aim down">↓</button>
+    <button type="button" data-board-key="ArrowRight" aria-label="Aim right">→</button>
+    <button type="button" data-board-key="Enter">Pop</button>
+  </nav></details>
   <label class="sr-only" for="levelSel">Difficulty</label>
   <select id="levelSel" aria-label="Difficulty">
     <option value="easy">Squirt · 3 kinds</option>
@@ -141,11 +150,21 @@ window.tmView = function () {
   var w = Math.min(window.innerWidth || Infinity, de.clientWidth || Infinity);
   var h = Math.min(window.innerHeight || Infinity, de.clientHeight || Infinity);
   var compact = w <= 360 || h <= 600;
-  return { availW: Math.min(w, 760) - 36, availH: h - (compact ? 182 : 230) };
+  var mobile = w <= 980;
+  var landscape = w > h;
+  var strip = document.querySelector('.stalemate-strip');
+  var footer = strip ? strip.getBoundingClientRect().height : 0;
+  var hud = document.querySelector('header.hud');
+  var dock = document.querySelector('.dock');
+  var chrome = mobile ? (landscape ? 24 : (hud ? hud.offsetHeight : 64) + (dock ? dock.offsetHeight : 100) + 20) : (compact ? 182 : 230);
+  return { availW: Math.min(w - (mobile && landscape ? 210 : 0), 760) - 36, availH: h - chrome - footer };
 };
 window.tmFit = function (levelKey) {
   var d = TM_DIMS[levelKey] || TM_DIMS.normal;
-  var v = tmView(), availW = v.availW, availH = v.availH;
+  // Preserve the established board sizes; layout() fits this same board after rotation.
+  var w = Math.min(window.innerWidth, document.documentElement.clientWidth);
+  var h = Math.min(window.innerHeight, document.documentElement.clientHeight);
+  var availW = Math.min(w, 760) - 36, availH = h - (w <= 360 || h <= 600 ? 182 : 230);
   var fit = function (n, avail, floor) { return Math.max(Math.min(n, floor), Math.min(n, Math.floor(avail / 32))); };
   return { availW: availW, availH: availH, cols: fit(d[0], availW, 6), rows: fit(d[1], availH, 8) };
 };
@@ -421,6 +440,12 @@ document.addEventListener('keydown', (e) => {
   const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
   if (moves[k]) { e.preventDefault(); cursor.c += moves[k][0]; cursor.r += moves[k][1]; clampCursor(); paintCursor(); return; }
   if (k === 'Enter' || k === ' ') { e.preventDefault(); popAt(cursor.c, cursor.r); }
+});
+document.querySelectorAll('[data-board-key]').forEach(button => {
+  button.addEventListener('click', () => {
+    boardEl.focus({ preventScroll: true });
+    boardEl.dispatchEvent(new KeyboardEvent('keydown', { key: button.dataset.boardKey, bubbles: true }));
+  });
 });
 els.undo.addEventListener('click', doUndo);
 els.overUndo.addEventListener('click', doUndo);

@@ -9,7 +9,8 @@
     "lint": "eslint games/ tests/",
     "lint:fix": "eslint games/ tests/ --fix",
     "format": "prettier --write 'games/**/*.js' 'tests/**/*.js'",
-    "format:check": "prettier --check 'games/**/*.js' 'tests/**/*.js'"
+    "format:check": "prettier --check 'games/**/*.js' 'tests/**/*.js'",
+    "test:mobile": "node scripts/test-mobile-fit.cjs && node scripts/mobile-fit.cjs"
   },
   "devDependencies": {
     "eslint": "^10.1.0",
