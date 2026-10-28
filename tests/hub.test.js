@@ -19,7 +19,9 @@ const LIVE_GAMES = [
   'crapeights.html',
   'turdrummy.html',
   'turdspades.html',
-  'turdomania.html'
+  'turdomania.html',
+  'chess.html',
+  'turdrush.html'
 ];
 
 function bootHub(lastGame, url = 'http://localhost/', extras = {}) {
@@ -79,8 +81,8 @@ describe('six-game hub last-played mark', () => {
     });
   }
 
-  it('keeps the root door as seven live games without a Neon promo link', () => {
-    expect(hubHtml.match(/class="game-card"/g)).toHaveLength(7);
+  it('keeps the root door as nine live games without a Neon promo link', () => {
+    expect(hubHtml.match(/class="game-card"/g)).toHaveLength(9);
     for (const href of LIVE_GAMES) {
       expect(hubHtml).toContain(`href="${href}"`);
     }
@@ -122,13 +124,13 @@ describe('six-game hub last-played mark', () => {
   });
 
   it(
-    'marks the last opened live game without adding an eighth card',
+    'marks the last opened live game without adding a tenth card',
     () => {
       const dom = bootHub('turdspades.html');
       const cards = [...dom.window.document.querySelectorAll('.game-card')];
       const marked = cards.filter((card) => card.classList.contains('last-played'));
 
-      expect(cards).toHaveLength(7);
+      expect(cards).toHaveLength(9);
       expect(marked).toHaveLength(1);
       expect(marked[0].getAttribute('href')).toBe('turdspades.html');
       expect(marked[0].querySelector('.play')?.textContent).toContain('Play again');
@@ -161,7 +163,7 @@ describe('six-game hub last-played mark', () => {
 
   it('ignores malformed last-played data and Neon', () => {
     const junk = bootHub('not-a-game.html');
-    expect(junk.window.document.querySelectorAll('.game-card')).toHaveLength(7);
+    expect(junk.window.document.querySelectorAll('.game-card')).toHaveLength(9);
     expect(junk.window.document.querySelectorAll('.game-card.last-played')).toHaveLength(0);
 
     const neon = bootHub('neon-arkanoid.html');
@@ -183,7 +185,7 @@ describe('six-game hub continue mark', () => {
     const continuing = cards.filter((card) => card.classList.contains('in-progress'));
     const last = cards.filter((card) => card.classList.contains('last-played'));
 
-    expect(cards).toHaveLength(7);
+    expect(cards).toHaveLength(9);
     expect(continuing).toHaveLength(1);
     expect(continuing[0].getAttribute('href')).toBe('turdspades.html');
     expect(continuing[0].querySelector('.play')?.textContent).toContain('Continue');
@@ -257,7 +259,7 @@ describe('six-game hub continue mark', () => {
       }
     });
     expect(neon.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
-    expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(7);
+    expect(neon.window.document.querySelectorAll('.game-card')).toHaveLength(9);
   });
 
   it('refuses to remember Neon, a seventh game, or an unplayable snapshot from the suite API', () => {
@@ -330,7 +332,7 @@ describe('six-game hub masthead resume shortcut', () => {
     expect(link.getAttribute('aria-label')).toContain('TurdSpades');
     // The masthead still holds exactly one badge and the grid stays six cards.
     expect(dom.window.document.querySelectorAll('.hero-badge')).toHaveLength(1);
-    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(7);
+    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(9);
     expect(dom.window.document.querySelectorAll('a[href="neon-arkanoid.html"]')).toHaveLength(0);
   });
 

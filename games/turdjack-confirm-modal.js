@@ -140,9 +140,8 @@ export function createJackConfirmAsk(doc) {
       doc.addEventListener('keydown', onKeydown, true);
       acceptBtn.addEventListener('click', onAccept);
       declineBtn.addEventListener('click', onDecline);
-      // Focus before exposing the dialog to keyboard input. A delayed frame
-      // can otherwise move focus back after the player has already pressed Tab.
-      declineBtn.focus();
+      // Focus as soon as the modal is visible; a deferred frame can steal the first Tab.
+      declineBtn.focus({ preventScroll: true });
     });
   }
 

@@ -48,7 +48,9 @@ export function jackDeck(decks = 4) {
   return cards;
 }
 
-export function validSpadesSnapshot() {
+// Retain the old synthetic fixture as a negative regression: its turn and
+// remaining-card counts cannot describe a real Spades table.
+export function impossibleSpadesSnapshot() {
   const deck = spadeDeck();
   return {
     kind: 'turdspades',
@@ -73,6 +75,18 @@ export function validSpadesSnapshot() {
     summary: 'Race to 250.',
     lastRoundTone: 'neutral'
   };
+}
+
+export function validSpadesSnapshot() {
+  const snapshot = impossibleSpadesSnapshot();
+  const deck = spadeDeck();
+  // West won the first trick (four cards are no longer held). West, North and
+  // East have played in the second trick, and You now owe its fourth card.
+  snapshot.tricks = [0, 1, 0, 0];
+  snapshot.hands = [deck.slice(4, 16), deck.slice(16, 27), deck.slice(27, 38), deck.slice(38, 49)];
+  snapshot.trick = [1, 2, 3].map((player, index) => ({ player, card: deck[49 + index] }));
+  snapshot.selected = snapshot.hands[0][0].id;
+  return snapshot;
 }
 
 export function validRummySnapshot() {

@@ -5,6 +5,7 @@
 export const MUTE_STORAGE_KEY = 'turdsuite_muted';
 export const MUSIC_PREF_KEY = 'stalemate.music';
 export const TRACK_INDEX_KEY = 'turdsuite_music_track_v1';
+export const PLAYBACK_KEY = 'turdsuite_music_playback_v1';
 
 const LEGACY_MUSIC_OFF = [
   ['turdtrisMusic_v1', (v) => v === '0']
@@ -59,8 +60,8 @@ export const STALEMATE_TRACK_ONLY_BEEN_18_TITLE = 'It\u2019s Only Been 18';
 
 export const STALEMATE_PLAYLIST = [
   { path: 'stalemate/manic.m4a', title: 'Manic' },
-  { path: 'stalemate/andrea.m4a', title: 'Andrea' },
-  { path: 'stalemate/only-been-18.m4a', title: STALEMATE_TRACK_ONLY_BEEN_18_TITLE },
+  { path: 'stalemate/andrea.m4a', title: 'Andrea', listenUrl: 'https://music.apple.com/us/album/andrea/1718463871?i=1718463872' },
+  { path: 'stalemate/only-been-18.m4a', title: STALEMATE_TRACK_ONLY_BEEN_18_TITLE, listenUrl: 'https://music.apple.com/us/album/its-been-only-18/1718464113?i=1718464114' },
   { path: 'stalemate/wham-bam.m4a', title: 'Wham Bam' },
   { path: 'stalemate/planet-of-the-flakes.m4a', title: 'Planet of the Flakes' }
 ];
@@ -96,7 +97,7 @@ export function readTrackIndex(storage, length) {
  * @param {(path: string) => string} opts.resolveSrc
  * @param {Storage|null} [opts.storage]
  * @param {typeof Audio} [opts.AudioCtor]
- * @param {(state: { paused: boolean, title: string }) => void} [opts.onStateChange]
+ * @param {(state: { paused: boolean, title: string, listenUrl: string, index: number, status: string, canRetry: boolean }) => void} [opts.onStateChange]
  */
 export function createSuiteMusic(opts) {
   const playlist = opts.playlist || STALEMATE_PLAYLIST;
@@ -116,6 +117,36 @@ export function createSuiteMusic(opts) {
 
   let armed = false;
   let index = readTrackIndex(storage, playlist.length);
+  let pendingResume = 0;
+  let lastSavedSecond = -1;
+  let phase = 'paused';
+  let failure = '';
+  let generation = 0;
+  let pendingPlay = 0;
+  let observedTime = 0;
+  let seeking = false;
+  try {
+    const saved = JSON.parse(storage?.getItem(PLAYBACK_KEY) || 'null');
+    if (saved?.v === 1 && saved.track === playlist[index]?.path && Number.isFinite(saved.seconds)
+        && saved.seconds >= 0 && saved.seconds < 86400) pendingResume = saved.seconds;
+  } catch { /* Storage is optional; malformed saves start at the track beginning. */ }
+
+  function savePosition() {
+    if (pendingResume > 0) return; // An unarmed/new page must not erase its pending seek.
+    const seconds = Number(audio.currentTime);
+    if (!Number.isFinite(seconds) || seconds < 0) return;
+    try { storage?.setItem(PLAYBACK_KEY, JSON.stringify({ v: 1, track: playlist[index]?.path, seconds })); }
+    catch { /* Music keeps working when storage is denied or full. */ }
+    lastSavedSecond = Math.floor(seconds);
+  }
+
+  function restorePosition() {
+    if (!pendingResume || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+    const seconds = pendingResume < audio.duration - 1 ? pendingResume : 0;
+    try { audio.currentTime = seconds; pendingResume = 0; }
+    catch { return; } // Some media engines cannot seek until metadata/data is ready.
+    savePosition();
+  }
 
   function blocked() {
     return !!isSuiteMuted() || !!isGameBlocked() || !!isDocumentHidden();
@@ -127,14 +158,27 @@ export function createSuiteMusic(opts) {
 
   function publishState() {
     const track = currentTrack();
+    const status = !armed || blocked() ? 'paused' : failure || phase;
     onStateChange({
-      paused: blocked() || audio.paused,
-      title: track ? track.title : ''
+      paused: status !== 'playing',
+      status,
+      canRetry: !!failure && armed && !blocked(),
+      index,
+      title: track ? track.title : '',
+      listenUrl: track ? track.listenUrl || '' : ''
     });
   }
 
-  function loadIndex(nextIndex) {
+  function loadIndex(nextIndex, resume = 0) {
+    generation += 1;
+    pendingPlay = 0;
+    observedTime = 0;
+    seeking = false;
+    failure = '';
+    phase = 'paused';
+    pendingResume = resume;
     index = nextIndex;
+    lastSavedSecond = -1;
     try {
       if (storage) storage.setItem(TRACK_INDEX_KEY, String(index));
     } catch {
@@ -144,44 +188,117 @@ export function createSuiteMusic(opts) {
     if (track) {
       audio.src = resolveSrc(track.path);
     }
+    if (!resume) savePosition();
   }
 
-  function onEnded() {
-    const next = advanceTrackIndex(index, playlist.length);
-    loadIndex(next);
-    if (armed && !blocked()) {
-      const p = audio.play();
-      if (p && typeof p.then === 'function') {
-        p.then(publishState, publishState);
-      } else {
-        publishState();
-      }
-    } else {
+  function failed(error) {
+    failure = error?.name === 'NotAllowedError' ? 'blocked' : 'error';
+    phase = 'paused';
+    generation += 1;
+    pendingPlay = 0;
+    audio.pause();
+    publishState();
+  }
+
+  function play() {
+    // Turning music on can sync both the preference and the gesture. Keep the
+    // original request (and its playing event) instead of resetting it twice.
+    if (pendingPlay || (!audio.paused && phase === 'playing')) {
       publishState();
+      return;
+    }
+    const request = ++generation;
+    pendingPlay = request;
+    phase = 'loading';
+    publishState();
+    try {
+      Promise.resolve(audio.play()).then(() => {
+        if (request !== generation) return;
+        pendingPlay = 0;
+        if (blocked() || audio.paused || failure) return;
+        phase = 'playing';
+        publishState();
+      }, error => {
+        if (request !== generation) return;
+        pendingPlay = 0;
+        if (!blocked()) failed(error);
+      });
+    } catch (error) {
+      if (request === generation && !blocked()) failed(error);
     }
   }
 
-  audio.addEventListener('play', publishState);
-  audio.addEventListener('pause', publishState);
+  function onEnded() {
+    loadIndex(advanceTrackIndex(index, playlist.length));
+    sync();
+  }
+
+  audio.addEventListener('playing', () => {
+    if (failure || blocked() || !armed) return;
+    observedTime = Number(audio.currentTime);
+    phase = 'playing'; publishState();
+  });
+  for (const event of ['waiting', 'stalled']) audio.addEventListener(event, () => {
+    if (failure || blocked() || !armed) return;
+    // A stalled network fetch does not stop playback of already buffered data.
+    if (event === 'stalled' && Number(audio.readyState) >= 3 && !audio.paused) return;
+    observedTime = Number(audio.currentTime);
+    phase = 'loading'; publishState();
+  });
+  audio.addEventListener('error', () => { if (audio.error) failed(audio.error); });
+  audio.addEventListener('pause', () => { phase = 'paused'; savePosition(); publishState(); });
+  audio.addEventListener('loadedmetadata', restorePosition);
+  audio.addEventListener('canplay', restorePosition);
+  audio.addEventListener('seeking', () => { seeking = true; });
+  audio.addEventListener('seeked', () => {
+    seeking = false;
+    observedTime = Number(audio.currentTime);
+  });
+  audio.addEventListener('timeupdate', () => {
+    restorePosition();
+    const seconds = Number(audio.currentTime);
+    // WebKit can emit waiting after a restored seek while decoded audio keeps
+    // advancing, without another playing event. A completed seek alone is not
+    // progress; require a later advancing sample with every playback gate open.
+    if (phase === 'loading' && armed && !failure && !blocked() && !audio.paused
+        && !seeking && !audio.seeking && seconds > observedTime) {
+      phase = 'playing';
+      publishState();
+    }
+    observedTime = seconds;
+    if (Math.abs(Math.floor(audio.currentTime) - lastSavedSecond) >= 5) savePosition();
+  });
   audio.addEventListener('ended', onEnded);
 
-  loadIndex(index);
+  loadIndex(index, pendingResume);
 
   function sync() {
     if (!armed || blocked()) {
+      generation += 1;
+      pendingPlay = 0;
       audio.pause();
       publishState();
       return;
     }
-    const p = audio.play();
-    if (p && typeof p.then === 'function') {
-      p.then(publishState, publishState);
-    } else {
+    // Game/visibility changes must not create an unbounded retry loop.
+    if (failure) {
       publishState();
+      return;
     }
+    play();
   }
 
   return {
+    get tracks() { return playlist.map((track, trackIndex) => ({ index: trackIndex, title: track.title })); },
+    savePosition,
+    nextTrack() { this.playTrackAt(advanceTrackIndex(index, playlist.length)); },
+    retryTrack() {
+      if (!failure || !armed || blocked()) return;
+      const resume = pendingResume || Number(audio.currentTime) || 0;
+      loadIndex(index, resume);
+      if (typeof audio.load === 'function') audio.load();
+      sync();
+    },
     get armed() {
       return armed;
     },
@@ -195,7 +312,7 @@ export function createSuiteMusic(opts) {
       return audio;
     },
     isPlaying() {
-      return armed && !blocked() && !audio.paused;
+      return armed && !blocked() && !audio.paused && !failure;
     },
     armFromGesture() {
       if (armed) {
@@ -215,6 +332,8 @@ export function createSuiteMusic(opts) {
     },
     sync,
     pause() {
+      generation += 1;
+      pendingPlay = 0;
       audio.pause();
       publishState();
     },

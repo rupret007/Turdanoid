@@ -213,7 +213,7 @@ function resumeEdges() {
             'balanced space above and below the hub'
           ).toBeLessThanOrEqual(2);
           const layout = await page.evaluate(measureHub, true);
-          expect(layout.cards).toHaveLength(7);
+          expect(layout.cards).toHaveLength(9);
           expect(layout.offFirst).toEqual([]);
           expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         } finally {
@@ -277,12 +277,12 @@ function resumeEdges() {
   });
 
   for (const viewport of PORTRAIT) {
-    it(`fits all seven returning-player rows in the first screen at ${viewport.width}×${viewport.height}`, async () => {
+    it(`fits all nine returning-player rows in the first screen at ${viewport.width}×${viewport.height}`, async () => {
       const page = await browser.newPage({ viewport });
       try {
         await openHub(page, true);
         const layout = await page.evaluate(measureHub, true);
-        expect(layout.cards).toHaveLength(7);
+        expect(layout.cards).toHaveLength(9);
         expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         expect(layout.clipped).toEqual([]);
         expect(layout.offFirst).toEqual([]);
@@ -317,7 +317,7 @@ function resumeEdges() {
       try {
         await openHub(page, true);
         const layout = await page.evaluate(measureHub, false);
-        expect(layout.cards).toHaveLength(7);
+        expect(layout.cards).toHaveLength(9);
         expect(layout.scrollWidth).toBeLessThanOrEqual(viewport.width);
         expect(layout.clipped).toEqual([]);
         expect(layout.overlaps).toEqual([]);

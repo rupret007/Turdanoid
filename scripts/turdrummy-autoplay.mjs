@@ -230,6 +230,8 @@ function createHarness({ browser, base, opts, cfg, name, outDir, report }) {
   async function press(selector, tag) {
     const locator = page.locator(selector).first();
     try {
+      const closedMenu = locator.locator('xpath=ancestor::details[not(@open)][1]/summary');
+      if (await closedMenu.count()) await tap(closedMenu);
       await tap(locator);
     } catch (error) {
       found('click-blocked', `${tag} (${selector}) could not be tapped: ${String(error.message).split('\n')[0]}`);
@@ -265,6 +267,9 @@ function createHarness({ browser, base, opts, cfg, name, outDir, report }) {
       for (const s of sel) {
         for (const node of document.querySelectorAll(s)) {
           if (node.closest('[hidden]') || node.offsetParent === null) continue;
+          // Chromium can return layout boxes for descendants of closed details.
+          // They are not rendered controls; the opened menu is audited separately.
+          if (node.checkVisibility && !node.checkVisibility({ checkVisibilityCSS: true })) continue;
           const r = node.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) continue;
           if (r.left < -1 || r.right > vw + 1) out.push(`${s} ${node.id || node.dataset.cardId || ''} x ${Math.round(r.left)}..${Math.round(r.right)} of ${vw}`);
@@ -498,6 +503,19 @@ async function runPointScenario(browser, name, base, opts, report, outDir) {
   await harness.checkLayout('start');
   const { rounds } = await harness.play({ label: name });
   await harness.checkLayout('end');
+  const finished = await page.evaluate(READ_STATE);
+  let replayStarted = false;
+  if (opts.match && !finished.matchOver) harness.found('incomplete-match', 'action limit reached before a complete match');
+  if (opts.match && finished.matchOver) {
+    for (let index = 0; index < 4; index += 1) {
+      await page.keyboard.press(index % 2 ? 'Shift+Tab' : 'Tab');
+      const contained = await page.evaluate(() => document.getElementById('trophyOverlay').contains(document.activeElement));
+      if (!contained) harness.found('trophy-focus', 'keyboard focus left the match trophy');
+    }
+    await harness.press('#trophyRematchBtn', 'rematch');
+    replayStarted = await page.waitForFunction(() => state.round === 1 && !state.matchOver && state.playerScore === 0 && state.aiScore === 0, null, { timeout: 5000 }).then(() => true, () => false);
+    if (!replayStarted) harness.found('replay', 'Rematch did not start a fresh match');
+  }
   const flights = await page.evaluate(() => window.__flights || 0);
   const canvases = await page.evaluate(() => document.querySelectorAll('canvas').length);
   if (cfg.reducedMotion && (flights > 0 || canvases > 0)) {
@@ -509,6 +527,10 @@ async function runPointScenario(browser, name, base, opts, report, outDir) {
     reducedMotion: cfg.reducedMotion || 'no-preference',
     actions: harness.actions,
     rounds,
+    roundOver: finished.roundOver,
+    matchComplete: finished.matchOver,
+    finalScores: [finished.playerScore, finished.aiScore],
+    replayStarted,
     dialogs: harness.dialogs,
     flights,
     botLatencyMs: summarize(harness.botLatency),

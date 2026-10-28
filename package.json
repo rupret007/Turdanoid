@@ -9,13 +9,15 @@
     "lint": "eslint games/ tests/",
     "lint:fix": "eslint games/ tests/ --fix",
     "format": "prettier --write 'games/**/*.js' 'tests/**/*.js'",
-    "format:check": "prettier --check 'games/**/*.js' 'tests/**/*.js'"
+    "format:check": "prettier --check 'games/**/*.js' 'tests/**/*.js'",
+    "test:mobile": "node scripts/test-mobile-fit.cjs && node scripts/mobile-fit.cjs"
   },
   "devDependencies": {
     "eslint": "^10.1.0",
     "jsdom": "29.0.1",
     "playwright": "^1.49.1",
     "prettier": "^3.4.2",
-    "vitest": "^4.1.11"
+    "rolldown": "1.2.15",
+    "vitest": "^4.1.12"
   }
 }

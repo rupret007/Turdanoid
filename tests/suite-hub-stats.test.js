@@ -40,6 +40,14 @@ describe('suite-hub-stats', () => {
     expect(readHubStatBadge(getItem, 'turdspades.html')?.text).toBe('1 match win');
   });
 
+  it('reads only finite completed runner bests from the existing shared progress store', () => {
+    const getItem = key => key === 'arcade_progress_v1' ? JSON.stringify({ version: 1, bests: { 'turdrush|endless|standard': [{ value: 1234 }, { value: 999 }] } }) : null;
+    expect(readHubStatBadge(getItem, 'turdrush.html')?.text).toBe('Best 1,234');
+    expect(readHubStatBadge(() => '{broken', 'turdrush.html')).toBeNull();
+    expect(readHubStatBadge(() => JSON.stringify({ version: 2, bests: { 'turdrush|endless|standard': [{ value: 1234 }] } }), 'turdrush.html')).toBeNull();
+    expect(readHubStatBadge(() => JSON.stringify({ version: 1, bests: { 'turdrush|endless|standard': [{ value: -1 }, { value: '99999' }] } }), 'turdrush.html')).toBeNull();
+  });
+
   it('reads Crapjack bankroll and Eights wins', () => {
     const store = {
       turdjackBankroll: '250',
@@ -59,6 +67,18 @@ describe('suite-hub-stats', () => {
     decorateHubStatBadges(doc, {
       getItem: (k) => (k === 'turdtrisHighScore' ? '9001' : null)
     });
-    expect(doc.querySelector('.suite-hub-stat')?.textContent).toBe('Best 9,001');
+    expect(doc.querySelector('.suite-hub-stat')?.textContent).toBe('Classic best 9,001');
+    expect(doc.querySelector('.suite-hub-stat').hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('keeps separate mode and difficulty records visible without altering their storage', () => {
+    const records = {
+      turdtrisHighScore: '1234567', turdtrisSprint40BestMs_v1: '61234', turdtrisUltra120Best_v1: '98765',
+      turdomania_best_v1: JSON.stringify({ v: 1, best: { easy: 7777, normal: 123456, hard: 99 } })
+    };
+    const read = key => records[key] ?? null;
+    expect(readHubStatBadge(read, 'turdtris.html').text).toBe('Classic best 1,234,567 · Sprint best 1:01.2 · Ultra best 98,765');
+    expect(readHubStatBadge(read, 'turdomania.html').text).toBe('Easy best 7,777 · Normal best 123,456 · Hard best 99');
+    expect(JSON.parse(records.turdomania_best_v1).best.normal).toBe(123456);
   });
 });

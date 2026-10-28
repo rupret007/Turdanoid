@@ -40,6 +40,18 @@ afterEach(() => {
 });
 
 describe('Crapjack b3821b4 continue snapshot', () => {
+  it('preserves an optional dealer-in-flight marker without rejecting legacy saves', () => {
+    const dom = bootPage();
+    const legacy = validJackSnapshot();
+    expect(rememberContinue(dom.localStorage, 'turdjack.html', legacy)).toBe(true);
+    expect(loadContinue(dom.localStorage, 'turdjack.html').dealerResolving).toBeUndefined();
+    const inFlight = { ...legacy, dealerResolving: true, firstDecisionOpen: false };
+    expect(rememberContinue(dom.localStorage, 'turdjack.html', inFlight)).toBe(true);
+    expect(loadContinue(dom.localStorage, 'turdjack.html').dealerResolving).toBe(true);
+    expect(rememberContinue(dom.localStorage, 'turdjack.html', { ...inFlight, dealerResolving: 'true' })).toBe(false);
+    expect(rememberContinue(dom.localStorage, 'turdjack.html', { ...inFlight, firstDecisionOpen: true })).toBe(false);
+  });
+
   it(
     'restores validJackSnapshot through tryRestoreTable with no stats key drift',
     { timeout: PAGE_BOOT_TIMEOUT },

@@ -92,7 +92,7 @@ describe('suite facade storage failures', () => {
     expect(() => dom.window.Suite.table.list()).not.toThrow();
     expect(dom.window.Suite.table.list()).toEqual([]);
     expect(dom.window.Suite.guide.hasSeen('turdspades.html')).toBe(false);
-    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(7);
+    expect(dom.window.document.querySelectorAll('.game-card')).toHaveLength(9);
     expect(dom.window.document.querySelectorAll('.game-card.in-progress')).toHaveLength(0);
     expect(dom.window.document.querySelector('.hero-resume')).toBeNull();
   });

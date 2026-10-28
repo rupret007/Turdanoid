@@ -1,6 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mobile-game="turdanoid">
 <head>
+<script src="assets/suite-loading.js"></script>
+<script src="games/suite-progress-core.js"></script>
+<script src="assets/suite-progress.js"></script>
+<script src="assets/suite-share.js"></script>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,8 +14,10 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <title>Turdanoid — Bricks. Busted.</title>
 <link rel="stylesheet" href="assets/turdsuite.css">
+<link rel="stylesheet" href="assets/arcade.css">
+<link rel="stylesheet" href="assets/suite-progress.css">
 <style>
-  :root{
+  body{
     --bg-a:var(--ta-ink, #0a1820); --bg-b:var(--ta-ink-mid, #123040); --bg-c:#1a3a34;
     --ink:var(--ta-ink-text, #eaf6f0); --accent:var(--ta-slime, #3ecf9a); --hot:var(--ta-coral, #ff6d5a); --gold:var(--ta-brass, #e8c56a);
     --pink:var(--ta-rose, #d878a8); --violet:var(--ta-indigo, #8a82d8); --aqua:var(--ta-aqua, #5ec8e0);
@@ -49,8 +55,8 @@
   #stage.layout-wide #powers .chip{font-size:10px;min-width:0;width:100%}
 
   /* HUD — glass chips so the numbers read over any wall */
-  .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.02em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.75);gap:8px}
-  .hud .col{display:flex;flex-direction:column;gap:1px;padding:7px 12px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.16),0 10px 24px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);min-width:74px}
+  .hud{position:absolute;left:10px;right:10px;top:max(10px,calc(var(--safe-top) + 6px));z-index:4;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-weight:700;letter-spacing:.02em;text-transform:uppercase;font-size:clamp(11px,2.6vw,14px);text-shadow:0 2px 8px rgba(0,0,0,.75);gap:8px}
+  .hud .col{display:flex;flex-direction:column;gap:1px;padding:7px 12px 8px;border-radius:14px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.16),0 10px 24px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);min-width:74px;pointer-events:auto}
   .hud .lbl{font-size:.72em;color:var(--ta-muted,#9ab4aa);opacity:1;letter-spacing:.08em}
   .hud .val{font-size:1.45em;color:var(--accent);text-shadow:0 0 16px rgba(62,207,154,.4),0 2px 6px rgba(0,0,0,.75);font-variant-numeric:tabular-nums}
   .hud .right{text-align:right;margin-right:0}
@@ -78,7 +84,7 @@
   #hype .hype-title{letter-spacing:.02em;color:var(--ink);white-space:nowrap}
 
   /* Power chips */
-  #powers{position:absolute;left:8px;right:8px;bottom:max(120px,calc(var(--safe-bot) + 110px));display:flex;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:none}
+  #powers{position:absolute;left:8px;right:8px;bottom:var(--powers-bottom,max(120px,calc(var(--safe-bot) + 110px)));display:flex;flex-wrap:wrap;justify-content:center;gap:6px;pointer-events:none}
   .chip{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);color:var(--ink);padding:5px 10px 6px;border-radius:999px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 6px 14px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);animation:chipIn .3s cubic-bezier(.2,1.5,.4,1) both;display:inline-flex;flex-direction:column;align-items:center;gap:4px;min-width:64px}
   .chip .chip-bar{width:100%;height:3px;border-radius:99px;background:rgba(0,0,0,.35);overflow:hidden}
   .chip .chip-bar span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .12s linear}
@@ -117,10 +123,10 @@
   .overlay.show > *:nth-child(7){animation-delay:.4s}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   @keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  .overlay h1{font-size:clamp(36px,9vw,56px);letter-spacing:-.03em;margin-bottom:6px;line-height:.92;font-weight:800;
+  .overlay h2{font-size:clamp(36px,9vw,56px);letter-spacing:-.03em;margin-bottom:6px;line-height:.92;font-weight:800;
     background:linear-gradient(180deg,#fff8d8 0%,var(--gold) 42%,#c88820 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 28px rgba(255,215,106,.5)) drop-shadow(0 6px 0 rgba(70,40,0,.55)) drop-shadow(0 16px 28px rgba(0,0,0,.7))}
-  .overlay h1 .sub{display:block;font-size:.34em;letter-spacing:.12em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.45);filter:none}
+  .overlay h2 .sub{display:block;font-size:.34em;letter-spacing:.12em;margin-top:10px;background:none;-webkit-text-fill-color:var(--accent);color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.45);filter:none}
   .title-kicker{margin:0 0 8px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);text-shadow:0 0 12px rgba(62,207,154,.35)}
   .title-kicker::before,.title-kicker::after{content:"";display:inline-block;width:28px;height:1px;margin:0 10px 4px;vertical-align:middle;background:linear-gradient(90deg,transparent,var(--ta-brass,#e8c56a),transparent)}
   .title-deck{max-width:22ch !important;font-size:clamp(16px,4vw,20px) !important;line-height:1.35 !important;font-weight:600;letter-spacing:0}
@@ -135,9 +141,9 @@
   #playShell:has(#endScreen.show) .topbtns,
   #playShell:has(#clearTally.show) .topbtns,
   #playShell:has(#howScreen.show) .topbtns{visibility:hidden}
-  #titleScreen h1{position:relative}
-  #titleScreen h1::after{content:"";display:block;width:76px;height:3px;margin:12px auto 0;border-radius:99px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-  #titleScreen.show h1{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) both, titleBob 3.6s ease-in-out .5s infinite}
+  #titleScreen h2{position:relative}
+  #titleScreen h2::after{content:"";display:block;width:76px;height:3px;margin:12px auto 0;border-radius:99px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  #titleScreen.show h2{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) both, titleBob 3.6s ease-in-out .5s infinite}
   #titleScreen.show #btnStart{animation:riseIn .48s cubic-bezier(.2,1.15,.3,1) .22s both, ctaPulse 2.4s ease-in-out .8s infinite}
   @keyframes titleBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
   @keyframes ctaPulse{0%,100%{box-shadow:0 12px 28px rgba(232,197,106,.32),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}50%{box-shadow:0 16px 42px rgba(232,197,106,.55),inset 0 -3px 0 rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)}}
@@ -159,7 +165,7 @@
   #endScreen.show .stat:nth-child(6){animation-delay:.25s}
   @keyframes statIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
   #clearTally.tally-overlay{background:linear-gradient(180deg,rgba(6,16,24,.28),rgba(4,12,16,.94));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-  #clearTally h1{font-size:clamp(28px,8vw,48px);margin-bottom:12px}
+  #clearTally h2{font-size:clamp(28px,8vw,48px);margin-bottom:12px}
   .tally-card{width:min(340px,92vw);padding:8px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1)}
   #tallyLines{display:flex;flex-direction:column;gap:8px;min-width:0;text-align:left}
   .tally-line{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:12px;background:rgba(6,16,22,.35);border:1px solid rgba(232,197,106,.12);font-weight:700;letter-spacing:.03em}
@@ -171,6 +177,13 @@
   #endScreen.is-loss{background:linear-gradient(180deg,rgba(255,90,72,.3) 0%,rgba(28,8,12,.92) 48%,rgba(4,10,12,.97) 100%)}
   #endScreen.is-loss .result-kicker{color:var(--hot)}
   #endScreen.is-win .result-kicker{color:var(--gold)}
+  /* Completed progress and sharing remain reachable on shorter screens. */
+  #endScreen{overflow-y:auto;overscroll-behavior:contain;justify-content:flex-start;scroll-padding-top:60px}
+  #endScreen > *{flex-shrink:0}
+  #endScreen > :first-child{margin-top:auto}
+  #endScreen > :last-child{margin-bottom:auto}
+  #endScreen .suite-result-share-actions :is(button,a){margin:0;min-height:44px;padding:8px 12px;font-size:14px;line-height:1.2;letter-spacing:0}
+  @media(max-width:980px){#endScreen{padding-top:60px}}
   .how-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(420px,92vw);margin:8px 0 4px;text-align:left}
   .how-card{padding:12px 12px 10px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 22px rgba(0,0,0,.3)}
   .how-card h3{margin:0 0 4px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
@@ -182,8 +195,12 @@
   .menu-secondary button:hover{border-color:var(--ta-brass,#e8c56a)}
 
   /* Mobile launch button */
-  #mobileLaunch{position:absolute;left:50%;bottom:max(20px,calc(var(--safe-bot) + 14px));transform:translateX(-50%);padding:12px 28px;font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,#ffe9a8,#ffd76a 45%,#f1a83b);color:#3a1d00;border:0;border-radius:999px;box-shadow:0 8px 20px rgba(241,168,59,.45),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(0,0,0,.15);display:none;z-index:6;font-family:inherit}
+  #mobileLaunch{position:absolute;left:50%;bottom:max(88px,calc(var(--safe-bot) + 82px));transform:translateX(-50%);padding:12px 28px;font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(180deg,#ffe9a8,#ffd76a 45%,#f1a83b);color:#3a1d00;border:0;border-radius:999px;box-shadow:0 8px 20px rgba(241,168,59,.45),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(0,0,0,.15);display:none;z-index:6;font-family:inherit}
   #mobileLaunch.show{display:block;animation:pulse 1.4s infinite ease-in-out}
+  body.arcade #mobileLaunch{width:max-content;max-width:calc(100% - 24px);white-space:nowrap;font-size:clamp(14px,4vw,18px)}
+  /* Keep both the caught ball/paddle and the first-play hint unobstructed. */
+  #arcHint{bottom:max(156px,calc(var(--safe-bot) + 150px))}
+  #playShell:has(#mobileLaunch.show){--powers-bottom:max(152px,calc(var(--safe-bot) + 146px))}
   @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}
 
   /* Toast for power-up pickups */
@@ -195,7 +212,7 @@
     .hud .col{padding:4px 9px 5px;min-width:0}
   }
   @media (max-width:520px){
-    .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:max(10px,calc(env(safe-area-inset-right, 0px) + 4px));padding:4px 2px 5px;border-radius:16px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.26),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0;align-items:stretch}
+    .hud{left:max(10px, calc(env(safe-area-inset-left, 0px) + 68px));right:max(10px,calc(env(safe-area-inset-right, 0px) + 98px));padding:4px 2px 5px;border-radius:16px;background:linear-gradient(180deg,rgba(255,248,220,.12),rgba(255,255,255,.02)),var(--panel);border:1px solid var(--panel-border);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 0 1px rgba(232,197,106,.26),0 10px 22px rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);gap:0;align-items:stretch}
     .hud .right{margin-right:0px;text-align:center}
     .hud .center{margin-right:0px;text-align:center}
     .hud .col{padding:3px 7px 4px;min-width:0;flex:1 1 0;align-items:center;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:0}
@@ -213,7 +230,7 @@
     .topbtns{gap:4px}
     .iconbtn{width:44px;height:44px;font-size:16px}
     .overlay{padding:18px 14px}
-    .overlay h1{font-size:clamp(32px,10vw,64px)}
+    .overlay h2{font-size:clamp(32px,10vw,64px)}
     .overlay button{padding:13px 22px;font-size:16px}
     .how-grid{gap:8px}
     .how-card p{font-size:12px}
@@ -225,7 +242,7 @@
     .life-pip{width:9px;height:11px}
   }
   @media (prefers-reduced-motion:reduce){
-    #titleScreen h1,#titleScreen.show h1,#titleScreen.show #btnStart,#mobileLaunch.show,.chip,.hud .col.critical,
+    #titleScreen h2,#titleScreen.show h2,#titleScreen.show #btnStart,#mobileLaunch.show,.chip,.hud .col.critical,
     .overlay,.overlay.show,.overlay.show > *,
     #combo,#hype,#toast,.hud .val.bump,#endScreen.show .stat{animation:none;transition:none}
   }
@@ -237,9 +254,12 @@
   #coachCard button{padding:12px 28px;font-size:15px;font-weight:800}
   #coachStep{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.65;margin-bottom:6px}
 </style>
+<link rel="stylesheet" href="assets/mobile-fit.css">
+<script src="assets/mobile-fit.js" defer></script>
 </head>
-<body data-suite-no-bg="1">
-<div id="app">
+<body class="arcade" data-arcade-game="turdanoid" data-suite-no-bg="1">
+<div id="app" role="main">
+<h1 class="suite-game-heading">Turdanoid</h1>
   <div id="announcer" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="stage">
     <aside id="sideLeft" class="side-gutter" aria-hidden="true">
@@ -271,6 +291,7 @@
     <div id="hype"></div>
     <div id="powers"></div>
     <div id="toast"></div>
+    <div class="arc-hint" id="arcHint" hidden aria-hidden="true">Drag to move · tap to launch</div>
     <button id="mobileLaunch">TAP TO LAUNCH 💩</button>
     <div id="coachOverlay" role="dialog" aria-labelledby="coachTitle" aria-modal="true">
       <div id="coachCard">
@@ -284,7 +305,7 @@
     <!-- Title screen -->
     <div class="overlay show title-poster" id="titleScreen">
       <p class="title-kicker">Midnight Porcelain Arcade</p>
-      <h1>Turdanoid</h1>
+      <h2>Turdanoid</h2>
       <p class="title-deck">Smash the wall. Catch the weird stuff. Don't get flushed.</p>
       <div class="helprow">
         <span>Drag to move</span>
@@ -292,10 +313,10 @@
         <span>← → Space</span>
       </div>
       <div class="suite-hud-settings title-difficulty-wrap" id="suite-difficulty-mount"></div>
-      <button id="btnStart">START FLUSHING</button>
+      <button id="btnStart" disabled>Loading game…</button>
       <div class="menu-secondary">
-        <button id="btnBoss" type="button">Boss Flush</button>
-        <button id="btnHowTo">How To Play</button>
+        <button id="btnBoss" type="button" disabled>Boss Flush</button>
+        <button id="btnHowTo" disabled>How To Play</button>
         <button id="btnHub" onclick="location.href='./'">Game Hub</button>
       </div>
       <p class="quip" id="titleQuip"></p>
@@ -303,7 +324,7 @@
 
     <!-- Pause -->
     <div class="overlay" id="pauseScreen" inert>
-      <h1>Paused<span class="sub">take a breather</span></h1>
+      <h2>Paused<span class="sub">take a breather</span></h2>
       <p>The stink waits for no one. Or does it? It does, but only because you paused.</p>
       <div class="helprow">
         <span>←/→ or drag — move seat</span>
@@ -319,7 +340,7 @@
     <!-- How to play -->
     <div class="overlay" id="howScreen" inert>
       <p class="title-kicker">House rules</p>
-      <h1>How To Play<span class="sub">brick breaker, but worse</span></h1>
+      <h2>How To Play<span class="sub">brick breaker, but worse</span></h2>
       <div class="how-grid">
         <article class="how-card"><h3>Move</h3><p>Drag or ← →. Tap or Space to launch and fire.</p></article>
         <article class="how-card"><h3>Break</h3><p>Bounce the turd. Clear the wall. Combos multiply score.</p></article>
@@ -331,7 +352,7 @@
 
     <div class="overlay tally-overlay" id="clearTally" role="dialog" aria-labelledby="clearTallyTitle" aria-modal="true" tabindex="-1" inert>
       <p class="title-kicker">Stage bonus</p>
-      <h1 id="clearTallyTitle">Level clear</h1>
+      <h2 id="clearTallyTitle">Level clear</h2>
       <div class="tally-card">
         <div id="tallyLines"></div>
       </div>
@@ -341,7 +362,7 @@
     <!-- Game Over / Win -->
     <div class="overlay" id="endScreen" inert>
       <p class="result-kicker" id="endKicker">Run complete</p>
-      <h1 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h1>
+      <h2 id="endTitle">Game Over<span class="sub" id="endSub">you got flushed</span></h2>
       <p class="quip" id="endQuip"></p>
       <div class="stats">
         <div class="stat"><span class="l">Score</span><span class="v" id="endScore">0</span></div>
@@ -351,6 +372,7 @@
         <div class="stat"><span class="l">Max combo</span><span class="v" id="endCombo">0</span></div>
         <div class="stat"><span class="l">Time</span><span class="v" id="endTime">0:00</span></div>
       </div>
+      <p class="suite-progress-result" id="progressResult" role="status" hidden></p>
       <button id="btnRestart">PLAY AGAIN</button>
       <div class="menu-secondary">
         <button id="btnEndQuit">MAIN MENU</button>
@@ -581,6 +603,7 @@ const prefs = loadGamePrefs();
 let best = Number.isFinite(prefs.best) ? prefs.best : 0;
 let bossBest = Number.isFinite(prefs.bossBest) ? prefs.bossBest : 0;
 let soundOn = prefs.soundOn !== false;
+window.Suite?.setSoundLocalEnabled?.(() => soundOn);
 function suiteMuted(){
   try {
     if (window.Suite && typeof Suite.isMuted === 'function') return !!Suite.isMuted();
@@ -608,8 +631,21 @@ try {
 } catch (e) {}
 let ambientOn = !!prefs.ambientOn;
 let hapticOn = prefs.hapticOn !== false;
+const titleMode = new URLSearchParams(location.search).get('mode') === 'boss' ? 'boss' : 'classic';
 let gameMode = 'classic';
 let runStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
+let progressRunId = null;
+let progressRunResult = null;
+let progressRunDifficulty = 'normal';
+let progressCurrentDifficulty = 'normal';
+const resultShare = window.SuiteShare?.create({ host: document.getElementById('endScreen'), game: 'turdanoid' });
+try {
+  window.Suite?.difficulty?.onChange?.(value => {
+    if(value === progressCurrentDifficulty) return;
+    if(progressRunId && !progressRunResult && (state === 'playing' || state === 'paused')) progressRunDifficulty = 'mixed';
+    progressCurrentDifficulty = value;
+  });
+} catch { /* Difficulty metadata is optional. */ }
 let levelStats = { bricks: 0, maxCombo: 0, startedAt: 0 };
 let clearTally = null;
 
@@ -729,9 +765,14 @@ const TITLE_QUIPS = [
 
 /* ---- Audio (Web Audio API, no files) ---- */
 let actx = null;
-function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function audio(){
+  if (window.Suite?.isStudioAudio?.()) return Suite.getSoundContext();
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  return actx;
+}
 function beep(freq=440, dur=0.08, type='square', vol=0.06, slide=0){
   if(soundBlocked()) return;
+  if (window.Suite?.isStudioAudio?.()) return Suite.playSound('shared.beep');
   const a = audio(); if(!a) return;
   try{
     const o = a.createOscillator(), g = a.createGain();
@@ -745,6 +786,7 @@ function beep(freq=440, dur=0.08, type='square', vol=0.06, slide=0){
 }
 function fart(){
   if(soundBlocked()) return;
+  if (window.Suite?.isStudioAudio?.()) return Suite.playSound('shared.fart');
   const a = audio(); if(!a) return;
   try{
     const o=a.createOscillator(), g=a.createGain(), lfo=a.createOscillator(), lg=a.createGain();
@@ -759,15 +801,28 @@ function fart(){
   }catch(e){}
 }
 let ambientNodes = null;
+const ambientTails = new Set();
 function stopAmbient(){
   if(!ambientNodes) return;
+  const previous = ambientNodes;
+  ambientNodes = null;
+  ambientTails.add(previous);
   try{
-    ambientNodes.gain.gain.exponentialRampToValueAtTime(0.001, audio().currentTime + 0.4);
-    setTimeout(()=>{ try{ ambientNodes.osc.stop(); ambientNodes.lfo.stop(); }catch(e){} ambientNodes = null; }, 450);
-  }catch(e){ ambientNodes = null; }
+    const now = previous.context.currentTime;
+    previous.gain.gain.cancelScheduledValues(now);
+    previous.gain.gain.setTargetAtTime(.0001, now, .006);
+    previous.osc.onended = () => {
+      ambientTails.delete(previous);
+      previous.osc.disconnect(); previous.lfo.disconnect(); previous.mod.disconnect(); previous.gain.disconnect();
+    };
+    previous.osc.stop(now + .03); previous.lfo.stop(now + .03);
+  }catch(e){ ambientTails.delete(previous); }
 }
 function startAmbient(){
-  if(soundBlocked() || !ambientOn) return;
+  if(soundBlocked() || !ambientOn || state !== 'playing' || paused || document.hidden) return;
+  if (ambientNodes || ambientTails.size >= 2) return;
+  const volume = window.Suite?.isStudioAudio?.() ? Suite.getEffectsVolume() : 1;
+  if (!volume) return;
   const a = audio(); if(!a) return;
   stopAmbient();
   try{
@@ -776,10 +831,10 @@ function startAmbient(){
     lfo.type = 'sine'; lfo.frequency.value = 0.07; lg.gain.value = 6;
     lfo.connect(lg).connect(osc.frequency);
     g.gain.value = 0.0001;
-    g.gain.exponentialRampToValueAtTime(0.006, a.currentTime + 1.2);
+    g.gain.exponentialRampToValueAtTime(0.006 * volume, a.currentTime + 1.2);
     osc.connect(g).connect(a.destination);
     osc.start(); lfo.start();
-    ambientNodes = { osc, lfo, gain: g };
+    ambientNodes = { osc, lfo, mod: lg, gain: g, context: a };
   }catch(e){}
 }
 function playProfile(name){
@@ -810,6 +865,26 @@ const sfx = {
   flushWarp: ()=>{ beep(620,0.35,'sine',0.07,-520); setTimeout(()=>beep(300,0.3,'triangle',0.06,-200),180); },
   chord: ()=>{ beep(110,0.4,'sawtooth',0.07,0); beep(165,0.4,'sawtooth',0.06,0); beep(220,0.35,'square',0.04,0); },
 };
+// The receiver selects its palette; game events and rules are unchanged.
+for (const name of Object.keys(sfx)) {
+  const original = sfx[name];
+  sfx[name] = (...args) => {
+    if (window.Suite?.isStudioAudio?.()) return Suite.playSound('ta.' + name, { strength: args[0] });
+    return original(...args);
+  };
+}
+window.Suite?.setSoundSettingsPause?.(() => {
+  if (state === 'playing') doPause();
+  return state === 'paused' ? tPause.querySelector('button') : null;
+});
+window.addEventListener('suite:audiochange', () => {
+  syncSoundButton();
+  const volume = window.Suite?.isStudioAudio?.() ? Suite.getEffectsVolume() : 1;
+  if (soundBlocked() || !volume || document.hidden || state !== 'playing' || paused) stopAmbient();
+  else if (ambientOn && !ambientNodes) startAmbient();
+  else if (ambientNodes) ambientNodes.gain.gain.setTargetAtTime(.006 * volume, ambientNodes.context.currentTime, .01);
+});
+window.addEventListener('pagehide', stopAmbient);
 
 /* ---- DOM helpers ---- */
 const $ = id => document.getElementById(id);
@@ -863,13 +938,25 @@ function resize(){
     playShell.style.width = '100%';
     playShell.style.height = '100%';
   }
-  W = Math.max(280, canvasW);
-  H = Math.max(380, canvasH);
+  W = r.width > 0 ? Math.max(1, canvasW) : 280;
+  H = r.height > 0 ? Math.max(1, canvasH) : 380;
   DPR = Math.max(1, Math.min(window.devicePixelRatio||1, 2));
   cv.width = Math.floor(W*DPR);
   cv.height = Math.floor(H*DPR);
   cv.style.width = W+'px'; cv.style.height = H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(brickWallGeometry && bricks.length && TLEVELS && TLEVELS.brickGeometry){
+    const previous = brickWallGeometry;
+    const next = TLEVELS.brickGeometry(W, H, previous.cols, previous.rows, brickTopInset());
+    for(const brick of bricks){
+      const col = Math.round((brick.x - previous.padX) / (previous.bw + previous.gap));
+      const row = Math.round((brick.y - previous.top) / (previous.bh + previous.rowGap));
+      brick.x = next.padX + col * (next.bw + next.gap);
+      brick.y = next.top + row * (next.bh + next.rowGap);
+      brick.w = next.bw; brick.h = next.bh;
+    }
+    brickWallGeometry = {...next, cols:previous.cols, rows:previous.rows};
+  }
   if(paddle){
     paddle.y = H - paddle.h - 36;
     paddle.x = Math.min(Math.max(paddle.x, paddle.w/2), W - paddle.w/2);
@@ -1151,11 +1238,23 @@ function drawTitleAttract(rts){
   }
   ctx.restore();
 }
+// Ten-second rule: first run never blocks play with a modal. Show a
+// pulsing one-line hint chip that clears on the first move or launch.
 function maybeShowCoach(){
   if(!TCOACH || TCOACH.coachSeen(persist)) return;
-  coachStep = 0;
-  updateCoachCard();
-  $('coachOverlay').classList.add('show');
+  TCOACH.markCoachSeen(persist);
+  const hint = $('arcHint');
+  if(!hint) return;
+  hint.hidden = false;
+  const clear = () => {
+    hint.hidden = true;
+    clearTimeout(t);
+    $('playShell').removeEventListener('pointerdown', clear);
+    window.removeEventListener('keydown', clear);
+  };
+  const t = setTimeout(clear, 10000);
+  $('playShell').addEventListener('pointerdown', clear, { once: true });
+  window.addEventListener('keydown', clear, { once: true });
 }
 function updateCoachCard(){
   const steps = TCOACH ? TCOACH.STEPS : [];
@@ -1251,12 +1350,19 @@ function newBall(stuck=true){
 
 /* ---- Level generation ---- */
 const PATTERN_NAMES = TLEVELS ? TLEVELS.allPatternNames() : ['Classic Wall','Checker','Tunnel','Wave','Pyramid','Diamond','Cross','Spiral','Hourglass','Brick House','Skull','Funhouse','Sewer Maze'];
+let brickWallGeometry = null;
 function steel(br){ return !!(br && br.indestructible); }
 function breakableLeft(){ return TLEVELS ? TLEVELS.remainingBreakable(bricks) : bricks.filter(b => !b.indestructible).length; }
 function paintSpecialBrick(b){
   if(!BRICK_ART || !b.material || !BRICK_ART.MATERIAL_PALETTES[b.material]) return;
   const pal = BRICK_ART.MATERIAL_PALETTES[b.material];
   b.c1 = pal[0]; b.c2 = pal[1]; b.glow = pal[2];
+}
+function brickTopInset(){
+  const hud = document.querySelector('.hud');
+  const canvas = cv.getBoundingClientRect();
+  if(!hud || canvas.height <= 0) return 70;
+  return Math.max(70, Math.ceil((hud.getBoundingClientRect().bottom + 8 - canvas.top) * H / canvas.height));
 }
 function newLevel(){
   levelStats = { bricks: 0, maxCombo: 0, startedAt: Date.now() };
@@ -1267,8 +1373,10 @@ function newLevel(){
   const campaign = TLEVELS && TLEVELS.definitionForLevel ? TLEVELS.definitionForLevel(level) : null;
   const cols = campaign ? campaign.cols : Math.max(8, Math.min(13, Math.floor(W/52)));
   const rows = campaign ? campaign.rows : Math.min(10, 4 + Math.floor(level/2));
-  const geo = TLEVELS && TLEVELS.brickGeometry ? TLEVELS.brickGeometry(W, H, cols, rows) : null;
-  const top = geo ? geo.top : 70;
+  const inset = brickTopInset();
+  const geo = TLEVELS && TLEVELS.brickGeometry ? TLEVELS.brickGeometry(W, H, cols, rows, inset) : null;
+  const top = geo ? geo.top : inset;
+  brickWallGeometry = geo ? {...geo, cols, rows} : null;
   const padX = geo ? geo.padX : Math.max(10, W*0.04);
   const gapX = geo ? geo.gap : 6;
   const gapY = geo ? geo.rowGap : 5;
@@ -1413,6 +1521,10 @@ cv.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); }, {passiv
 cv.addEventListener('touchcancel', pointerUp);
 
 window.addEventListener('keydown', e=>{
+  // Focused controls own their native activation; Space on Boss/Help must not
+  // bypass that button and start a Classic run behind it.
+  if(e.target?.closest?.('input, select, textarea, [contenteditable="true"]')) return;
+  if((e.key===' ' || e.key==='Enter') && e.target?.closest?.('button, a, summary')) return;
   if(clearTally && (e.key===' ' || e.key==='Enter')){
     e.preventDefault();
     skipClearTally();
@@ -1470,6 +1582,7 @@ btnSound.addEventListener('click', ()=>{
     soundOn = false;
   }
   persistPrefs({ soundOn });
+  window.Suite?.syncSoundState?.();
   syncSoundButton();
   if(!soundBlocked()){ sfx.power(); startAmbient(); }
   else stopAmbient();
@@ -1562,14 +1675,23 @@ function updatePowers(){
 
 /* ---- Flow ---- */
 function startGame(){
-  gameMode = 'classic';
+  gameMode = titleMode;
   beginRun();
 }
 function startBossGame(){
-  gameMode = 'boss';
+  gameMode = titleMode === 'boss' ? 'classic' : 'boss';
   beginRun();
 }
 function beginRun(){
+  window.Suite?.stopSounds?.();
+  window.Suite?.setSoundPaused?.(false);
+  resultShare?.setResult(null);
+  progressRunId = window.SuiteProgress?.newRunId('turdanoid') || null;
+  progressRunResult = null;
+  $('progressResult').hidden = true;
+  $('progressResult').textContent = '';
+  try { progressRunDifficulty = window.Suite?.difficulty?.get() || 'normal'; } catch { progressRunDifficulty = 'normal'; }
+  progressCurrentDifficulty = progressRunDifficulty;
   resize();
   paddle = newPaddle();
   score=0; level=1; lives=suiteStartingLives(3); comboHits=0; comboTimer=0; stink=0; flash=0; shake=0; hitStop=0; lifeGrace=0;
@@ -1580,6 +1702,7 @@ function beginRun(){
   newLevel();
   state='playing'; running=true; paused=false;
   hideOverlay(tTitle); hideOverlay(tEnd); hideOverlay(tPause); hideOverlay(tHow); hideOverlay(tClearTally);
+  tEnd.scrollTop = 0;
   clearTally = null;
   updateHud(); updatePowers();
   audio();
@@ -1598,11 +1721,13 @@ function hideOverlay(el){
   el.setAttribute('inert', '');
   el.setAttribute('aria-hidden', 'true');
 }
-function doPause(){ if(state!=='playing') return; state='paused'; paused=true; showOverlay(tPause); syncPauseButton(); }
+function doPause(){ if(state!=='playing') return; state='paused'; paused=true; window.Suite?.setSoundPaused?.(true); stopAmbient(); showOverlay(tPause); syncPauseButton(); }
 function doResume(){
   if(state!=='paused') return;
   state='playing';
   paused=false;
+  window.Suite?.setSoundPaused?.(false);
+  if (ambientOn) startAmbient();
   // Same clock reset Turdtris already uses after blur: a hidden tab can
   // freeze rAF, and the first playing frame must not inherit that gap.
   lastTime = performance.now();
@@ -1715,7 +1840,7 @@ function quitToMenu(){
   showOverlay(tTitle); pickTitleQuip();
   $('btnStart').focus();
 }
-function restartGame(){ hideOverlay(tEnd); startGame(); }
+function restartGame(){ hideOverlay(tEnd); beginRun(); }
 function gameOver(won){
   state = won?'win':'gameover';
   running=false;
@@ -1741,6 +1866,28 @@ function gameOver(won){
   $('endBricks').textContent = String(runStats.bricks || 0);
   $('endCombo').textContent = String(runStats.maxCombo || 0);
   $('endTime').textContent = formatRunTime(Date.now() - (runStats.startedAt || Date.now()));
+  if(progressRunId && !progressRunResult){
+    progressRunResult = {
+      id: progressRunId, game: 'turdanoid', mode: gameMode, difficulty: progressRunDifficulty, kind: 'run',
+      outcome: won ? 'win' : 'loss', score, completed: !!won,
+      elapsedMs: Math.max(0, Date.now() - runStats.startedAt),
+      levelsCleared: gameMode === 'classic' ? Math.max(0, Math.min(30, level - 1)) : 0,
+      maxCombo: runStats.maxCombo || 0
+    };
+    try {
+      const recorded = window.SuiteProgress?.record(progressRunResult);
+      if(recorded?.improvement) progressRunResult.improvement = recorded.improvement;
+      const goals = recorded?.newlyEarned?.map(goal => goal.title) || [];
+      const feedback = [goals.length ? `Goal earned: ${goals.join(' · ')}` : '', recorded?.improvement || '', recorded && !recorded.storageAvailable ? 'Your browser could not save progress on this device.' : ''].filter(Boolean).join(' ');
+      $('progressResult').textContent = feedback;
+      $('progressResult').hidden = !feedback;
+    } catch { /* Optional progress never interrupts the completed game. */ }
+  }
+  resultShare?.setResult(runStats.startedAt ? progressRunResult || {
+    mode: gameMode, outcome: won ? 'win' : 'loss', score, completed: !!won,
+    levelsCleared: gameMode === 'classic' ? Math.max(0, Math.min(30, level - 1)) : 0,
+    maxCombo: runStats.maxCombo || 0
+  } : null);
   showOverlay(tEnd);
   won ? sfx.win() : sfx.death();
 }
@@ -2274,6 +2421,8 @@ function step(dt){
       if(k==='slow' || k==='fast') speedPowersChanged = true;
       if(k==='big' && !activePowers.shrink) paddle.w = paddle.baseW;
       if(k==='shrink') paddle.w = paddle.baseW;
+      // Shared expiry also reaches caught balls and balls paused by hit-stop.
+      if(k==='fire') balls.forEach(b=>b.fire=0);
       if(k==='ghost') balls.forEach(b=>b.ghost=0);
       if(k==='gold'){
         // Restore brick colors when gold rush ends
@@ -2456,11 +2605,13 @@ function step(dt){
 
   // No life lost while a level transition is pending, or when the wall was
   // cleared this same frame (the clear block below will start the transition).
-  if(balls.length === 0 && !levelTransition && breakableLeft() > 0){
+  // Boss Flush has no brick wall, but still needs a last-ball life/relaunch.
+  if(balls.length === 0 && !levelTransition && (gameMode === 'boss' || breakableLeft() > 0)){
     lives--;
     sfx.death();
     floatText('OUT OF TURDS', W/2, H/2, '#ff9d74');
     shake = Math.max(shake, 12);
+    lifeGrace = LIFE_GRACE_FRAMES;
     if(lives <= 0){ gameOver(false); return; }
     paddle.w = paddle.baseW;
     activePowers = {}; updatePowers();
@@ -3598,6 +3749,10 @@ pickTitleQuip();
 updateSideStats();
 lastTime = performance.now();
 requestAnimationFrame(loop);
+$('btnStart').textContent = titleMode === 'boss' ? 'BOSS FLUSH' : 'START FLUSHING';
+$('btnBoss').textContent = titleMode === 'boss' ? 'Classic Flush' : 'Boss Flush';
+for (const id of ['btnStart', 'btnBoss', 'btnHowTo']) $(id).disabled = false;
+window.SuiteLoading?.ready();
 
 let lastTouch = 0;
 document.addEventListener('touchend', e=>{
@@ -3609,8 +3764,11 @@ document.addEventListener('touchend', e=>{
   lastTouch = now;
 }, {passive:false});
 
-// One-finger drags never scroll the page; two-finger pinch is left to the browser for zoom.
-document.body.addEventListener('touchmove', e=>{ if(e.touches.length < 2) e.preventDefault(); }, {passive:false});
+// Keep gameplay drags fixed; completed results can scroll. Two-finger pinch still zooms.
+document.body.addEventListener('touchmove', e=>{
+  if(e.target.closest?.('#endScreen.show')) return;
+  if(e.touches.length < 2) e.preventDefault();
+}, {passive:false});
 
 /* ---- Test hook ----
    Local/dev only. The public GitHub Pages host must not ship a

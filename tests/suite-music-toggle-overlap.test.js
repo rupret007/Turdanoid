@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, Suite, getComputedStyle, Element */
+/* global URL, Suite, getComputedStyle, Element, shoe, showWelcomeGuide, roundActive, pendingDecision, openingHandInFlight, playerHand, currentBet, bankroll */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chromium } from 'playwright';
@@ -113,28 +113,60 @@ async function prepTurdanoid(page) {
 
 async function prepTurdtris(page) {
   await dismissGuides(page);
-  const closeGuide = page.getByRole('button', { name: 'Close Guide' });
+  const closeGuide = page.getByRole('button', { name: 'Play', exact: true });
   if (await closeGuide.isVisible().catch(() => false)) {
     await closeGuide.click();
   }
   await page.waitForSelector('#game', { state: 'visible', timeout: 10_000 });
 }
 
-async function prepTurdjack(page) {
+async function prepTurdjack(page, scenario = 'bust') {
   await dismissGuides(page);
-  // A random opening blackjack ends the hand before table-first layout can
-  // be measured. Deal a known live hand through the actual Deal control.
+  // The local fixture stacks real cards; Quick Start still drives the actual deal.
+  // Naturals can settle immediately, so an active-hand class is not always ready state.
   await page.waitForFunction(() => window.__turdjackDev);
-  await page.evaluate(() => window.__turdjackDev.prepare('push'));
-  await page.locator('#dealBtn:visible, [data-mobile-action="deal"]:visible').first().click();
+  await page.evaluate((name) => {
+    window.__turdjackDev.prepare(name === 'even-money' ? 'blackjack' : name);
+    window.__turdjackDev._autoInsurance = null;
+    if (name === 'even-money') {
+      // Shoe draws pop from the end: player Ace, dealer Ace, player King, hole 7.
+      shoe.splice(-4, 4,
+        { rank: '7', suit: 'C' }, { rank: 'K', suit: 'S' },
+        { rank: 'A', suit: 'H' }, { rank: 'A', suit: 'S' }
+      );
+    }
+    showWelcomeGuide();
+  }, scenario);
+  const quick = page.getByRole('button', { name: 'Quick Start', exact: true });
+  await quick.waitFor({ state: 'visible' });
+  await quick.click();
+  await page.waitForFunction(() => {
+    if (pendingDecision) {
+      return document.getElementById('jackConfirmOverlay').getAttribute('aria-hidden') === 'false';
+    }
+    return playerHand.length === 2 && !openingHandInFlight;
+  }, null, { timeout: 10_000 });
+  const expectedDecision = ['insurance', 'even-money'].includes(scenario) ? scenario : null;
+  expect(await page.evaluate(() => pendingDecision)).toBe(expectedDecision);
+  const dialog = page.locator('#jackConfirmOverlay');
+  if (expectedDecision) {
+    expect(await dialog.isVisible()).toBe(true);
+    await page.locator('#jackConfirmNo').click();
+    await dialog.waitFor({ state: 'hidden' });
+  }
+  await page.waitForFunction(() => pendingDecision === null && !openingHandInFlight, null, { timeout: 10_000 });
+  expect(await dialog.isVisible()).toBe(false);
+  const active = await page.evaluate(() => roundActive);
+  expect(active).toBe(scenario === 'bust');
   const viewport = page.viewportSize();
   if (viewport && viewport.width <= 680) {
     await page.waitForFunction(
-      () => document.body.classList.contains('jack-table-first'),
+      (expected) => document.body.classList.contains('jack-table-first') === expected,
+      active,
       { timeout: 10_000 }
     );
   }
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(300);
 }
 
 async function prepCrapeights(page) {
@@ -236,16 +268,51 @@ function measureMusicToggleOverlap(page, guardSelector) {
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('suite music toggle layout', () => {
+  it.each(['blackjack', 'insurance', 'even-money', 'bust'])('keeps rotated Crapjack chips usable after %s and retains Bet Tools', async (scenario) => {
+    const page = await browser.newPage({ viewport: { width: 360, height: 640 }, reducedMotion: 'reduce' });
+    try {
+      await page.goto(`${baseUrl}/turdjack.html`);
+      await prepTurdjack(page, scenario);
+      await page.setViewportSize({ width: 640, height: 360 });
+      await page.waitForTimeout(200);
+      for (const button of await page.locator('#mobileFeltChipRack button').all()) {
+        const box = await button.boundingBox();
+        expect(box.width).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(await button.evaluate(el => {
+          const b = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+          return hit === el || el.contains(hit);
+        })).toBe(true);
+      }
+      if (scenario !== 'bust') {
+        await page.locator('.mobile-menu summary').first().click();
+        const tools = page.locator('.mobile-menu-actions .mobile-pit-extra');
+        await tools.locator('summary').click();
+        const before = await page.evaluate(() => currentBet);
+        await tools.locator('[data-mobile-action="max-bet"]').click();
+        expect(await page.evaluate(() => currentBet)).toBe(await page.evaluate(() => bankroll));
+        expect(await page.evaluate(() => currentBet)).toBeGreaterThan(before);
+      }
+    } finally {
+      await page.close();
+    }
+  });
   for (const spec of SUITE_PAGES) {
     for (const viewport of VIEWPORTS) {
       it(`#suite-music-toggle clears pause, sound, and HUD chrome on ${spec.slug} at ${viewport.width}×${viewport.height}`, async () => {
         const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
         try {
           await page.goto(`${baseUrl}/${spec.path}`, { waitUntil: 'domcontentloaded' });
-          await spec.prep(page);
-          await page.waitForTimeout(150);
-          const result = await measureMusicToggleOverlap(page, GUARD_SELECTOR);
-          expect(result.ok, JSON.stringify(result)).toBe(true);
+          // Preserve all 24 viewport cases and their live-hand coverage, and also
+          // exercise the three opening outcomes that made random prep unreliable.
+          const scenarios = spec.slug === 'turdjack' ? ['blackjack', 'insurance', 'even-money', 'bust'] : [undefined];
+          for (const scenario of scenarios) {
+            await spec.prep(page, scenario);
+            await page.waitForTimeout(150);
+            const result = await measureMusicToggleOverlap(page, GUARD_SELECTOR);
+            expect(result.ok, JSON.stringify({ scenario, ...result })).toBe(true);
+          }
         } finally {
           await page.close();
         }
