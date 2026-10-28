@@ -116,9 +116,7 @@ const SIX_SUITE_GAMES = [
           };
         });
         await start.click();
-        // The color control must work on either turn. Bot-turn cards are
-        // deliberately read-only divs; waiting for a human button can hang.
-        await page.waitForSelector('#playerHand .card', { timeout: 15000 });
+        await page.waitForSelector('#playerHand .card-button', { timeout: 15000 });
       }
       expect(await page.locator('#playerHand .card-button').count()).toBe(10);
       expect(await page.locator('#drawStockBtn').isEnabled()).toBe(true);
