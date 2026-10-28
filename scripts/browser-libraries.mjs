@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, lstatSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -33,6 +33,14 @@ export function prepareBrowserLibraries() {
       throw new Error(`Chromium library setup failed: ${command} ${args.join(' ')}`, { cause: result.error });
     }
   }
+  function isRegularFile(filePath) {
+    try {
+      const stat = lstatSync(filePath);
+      return stat.isFile() && !stat.isSymbolicLink();
+    } catch {
+      return false;
+    }
+  }
 
   useLocalLibraries();
   const missing = missingLibraries();
@@ -51,10 +59,30 @@ export function prepareBrowserLibraries() {
     throw new Error(`Missing Chromium libraries: ${missing.join(', ')}. Run npx playwright install-deps chromium.`);
   }
 
+  const neededPackages = [...new Set(missing.map((library) => packages[library]))];
+  const expectedDebs = new Set(neededPackages.map((pkg) => `${pkg}_`));
+
+  if (existsSync(cache)) {
+    for (const file of readdirSync(cache)) {
+      if (file.endsWith('.deb') && !expectedDebs.has(file.split('_')[0] + '_')) {
+        rmSync(join(cache, file), { force: true });
+      }
+    }
+  }
+
   mkdirSync(cache, { recursive: true });
   console.log(`Preparing local Chromium libraries: ${missing.join(', ')}`);
-  run('apt-get', ['download', ...new Set(missing.map((library) => packages[library]))]);
-  for (const archive of readdirSync(cache).filter((file) => file.endsWith('.deb'))) {
+  run('apt-get', ['download', ...neededPackages]);
+
+  const downloadedDebs = readdirSync(cache)
+    .filter((file) => file.endsWith('.deb'))
+    .filter((file) => {
+      const pkgName = file.split('_')[0];
+      return neededPackages.includes(pkgName);
+    })
+    .filter((file) => isRegularFile(join(cache, file)));
+
+  for (const archive of downloadedDebs) {
     run('dpkg-deb', ['--extract', join(cache, archive), root]);
   }
   useLocalLibraries();
