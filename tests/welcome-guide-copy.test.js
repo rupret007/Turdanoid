@@ -39,6 +39,37 @@ describe.each(pages)('%s welcome guide copy', (file, guideSelector, closeSelecto
 });
 
 describe('table guides teach tap controls before optional keyboard shortcuts', () => {
+  it.each([
+    ['phone', ['.mobile-menu summary', '.mobile-menu-actions button:nth-child(2)', '#intelDrawer summary']],
+    ['desktop', ['#intelToggleBtn']]
+  ])('locates Crapjack rules using the %s controls', (viewport, selectors) => {
+    const dom = new JSDOM(readFileSync(join(root, 'turdjack.html'), 'utf8'));
+    try {
+      const document = dom.window.document;
+      const tip = [...document.querySelectorAll('#welcomeGuide p')]
+        .find((paragraph) => paragraph.textContent.startsWith('Tip:'));
+      expect(tip).toBeDefined();
+      const copy = tip.textContent.replace(/\s+/g, ' ');
+      const path = selectors.map((selector) => {
+        const control = document.querySelector(selector);
+        expect(control, `${viewport} rules control`).not.toBeNull();
+        return control.textContent.replace('📋', '').trim();
+      }).join(' → ');
+      expect(copy).toContain(path);
+      expect(path).toMatch(viewport === 'phone' ? /Table Menu/ : /Table Intel/);
+      expect(copy).toMatch(viewport === 'phone' ? /on phones/ : /Table Intel/);
+      const setup = [...document.querySelectorAll('#intelSlide h3')]
+        .find((heading) => heading.textContent === 'Table Setup');
+      expect(setup).toBeDefined();
+      expect(setup.parentElement.querySelector('#applyRulesBtn')).not.toBeNull();
+      expect(copy).toContain(setup.textContent);
+      expect(copy).toMatch(/strategy hint/i);
+      expect(copy).not.toMatch(/on the right/i);
+    } finally {
+      dom.window.close();
+    }
+  });
+
   it('names the Crapjack pit buttons and maps the phone Clear label', () => {
     const dom = new JSDOM(readFileSync(join(root, 'turdjack.html'), 'utf8'));
     try {
