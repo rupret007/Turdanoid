@@ -476,7 +476,12 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
             if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
           }
         } else {await nativeBurst(client, packets);}
-        await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
+        const elapsed = (await state(page)).elapsed;
+        // Stalled frames clamp simulation time, so wall time cannot guarantee
+        // that the bounded250ms intent and real lane interpolation have finished.
+        mark(page, 'wait for 350ms of completed simulation progress');
+        await page.waitForFunction(from => globalThis.__turdrush.state.elapsed >= from + .35,
+          elapsed, { polling: 50, timeout: 5000 });
         const after = await state(page);
         outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
         expect(after.phase).toBe('running');
