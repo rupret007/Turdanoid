@@ -51,3 +51,13 @@ it('returns Turdjack’s toggle to the declared header mount after leaving the m
   expect(pit.contains(toggle)).toBe(false);
   expect(toggle.classList.contains('suite-arcade-a11y-toggle--inline')).toBe(true);
 });
+
+it('keeps the mount ID unique when the mobile pit takes the toggle', () => {
+  const { doc, pit, toggle } = table(390);
+  doc.body.classList.add('jack-table-first');
+
+  syncArcadeA11yMount(doc);
+
+  expect(pit.contains(toggle)).toBe(true);
+  expect(doc.querySelectorAll('[id="suite-arcade-a11y-mount"]')).toHaveLength(1);
+});
