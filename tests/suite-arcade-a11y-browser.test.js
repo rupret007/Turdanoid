@@ -454,6 +454,37 @@ async function assertA11yToggleLayout(page, game) {
     }
   });
 
+  it('keeps keyboard focus on Clr when the live Turdjack table rotates', async () => {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    try {
+      await page.goto(`${baseUrl}/turdjack.html`, { waitUntil: 'domcontentloaded' });
+      await closeVisibleGuide(page, '#closeGuideBtn');
+      await page.waitForFunction(() => window.__turdjackDev);
+      await page.evaluate(() => {
+        window.__turdjackDev.prepare('bust');
+        window.__turdjackDev._autoInsurance = null;
+        window.showWelcomeGuide();
+      });
+      const quickStart = page.getByRole('button', { name: 'Quick Start', exact: true });
+      await quickStart.click({ timeout: 8_000 });
+      await page.waitForFunction(() => document.body.classList.contains('jack-table-first'), null, { timeout: 8_000 });
+      const toggle = page.locator('#suite-arcade-a11y-toggle');
+      await page.locator('#mobilePit #suite-arcade-a11y-toggle').waitFor({ timeout: 8_000 });
+      await toggle.focus();
+      expect(await toggle.evaluate(button => button === document.activeElement)).toBe(true);
+      const initial = await toggle.getAttribute('aria-pressed');
+      await page.setViewportSize({ width: 844, height: 390 });
+      await page.waitForFunction(() => !document.body.classList.contains('jack-table-first')
+        && !document.querySelector('#mobilePit #suite-arcade-a11y-toggle'), null, { timeout: 8_000 });
+      expect(await toggle.isVisible()).toBe(true);
+      expect(await toggle.evaluate(button => button === document.activeElement)).toBe(true);
+      await page.keyboard.press('Space');
+      expect(await toggle.getAttribute('aria-pressed')).toBe(initial === 'true' ? 'false' : 'true');
+    } finally {
+      await page.close();
+    }
+  });
+
   it('persists colorblind toggle across reload', async () => {
     if (!hasBrowser) {
       return;

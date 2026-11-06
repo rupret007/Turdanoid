@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, rules, window */
+/* global URL, window */
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -83,18 +83,16 @@ async function prepCrapeights(page) {
 }
 
 async function prepCrapjack(page) {
-  await dismissGuides(page);
+  await page.waitForFunction(() => window.__turdjackDev);
   await page.evaluate(() => {
-    if (typeof rules !== 'undefined') {
-      rules.allowInsurance = false;
-    }
+    // Deal through the real UI with a known non-natural hand.
+    window.__turdjackDev.prepare('bust');
+    window.showWelcomeGuide();
   });
-  const quick = page.getByRole('button', { name: 'Quick Start' });
-  if (await quick.isVisible().catch(() => false)) {
-    await quick.click();
-  }
+  await page.getByRole('button', { name: 'Quick Start', exact: true }).click();
   await page.waitForFunction(
     () => document.body.classList.contains('jack-table-first'),
+    null,
     { timeout: 10_000 }
   );
   await page.evaluate(() => {
