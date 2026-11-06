@@ -333,17 +333,17 @@ function ensureMountSlot(doc, target) {
   let slot = target.parent.querySelector(`:scope > #suite-arcade-a11y-mount, :scope > .${target.slotClass}`);
   if (!slot) {
     slot = doc.createElement('div');
-    slot.id = 'suite-arcade-a11y-mount';
     slot.className = target.slotClass;
     target.parent.insertBefore(slot, target.parent.firstChild);
-  } else if (!slot.id) {
+  }
+  if (!slot.id && !doc.getElementById('suite-arcade-a11y-mount')) {
     slot.id = 'suite-arcade-a11y-mount';
   }
   return slot;
 }
 
 /**
- * Moves the colorblind toggle into the sticky mobile pit / table dock when that chrome is active.
+ * Uses active mobile table chrome, returning to the declared mount when it is inactive.
  * @param {Document} doc
  */
 export function syncArcadeA11yMount(doc) {
@@ -367,22 +367,26 @@ export function syncArcadeA11yMount(doc) {
   if (!toggle) {
     return ensureArcadeA11yMount(doc);
   }
-  let bodySlot = doc.querySelector('body > .suite-a11y-body-slot');
-  if (!bodySlot) {
-    bodySlot = doc.createElement('div');
-    bodySlot.id = 'suite-arcade-a11y-mount';
-    bodySlot.className = 'suite-a11y-play-shell-slot suite-a11y-body-slot';
-    doc.body.appendChild(bodySlot);
+  // Keep the page's declared mount; a temporary table slot is not its idle home.
+  let slot = doc.querySelector(
+    '#suite-arcade-a11y-mount:not(.suite-a11y-pit-slot):not(.suite-a11y-table-dock-slot)'
+  ) || doc.querySelector('body > .suite-a11y-body-slot');
+  if (!slot) {
+    slot = doc.createElement('div');
+    slot.id = 'suite-arcade-a11y-mount';
+    slot.className = 'suite-a11y-play-shell-slot suite-a11y-body-slot';
+    doc.body.appendChild(slot);
   }
-  if (toggle.parentElement !== bodySlot) {
-    bodySlot.appendChild(toggle);
-    toggle.className = 'suite-arcade-a11y-toggle suite-arcade-a11y-toggle--floating';
+  if (toggle.parentElement !== slot) {
+    slot.appendChild(toggle);
   }
+  const mode = slot.classList.contains('suite-a11y-body-slot') ? 'floating' : 'inline';
+  toggle.className = `suite-arcade-a11y-toggle suite-arcade-a11y-toggle--${mode}`;
   const pitSlot = doc.querySelector('.suite-a11y-pit-slot, .suite-a11y-table-dock-slot');
-  if (pitSlot && pitSlot !== bodySlot && pitSlot.childElementCount === 0) {
+  if (pitSlot && pitSlot !== slot && pitSlot.childElementCount === 0) {
     pitSlot.remove();
   }
-  return bodySlot;
+  return slot;
 }
 
 function resolveA11yToggleMount(doc) {
