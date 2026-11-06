@@ -525,7 +525,7 @@ async function assertA11yToggleLayout(page, game) {
             }
           }
           const inViewport = toggleBox && toggleBox.left >= 0 && toggleBox.top >= 0 &&
-            toggleBox.right <= innerWidth && toggleBox.bottom <= innerHeight;
+            toggleBox.right <= window.innerWidth && toggleBox.bottom <= window.innerHeight;
           return { toggleVisible: !!toggleBox, inViewport, visibleButtonIds, hits };
         });
         expect(result.toggleVisible).toBe(true);
