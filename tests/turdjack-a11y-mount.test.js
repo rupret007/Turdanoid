@@ -19,7 +19,7 @@ function table(width) {
     '</header><main><div id="mobilePit"></div></main></body>',
     { url: 'http://localhost/turdjack.html' }
   );
-  Object.defineProperty(dom.window, 'innerWidth', { value: width });
+  Object.defineProperty(dom.window, 'innerWidth', { value: width, configurable: true });
   const doc = dom.window.document;
   const headerSlot = doc.getElementById('suite-arcade-a11y-mount');
   const pit = doc.getElementById('mobilePit');
@@ -74,6 +74,19 @@ it('preserves keyboard focus when Turdjack moves the toggle out of the mobile pi
   syncArcadeA11yMount(doc);
 
   expect(toggle.parentElement === headerSlot).toBe(true);
+  expect(doc.activeElement === toggle).toBe(true);
+});
+
+it('preserves keyboard focus when Turdjack moves the toggle into the mobile pit', () => {
+  const { doc, pit, toggle } = table(844);
+  toggle.focus();
+  expect(doc.activeElement === toggle).toBe(true);
+
+  Object.defineProperty(dom.window, 'innerWidth', { value: 390 });
+  doc.body.classList.add('jack-table-first');
+  syncArcadeA11yMount(doc);
+
+  expect(pit.contains(toggle)).toBe(true);
   expect(doc.activeElement === toggle).toBe(true);
 });
 
