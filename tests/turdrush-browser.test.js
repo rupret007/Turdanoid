@@ -500,6 +500,33 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
     });
   });
 
+  it('checks the same bounded lane target on a slow animation clock', async () => {
+    await withPage('native-touch-targets-slow-frames', { viewport: { width: 390, height: 844 } }, async page => {
+      await page.evaluate(() => {
+        const cancelNativeFrame = globalThis.cancelAnimationFrame.bind(globalThis);
+        const timers = new Map();
+        let nextId = -1;
+        // Delay animation delivery on this page only. Input remains native.
+        globalThis.requestAnimationFrame = callback => {
+          const id = nextId--;
+          timers.set(id, globalThis.setTimeout(() => {
+            timers.delete(id);
+            callback(globalThis.performance.now());
+          }, 300));
+          return id;
+        };
+        globalThis.cancelAnimationFrame = id => {
+          if (id >= 0) {cancelNativeFrame(id); return;}
+          globalThis.clearTimeout(timers.get(id));
+          timers.delete(id);
+        };
+      });
+      await expectLaneTargets(page, 'native-touch-targets-slow-frames', [
+        [2, ['left', 'left'], 0, 0, 68]
+      ]);
+    });
+  });
+
   it('keeps a bounded lane target through edge corrections and paced opposite flicks', async () => {
     await withPage('native-touch-targets-edges', { viewport: { width: 390, height: 844 } }, async page => {
       await expectLaneTargets(page, 'native-touch-target-edge-cases', [
