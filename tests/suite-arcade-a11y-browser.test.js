@@ -483,14 +483,15 @@ async function assertA11yToggleLayout(page, game) {
 
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
     it(`Clr toggle clears title menu buttons on Turdanoid at ${viewport.width}x${viewport.height}`, async () => {
-      if (!hasBrowser) {
-        return;
-      }
-      const page = await browser.newPage({ viewport });
+      expect(hasBrowser, 'Playwright Chromium is required for the title menu overlap check').toBe(true);
+      const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
       try {
         await page.goto(`${baseUrl}/TurdAnoid.html`, { waitUntil: 'domcontentloaded' });
         await page.waitForSelector('#suite-arcade-a11y-toggle');
         await page.waitForSelector('#titleScreen.show');
+        for (const id of ['btnBoss', 'btnHowTo']) {
+          await page.waitForSelector(`#titleScreen .menu-secondary #${id}`, { state: 'visible' });
+        }
         const result = await page.evaluate(() => {
           const overlap = (a, b) =>
             Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
@@ -504,21 +505,32 @@ async function assertA11yToggleLayout(page, game) {
               return null;
             }
             const r = el.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) {
+              return null;
+            }
             return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
           };
           const toggle = document.getElementById('suite-arcade-a11y-toggle');
           const toggleBox = box(toggle);
-          const menuBtns = document.querySelectorAll('.menu-secondary button');
+          const menuBtns = document.querySelectorAll('#titleScreen .menu-secondary button');
+          const visibleButtonIds = [];
           const hits = [];
           for (const btn of menuBtns) {
             const btnBox = box(btn);
+            if (btnBox) {
+              visibleButtonIds.push(btn.id);
+            }
             if (toggleBox && btnBox && overlap(toggleBox, btnBox)) {
               hits.push(btn.id || btn.textContent.trim());
             }
           }
-          return { toggleVisible: !!toggleBox, hits };
+          const inViewport = toggleBox && toggleBox.left >= 0 && toggleBox.top >= 0 &&
+            toggleBox.right <= innerWidth && toggleBox.bottom <= innerHeight;
+          return { toggleVisible: !!toggleBox, inViewport, visibleButtonIds, hits };
         });
         expect(result.toggleVisible).toBe(true);
+        expect(result.inViewport).toBe(true);
+        expect(result.visibleButtonIds).toEqual(expect.arrayContaining(['btnBoss', 'btnHowTo']));
         expect(result.hits).toEqual([]);
       } finally {
         await page.close();
