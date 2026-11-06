@@ -61,3 +61,35 @@ it('keeps the mount ID unique when the mobile pit takes the toggle', () => {
   expect(pit.contains(toggle)).toBe(true);
   expect(doc.querySelectorAll('[id="suite-arcade-a11y-mount"]')).toHaveLength(1);
 });
+
+it('preserves keyboard focus when Turdjack moves the toggle out of the mobile pit', () => {
+  const { doc, headerSlot, pit, toggle } = table(390);
+  doc.body.classList.add('jack-table-first');
+  syncArcadeA11yMount(doc);
+  expect(pit.contains(toggle)).toBe(true);
+  toggle.focus();
+  expect(doc.activeElement === toggle).toBe(true);
+
+  doc.body.classList.remove('jack-table-first');
+  syncArcadeA11yMount(doc);
+
+  expect(toggle.parentElement === headerSlot).toBe(true);
+  expect(doc.activeElement === toggle).toBe(true);
+});
+
+it('does not move focus from another control while updating the toggle mount', () => {
+  const { doc, headerSlot, pit, toggle } = table(390);
+  doc.body.classList.add('jack-table-first');
+  syncArcadeA11yMount(doc);
+  expect(pit.contains(toggle)).toBe(true);
+  const other = doc.createElement('button');
+  headerSlot.before(other);
+  other.focus();
+  expect(doc.activeElement === other).toBe(true);
+
+  doc.body.classList.remove('jack-table-first');
+  syncArcadeA11yMount(doc);
+
+  expect(toggle.parentElement === headerSlot).toBe(true);
+  expect(doc.activeElement === other).toBe(true);
+});
