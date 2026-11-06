@@ -476,7 +476,12 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
             if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
           }
         } else {await nativeBurst(client, packets);}
-        await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
+        const elapsed = (await state(page)).elapsed;
+        // Stalled frames clamp simulation time, so wall time cannot guarantee
+        // that the bounded250ms intent and real lane interpolation have finished.
+        mark(page, 'wait for 350ms of completed simulation progress');
+        await page.waitForFunction(from => globalThis.__turdrush.state.elapsed >= from + .35,
+          elapsed, { polling: 50, timeout: 5000 });
         const after = await state(page);
         outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
         expect(after.phase).toBe('running');
@@ -496,6 +501,33 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
       await expectLaneTargets(page, 'native-touch-target-cases', [
         [2, ['left', 'left', 'right'], 1, 0, 40], [0, ['right', 'right', 'left'], 1, 0, 44],
         [2, ['left', 'left'], 0, 0, 48], [0, ['right', 'right'], 2, 0, 52]
+      ]);
+    });
+  });
+
+  it('checks the same bounded lane target on a slow animation clock', async () => {
+    await withPage('native-touch-targets-slow-frames', { viewport: { width: 390, height: 844 } }, async page => {
+      await page.evaluate(() => {
+        const cancelNativeFrame = globalThis.cancelAnimationFrame.bind(globalThis);
+        const timers = new Map();
+        let nextId = -1;
+        // Delay animation delivery on this page only. Input remains native.
+        globalThis.requestAnimationFrame = callback => {
+          const id = nextId--;
+          timers.set(id, globalThis.setTimeout(() => {
+            timers.delete(id);
+            callback(globalThis.performance.now());
+          }, 300));
+          return id;
+        };
+        globalThis.cancelAnimationFrame = id => {
+          if (id >= 0) {cancelNativeFrame(id); return;}
+          globalThis.clearTimeout(timers.get(id));
+          timers.delete(id);
+        };
+      });
+      await expectLaneTargets(page, 'native-touch-targets-slow-frames', [
+        [2, ['left', 'left'], 0, 0, 68]
       ]);
     });
   });
