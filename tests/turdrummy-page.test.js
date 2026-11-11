@@ -80,6 +80,18 @@ function boot({ reduced = false, canAnimate = true, stored = {}, storageFailure 
       window.requestAnimationFrame = () => nextTimer++;
       window.cancelAnimationFrame = () => {};
       window.Math.random = () => 0.42;
+      if (storageFailure) {
+        // The live shuffle prefers crypto over Math.random. Keep the opening
+        // deal repeatable so this test exercises storage failure, not bot gin.
+        let seed = 0x5eed1234;
+        window.crypto.getRandomValues = values => {
+          for (let i = 0; i < values.length; i++) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            values[i] = seed;
+          }
+          return values;
+        };
+      }
       window.matchMedia = (query) => ({
         matches: query.includes('reduce') ? reduced : false,
         media: query,
