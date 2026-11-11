@@ -476,7 +476,13 @@ describe.skipIf(!available)('native Turd Rush interface', () => {
             if (cursor + 3 < packets.length) {await page.waitForTimeout(paced);}
           }
         } else {await nativeBurst(client, packets);}
-        await page.waitForTimeout(350); // Complete the bounded250ms intent and real lane interpolation.
+        // A slow browser can spend 350 ms of wall time without advancing the
+        // bounded swipe intent and lane interpolation by 350 ms of game time.
+        const settleAt = (await state(page)).elapsed + .35;
+        await page.waitForFunction(until => {
+          const run = globalThis.__turdrush.state;
+          return run.phase !== 'running' || run.elapsed >= until;
+        }, settleAt, { timeout: 6000 });
         const after = await state(page);
         outcomes.push({ from, directions, target, paced: paced || 0, player: after.player, elapsed: after.elapsed });
         expect(after.phase).toBe('running');
