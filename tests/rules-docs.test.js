@@ -112,7 +112,9 @@ describe('RULES.md follows the shipped games', () => {
   it('records the four-player Crappy Eights action match', () => {
     const game = readRepoFile('crapeights.html');
     const documented = section(rules, 'Crapeights (Crazy Eights)');
-    const matchTarget = numericConstant(game, 'MATCH_TARGET');
+    expect(game).toContain('src="games/crapeights-rules.js"');
+    expect(game).toContain('target: MATCH_TARGET');
+    const matchTarget = numericProperty(readRepoFile('games/crapeights-rules.js'), 'target');
 
     for (const opponent of ['oppCard1', 'oppCard2', 'oppCard3']) {
       expect(game).toContain(`id="${opponent}"`);
