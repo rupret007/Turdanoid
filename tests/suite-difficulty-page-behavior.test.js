@@ -43,7 +43,7 @@ const turdrummyCores = [
 ].map((file) => readFileSync(join(root, file), 'utf8'));
 const crapeightsSources = [
   'table-continue-core',
-  'crapeights-ai',
+  'crapeights-rules', 'crapeights-ai',
   'crapeights-presentation',
   'crapeights-table',
   'crapeights-hand',
