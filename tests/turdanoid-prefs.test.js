@@ -12,6 +12,7 @@ import { PREFS_KEY, LEGACY_KEYS, DEFAULT_PREFS } from '../games/turdanoid-storag
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
 const levelsCore = readFileSync(join(rootDir, 'games/turdanoid-levels-core.js'), 'utf8');
+const physicsCore = readFileSync(join(rootDir, 'games/turdanoid-physics-core.js'), 'utf8');
 const storageCore = readFileSync(join(rootDir, 'games/turdanoid-storage-core.js'), 'utf8');
 
 function makeCtxStub() {
@@ -43,6 +44,7 @@ function bootPageWithoutModulePrefs(seed = {}, hideScoreHelpers = false) {
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
       window.eval(levelsCore);
+      window.eval(physicsCore);
       window.eval(storageCore);
       delete window.TurdanoidStorage.loadPrefs;
       delete window.TurdanoidStorage.savePrefs;
@@ -69,6 +71,7 @@ function bootPage(seed = {}) {
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
       window.eval(levelsCore);
+      window.eval(physicsCore);
       window.eval(storageCore);
       Object.entries(seed).forEach(([key, value]) => window.localStorage.setItem(key, value));
     }
