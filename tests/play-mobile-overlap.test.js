@@ -1,5 +1,5 @@
 // @vitest-environment node
-/* global URL, rules, window */
+/* global URL, rules, shoe, window */
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -84,18 +84,24 @@ async function prepCrapeights(page) {
 
 async function prepCrapjack(page) {
   await dismissGuides(page);
-  await page.evaluate(() => {
-    if (typeof rules !== 'undefined') {
-      rules.allowInsurance = false;
-    }
-  });
+  // A natural resolves before the action pit becomes active. Choose an
+  // ordinary opening hand while keeping the shoe inventory intact.
+  await page.evaluate(opening => {
+    rules.allowInsurance = false;
+    const cards = opening.map(([rank, suit]) => {
+      const index = shoe.findIndex(card => card.rank === rank && card.suit === suit);
+      if (index < 0) { throw new Error('Opening card absent from shoe'); }
+      return shoe.splice(index, 1)[0];
+    });
+    shoe.push(...cards.reverse());
+  }, [['5', 'H'], ['6', 'D'], ['7', 'S'], ['9', 'C']]);
   const quick = page.getByRole('button', { name: 'Quick Start' });
   if (await quick.isVisible().catch(() => false)) {
     await quick.click();
   }
   await page.waitForFunction(
     () => document.body.classList.contains('jack-table-first'),
-    { timeout: 10_000 }
+    undefined, { timeout: 10_000 }
   );
   await page.evaluate(() => {
     window.SuiteArcadeA11y?.syncArcadeA11yMount?.(document);
