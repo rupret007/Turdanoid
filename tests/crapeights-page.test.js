@@ -7,7 +7,7 @@ import { validEightsSnapshot } from './continue-fixtures.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const openPages = [];
-const sources = ['table-continue-core', 'crapeights-ai', 'crapeights-presentation', 'crapeights-table', 'crapeights-hand', 'crapeights-effects']
+const sources = ['table-continue-core', 'crapeights-rules', 'crapeights-ai', 'crapeights-presentation', 'crapeights-table', 'crapeights-hand', 'crapeights-effects']
   .map((name) => readFileSync(join(root, 'games', `${name}.js`), 'utf8'));
 
 function pendingWildSnapshot() {

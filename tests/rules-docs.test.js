@@ -112,7 +112,9 @@ describe('RULES.md follows the shipped games', () => {
   it('records the four-player Crappy Eights action match', () => {
     const game = readRepoFile('crapeights.html');
     const documented = section(rules, 'Crapeights (Crazy Eights)');
-    const matchTarget = numericConstant(game, 'MATCH_TARGET');
+    expect(game).toContain('src="games/crapeights-rules.js"');
+    expect(game).toContain('target: MATCH_TARGET');
+    const matchTarget = numericProperty(readRepoFile('games/crapeights-rules.js'), 'target');
 
     for (const opponent of ['oppCard1', 'oppCard2', 'oppCard3']) {
       expect(game).toContain(`id="${opponent}"`);
@@ -129,9 +131,11 @@ describe('RULES.md follows the shipped games', () => {
   it('records TurdRummy layoffs, bonuses, and match target', () => {
     const game = readRepoFile('turdrummy.html');
     const documented = section(rules, 'Turdrummy (Gin Rummy)');
-    const ginBonus = numericProperty(game, 'ginBonus');
-    const undercutBonus = numericProperty(game, 'undercutBonus');
-    const matchTarget = numericProperty(game, 'matchTarget');
+    expect(game).toContain('...window.TurdRummyRules.balance');
+    const scoring = readRepoFile('games/turdrummy-rules.js');
+    const ginBonus = numericProperty(scoring, 'ginBonus');
+    const undercutBonus = numericProperty(scoring, 'undercutBonus');
+    const matchTarget = numericProperty(scoring, 'matchTarget');
 
     expect(documented).toContain(`First to ${matchTarget} points wins`);
     expect(documented).toContain(`Gin | ${ginBonus} + defender deadwood`);

@@ -21,6 +21,7 @@ const coreSources = [
   'games/table-continue-core.js',
   'games/turdrummy-ai-core.js',
   'games/turdrummy-meld-core.js',
+  'games/turdrummy-rules.js',
   'games/turdrummy-motion-core.js',
   'games/turdrummy-coach-core.js',
   'games/turdrummy-audio-core.js',

@@ -50,6 +50,11 @@ function boot(table) {
     runScripts: 'dangerously',
     url: `http://localhost/${table.page}`,
     beforeParse(window) {
+      if (table.page === 'crapeights.html') {
+        window.eval(readFileSync(join(root, 'games/crapeights-rules.js'), 'utf8'));
+      } else if (table.page === 'turdrummy.html') {
+        window.eval(readFileSync(join(root, 'games/turdrummy-rules.js'), 'utf8'));
+      }
       Object.defineProperty(window.document, 'hidden', { get: () => hidden });
       window.setTimeout = (callback, delay) => {
         const id = nextTimer++;

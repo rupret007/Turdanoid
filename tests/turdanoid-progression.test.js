@@ -19,6 +19,7 @@ import {
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
 const levelsCore = readFileSync(join(rootDir, 'games/turdanoid-levels-core.js'), 'utf8');
+const physicsCore = readFileSync(join(rootDir, 'games/turdanoid-physics-core.js'), 'utf8');
 const storageCore = readFileSync(join(rootDir, 'games/turdanoid-storage-core.js'), 'utf8');
 const FRAME = 1000 / 60;
 const PLAY_FRAMES = 28;
@@ -52,6 +53,7 @@ function bootGame() {
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
       window.eval(levelsCore);
+      window.eval(physicsCore);
       window.eval(storageCore);
     }
   });

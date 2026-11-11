@@ -16,6 +16,7 @@ import { hudMetrics } from '../games/turdanoid-layout.js';
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(rootDir, 'TurdAnoid.html'), 'utf8');
 const levelsCore = readFileSync(join(rootDir, 'games/turdanoid-levels-core.js'), 'utf8');
+const physicsCore = readFileSync(join(rootDir, 'games/turdanoid-physics-core.js'), 'utf8');
 const storageCore = readFileSync(join(rootDir, 'games/turdanoid-storage-core.js'), 'utf8');
 
 const FRAME = 1000 / 60;
@@ -50,6 +51,7 @@ function bootAt(url) {
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
       window.eval(levelsCore);
+      window.eval(physicsCore);
       window.eval(storageCore);
     }
   });
@@ -74,6 +76,7 @@ function bootGameWithPrefs(prefs = {}) {
       window.requestAnimationFrame = () => 0;
       window.cancelAnimationFrame = () => {};
       window.eval(levelsCore);
+      window.eval(physicsCore);
       window.eval(storageCore);
       Object.entries(prefs).forEach(([key, value]) => window.localStorage.setItem(key, value));
     }
