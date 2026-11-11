@@ -219,6 +219,9 @@ async function assertA11yToggleLayout(page, game) {
   expect(report.inViewport).toBe(true);
   expect(report.hits).toEqual([]);
   expect(report.floating).toBe(false);
+  if (game.path === '/turdjack.html') {
+    expect(await page.locator('#suite-arcade-a11y-mount').count()).toBe(1);
+  }
 }
 
 (hasBrowser ? describe.sequential : describe.skip)('arcade a11y (Playwright)', () => {
