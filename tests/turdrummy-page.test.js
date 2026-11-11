@@ -25,6 +25,7 @@ const tableContinueCore = readFileSync(join(root, 'games/table-continue-core.js'
 const coreSources = [
   'games/turdrummy-ai-core.js',
   'games/turdrummy-meld-core.js',
+  'games/turdrummy-rules.js',
   'games/turdrummy-motion-core.js',
   'games/turdrummy-coach-core.js',
   'games/turdrummy-audio-core.js',

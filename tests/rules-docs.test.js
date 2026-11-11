@@ -131,9 +131,11 @@ describe('RULES.md follows the shipped games', () => {
   it('records TurdRummy layoffs, bonuses, and match target', () => {
     const game = readRepoFile('turdrummy.html');
     const documented = section(rules, 'Turdrummy (Gin Rummy)');
-    const ginBonus = numericProperty(game, 'ginBonus');
-    const undercutBonus = numericProperty(game, 'undercutBonus');
-    const matchTarget = numericProperty(game, 'matchTarget');
+    expect(game).toContain('...window.TurdRummyRules.balance');
+    const scoring = readRepoFile('games/turdrummy-rules.js');
+    const ginBonus = numericProperty(scoring, 'ginBonus');
+    const undercutBonus = numericProperty(scoring, 'undercutBonus');
+    const matchTarget = numericProperty(scoring, 'matchTarget');
 
     expect(documented).toContain(`First to ${matchTarget} points wins`);
     expect(documented).toContain(`Gin | ${ginBonus} + defender deadwood`);

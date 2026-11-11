@@ -110,6 +110,7 @@ function boot() {
     // No resources option: external scripts, fonts and assets are not loaded.
     // No timer callbacks run unless a test explicitly calls a live game action.
     beforeParse(window) {
+      window.eval(readFileSync(join(root, 'games/turdrummy-rules.js'), 'utf8'));
       window.setTimeout = (callback, delay) => {
         const id = nextTimer++;
         timers.set(id, { callback, delay });
@@ -147,6 +148,7 @@ function checkLayoff(page, fixture, reversed = false) {
     const melds = ${reversed ? 'knocker.melds.slice().reverse()' : 'knocker.melds'};
     const inputBefore = JSON.stringify([hands, melds]);
     const result = applyLayoff(hands.defender, melds);
+    const { canCardAttachToMeld, cloneMelds, attachCardToMeld } = window.TurdRummyRules;
     function replayReceipt(index, table) {
       if (index === result.laidOffCards.length) return true;
       const card = result.laidOffCards[index];
@@ -247,7 +249,8 @@ describe('the live TurdRummy layoff search', () => {
       const defender = analyzeHand(hands.defender);
       const inputBefore = JSON.stringify([hands, knocker.melds]);
       const result = applyLayoff(hands.defender, knocker.melds);
-      function replayReceipt(index, table) {
+      const { canCardAttachToMeld, cloneMelds, attachCardToMeld } = window.TurdRummyRules;
+    function replayReceipt(index, table) {
         if (index === result.laidOffCards.length) return true;
         const card = result.laidOffCards[index];
         return table.some((meld, destination) => {

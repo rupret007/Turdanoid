@@ -36,6 +36,7 @@ const storageCore = readFileSync(join(root, 'games/turdanoid-storage-core.js'), 
 const turdrummyCores = [
   'games/turdrummy-ai-core.js',
   'games/turdrummy-meld-core.js',
+  'games/turdrummy-rules.js',
   'games/turdrummy-motion-core.js',
   'games/turdrummy-coach-core.js',
   'games/turdrummy-audio-core.js',
