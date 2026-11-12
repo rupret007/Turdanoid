@@ -351,12 +351,16 @@ export function syncArcadeA11yMount(doc) {
     return null;
   }
   const toggle = doc.getElementById('suite-arcade-a11y-toggle');
+  const hadFocus = toggle && doc.activeElement === toggle;
   const tableTarget = tablePlayMountTarget(doc);
   if (tableTarget) {
     const slot = ensureMountSlot(doc, tableTarget);
     if (toggle && toggle.parentElement !== slot) {
       slot.appendChild(toggle);
       toggle.className = 'suite-arcade-a11y-toggle suite-arcade-a11y-toggle--inline';
+      if (hadFocus) {
+        toggle.focus({ preventScroll: true });
+      }
     }
     const bodySlot = doc.querySelector('body > .suite-a11y-body-slot');
     if (bodySlot && bodySlot !== slot && bodySlot.childElementCount === 0) {
@@ -382,6 +386,9 @@ export function syncArcadeA11yMount(doc) {
   }
   const mode = slot.classList.contains('suite-a11y-body-slot') ? 'floating' : 'inline';
   toggle.className = `suite-arcade-a11y-toggle suite-arcade-a11y-toggle--${mode}`;
+  if (hadFocus && doc.activeElement !== toggle) {
+    toggle.focus({ preventScroll: true });
+  }
   const pitSlot = doc.querySelector('.suite-a11y-pit-slot, .suite-a11y-table-dock-slot');
   if (pitSlot && pitSlot !== slot && pitSlot.childElementCount === 0) {
     pitSlot.remove();
