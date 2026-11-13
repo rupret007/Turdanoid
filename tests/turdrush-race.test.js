@@ -76,7 +76,7 @@ describe('authoritative same-course Turd Rush', () => {
     for (const seat of ['a', 'b']) { expect(pop(game, seat, 1, [[1, into]], start).ok).toBe(true); }
     const earlyTick = 880;
     const corrections = Array.from({ length: Math.abs(safe - danger) }, (_, index) => [earlyTick + index, dodge]);
-    expect(pop(game, 'a', 2, corrections, timeAt(earlyTick) + 220).ok).toBe(true);
+    expect(pop(game, 'a', 2, corrections, timeAt(earlyTick) + 400).ok).toBe(true);
     expect(pop(game, 'b', 2, [[earlyTick, dodge]], settledAt(earlyTick)).reason).toBe('late-input');
     game.expire(settledAt(1000));
     expect(game.view('a', settledAt(1000)).players).toMatchObject({ a: { status: 'running' }, b: { status: 'crashed' } });
